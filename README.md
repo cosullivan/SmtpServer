@@ -23,7 +23,7 @@ At its most basic, it only takes a few lines of code for the server to be listen
 
 # What hooks are provided?
 There are three hooks that can be implemented; IMessageStore, IMailboxFilter, and IUserAuthenticator.
-```
+```C#
 var options = new OptionsBuilder()
     .WithServerName("localhost")
     .WithPort(25, 587)
@@ -35,7 +35,7 @@ var options = new OptionsBuilder()
 var smtpServer = new SmtpServer.SmtpServer(options);
 await smtpServer.StartAsync(CancellationToken.None);
 ```
-```
+```C#
 public class ConsoleMessageStore : IMessageStore
 {
     public Task<string> SaveAsync(IMimeMessage message, CancellationToken cancellationToken)
@@ -46,7 +46,7 @@ public class ConsoleMessageStore : IMessageStore
     }
 }
 ```    
-```
+```C#
 public class MailboxFilter : IMailboxFilter
 {
     public Task<MailboxFilterResult> CanAcceptFromAsync(IMailbox @from, int size = 0)
