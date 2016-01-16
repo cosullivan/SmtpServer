@@ -1,0 +1,41 @@
+﻿using System;
+using System.Globalization;
+
+namespace SmtpServer.Mail
+{
+    public interface IMailbox
+    {
+        /// <summary>
+        /// Gets the user/account name.
+        /// </summary>
+        string User { get; }
+
+        /// <summary>
+        /// Gets the host server.
+        /// </summary>
+        string Host { get; }
+
+        /// <summary>
+        /// Gets the display name.
+        /// </summary>
+        string DisplayName { get; }
+    }
+
+    public static class MailboxExtensionMethods
+    {
+        /// <summary>
+        /// Returns the Mailbox as an Address string.
+        /// </summary>
+        /// <param name="mailbox">The mailbox to perform the operation on.</param>
+        /// <returns>The address string that represents the mailbox.</returns>
+        public static string AsAddress(this IMailbox mailbox)
+        {
+            if (mailbox == null)
+            {
+                throw new ArgumentNullException(nameof(mailbox));
+            }
+
+            return String.Format(CultureInfo.InvariantCulture, "{0}@{1}", mailbox.User, mailbox.Host);
+        }
+    }
+}

@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmtpServer", "SmtpServer\SmtpServer.csproj", "{7DD2E2FD-592E-441C-A204-5D898BFDE8CA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmtpServer.Tests", "SmtpServer.Tests\SmtpServer.Tests.csproj", "{72A9962D-1B98-4E56-906E-43A26DD69B1D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7DD2E2FD-592E-441C-A204-5D898BFDE8CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7DD2E2FD-592E-441C-A204-5D898BFDE8CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7DD2E2FD-592E-441C-A204-5D898BFDE8CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7DD2E2FD-592E-441C-A204-5D898BFDE8CA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{72A9962D-1B98-4E56-906E-43A26DD69B1D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{72A9962D-1B98-4E56-906E-43A26DD69B1D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{72A9962D-1B98-4E56-906E-43A26DD69B1D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72A9962D-1B98-4E56-906E-43A26DD69B1D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
