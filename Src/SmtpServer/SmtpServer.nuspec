@@ -6,7 +6,7 @@
     <title>SmtpServer</title>
     <authors>Cain O'Sullivan</authors>
     <owners>Cain O'Sullivan</owners>
-    <projectUrl>http://cainosullivan.com/smtpserver</projectUrl>
+    <projectUrl>https://github.com/cosullivan/SmtpServer</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>.NET SmtpServer</description>
     <releaseNotes>Initial Version.</releaseNotes>

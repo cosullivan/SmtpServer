@@ -13,17 +13,19 @@ SmtpServer currently supports the following ESMTP extensions:
 
 At its most basic, it only takes a few lines of code for the server to be listening to incoming requests.
 
-    var options = new OptionsBuilder()
-        .WithServerName("localhost")
-        .WithPort(25, 587)
-        .Build();
+```cs
+var options = new OptionsBuilder()
+    .WithServerName("localhost")
+    .WithPort(25, 587)
+    .Build();
 
-    var smtpServer = new SmtpServer.SmtpServer(options);
-    await smtpServer.StartAsync(CancellationToken.None);
+var smtpServer = new SmtpServer.SmtpServer(options);
+await smtpServer.StartAsync(CancellationToken.None);
+```
 
 # What hooks are provided?
 There are three hooks that can be implemented; IMessageStore, IMailboxFilter, and IUserAuthenticator.
-```C#
+```cs
 var options = new OptionsBuilder()
     .WithServerName("localhost")
     .WithPort(25, 587)
@@ -35,7 +37,8 @@ var options = new OptionsBuilder()
 var smtpServer = new SmtpServer.SmtpServer(options);
 await smtpServer.StartAsync(CancellationToken.None);
 ```
-```C#
+
+```cs
 public class ConsoleMessageStore : IMessageStore
 {
     public Task<string> SaveAsync(IMimeMessage message, CancellationToken cancellationToken)
@@ -45,8 +48,9 @@ public class ConsoleMessageStore : IMessageStore
         return Task.FromResult(String.Empty);
     }
 }
-```    
-```C#
+```
+
+```cs
 public class MailboxFilter : IMailboxFilter
 {
     public Task<MailboxFilterResult> CanAcceptFromAsync(IMailbox @from, int size = 0)
@@ -65,7 +69,8 @@ public class MailboxFilter : IMailboxFilter
     }
 }
 ```
-```C#  
+
+```cs  
 public class UserAuthenticator : IUserAuthenticator
 {
     public Task<bool> AuthenticateAsync(string user, string password)

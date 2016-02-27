@@ -1,0 +1,1 @@
+..\tools\nuget.exe pack ..\Src\SmtpServer\SmtpServer.csproj -Prop Configuration=Release -BasePath ..\Src\SmtpServer\ -OutputDirectory Packages
