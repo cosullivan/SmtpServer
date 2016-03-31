@@ -42,5 +42,10 @@ namespace SmtpServer
         /// Gets the user authenticator.
         /// </summary>
         IUserAuthenticator UserAuthenticator { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether authentication should be allowed on an unsecure session.
+        /// </summary>
+        bool AllowUnsecureAuthentication { get; }
     }
 }

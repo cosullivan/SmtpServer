@@ -98,7 +98,7 @@ namespace SmtpServer
         /// <returns>The SMTP session.</returns>
         SmtpSession CreateSession(TcpClient tcpClient)
         {
-            return new SmtpSession(_options, tcpClient, new SmtpStateMachine(CreateCommandFactory()));
+            return new SmtpSession(_options, tcpClient, new SmtpStateMachine(_options, CreateCommandFactory()));
         }
 
         /// <summary>

@@ -39,7 +39,7 @@ namespace SmtpServer.Protocol
             switch (_method)
             {
                 case AuthenticationMethod.Plain:
-                    if (await TryPlain(context, cancellationToken) == false)
+                    if (await TryPlainAsync(context, cancellationToken) == false)
                     {
                         await context.Text.ReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ConfigureAwait(false);
                         return;
@@ -47,7 +47,7 @@ namespace SmtpServer.Protocol
                     break;
 
                 case AuthenticationMethod.Login:
-                    if (await TryLogin(context, cancellationToken) == false)
+                    if (await TryLoginAsync(context, cancellationToken) == false)
                     {
                         await context.Text.ReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ConfigureAwait(false);
                         return;
@@ -62,6 +62,9 @@ namespace SmtpServer.Protocol
             }
 
             await context.Text.ReplyAsync(SmtpResponse.AuthenticationSuccessful, cancellationToken).ConfigureAwait(false);
+
+            context.StateMachine.RemoveCommand(SmtpState.WaitingForMail, "AUTH");
+            context.StateMachine.RemoveCommand(SmtpState.WaitingForMailSecure, "AUTH");
         }
 
         /// <summary>
@@ -70,7 +73,7 @@ namespace SmtpServer.Protocol
         /// <param name="context">The execution context to operate on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>true if the PLAIN login sequence worked, false if not.</returns>
-        async Task<bool> TryPlain(ISmtpSessionContext context, CancellationToken cancellationToken)
+        async Task<bool> TryPlainAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
         {
             await context.Text.ReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, " "), cancellationToken).ConfigureAwait(false);
 
@@ -98,7 +101,7 @@ namespace SmtpServer.Protocol
         /// <param name="context">The execution context to operate on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>true if the LOGIN login sequence worked, false if not.</returns>
-        async Task<bool> TryLogin(ISmtpSessionContext context, CancellationToken cancellationToken)
+        async Task<bool> TryLoginAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
         {
             await context.Text.ReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, "VXNlcm5hbWU6"), cancellationToken);
 

@@ -12,7 +12,7 @@ namespace SmtpServer
     {
         readonly ISmtpServerOptions _options;
         readonly SmtpStateMachine _stateMachine;
-        readonly SmtpSessionContext _context = new SmtpSessionContext(new SmtpTransaction());
+        readonly SmtpSessionContext _context;
         int _retryCount = 5;
 
         /// <summary>
@@ -25,7 +25,11 @@ namespace SmtpServer
         {
             _options = options;
             _stateMachine = stateMachine;
-            _context.Text = new NetworkTextStream(tcpClient);
+
+            _context = new SmtpSessionContext(new SmtpTransaction(), stateMachine, tcpClient.Client.RemoteEndPoint)
+            {
+                Text = new NetworkTextStream(tcpClient)
+            };
         }
 
         /// <summary>

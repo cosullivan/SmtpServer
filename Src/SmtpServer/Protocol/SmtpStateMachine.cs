@@ -5,75 +5,98 @@ using SmtpServer.Protocol.Text;
 
 namespace SmtpServer.Protocol
 {
-    public class SmtpStateMachine
+    public class SmtpStateMachine : ISmtpStateMachine
     {
-        const int Initialized = 0;
-        const int WaitingForMail = 1;
-        const int WaitingForMailSecure = 2;
-        const int WithinTransaction = 3;
-        const int CanAcceptData = 4;
-
         readonly StateTable _stateTable;
-        
+
         /// <summary>
         /// Constructor.
         /// </summary>
+        /// <param name="options">The options to assist when configuring the state machine.</param>
         /// <param name="commandFactory">The SMTP command factory.</param>
-        public SmtpStateMachine(SmtpCommandFactory commandFactory)
+        public SmtpStateMachine(ISmtpServerOptions options, SmtpCommandFactory commandFactory)
         {
             _stateTable = new StateTable
             {
-                new State(Initialized)
+                new State(SmtpState.Initialized)
                 {
+#if DEBUG
                     { "DBUG", commandFactory.TryMakeDbug },
+#endif
                     { "NOOP", commandFactory.TryMakeNoop },
                     { "RSET", commandFactory.TryMakeRset },
                     { "QUIT", commandFactory.TryMakeQuit },
-                    { "HELO", commandFactory.TryMakeHelo, WaitingForMail },
-                    { "EHLO", commandFactory.TryMakeEhlo, WaitingForMail },
+                    { "HELO", commandFactory.TryMakeHelo, SmtpState.WaitingForMail },
+                    { "EHLO", commandFactory.TryMakeEhlo, SmtpState.WaitingForMail },
                 },
-                new State(WaitingForMail)
+                new State(SmtpState.WaitingForMail)
                 {
+#if DEBUG
                     { "DBUG", commandFactory.TryMakeDbug },
+#endif
                     { "NOOP", commandFactory.TryMakeNoop },
                     { "RSET", commandFactory.TryMakeRset },
                     { "QUIT", commandFactory.TryMakeQuit },
-                    { "HELO", commandFactory.TryMakeHelo, WaitingForMail },
-                    { "EHLO", commandFactory.TryMakeEhlo, WaitingForMail },
-                    { "MAIL", commandFactory.TryMakeMail, WithinTransaction },
-                    { "STARTTLS", commandFactory.TryMakeStartTls, WaitingForMailSecure },
+                    { "HELO", commandFactory.TryMakeHelo, SmtpState.WaitingForMail },
+                    { "EHLO", commandFactory.TryMakeEhlo, SmtpState.WaitingForMail },
+                    { "MAIL", commandFactory.TryMakeMail, SmtpState.WithinTransaction },
+                    { "STARTTLS", commandFactory.TryMakeStartTls, SmtpState.WaitingForMailSecure },
                 },
-                new State(WaitingForMailSecure)
+                new State(SmtpState.WaitingForMailSecure)
                 {
+#if DEBUG
                     { "DBUG", commandFactory.TryMakeDbug },
+#endif
                     { "NOOP", commandFactory.TryMakeNoop },
                     { "RSET", commandFactory.TryMakeRset },
                     { "QUIT", commandFactory.TryMakeQuit },
                     { "AUTH", commandFactory.TryMakeAuth },
-                    { "HELO", commandFactory.TryMakeHelo, WaitingForMailSecure },
-                    { "EHLO", commandFactory.TryMakeEhlo, WaitingForMailSecure },
-                    { "MAIL", commandFactory.TryMakeMail, WithinTransaction }
+                    { "HELO", commandFactory.TryMakeHelo, SmtpState.WaitingForMailSecure },
+                    { "EHLO", commandFactory.TryMakeEhlo, SmtpState.WaitingForMailSecure },
+                    { "MAIL", commandFactory.TryMakeMail, SmtpState.WithinTransaction }
                 },
-                new State(WithinTransaction)
+                new State(SmtpState.WithinTransaction)
                 {
+#if DEBUG
                     { "DBUG", commandFactory.TryMakeDbug },
+#endif
                     { "NOOP", commandFactory.TryMakeNoop },
                     { "RSET", commandFactory.TryMakeRset },
                     { "QUIT", commandFactory.TryMakeQuit },
-                    { "RCPT", commandFactory.TryMakeRcpt, CanAcceptData },
+                    { "RCPT", commandFactory.TryMakeRcpt, SmtpState.CanAcceptData },
                 },
-                new State(CanAcceptData)
+                new State(SmtpState.CanAcceptData)
                 {
+#if DEBUG
                     { "DBUG", commandFactory.TryMakeDbug },
+#endif
                     { "NOOP", commandFactory.TryMakeNoop },
                     { "RSET", commandFactory.TryMakeRset },
                     { "QUIT", commandFactory.TryMakeQuit },
                     { "RCPT", commandFactory.TryMakeRcpt },
-                    { "DATA", commandFactory.TryMakeData, WaitingForMail },
+                    { "DATA", commandFactory.TryMakeData, SmtpState.WaitingForMail },
                 }
             };
 
-            _stateTable.Initialize(Initialized);
+            if (options.AllowUnsecureAuthentication)
+            {
+                _stateTable[SmtpState.WaitingForMail].Add("AUTH", commandFactory.TryMakeAuth);
+            }
+
+            _stateTable.Initialize(SmtpState.Initialized);
+        }
+
+        /// <summary>
+        /// Remove the specified command from the state.
+        /// </summary>
+        /// <param name="state">The SMTP state to remove the command from.</param>
+        /// <param name="command">The command to remove from the state.</param>
+        public void RemoveCommand(SmtpState state, string command)
+        {
+            if (_stateTable[state].Actions.ContainsKey(command))
+            {
+                _stateTable[state].Actions.Remove(command);
+            }
         }
 
         /// <summary>
@@ -90,16 +113,26 @@ namespace SmtpServer.Protocol
 
         class StateTable : IEnumerable
         {
-            readonly Dictionary<int, State> _states = new Dictionary<int, State>();
+            readonly Dictionary<SmtpState, State> _states = new Dictionary<SmtpState, State>();
             State _state;
 
             /// <summary>
             /// Sets the initial state.
             /// </summary>
             /// <param name="stateId">The ID of the initial state.</param>
-            public void Initialize(int stateId)
+            public void Initialize(SmtpState stateId)
             {
                 _state = _states[stateId];
+            }
+
+            /// <summary>
+            /// Returns the state with the given ID.
+            /// </summary>
+            /// <param name="stateId">The state ID to return.</param>
+            /// <returns>The state with the given id.</returns>
+            public State this[SmtpState stateId]
+            {
+                get { return _states[stateId]; }
             }
 
             /// <summary>
@@ -121,7 +154,7 @@ namespace SmtpServer.Protocol
             public bool TryAccept(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
             {
                 // lookup the correct action
-                Tuple<State.TryMakeDelegate, int> action;
+                Tuple<State.TryMakeDelegate, SmtpState> action;
                 if (_state.Actions.TryGetValue(tokenEnumerator.Peek().Text, out action) == false)
                 {
                     var response = $"expected {String.Join("/", _state.Actions.Keys)}";
@@ -157,16 +190,14 @@ namespace SmtpServer.Protocol
         {
             public delegate bool TryMakeDelegate(TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse errorResponse);
 
-            readonly int _stateId;
-            readonly Dictionary<string, Tuple<TryMakeDelegate, int>> _actions = new Dictionary<string, Tuple<TryMakeDelegate, int>>(StringComparer.InvariantCultureIgnoreCase);
-
             /// <summary>
             /// Constructor.
             /// </summary>
             /// <param name="stateId">The ID of the state.</param>
-            public State(int stateId)
+            public State(SmtpState stateId)
             {
-                _stateId = stateId;
+                StateId = stateId;
+                Actions = new Dictionary<string, Tuple<TryMakeDelegate, SmtpState>>(StringComparer.InvariantCultureIgnoreCase);
             }
 
             /// <summary>
@@ -175,9 +206,9 @@ namespace SmtpServer.Protocol
             /// <param name="command">The name of the SMTP command.</param>
             /// <param name="tryMake">The function callback to create the command.</param>
             /// <param name="transitionTo">The state to transition to.</param>
-            public void Add(string command, TryMakeDelegate tryMake, int? transitionTo = null)
+            public void Add(string command, TryMakeDelegate tryMake, SmtpState? transitionTo = null)
             {
-                Actions.Add(command, Tuple.Create(tryMake, transitionTo ?? _stateId));
+                Actions.Add(command, Tuple.Create(tryMake, transitionTo ?? StateId));
             }
 
             /// <summary>
@@ -193,18 +224,12 @@ namespace SmtpServer.Protocol
             /// <summary>
             /// Gets ID of the state.
             /// </summary>
-            public int StateId
-            {
-                get {  return _stateId; }
-            }
+            public SmtpState StateId { get; }
 
             /// <summary>
             /// Gets the actions that are available to the state.
             /// </summary>
-            public Dictionary<string, Tuple<TryMakeDelegate, int>> Actions
-            {
-                get { return _actions; }
-            }
+            public Dictionary<string, Tuple<TryMakeDelegate, SmtpState>> Actions { get; }
         }
     }
 }

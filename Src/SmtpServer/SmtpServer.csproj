@@ -66,6 +66,7 @@
     <Compile Include="Protocol\DbugCommand.cs" />
     <Compile Include="Protocol\EhloCommand.cs" />
     <Compile Include="Protocol\HeloCommand.cs" />
+    <Compile Include="Protocol\ISmtpStateMachine.cs" />
     <Compile Include="Protocol\MailCommand.cs" />
     <Compile Include="Protocol\NoopCommand.cs" />
     <Compile Include="Protocol\QuitCommand.cs" />
@@ -76,6 +77,7 @@
     <Compile Include="Protocol\SmtpParser.cs" />
     <Compile Include="Protocol\SmtpReplyCode.cs" />
     <Compile Include="Protocol\SmtpResponse.cs" />
+    <Compile Include="Protocol\SmtpState.cs" />
     <Compile Include="Protocol\SmtpStateMachine.cs" />
     <Compile Include="Protocol\StartTlsCommand.cs" />
     <Compile Include="Protocol\Text\StringTokenReader.cs" />

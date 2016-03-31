@@ -1,4 +1,7 @@
-﻿namespace SmtpServer
+﻿using System.Net;
+using SmtpServer.Protocol;
+
+namespace SmtpServer
 {
     public interface ISmtpSessionContext
     {
@@ -16,5 +19,15 @@
         /// Gets the current transaction.
         /// </summary>
         ISmtpTransaction Transaction { get; }
+
+        /// <summary>
+        /// Gets the current state machine.
+        /// </summary>
+        ISmtpStateMachine StateMachine { get; }
+
+        /// <summary>
+        /// Gets the remote endpoint of the client.
+        /// </summary>
+        EndPoint RemoteEndPoint { get; }
     }
 }

@@ -58,13 +58,13 @@ namespace SmtpServer
         public IMessageStore MessageStore { get; internal set; }
 
         /// <summary>
-        /// Gets or sets the mailbox filter.
+        /// Gets the mailbox filter.
         /// </summary>
         public IMailboxFilter MailboxFilter
         {
             get
             {
-                if (_mailboxFilters.Count() == 1)
+                if (_mailboxFilters.Count == 1)
                 {
                     return _mailboxFilters.First();
                 }
@@ -77,5 +77,10 @@ namespace SmtpServer
         /// Gets the user authenticator.
         /// </summary>
         public IUserAuthenticator UserAuthenticator { get; internal set; }
+
+        /// <summary>
+        /// Gets a value indicating whether authentication should be allowed on an unsecure session.
+        /// </summary>
+        public bool AllowUnsecureAuthentication { get; internal set; }
     }
 }

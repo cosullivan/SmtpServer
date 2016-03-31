@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using SmtpServer.Authentication;
 using SmtpServer.Storage;
@@ -25,7 +26,7 @@ namespace SmtpServer
         /// </summary>
         /// <param name="serverName">The name of the server.</param>
         /// <returns>A OptionsBuilder to continue building on.</returns>
-        public OptionsBuilder WithServerName(string serverName)
+        public OptionsBuilder ServerName(string serverName)
         {
             _options.ServerName = serverName;
 
@@ -37,7 +38,7 @@ namespace SmtpServer
         /// </summary>
         /// <param name="serverCertificate">The server's certificate to use when starting a TLS session.</param>
         /// <returns>A OptionsBuilder to continue building on.</returns>
-        public OptionsBuilder WithCertificate(X509Certificate serverCertificate)
+        public OptionsBuilder Certificate(X509Certificate serverCertificate)
         {
             _options.ServerCertificate = serverCertificate;
 
@@ -49,7 +50,7 @@ namespace SmtpServer
         /// </summary>
         /// <param name="endpoint">The endpoint to listen on.</param>
         /// <returns>A OptionsBuilder to continue building on.</returns>
-        public OptionsBuilder WithEndpoint(IPEndPoint endpoint)
+        public OptionsBuilder Endpoint(IPEndPoint endpoint)
         {
             _options.Endpoints.Add(endpoint);
 
@@ -61,7 +62,7 @@ namespace SmtpServer
         /// </summary>
         /// <param name="ports">The port to add as the endpoint.</param>
         /// <returns>A OptionsBuilder to continue building on.</returns>
-        public OptionsBuilder WithPort(params int[] ports)
+        public OptionsBuilder Port(params int[] ports)
         {
             foreach (var port in ports)
             {
@@ -76,7 +77,7 @@ namespace SmtpServer
         /// </summary>
         /// <param name="messageStore">The message store to add.</param>
         /// <returns>A OptionsBuilder to continue building on.</returns>
-        public OptionsBuilder WithMessageStore(IMessageStore messageStore)
+        public OptionsBuilder MessageStore(IMessageStore messageStore)
         {
             _options.MessageStore = messageStore;
 
@@ -88,7 +89,7 @@ namespace SmtpServer
         /// </summary>
         /// <param name="mailboxFilter">The mailbox filter to add.</param>
         /// <returns>A OptionsBuilder to continue building on.</returns>
-        public OptionsBuilder WithMailboxFilter(IMailboxFilter mailboxFilter)
+        public OptionsBuilder MailboxFilter(IMailboxFilter mailboxFilter)
         {
             _options.MailboxFilters.Add(mailboxFilter);
 
@@ -100,9 +101,21 @@ namespace SmtpServer
         /// </summary>
         /// <param name="userAuthenticator">The user authenticator.</param>
         /// <returns>A OptionsBuilder to continue building on.</returns>
-        public OptionsBuilder WithUserAuthenticator(IUserAuthenticator userAuthenticator)
+        public OptionsBuilder UserAuthenticator(IUserAuthenticator userAuthenticator)
         {
             _options.UserAuthenticator = userAuthenticator;
+
+            return this;
+        }
+
+        /// <summary>
+        /// Sets a value indicating whether authentication should be allowed on an unsecure session.
+        /// </summary>
+        /// <param name="value">true if the AUTH command is available on an unsecure session, false if not.</param>
+        /// <returns>A OptionsBuilder to continue building on.</returns>
+        public OptionsBuilder AllowUnsecureAuthentication(bool value = true)
+        {
+            _options.AllowUnsecureAuthentication = value;
 
             return this;
         }
@@ -112,11 +125,99 @@ namespace SmtpServer
         /// </summary>
         /// <param name="maxMessageSize">The maximum message size to allow.</param>
         /// <returns>A OptionsBuilder to continue building on.</returns>
-        public OptionsBuilder WithMaxMessageSize(int maxMessageSize)
+        public OptionsBuilder MaxMessageSize(int maxMessageSize)
         {
             _options.MaxMessageSize = maxMessageSize;
 
             return this;
+        }
+
+        /// <summary>
+        /// Sets the server name.
+        /// </summary>
+        /// <param name="serverName">The name of the server.</param>
+        /// <returns>A OptionsBuilder to continue building on.</returns>
+        [Obsolete("Please use ServerName")]
+        public OptionsBuilder WithServerName(string serverName)
+        {
+            return ServerName(serverName);
+        }
+
+        /// <summary>
+        /// Sets the X509 certificate to use when starting a TLS session.
+        /// </summary>
+        /// <param name="serverCertificate">The server's certificate to use when starting a TLS session.</param>
+        /// <returns>A OptionsBuilder to continue building on.</returns>
+        [Obsolete("Please use Certificate")]
+        public OptionsBuilder WithCertificate(X509Certificate serverCertificate)
+        {
+            return Certificate(serverCertificate);
+        }
+
+        /// <summary>
+        /// Adds an endpoint to listen on.
+        /// </summary>
+        /// <param name="endpoint">The endpoint to listen on.</param>
+        /// <returns>A OptionsBuilder to continue building on.</returns>
+        [Obsolete("Please use Endpoint")]
+        public OptionsBuilder WithEndpoint(IPEndPoint endpoint)
+        {
+            return Endpoint(endpoint);
+        }
+
+        /// <summary>
+        /// Adds an endpoint with the given port.
+        /// </summary>
+        /// <param name="ports">The port to add as the endpoint.</param>
+        /// <returns>A OptionsBuilder to continue building on.</returns>
+        [Obsolete("Please use Port")]
+        public OptionsBuilder WithPort(params int[] ports)
+        {
+            return Port(ports);
+        }
+
+        /// <summary>
+        /// Adds a message store.
+        /// </summary>
+        /// <param name="messageStore">The message store to add.</param>
+        /// <returns>A OptionsBuilder to continue building on.</returns>
+        [Obsolete("Please use MessageStore")]
+        public OptionsBuilder WithMessageStore(IMessageStore messageStore)
+        {
+            return MessageStore(messageStore);
+        }
+
+        /// <summary>
+        /// Adds a mailbox filter.
+        /// </summary>
+        /// <param name="mailboxFilter">The mailbox filter to add.</param>
+        /// <returns>A OptionsBuilder to continue building on.</returns>
+        [Obsolete("Please use MailboxFilter")]
+        public OptionsBuilder WithMailboxFilter(IMailboxFilter mailboxFilter)
+        {
+            return MailboxFilter(mailboxFilter);
+        }
+
+        /// <summary>
+        /// Sets the User Authenticator.
+        /// </summary>
+        /// <param name="userAuthenticator">The user authenticator.</param>
+        /// <returns>A OptionsBuilder to continue building on.</returns>
+        [Obsolete("Please use UserAuthenticator")]
+        public OptionsBuilder WithUserAuthenticator(IUserAuthenticator userAuthenticator)
+        {
+            return UserAuthenticator(userAuthenticator);
+        }
+
+        /// <summary>
+        /// Sets the maximum message size.
+        /// </summary>
+        /// <param name="maxMessageSize">The maximum message size to allow.</param>
+        /// <returns>A OptionsBuilder to continue building on.</returns>
+        [Obsolete("Please use MaxMessageSize")]
+        public OptionsBuilder WithMaxMessageSize(int maxMessageSize)
+        {
+            return MaxMessageSize(maxMessageSize);
         }
     }
 }

@@ -1,17 +1,23 @@
+using System.Net;
+using SmtpServer.Protocol;
+
 namespace SmtpServer
 {
     internal class SmtpSessionContext : ISmtpSessionContext
     {
-        readonly ISmtpTransaction _transaction;
         bool _isQuitRequested;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="transaction">The SMTP transaction.</param>
-        internal SmtpSessionContext(ISmtpTransaction transaction)
+        /// <param name="stateMachine">The current state machine for the session.</param>
+        /// <param name="remoteEndPoint">The remote endpoint of the client making the connection.</param>
+        internal SmtpSessionContext(ISmtpTransaction transaction, ISmtpStateMachine stateMachine, EndPoint remoteEndPoint)
         {
-            _transaction = transaction;
+            Transaction = transaction;
+            StateMachine = stateMachine;
+            RemoteEndPoint = remoteEndPoint;
         }
 
         /// <summary>
@@ -30,10 +36,17 @@ namespace SmtpServer
         /// <summary>
         /// Gets the current transaction.
         /// </summary>
-        public ISmtpTransaction Transaction
-        {
-            get { return _transaction; }
-        }
+        public ISmtpTransaction Transaction { get; }
+
+        /// <summary>
+        /// Gets the current state machine.
+        /// </summary>
+        public ISmtpStateMachine StateMachine { get; }
+
+        /// <summary>
+        /// Gets the remote endpoint of the client.
+        /// </summary>
+        public EndPoint RemoteEndPoint { get; }
 
         /// <summary>
         /// Gets a value indicating whether a quit has been requested.

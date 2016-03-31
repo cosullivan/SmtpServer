@@ -54,7 +54,7 @@ namespace SmtpServer.Protocol
                 return;
             }
 
-            switch (await _filter.CanAcceptFromAsync(Address, size))
+            switch (await _filter.CanAcceptFromAsync(context.RemoteEndPoint, Address, size))
             {
                 case MailboxFilterResult.Yes:
                     context.Transaction.From = _address;
