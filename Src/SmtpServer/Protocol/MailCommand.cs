@@ -54,7 +54,7 @@ namespace SmtpServer.Protocol
                 return;
             }
 
-            switch (await _filter.CanAcceptFromAsync(context.RemoteEndPoint, Address, size))
+            switch (await CreateSessionInstance(context).CanAcceptFromAsync(Address, size))
             {
                 case MailboxFilterResult.Yes:
                     context.Transaction.From = _address;
@@ -75,6 +75,16 @@ namespace SmtpServer.Protocol
             }
 
             throw new NotSupportedException("The Acceptance state is not supported.");
+        }
+
+        /// <summary>
+        /// Creates an instance of the message box filter specifically for this session.
+        /// </summary>
+        /// <param name="context">The session context information.</param>
+        /// <returns>The mailbox filter instance specifically for this session.</returns>
+        IMailboxFilter CreateSessionInstance(ISmtpSessionContext context)
+        {
+            return _filter.CreateSessionInstance(context.RemoteEndPoint);
         }
 
         /// <summary>

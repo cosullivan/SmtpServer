@@ -4,14 +4,17 @@ using SmtpServer.Mail;
 
 namespace SmtpServer.Storage
 {
-    public interface IMailboxFilter
+    public abstract class MailboxFilter : IMailboxFilter
     {
         /// <summary>
         /// Creates an instance of the message box filter specifically for this session.
         /// </summary>
         /// <param name="remoteEndPoint">The remote end point of the client making the connection.</param>
         /// <returns>The mailbox filter instance specifically for this session.</returns>
-        IMailboxFilter CreateSessionInstance(EndPoint remoteEndPoint);
+        public virtual IMailboxFilter CreateSessionInstance(EndPoint remoteEndPoint)
+        {
+            return this;
+        }
 
         /// <summary>
         /// Returns a value indicating whether the given mailbox can be accepted as a sender.
@@ -19,7 +22,10 @@ namespace SmtpServer.Storage
         /// <param name="from">The mailbox to test.</param>
         /// <param name="size">The estimated message size to accept.</param>
         /// <returns>The acceptance state of the mailbox.</returns>
-        Task<MailboxFilterResult> CanAcceptFromAsync(IMailbox from, int size = 0);
+        public virtual Task<MailboxFilterResult> CanAcceptFromAsync(IMailbox @from, int size = 0)
+        {
+            return Task.FromResult(MailboxFilterResult.Yes);
+        }
 
         /// <summary>
         /// Returns a value indicating whether the given mailbox can be accepted as a recipient to the given sender.
@@ -27,6 +33,9 @@ namespace SmtpServer.Storage
         /// <param name="to">The mailbox to test.</param>
         /// <param name="from">The sender's mailbox.</param>
         /// <returns>The acceptance state of the mailbox.</returns>
-        Task<MailboxFilterResult> CanDeliverToAsync(IMailbox to, IMailbox from);
+        public virtual Task<MailboxFilterResult> CanDeliverToAsync(IMailbox to, IMailbox @from)
+        {
+            return Task.FromResult(MailboxFilterResult.Yes);
+        }
     }
 }

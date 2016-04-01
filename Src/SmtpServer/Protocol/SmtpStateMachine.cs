@@ -91,7 +91,7 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="state">The SMTP state to remove the command from.</param>
         /// <param name="command">The command to remove from the state.</param>
-        public void RemoveCommand(SmtpState state, string command)
+        void ISmtpStateMachine.RemoveCommand(SmtpState state, string command)
         {
             if (_stateTable[state].Actions.ContainsKey(command))
             {

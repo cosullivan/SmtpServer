@@ -5,7 +5,7 @@ using SmtpServer.Mail;
 
 namespace SmtpServer.Storage
 {
-    public class CompositeMailboxFilter : IMailboxFilter
+    internal sealed class CompositeMailboxFilter : IMailboxFilter
     {
         readonly IMailboxFilter[] _filters;
 
@@ -19,20 +19,29 @@ namespace SmtpServer.Storage
         }
 
         /// <summary>
-        /// Returns a value indicating whether the given mailbox can be accepted as a sender.
+        /// Creates an instance of the message box filter specifically for this session.
         /// </summary>
         /// <param name="remoteEndPoint">The remote end point of the client making the connection.</param>
+        /// <returns>The mailbox filter instance specifically for this session.</returns>
+        public IMailboxFilter CreateSessionInstance(EndPoint remoteEndPoint)
+        {
+            return new CompositeMailboxFilter(_filters.Select(filter => filter.CreateSessionInstance(remoteEndPoint)).ToArray());
+        }
+
+        /// <summary>
+        /// Returns a value indicating whether the given mailbox can be accepted as a sender.
+        /// </summary>
         /// <param name="from">The mailbox to test.</param>
         /// <param name="size">The estimated message size to accept.</param>
         /// <returns>The acceptance state of the mailbox.</returns>
-        public async Task<MailboxFilterResult> CanAcceptFromAsync(EndPoint remoteEndPoint, IMailbox @from, int size = 0)
+        public async Task<MailboxFilterResult> CanAcceptFromAsync(IMailbox @from, int size = 0)
         {
             if (_filters == null || _filters.Any() == false)
             {
                 return MailboxFilterResult.Yes;
             }
 
-            var results = await Task.WhenAll(_filters.Select(f => f.CanAcceptFromAsync(remoteEndPoint, @from, size)));
+            var results = await Task.WhenAll(_filters.Select(f => f.CanAcceptFromAsync(@from, size)));
 
             return results.Max();
         }
