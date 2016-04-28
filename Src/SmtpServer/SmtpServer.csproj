@@ -100,7 +100,9 @@
     <Compile Include="Protocol\Text\TokenKind.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="SmtpServer.nuspec" />
+    <None Include="SmtpServer.nuspec">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="SmtpServer.pfx" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
