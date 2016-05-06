@@ -61,7 +61,7 @@ namespace SmtpServer.Protocol
                 yield return $"SIZE {_options.MaxMessageSize}";
             }
 
-            if (session.Text.IsSecure && _options.UserAuthenticator != null)
+            if ((session.Text.IsSecure || _options.AllowUnsecureAuthentication) && _options.UserAuthenticator != null)
             {
                 yield return "AUTH PLAIN LOGIN";
             }
