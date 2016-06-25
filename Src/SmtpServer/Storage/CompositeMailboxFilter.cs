@@ -1,5 +1,4 @@
 ﻿using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 using SmtpServer.Mail;
 
@@ -21,11 +20,11 @@ namespace SmtpServer.Storage
         /// <summary>
         /// Creates an instance of the message box filter specifically for this session.
         /// </summary>
-        /// <param name="remoteEndPoint">The remote end point of the client making the connection.</param>
+        /// <param name="context">The session level context.</param>
         /// <returns>The mailbox filter instance specifically for this session.</returns>
-        public IMailboxFilter CreateSessionInstance(EndPoint remoteEndPoint)
+        public IMailboxFilter CreateSessionInstance(ISessionContext context)
         {
-            return new CompositeMailboxFilter(_filters.Select(filter => filter.CreateSessionInstance(remoteEndPoint)).ToArray());
+            return new CompositeMailboxFilter(_filters.Select(filter => filter.CreateSessionInstance(context)).ToArray());
         }
 
         /// <summary>

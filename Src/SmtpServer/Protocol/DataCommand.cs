@@ -51,7 +51,8 @@ namespace SmtpServer.Protocol
             try
             {
                 // store the transaction
-                var messageId = await _messageStore.SaveAsync(context.Transaction, cancellationToken).ConfigureAwait(false);
+                var messageStore = CreateSessionInstance(context);
+                var messageId = await messageStore.SaveAsync(context.Transaction, cancellationToken).ConfigureAwait(false);
 
                 await context.Text.ReplyAsync(new SmtpResponse(SmtpReplyCode.Ok, $"mail accepted ({messageId})"), cancellationToken).ConfigureAwait(false);
             }
@@ -59,6 +60,16 @@ namespace SmtpServer.Protocol
             {
                 await context.Text.ReplyAsync(new SmtpResponse(SmtpReplyCode.MailboxUnavailable), cancellationToken).ConfigureAwait(false);
             }
+        }
+
+        /// <summary>
+        /// Creates an instance of the message store specifically for this session.
+        /// </summary>
+        /// <param name="context">The session context information.</param>
+        /// <returns>The message store instance specifically for this session.</returns>
+        IMessageStore CreateSessionInstance(ISessionContext context)
+        {
+            return _messageStore.CreateSessionInstance(context);
         }
     }
 }

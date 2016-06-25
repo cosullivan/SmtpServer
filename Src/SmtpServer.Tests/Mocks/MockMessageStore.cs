@@ -7,11 +7,11 @@ using SmtpServer.Storage;
 
 namespace SmtpServer.Tests.Mocks
 {
-    public class MockMessageStore : IMessageStore
+    public class MockMessageStore : MessageStore
     {
         readonly List<IMimeMessage> _messages = new List<IMimeMessage>();
 
-        public Task<string> SaveAsync(IMimeMessage message, CancellationToken cancellationToken)
+        public override Task<string> SaveAsync(IMimeMessage message, CancellationToken cancellationToken)
         {
             _messages.Add(message);
 

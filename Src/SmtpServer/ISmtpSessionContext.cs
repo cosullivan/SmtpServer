@@ -3,7 +3,7 @@ using SmtpServer.Protocol;
 
 namespace SmtpServer
 {
-    public interface ISmtpSessionContext
+    public interface ISmtpSessionContext : ISessionContext
     {
         /// <summary>
         /// Indicates to the session that it should quit.
@@ -24,10 +24,5 @@ namespace SmtpServer
         /// Gets the current state machine.
         /// </summary>
         ISmtpStateMachine StateMachine { get; }
-
-        /// <summary>
-        /// Gets the remote endpoint of the client.
-        /// </summary>
-        EndPoint RemoteEndPoint { get; }
     }
 }

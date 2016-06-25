@@ -82,9 +82,9 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="context">The session context information.</param>
         /// <returns>The mailbox filter instance specifically for this session.</returns>
-        IMailboxFilter CreateSessionInstance(ISmtpSessionContext context)
+        IMailboxFilter CreateSessionInstance(ISessionContext context)
         {
-            return _filter.CreateSessionInstance(context.RemoteEndPoint);
+            return _filter.CreateSessionInstance(context);
         }
 
         /// <summary>

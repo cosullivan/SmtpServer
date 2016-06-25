@@ -50,6 +50,7 @@
     <Compile Include="Authentication\IUserAuthenticator.cs" />
     <Compile Include="Extensions\TaskExtensions.cs" />
     <Compile Include="Extensions\TraceSwitchExtensions.cs" />
+    <Compile Include="ISessionContext.cs" />
     <Compile Include="ISmtpSessionContext.cs" />
     <Compile Include="ISmtpServerOptions.cs" />
     <Compile Include="ISmtpTransaction.cs" />
@@ -98,6 +99,7 @@
     <Compile Include="Protocol\Text\Token.cs" />
     <Compile Include="Protocol\Text\TokenEnumerator.cs" />
     <Compile Include="Protocol\Text\TokenKind.cs" />
+    <Compile Include="Storage\MessageStore.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="SmtpServer.nuspec">

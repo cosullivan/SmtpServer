@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -61,10 +60,25 @@ namespace SmtpServer.Protocol
                 yield return $"SIZE {_options.MaxMessageSize}";
             }
 
-            if ((session.Text.IsSecure || _options.AllowUnsecureAuthentication) && _options.UserAuthenticator != null)
+            if (IsPlainLoginAllowed(session))
             {
                 yield return "AUTH PLAIN LOGIN";
             }
+        }
+
+        /// <summary>
+        /// Returns a value indicating whether or not plain login is allowed.
+        /// </summary>
+        /// <param name="session">The current session.</param>
+        /// <returns>true if plain login is allowed for the session, false if not.</returns>
+        bool IsPlainLoginAllowed(ISmtpSessionContext session)
+        {
+            if (_options.UserAuthenticator == null)
+            {
+                return false;
+            }
+
+            return session.Text.IsSecure || _options.AllowUnsecureAuthentication;
         }
 
         /// <summary>
