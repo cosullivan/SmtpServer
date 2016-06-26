@@ -18,29 +18,20 @@ namespace SmtpServer.Storage
         }
 
         /// <summary>
-        /// Creates an instance of the message box filter specifically for this session.
-        /// </summary>
-        /// <param name="context">The session level context.</param>
-        /// <returns>The mailbox filter instance specifically for this session.</returns>
-        public IMailboxFilter CreateSessionInstance(ISessionContext context)
-        {
-            return new CompositeMailboxFilter(_filters.Select(filter => filter.CreateSessionInstance(context)).ToArray());
-        }
-
-        /// <summary>
         /// Returns a value indicating whether the given mailbox can be accepted as a sender.
         /// </summary>
+        /// <param name="context">The session context.</param>
         /// <param name="from">The mailbox to test.</param>
         /// <param name="size">The estimated message size to accept.</param>
         /// <returns>The acceptance state of the mailbox.</returns>
-        public async Task<MailboxFilterResult> CanAcceptFromAsync(IMailbox @from, int size = 0)
+        public async Task<MailboxFilterResult> CanAcceptFromAsync(ISessionContext context, IMailbox @from, int size = 0)
         {
             if (_filters == null || _filters.Any() == false)
             {
                 return MailboxFilterResult.Yes;
             }
 
-            var results = await Task.WhenAll(_filters.Select(f => f.CanAcceptFromAsync(@from, size)));
+            var results = await Task.WhenAll(_filters.Select(f => f.CanAcceptFromAsync(context, @from, size)));
 
             return results.Max();
         }
@@ -48,17 +39,18 @@ namespace SmtpServer.Storage
         /// <summary>
         /// Returns a value indicating whether the given mailbox can be accepted as a recipient to the given sender.
         /// </summary>
+        /// <param name="context">The session context.</param>
         /// <param name="to">The mailbox to test.</param>
         /// <param name="from">The sender's mailbox.</param>
         /// <returns>The acceptance state of the mailbox.</returns>
-        public async Task<MailboxFilterResult> CanDeliverToAsync(IMailbox to, IMailbox @from)
+        public async Task<MailboxFilterResult> CanDeliverToAsync(ISessionContext context, IMailbox to, IMailbox @from)
         {
             if (_filters == null || _filters.Any() == false)
             {
                 return MailboxFilterResult.Yes;
             }
 
-            var results = await Task.WhenAll(_filters.Select(f => f.CanDeliverToAsync(to, @from)));
+            var results = await Task.WhenAll(_filters.Select(f => f.CanDeliverToAsync(context, to, @from)));
 
             return results.Max();
         }

@@ -34,9 +34,9 @@ namespace SmtpServer
         IMessageStoreFactory MessageStoreFactory { get; }
 
         /// <summary>
-        /// Gets the mailbox filter.
+        /// Gets the mailbox filter factory to use.
         /// </summary>
-        IMailboxFilter MailboxFilter { get; }
+        IMailboxFilterFactory MailboxFilterFactory { get; }
 
         /// <summary>
         /// Gets the user authenticator.

@@ -92,7 +92,10 @@
     <Compile Include="SmtpSessionContext.cs" />
     <Compile Include="SmtpTransaction.cs" />
     <Compile Include="Storage\CompositeMailboxFilter.cs" />
+    <Compile Include="Storage\CompositeMailboxFilterFactory.cs" />
+    <Compile Include="Storage\DisposableContainer.cs" />
     <Compile Include="Storage\DoNothingMessageStore.cs" />
+    <Compile Include="Storage\IMailboxFilterFactory.cs" />
     <Compile Include="Storage\IMailboxFilter.cs" />
     <Compile Include="Storage\IMessageStore.cs" />
     <Compile Include="Storage\IMessageStoreFactory.cs" />

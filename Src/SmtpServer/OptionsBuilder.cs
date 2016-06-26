@@ -84,13 +84,13 @@ namespace SmtpServer
         }
 
         /// <summary>
-        /// Adds a mailbox filter.
+        /// Adds a mailbox filter factory.
         /// </summary>
-        /// <param name="mailboxFilter">The mailbox filter to add.</param>
+        /// <param name="mailboxFilterFactory">The mailbox filter factory to add.</param>
         /// <returns>A OptionsBuilder to continue building on.</returns>
-        public OptionsBuilder MailboxFilter(IMailboxFilter mailboxFilter)
+        public OptionsBuilder MailboxFilter(IMailboxFilterFactory mailboxFilterFactory)
         {
-            _options.MailboxFilters.Add(mailboxFilter);
+            _options.MailboxFilterFactories.Add(mailboxFilterFactory);
 
             return this;
         }
