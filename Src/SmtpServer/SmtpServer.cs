@@ -79,7 +79,7 @@ namespace SmtpServer
             tcpListener.Start();
 
             // keep track of the running tasks for disposal
-            var sessions = new List<SmtpSession>();
+            var sessions = new ConcurrentDictionary<SmtpSession, SmtpSession>();
 
             try
             {
@@ -92,7 +92,7 @@ namespace SmtpServer
 
                     // create a new session to handle the connection
                     var session = CreateSession(tcpClient);
-                    sessions.Add(session);
+                    sessions.TryAdd(session, session);
 
                     OnSessionCreated(new SessionEventArgs(session.Context));
 
@@ -102,7 +102,9 @@ namespace SmtpServer
                     session.Task
                         .ContinueWith(t =>
                         {
-                            sessions.Remove(session);
+                            SmtpSession s;
+                            sessions.TryRemove(session, out s);
+
                             OnSessionCompleted(new SessionEventArgs(session.Context));
                         },
                         cancellationToken);
@@ -110,7 +112,7 @@ namespace SmtpServer
                 }
 
                 // the server has been cancelled, wait for the tasks to complete
-                await Task.WhenAll(sessions.Select(s => s.Task)).ConfigureAwait(false);
+                await Task.WhenAll(sessions.Keys.Select(s => s.Task)).ConfigureAwait(false);
             }
             finally
             {

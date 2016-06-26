@@ -2,9 +2,6 @@
 using System.Net.Mail;
 using System.Threading;
 using System.Threading.Tasks;
-using Limilabs.Client.SMTP;
-using Limilabs.Mail;
-using Limilabs.Mail.Headers;
 using SmtpServer;
 
 namespace SampleApp
@@ -77,18 +74,18 @@ namespace SampleApp
 
                 counter++;
 
-                //await Task.Delay(0, cancellationToken).ConfigureAwait(false);
+                //await Task.Delay(50, cancellationToken).ConfigureAwait(false);
             }
         }
 
         static void OnSmtpServerSessionCreated(object sender, SessionEventArgs sessionEventArgs)
         {
-            //Console.WriteLine("SessionCreated: {0}", sessionEventArgs.Context.RemoteEndPoint);
+            Console.WriteLine("SessionCreated: {0}", sessionEventArgs.Context.RemoteEndPoint);
         }
 
         static void OnSmtpServerSessionCompleted(object sender, SessionEventArgs sessionEventArgs)
         {
-            //Console.WriteLine("SessionCompleted: {0}", sessionEventArgs.Context.RemoteEndPoint);
+            Console.WriteLine("SessionCompleted: {0}", sessionEventArgs.Context.RemoteEndPoint);
         }
     }
 }
