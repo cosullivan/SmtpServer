@@ -20,7 +20,9 @@ namespace SampleApp
                 .Build();
 
             var serverTask = RunServerAsync(options, cancellationTokenSource.Token);
-            var clientTask = RunClientAsync(cancellationTokenSource.Token);
+            var clientTask1 = RunClientAsync("A", cancellationTokenSource.Token);
+            var clientTask2 = RunClientAsync("B", cancellationTokenSource.Token);
+            var clientTask3 = RunClientAsync("C", cancellationTokenSource.Token);
 
             Console.WriteLine("Press any key to continue");
             Console.ReadKey();
@@ -28,7 +30,9 @@ namespace SampleApp
             cancellationTokenSource.Cancel();
 
             serverTask.WaitWithoutException();
-            clientTask.WaitWithoutException();
+            clientTask1.WaitWithoutException();
+            clientTask2.WaitWithoutException();
+            clientTask3.WaitWithoutException();
         }
 
         static async Task RunServerAsync(ISmtpServerOptions options, CancellationToken cancellationToken)
@@ -38,7 +42,7 @@ namespace SampleApp
             await smtpServer.StartAsync(cancellationToken);
         }
 
-        static async Task RunClientAsync(CancellationToken cancellationToken)
+        static async Task RunClientAsync(string name, CancellationToken cancellationToken)
         {
             var counter = 1;
             while (cancellationToken.IsCancellationRequested == false)
@@ -50,7 +54,7 @@ namespace SampleApp
                         await smtpClient.SendMailAsync(
                             new MailMessage("sample@test.com", "sample@test.com")
                             {
-                                Subject = $"Message {counter++}"
+                                Subject = $"{name} {counter++}"
                             });
                     }
                     catch (SmtpException smtpException)
@@ -59,7 +63,7 @@ namespace SampleApp
                     }
                 }
 
-                await Task.Delay(1000, cancellationToken);
+                await Task.Delay(250, cancellationToken);
             }
         }
     }
