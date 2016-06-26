@@ -58,7 +58,7 @@ namespace SampleApp
                     try
                     {
                         await smtpClient.SendMailAsync(
-                            new MailMessage("sample@test.com", "sample@test.com")
+                            new MailMessage($"{name}{counter++}@test.com", "sample@test.com")
                             {
                                 Subject = $"{name} {counter++}"
                             });

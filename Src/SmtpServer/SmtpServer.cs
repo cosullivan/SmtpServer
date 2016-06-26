@@ -154,7 +154,7 @@ namespace SmtpServer
                     var session = CreateSession(tcpClient);
                     sessions.Add(session);
 
-                    OnSessionCreated(new SessionEventArgs(session.Context));
+                    //OnSessionCreated(new SessionEventArgs(session.Context));
 
                     session.Run(cancellationToken);
 
@@ -162,8 +162,13 @@ namespace SmtpServer
                     session.Task
                         .ContinueWith(t =>
                         {
+                            if (t.Exception != null)
+                            {
+                                Console.WriteLine(t.Exception);
+                            }
+                            //Console.WriteLine("Finished");
                             sessions.Remove(session);
-                            OnSessionCompleted(new SessionEventArgs(session.Context));
+                            //OnSessionCompleted(new SessionEventArgs(session.Context));
                         },
                         cancellationToken);
 #pragma warning restore 4014

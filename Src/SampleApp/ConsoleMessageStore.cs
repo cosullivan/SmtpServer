@@ -45,9 +45,11 @@ namespace SampleApp
         /// <returns>A unique identifier that represents this message in the underlying message store.</returns>
         public override Task<string> SaveAsync(IMimeMessage message, CancellationToken cancellationToken)
         {
-            Console.WriteLine("From: {0} ({1})", message.From, _context.RemoteEndPoint);
-            Console.WriteLine("To: {0}", String.Join(",", message.To.Select(m => m.AsAddress())));
-            Console.WriteLine(message.Mime);
+            //Console.WriteLine("From: {0} ({1})", message.From, _context.RemoteEndPoint);
+            //Console.WriteLine("To: {0}", String.Join(",", message.To.Select(m => m.AsAddress())));
+            //Console.WriteLine(message.Mime);
+
+            Console.WriteLine(message.From.User);
 
             return Task.FromResult(Guid.NewGuid().ToString());
         }
