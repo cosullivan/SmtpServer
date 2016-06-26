@@ -2,6 +2,9 @@
 using System.Net.Mail;
 using System.Threading;
 using System.Threading.Tasks;
+using Limilabs.Client.SMTP;
+using Limilabs.Mail;
+using Limilabs.Mail.Headers;
 using SmtpServer;
 
 namespace SampleApp
@@ -57,30 +60,35 @@ namespace SampleApp
                 {
                     try
                     {
-                        await smtpClient.SendMailAsync(
-                            new MailMessage($"{name}{counter++}@test.com", "sample@test.com")
-                            {
-                                Subject = $"{name} {counter++}"
-                            });
+                        var message = new MailMessage($"{name}{counter}@test.com", "sample@test.com", $"{name} {counter}", "");
+                        //await smtpClient.SendMailAsync(message).ConfigureAwait(false);
+
+                        await Task.Run(() => smtpClient.Send(message), cancellationToken).ConfigureAwait(false);
                     }
                     catch (SmtpException smtpException)
                     {
                         Console.WriteLine(smtpException.StatusCode);
                     }
+                    catch (Exception exception)
+                    {
+                        Console.WriteLine(exception);
+                    }
                 }
 
-                await Task.Delay(250, cancellationToken);
+                counter++;
+
+                //await Task.Delay(0, cancellationToken).ConfigureAwait(false);
             }
         }
 
         static void OnSmtpServerSessionCreated(object sender, SessionEventArgs sessionEventArgs)
         {
-            Console.WriteLine("SessionCreated: {0}", sessionEventArgs.Context.RemoteEndPoint);
+            //Console.WriteLine("SessionCreated: {0}", sessionEventArgs.Context.RemoteEndPoint);
         }
 
         static void OnSmtpServerSessionCompleted(object sender, SessionEventArgs sessionEventArgs)
         {
-            Console.WriteLine("SessionCompleted: {0}", sessionEventArgs.Context.RemoteEndPoint);
+            //Console.WriteLine("SessionCompleted: {0}", sessionEventArgs.Context.RemoteEndPoint);
         }
     }
 }

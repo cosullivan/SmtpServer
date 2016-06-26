@@ -47,10 +47,9 @@ namespace SmtpServer
                     try
                     {
                         _tcpClient.Close();
-
                         _taskCompletionSource.SetResult(t.IsCompleted);
                     }
-                    catch (Exception)
+                    catch
                     {
                         _taskCompletionSource.SetResult(false);
                     }

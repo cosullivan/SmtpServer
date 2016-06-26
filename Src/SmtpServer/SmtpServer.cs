@@ -65,66 +65,6 @@ namespace SmtpServer
             await Task.WhenAll(_options.Endpoints.Select(e => ListenAsync(e, cancellationToken))).ConfigureAwait(false);
         }
 
-        ///// <summary>
-        ///// Listen for SMTP traffic on the given endpoint.
-        ///// </summary>
-        ///// <param name="endpoint">The endpoint to listen on.</param>
-        ///// <param name="cancellationToken">The cancellation token.</param>
-        ///// <returns>A task which performs the operation.</returns>
-        //async Task ListenAsync(IPEndPoint endpoint, CancellationToken cancellationToken)
-        //{
-        //    _logger.LogVerbose("Listening on port {0}", endpoint.Port);
-
-        //    var tcpListener = new TcpListener(endpoint);
-        //    tcpListener.Start();
-
-        //    // keep track of the running tasks for disposal
-        //    var sessions = new ConcurrentDictionary<Task, SmtpSession>();
-
-        //    try
-        //    {
-        //        while (cancellationToken.IsCancellationRequested == false)
-        //        {
-        //            cancellationToken.ThrowIfCancellationRequested();
-
-        //            // wait for a client connection
-        //            var tcpClient = await tcpListener.AcceptTcpClientAsync().WithCancellation(cancellationToken).ConfigureAwait(false);
-
-        //            _logger.LogVerbose("SMTP client accepted [{0}]", tcpClient.Client.RemoteEndPoint);
-
-        //            // create a new session to handle the connection
-        //            var session = CreateSession(tcpClient);
-
-        //            OnSessionCreated(new SessionEventArgs(session.Context));
-
-        //            var sessionTask = session.HandleAsync(cancellationToken)
-        //                .ContinueWith(t =>
-        //                    {
-        //                        SmtpSession s;
-        //                        sessions.TryRemove(t, out s);
-
-        //                        _logger.LogVerbose("SMTP client closed [{0}]", tcpClient.Client.RemoteEndPoint);
-
-        //                        // closing the client will dispose of the stream
-        //                        tcpClient.Close();
-
-        //                        OnSessionCompleted(new SessionEventArgs(session.Context));
-        //                    }, 
-        //                    cancellationToken);
-
-        //            // keep track of the session 
-        //            sessions.TryAdd(sessionTask, session);
-        //        }
-
-        //        // the server has been cancelled, wait for the tasks to complete
-        //        await Task.WhenAll(sessions.Keys).ConfigureAwait(false);
-        //    }
-        //    finally
-        //    {
-        //        tcpListener.Stop();
-        //    }
-        //}
-
         /// <summary>
         /// Listen for SMTP traffic on the given endpoint.
         /// </summary>
@@ -147,31 +87,26 @@ namespace SmtpServer
                 {
                     // wait for a client connection
                     var tcpClient = await tcpListener.AcceptTcpClientAsync().WithCancellation(cancellationToken).ConfigureAwait(false);
-
+                    
                     _logger.LogVerbose("SMTP client accepted [{0}]", tcpClient.Client.RemoteEndPoint);
 
                     // create a new session to handle the connection
                     var session = CreateSession(tcpClient);
                     sessions.Add(session);
 
-                    //OnSessionCreated(new SessionEventArgs(session.Context));
+                    OnSessionCreated(new SessionEventArgs(session.Context));
 
                     session.Run(cancellationToken);
 
-#pragma warning disable 4014
+                    #pragma warning disable 4014
                     session.Task
                         .ContinueWith(t =>
                         {
-                            if (t.Exception != null)
-                            {
-                                Console.WriteLine(t.Exception);
-                            }
-                            //Console.WriteLine("Finished");
                             sessions.Remove(session);
-                            //OnSessionCompleted(new SessionEventArgs(session.Context));
+                            OnSessionCompleted(new SessionEventArgs(session.Context));
                         },
                         cancellationToken);
-#pragma warning restore 4014
+                    #pragma warning restore 4014
                 }
 
                 // the server has been cancelled, wait for the tasks to complete

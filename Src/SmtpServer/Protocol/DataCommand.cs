@@ -39,13 +39,21 @@ namespace SmtpServer.Protocol
 
             await context.Text.ReplyAsync(new SmtpResponse(SmtpReplyCode.StartMailInput, "end with <CRLF>.<CRLF>"), cancellationToken).ConfigureAwait(false);
 
-            string text;
-            while ((text = await context.Text.ReadLineAsync(cancellationToken).ConfigureAwait(false)) != ".")
+            try
             {
-                // need to trim the '.' at the start of the line if it 
-                // exists as this would have been added for transparency
-                // http://tools.ietf.org/html/rfc5321#section-4.5.2
-                context.Transaction.Mime.AppendLine(text.TrimStart('.'));
+                string text;
+                while ((text = await context.Text.ReadLineAsync(TimeSpan.FromSeconds(60), cancellationToken).ConfigureAwait(false)) != ".")
+                {
+                    // need to trim the '.' at the start of the line if it 
+                    // exists as this would have been added for transparency
+                    // http://tools.ietf.org/html/rfc5321#section-4.5.2
+                    context.Transaction.Mime.AppendLine(text.TrimStart('.'));
+                }
+            }
+            catch (TimeoutException)
+            {
+                // TODO: not sure what the best thing to do here is
+                throw;
             }
 
             try
