@@ -1,5 +1,4 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using SmtpServer.Authentication;
 using SmtpServer.Storage;
@@ -16,7 +15,7 @@ namespace SmtpServer
         /// <returns>The server options that have been set.</returns>
         public ISmtpServerOptions Build()
         {
-            _options.MessageStore = _options.MessageStore ?? new DoNothingMessageStore();
+            _options.MessageStoreFactory = _options.MessageStoreFactory ?? new DoNothingMessageStore();
 
             return _options;
         }
@@ -73,13 +72,13 @@ namespace SmtpServer
         }
 
         /// <summary>
-        /// Adds a message store.
+        /// Adds a message store factory.
         /// </summary>
-        /// <param name="messageStore">The message store to add.</param>
+        /// <param name="messageStoreFactory">The message store factory to use.</param>
         /// <returns>A OptionsBuilder to continue building on.</returns>
-        public OptionsBuilder MessageStore(IMessageStore messageStore)
+        public OptionsBuilder MessageStore(IMessageStoreFactory messageStoreFactory)
         {
-            _options.MessageStore = messageStore;
+            _options.MessageStoreFactory = messageStoreFactory;
 
             return this;
         }

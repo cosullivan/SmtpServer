@@ -11,7 +11,7 @@ namespace SmtpServer.Tests.Mocks
     {
         readonly List<IMimeMessage> _messages = new List<IMimeMessage>();
 
-        public override Task<string> SaveAsync(IMimeMessage message, CancellationToken cancellationToken)
+        public override Task<string> SaveAsync(ISessionContext context, IMimeMessage message, CancellationToken cancellationToken)
         {
             _messages.Add(message);
 

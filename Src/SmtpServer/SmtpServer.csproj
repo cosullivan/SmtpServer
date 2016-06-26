@@ -95,6 +95,7 @@
     <Compile Include="Storage\DoNothingMessageStore.cs" />
     <Compile Include="Storage\IMailboxFilter.cs" />
     <Compile Include="Storage\IMessageStore.cs" />
+    <Compile Include="Storage\IMessageStoreFactory.cs" />
     <Compile Include="Storage\MailboxFilter.cs" />
     <Compile Include="Storage\MailboxFilterResult.cs" />
     <Compile Include="Protocol\Text\Token.cs" />

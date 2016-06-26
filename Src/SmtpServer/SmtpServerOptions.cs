@@ -53,9 +53,9 @@ namespace SmtpServer
         }
 
         /// <summary>
-        /// Gets or sets the message store to use.
+        /// Gets the message store factory to use.
         /// </summary>
-        public IMessageStore MessageStore { get; internal set; }
+        public IMessageStoreFactory MessageStoreFactory { get; internal set; }
 
         /// <summary>
         /// Gets the mailbox filter.

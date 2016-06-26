@@ -287,7 +287,7 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            command = new DataCommand(_options.MessageStore);
+            command = new DataCommand(_options.MessageStoreFactory);
             return true;
         }
 
