@@ -84,6 +84,7 @@
     <Compile Include="Protocol\Text\StringTokenReader.cs" />
     <Compile Include="Protocol\Text\ITokenEnumeratorCheckpoint.cs" />
     <Compile Include="Protocol\Text\TokenReader.cs" />
+    <Compile Include="SessionEventArgs.cs" />
     <Compile Include="SmtpServer.cs" />
     <Compile Include="SmtpServerOptions.cs" />
     <Compile Include="OptionsBuilder.cs" />

@@ -1,4 +1,6 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -11,6 +13,16 @@ namespace SmtpServer
 {
     public class SmtpServer
     {
+        /// <summary>
+        /// Raised when a session has been created.
+        /// </summary>
+        public event EventHandler<SessionEventArgs> SessionCreated;
+
+        /// <summary>
+        /// Raised when a session has completed.
+        /// </summary>
+        public event EventHandler<SessionEventArgs> SessionCompleted;
+
         readonly ISmtpServerOptions _options;
         readonly TraceSwitch _logger = new TraceSwitch("SmtpServer", "The SMTP server.");
 
@@ -24,6 +36,24 @@ namespace SmtpServer
         }
 
         /// <summary>
+        /// Raises the SessionCreated Event.
+        /// </summary>
+        /// <param name="args">The event data.</param>
+        protected virtual void OnSessionCreated(SessionEventArgs args)
+        {
+            SessionCreated?.Invoke(this, args);
+        }
+
+        /// <summary>
+        /// Raises the SessionCompleted Event.
+        /// </summary>
+        /// <param name="args">The event data.</param>
+        protected virtual void OnSessionCompleted(SessionEventArgs args)
+        {
+            SessionCompleted?.Invoke(this, args);
+        }
+
+        /// <summary>
         /// Starts the SMTP server.
         /// </summary>
         /// <param name="cancellationToken">The cancellation token.</param>
@@ -34,6 +64,66 @@ namespace SmtpServer
 
             await Task.WhenAll(_options.Endpoints.Select(e => ListenAsync(e, cancellationToken))).ConfigureAwait(false);
         }
+
+        ///// <summary>
+        ///// Listen for SMTP traffic on the given endpoint.
+        ///// </summary>
+        ///// <param name="endpoint">The endpoint to listen on.</param>
+        ///// <param name="cancellationToken">The cancellation token.</param>
+        ///// <returns>A task which performs the operation.</returns>
+        //async Task ListenAsync(IPEndPoint endpoint, CancellationToken cancellationToken)
+        //{
+        //    _logger.LogVerbose("Listening on port {0}", endpoint.Port);
+
+        //    var tcpListener = new TcpListener(endpoint);
+        //    tcpListener.Start();
+
+        //    // keep track of the running tasks for disposal
+        //    var sessions = new ConcurrentDictionary<Task, SmtpSession>();
+
+        //    try
+        //    {
+        //        while (cancellationToken.IsCancellationRequested == false)
+        //        {
+        //            cancellationToken.ThrowIfCancellationRequested();
+
+        //            // wait for a client connection
+        //            var tcpClient = await tcpListener.AcceptTcpClientAsync().WithCancellation(cancellationToken).ConfigureAwait(false);
+
+        //            _logger.LogVerbose("SMTP client accepted [{0}]", tcpClient.Client.RemoteEndPoint);
+
+        //            // create a new session to handle the connection
+        //            var session = CreateSession(tcpClient);
+
+        //            OnSessionCreated(new SessionEventArgs(session.Context));
+
+        //            var sessionTask = session.HandleAsync(cancellationToken)
+        //                .ContinueWith(t =>
+        //                    {
+        //                        SmtpSession s;
+        //                        sessions.TryRemove(t, out s);
+
+        //                        _logger.LogVerbose("SMTP client closed [{0}]", tcpClient.Client.RemoteEndPoint);
+
+        //                        // closing the client will dispose of the stream
+        //                        tcpClient.Close();
+
+        //                        OnSessionCompleted(new SessionEventArgs(session.Context));
+        //                    }, 
+        //                    cancellationToken);
+
+        //            // keep track of the session 
+        //            sessions.TryAdd(sessionTask, session);
+        //        }
+
+        //        // the server has been cancelled, wait for the tasks to complete
+        //        await Task.WhenAll(sessions.Keys).ConfigureAwait(false);
+        //    }
+        //    finally
+        //    {
+        //        tcpListener.Stop();
+        //    }
+        //}
 
         /// <summary>
         /// Listen for SMTP traffic on the given endpoint.
@@ -49,14 +139,12 @@ namespace SmtpServer
             tcpListener.Start();
 
             // keep track of the running tasks for disposal
-            var sessions = new ConcurrentDictionary<Task, Task>();
+            var sessions = new List<SmtpSession>();
 
             try
             {
                 while (cancellationToken.IsCancellationRequested == false)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-
                     // wait for a client connection
                     var tcpClient = await tcpListener.AcceptTcpClientAsync().WithCancellation(cancellationToken).ConfigureAwait(false);
 
@@ -64,26 +152,25 @@ namespace SmtpServer
 
                     // create a new session to handle the connection
                     var session = CreateSession(tcpClient);
+                    sessions.Add(session);
 
-                    var sessionTask = session.HandleAsync(cancellationToken)
+                    OnSessionCreated(new SessionEventArgs(session.Context));
+
+                    session.Run(cancellationToken);
+
+#pragma warning disable 4014
+                    session.Task
                         .ContinueWith(t =>
-                            {
-                                Task task;
-                                sessions.TryRemove(t, out task);
-
-                                _logger.LogVerbose("SMTP client closed [{0}]", tcpClient.Client.RemoteEndPoint);
-
-                                // closing the client will dispose of the stream
-                                tcpClient.Close();
-                            }, 
-                            cancellationToken);
-
-                    // keep track of the session 
-                    sessions.TryAdd(sessionTask, sessionTask);
+                        {
+                            sessions.Remove(session);
+                            OnSessionCompleted(new SessionEventArgs(session.Context));
+                        },
+                        cancellationToken);
+#pragma warning restore 4014
                 }
 
                 // the server has been cancelled, wait for the tasks to complete
-                await Task.WhenAll(sessions.Values).ConfigureAwait(false);
+                await Task.WhenAll(sessions.Select(s => s.Task)).ConfigureAwait(false);
             }
             finally
             {

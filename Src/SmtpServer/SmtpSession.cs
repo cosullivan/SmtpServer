@@ -1,4 +1,5 @@
-﻿using System.Net.Sockets;
+﻿using System;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.Protocol;
@@ -9,8 +10,9 @@ namespace SmtpServer
     internal sealed class SmtpSession
     {
         readonly ISmtpServerOptions _options;
+        readonly TcpClient _tcpClient;
         readonly SmtpStateMachine _stateMachine;
-        readonly SmtpSessionContext _context;
+        TaskCompletionSource<bool> _taskCompletionSource;
         int _retryCount = 5;
 
         /// <summary>
@@ -22,12 +24,38 @@ namespace SmtpServer
         internal SmtpSession(ISmtpServerOptions options, TcpClient tcpClient, SmtpStateMachine stateMachine)
         {
             _options = options;
+            _tcpClient = tcpClient;
             _stateMachine = stateMachine;
 
-            _context = new SmtpSessionContext(new SmtpTransaction(), stateMachine, tcpClient.Client.RemoteEndPoint)
+            Context = new SmtpSessionContext(new SmtpTransaction(), stateMachine, tcpClient.Client.RemoteEndPoint)
             {
                 Text = new NetworkTextStream(tcpClient)
             };
+        }
+
+        /// <summary>
+        /// Executes the session.
+        /// </summary>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        public void Run(CancellationToken cancellationToken)
+        {
+            _taskCompletionSource = new TaskCompletionSource<bool>();
+
+            RunAsync(cancellationToken)
+                .ContinueWith(t =>
+                {
+                    try
+                    {
+                        _tcpClient.Close();
+
+                        _taskCompletionSource.SetResult(t.IsCompleted);
+                    }
+                    catch (Exception)
+                    {
+                        _taskCompletionSource.SetResult(false);
+                    }
+                }, 
+                cancellationToken);
         }
 
         /// <summary>
@@ -35,17 +63,18 @@ namespace SmtpServer
         /// </summary>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which performs the operation.</returns>
-        public async Task HandleAsync(CancellationToken cancellationToken)
+        async Task RunAsync(CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
 
             await OutputGreetingAsync(cancellationToken).ConfigureAwait(false);
 
-            while (_retryCount-- > 0 && _context.IsQuitRequested == false)
+            while (_retryCount-- > 0 && Context.IsQuitRequested == false && cancellationToken.IsCancellationRequested == false)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var text = await _context.Text.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+                var text = await Context.Text.ReadLineAsync(cancellationToken).ConfigureAwait(false);
 
                 SmtpCommand command;
                 SmtpResponse errorResponse;
@@ -58,7 +87,7 @@ namespace SmtpServer
                 // the command was a normal command so we can reset the retry count
                 _retryCount = 5;
 
-                await command.ExecuteAsync(_context, cancellationToken).ConfigureAwait(false);
+                await command.ExecuteAsync(Context, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -71,8 +100,8 @@ namespace SmtpServer
         {
             var version = typeof(SmtpSession).Assembly.GetName().Version;
 
-            await _context.Text.WriteLineAsync($"220 {_options.ServerName} v{version} ESMTP ready", cancellationToken).ConfigureAwait(false);
-            await _context.Text.FlushAsync(cancellationToken).ConfigureAwait(false);
+            await Context.Text.WriteLineAsync($"220 {_options.ServerName} v{version} ESMTP ready", cancellationToken).ConfigureAwait(false);
+            await Context.Text.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -85,7 +114,20 @@ namespace SmtpServer
         {
             var response = new SmtpResponse(errorResponse.ReplyCode, $"{errorResponse.Message}, {_retryCount} retry(ies) remaining.");
 
-            return _context.Text.ReplyAsync(response, cancellationToken);
+            return Context.Text.ReplyAsync(response, cancellationToken);
+        }
+
+        /// <summary>
+        /// Returns the context for the session.
+        /// </summary>
+        internal SmtpSessionContext Context { get; }
+        
+        /// <summary>
+        /// Returns the completion task.
+        /// </summary>
+        internal Task<bool> Task
+        {
+            get { return _taskCompletionSource.Task; }
         }
     }
 }
