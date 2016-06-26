@@ -29,14 +29,14 @@ namespace SmtpServer
         IReadOnlyCollection<IPEndPoint> Endpoints { get; }
 
         /// <summary>
-        /// Gets the message store to use.
+        /// Gets the message store factory to use.
         /// </summary>
-        IMessageStore MessageStore { get; }
+        IMessageStoreFactory MessageStoreFactory { get; }
 
         /// <summary>
-        /// Gets the mailbox filter.
+        /// Gets the mailbox filter factory to use.
         /// </summary>
-        IMailboxFilter MailboxFilter { get; }
+        IMailboxFilterFactory MailboxFilterFactory { get; }
 
         /// <summary>
         /// Gets the user authenticator.

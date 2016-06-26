@@ -84,6 +84,7 @@
     <Compile Include="Protocol\Text\StringTokenReader.cs" />
     <Compile Include="Protocol\Text\ITokenEnumeratorCheckpoint.cs" />
     <Compile Include="Protocol\Text\TokenReader.cs" />
+    <Compile Include="SessionEventArgs.cs" />
     <Compile Include="SmtpServer.cs" />
     <Compile Include="SmtpServerOptions.cs" />
     <Compile Include="OptionsBuilder.cs" />
@@ -91,9 +92,13 @@
     <Compile Include="SmtpSessionContext.cs" />
     <Compile Include="SmtpTransaction.cs" />
     <Compile Include="Storage\CompositeMailboxFilter.cs" />
+    <Compile Include="Storage\CompositeMailboxFilterFactory.cs" />
+    <Compile Include="Storage\DisposableContainer.cs" />
     <Compile Include="Storage\DoNothingMessageStore.cs" />
+    <Compile Include="Storage\IMailboxFilterFactory.cs" />
     <Compile Include="Storage\IMailboxFilter.cs" />
     <Compile Include="Storage\IMessageStore.cs" />
+    <Compile Include="Storage\IMessageStoreFactory.cs" />
     <Compile Include="Storage\MailboxFilter.cs" />
     <Compile Include="Storage\MailboxFilterResult.cs" />
     <Compile Include="Protocol\Text\Token.cs" />

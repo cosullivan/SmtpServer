@@ -11,7 +11,7 @@ namespace SmtpServer.Protocol
     {
         readonly IMailbox _address;
         readonly IDictionary<string, string> _parameters;
-        readonly IMailboxFilter _filter;
+        readonly IMailboxFilterFactory _mailboxFilterFactory;
         readonly int _maxMessageSize;
 
         /// <summary>
@@ -19,18 +19,18 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="address">The address.</param>
         /// <param name="parameters">The list of extended (ESMTP) parameters.</param>
-        /// <param name="filter">The mailbox filter to test for acceptance of the mailbox.</param>
+        /// <param name="mailboxFilterFactory">The mailbox filter factory to create the filters from.</param>
         /// <param name="maxMessageSize">The maximum message size (0 for no limit).</param>
-        public MailCommand(IMailbox address, IDictionary<string, string> parameters, IMailboxFilter filter, int maxMessageSize = 0)
+        public MailCommand(IMailbox address, IDictionary<string, string> parameters, IMailboxFilterFactory mailboxFilterFactory, int maxMessageSize = 0)
         {
-            if (filter == null)
+            if (mailboxFilterFactory == null)
             {
-                throw new ArgumentNullException(nameof(filter));
+                throw new ArgumentNullException(nameof(mailboxFilterFactory));
             }
 
             _address = address;
             _parameters = parameters;
-            _filter = filter;
+            _mailboxFilterFactory = mailboxFilterFactory;
             _maxMessageSize = maxMessageSize;
         }
 
@@ -54,37 +54,30 @@ namespace SmtpServer.Protocol
                 return;
             }
 
-            switch (await CreateSessionInstance(context).CanAcceptFromAsync(Address, size))
+            using (var container = new DisposableContainer<IMailboxFilter>(_mailboxFilterFactory.CreateInstance(context)))
             {
-                case MailboxFilterResult.Yes:
-                    context.Transaction.From = _address;
-                    await context.Text.ReplyAsync(SmtpResponse.Ok, cancellationToken);
-                    return;
+                switch (await container.Instance.CanAcceptFromAsync(context, Address, size))
+                {
+                    case MailboxFilterResult.Yes:
+                        context.Transaction.From = _address;
+                        await context.Text.ReplyAsync(SmtpResponse.Ok, cancellationToken);
+                        return;
 
-                case MailboxFilterResult.NoTemporarily:
-                    await context.Text.ReplyAsync(SmtpResponse.MailboxUnavailable, cancellationToken);
-                    return;
+                    case MailboxFilterResult.NoTemporarily:
+                        await context.Text.ReplyAsync(SmtpResponse.MailboxUnavailable, cancellationToken);
+                        return;
 
-                case MailboxFilterResult.NoPermanently:
-                    await context.Text.ReplyAsync(SmtpResponse.MailboxNameNotAllowed, cancellationToken);
-                    return;
-                
-                case MailboxFilterResult.SizeLimitExceeded:
-                    await context.Text.ReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken);
-                    return;
+                    case MailboxFilterResult.NoPermanently:
+                        await context.Text.ReplyAsync(SmtpResponse.MailboxNameNotAllowed, cancellationToken);
+                        return;
+
+                    case MailboxFilterResult.SizeLimitExceeded:
+                        await context.Text.ReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken);
+                        return;
+                }
             }
 
             throw new NotSupportedException("The Acceptance state is not supported.");
-        }
-
-        /// <summary>
-        /// Creates an instance of the message box filter specifically for this session.
-        /// </summary>
-        /// <param name="context">The session context information.</param>
-        /// <returns>The mailbox filter instance specifically for this session.</returns>
-        IMailboxFilter CreateSessionInstance(ISessionContext context)
-        {
-            return _filter.CreateSessionInstance(context);
         }
 
         /// <summary>

@@ -39,7 +39,13 @@ namespace SampleApp
         {
             var smtpServer = new SmtpServer.SmtpServer(options);
 
+            smtpServer.SessionCreated += OnSmtpServerSessionCreated;
+            smtpServer.SessionCompleted += OnSmtpServerSessionCompleted;
+
             await smtpServer.StartAsync(cancellationToken);
+
+            smtpServer.SessionCreated -= OnSmtpServerSessionCreated;
+            smtpServer.SessionCompleted -= OnSmtpServerSessionCompleted;
         }
 
         static async Task RunClientAsync(string name, CancellationToken cancellationToken)
@@ -51,20 +57,34 @@ namespace SampleApp
                 {
                     try
                     {
-                        await smtpClient.SendMailAsync(
-                            new MailMessage($"{name}{counter++}@test.com", "sample@test.com")
-                            {
-                                Subject = $"{name} {counter++}"
-                            });
+                        var message = new MailMessage($"{name}{counter}@test.com", "sample@test.com", $"{name} {counter}", "");
+                        //await smtpClient.SendMailAsync(message).ConfigureAwait(false);
+
+                        await Task.Run(() => smtpClient.Send(message), cancellationToken).ConfigureAwait(false);
                     }
                     catch (SmtpException smtpException)
                     {
                         Console.WriteLine(smtpException.StatusCode);
                     }
+                    catch (Exception exception)
+                    {
+                        Console.WriteLine(exception);
+                    }
                 }
 
-                await Task.Delay(250, cancellationToken);
+                counter++;
+                //await Task.Delay(50, cancellationToken).ConfigureAwait(false);
             }
+        }
+
+        static void OnSmtpServerSessionCreated(object sender, SessionEventArgs sessionEventArgs)
+        {
+            Console.WriteLine("SessionCreated: {0}", sessionEventArgs.Context.RemoteEndPoint);
+        }
+
+        static void OnSmtpServerSessionCompleted(object sender, SessionEventArgs sessionEventArgs)
+        {
+            Console.WriteLine("SessionCompleted: {0}", sessionEventArgs.Context.RemoteEndPoint);
         }
     }
 }

@@ -1,4 +1,6 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -11,6 +13,16 @@ namespace SmtpServer
 {
     public class SmtpServer
     {
+        /// <summary>
+        /// Raised when a session has been created.
+        /// </summary>
+        public event EventHandler<SessionEventArgs> SessionCreated;
+
+        /// <summary>
+        /// Raised when a session has completed.
+        /// </summary>
+        public event EventHandler<SessionEventArgs> SessionCompleted;
+
         readonly ISmtpServerOptions _options;
         readonly TraceSwitch _logger = new TraceSwitch("SmtpServer", "The SMTP server.");
 
@@ -21,6 +33,24 @@ namespace SmtpServer
         public SmtpServer(ISmtpServerOptions options)
         {
             _options = options;
+        }
+
+        /// <summary>
+        /// Raises the SessionCreated Event.
+        /// </summary>
+        /// <param name="args">The event data.</param>
+        protected virtual void OnSessionCreated(SessionEventArgs args)
+        {
+            SessionCreated?.Invoke(this, args);
+        }
+
+        /// <summary>
+        /// Raises the SessionCompleted Event.
+        /// </summary>
+        /// <param name="args">The event data.</param>
+        protected virtual void OnSessionCompleted(SessionEventArgs args)
+        {
+            SessionCompleted?.Invoke(this, args);
         }
 
         /// <summary>
@@ -49,41 +79,40 @@ namespace SmtpServer
             tcpListener.Start();
 
             // keep track of the running tasks for disposal
-            var sessions = new ConcurrentDictionary<Task, Task>();
+            var sessions = new ConcurrentDictionary<SmtpSession, SmtpSession>();
 
             try
             {
                 while (cancellationToken.IsCancellationRequested == false)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-
                     // wait for a client connection
                     var tcpClient = await tcpListener.AcceptTcpClientAsync().WithCancellation(cancellationToken).ConfigureAwait(false);
-
+                    
                     _logger.LogVerbose("SMTP client accepted [{0}]", tcpClient.Client.RemoteEndPoint);
 
                     // create a new session to handle the connection
                     var session = CreateSession(tcpClient);
+                    sessions.TryAdd(session, session);
 
-                    var sessionTask = session.HandleAsync(cancellationToken)
+                    OnSessionCreated(new SessionEventArgs(session.Context));
+
+                    session.Run(cancellationToken);
+
+                    #pragma warning disable 4014
+                    session.Task
                         .ContinueWith(t =>
-                            {
-                                Task task;
-                                sessions.TryRemove(t, out task);
+                        {
+                            SmtpSession s;
+                            sessions.TryRemove(session, out s);
 
-                                _logger.LogVerbose("SMTP client closed [{0}]", tcpClient.Client.RemoteEndPoint);
-
-                                // closing the client will dispose of the stream
-                                tcpClient.Close();
-                            }, 
-                            cancellationToken);
-
-                    // keep track of the session 
-                    sessions.TryAdd(sessionTask, sessionTask);
+                            OnSessionCompleted(new SessionEventArgs(session.Context));
+                        },
+                        cancellationToken);
+                    #pragma warning restore 4014
                 }
 
                 // the server has been cancelled, wait for the tasks to complete
-                await Task.WhenAll(sessions.Values).ConfigureAwait(false);
+                await Task.WhenAll(sessions.Keys.Select(s => s.Task)).ConfigureAwait(false);
             }
             finally
             {

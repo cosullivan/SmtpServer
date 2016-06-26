@@ -7,20 +7,20 @@ namespace SmtpServer.Protocol
 {
     public sealed class DataCommand : SmtpCommand
     {
-        readonly IMessageStore _messageStore;
+        readonly IMessageStoreFactory _messageStoreFactory;
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="messageStore">The message store.</param>
-        public DataCommand(IMessageStore messageStore)
+        /// <param name="messageStoreFactory">The message store factory.</param>
+        public DataCommand(IMessageStoreFactory messageStoreFactory)
         {
-            if (messageStore == null)
+            if (messageStoreFactory == null)
             {
-                throw new ArgumentNullException(nameof(messageStore));
+                throw new ArgumentNullException(nameof(messageStoreFactory));
             }
 
-            _messageStore = messageStore;
+            _messageStoreFactory = messageStoreFactory;
         }
 
         /// <summary>
@@ -39,37 +39,37 @@ namespace SmtpServer.Protocol
 
             await context.Text.ReplyAsync(new SmtpResponse(SmtpReplyCode.StartMailInput, "end with <CRLF>.<CRLF>"), cancellationToken).ConfigureAwait(false);
 
-            string text;
-            while ((text = await context.Text.ReadLineAsync(cancellationToken).ConfigureAwait(false)) != ".")
+            try
             {
-                // need to trim the '.' at the start of the line if it 
-                // exists as this would have been added for transparency
-                // http://tools.ietf.org/html/rfc5321#section-4.5.2
-                context.Transaction.Mime.AppendLine(text.TrimStart('.'));
+                string text;
+                while ((text = await context.Text.ReadLineAsync(TimeSpan.FromSeconds(60), cancellationToken).ConfigureAwait(false)) != ".")
+                {
+                    // need to trim the '.' at the start of the line if it 
+                    // exists as this would have been added for transparency
+                    // http://tools.ietf.org/html/rfc5321#section-4.5.2
+                    context.Transaction.Mime.AppendLine(text.TrimStart('.'));
+                }
+            }
+            catch (TimeoutException)
+            {
+                // TODO: not sure what the best thing to do here is
+                throw;
             }
 
             try
             {
                 // store the transaction
-                var messageStore = CreateSessionInstance(context);
-                var messageId = await messageStore.SaveAsync(context.Transaction, cancellationToken).ConfigureAwait(false);
+                using (var container = new DisposableContainer<IMessageStore>(_messageStoreFactory.CreateInstance(context)))
+                {
+                    var messageId = await container.Instance.SaveAsync(context, context.Transaction, cancellationToken).ConfigureAwait(false);
 
-                await context.Text.ReplyAsync(new SmtpResponse(SmtpReplyCode.Ok, $"mail accepted ({messageId})"), cancellationToken).ConfigureAwait(false);
+                    await context.Text.ReplyAsync(new SmtpResponse(SmtpReplyCode.Ok, $"mail accepted ({messageId})"), cancellationToken).ConfigureAwait(false);
+                }
             }
             catch (Exception)
             {
                 await context.Text.ReplyAsync(new SmtpResponse(SmtpReplyCode.MailboxUnavailable), cancellationToken).ConfigureAwait(false);
             }
-        }
-
-        /// <summary>
-        /// Creates an instance of the message store specifically for this session.
-        /// </summary>
-        /// <param name="context">The session context information.</param>
-        /// <returns>The message store instance specifically for this session.</returns>
-        IMessageStore CreateSessionInstance(ISessionContext context)
-        {
-            return _messageStore.CreateSessionInstance(context);
         }
     }
 }

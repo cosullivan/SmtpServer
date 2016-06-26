@@ -11,7 +11,7 @@ namespace SmtpServer
     internal sealed class SmtpServerOptions : ISmtpServerOptions
     {
         readonly Collection<IPEndPoint> _endpoints = new Collection<IPEndPoint>();
-        readonly Collection<IMailboxFilter> _mailboxFilters = new Collection<IMailboxFilter>();
+        readonly Collection<IMailboxFilterFactory> _mailboxFilterFactories = new Collection<IMailboxFilterFactory>();
 
         /// <summary>
         /// Gets or sets the maximum size of a message.
@@ -45,31 +45,31 @@ namespace SmtpServer
         }
 
         /// <summary>
-        /// Gets or sets the mailbox filters to listen on.
+        /// Gets or sets the mailbox filter factories to use.
         /// </summary>
-        internal Collection<IMailboxFilter> MailboxFilters
+        internal Collection<IMailboxFilterFactory> MailboxFilterFactories
         {
-            get { return _mailboxFilters; }
+            get { return _mailboxFilterFactories; }
         }
 
         /// <summary>
-        /// Gets or sets the message store to use.
+        /// Gets the message store factory to use.
         /// </summary>
-        public IMessageStore MessageStore { get; internal set; }
+        public IMessageStoreFactory MessageStoreFactory { get; internal set; }
 
         /// <summary>
-        /// Gets the mailbox filter.
+        /// Gets the mailbox filter factory to use.
         /// </summary>
-        public IMailboxFilter MailboxFilter
+        public IMailboxFilterFactory MailboxFilterFactory
         {
             get
             {
-                if (_mailboxFilters.Count == 1)
+                if (_mailboxFilterFactories.Count == 1)
                 {
-                    return _mailboxFilters.First();
+                    return _mailboxFilterFactories.First();
                 }
 
-                return new CompositeMailboxFilter(_mailboxFilters.ToArray());
+                return new CompositeMailboxFilterFactory(_mailboxFilterFactories.ToArray());
             }
         }
 

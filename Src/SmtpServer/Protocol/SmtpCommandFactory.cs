@@ -217,7 +217,7 @@ namespace SmtpServer.Protocol
                 parameters = new Dictionary<string, string>();
             }
 
-            command = new MailCommand(mailbox, parameters, _options.MailboxFilter);
+            command = new MailCommand(mailbox, parameters, _options.MailboxFilterFactory);
             return true;
         }
 
@@ -258,7 +258,7 @@ namespace SmtpServer.Protocol
 
             // TODO: support optional service extension parameters here
 
-            command = new RcptCommand(mailbox, _options.MailboxFilter);
+            command = new RcptCommand(mailbox, _options.MailboxFilterFactory);
             return true;
         }
 
@@ -287,7 +287,7 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            command = new DataCommand(_options.MessageStore);
+            command = new DataCommand(_options.MessageStoreFactory);
             return true;
         }
 

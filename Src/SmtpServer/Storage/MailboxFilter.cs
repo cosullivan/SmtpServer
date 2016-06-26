@@ -3,14 +3,14 @@ using SmtpServer.Mail;
 
 namespace SmtpServer.Storage
 {
-    public abstract class MailboxFilter : IMailboxFilter
+    public abstract class MailboxFilter : IMailboxFilter, IMailboxFilterFactory
     {
         /// <summary>
-        /// Creates an instance of the message box filter specifically for this session.
+        /// Creates an instance of the message box filter.
         /// </summary>
-        /// <param name="context">The session level context.</param>
-        /// <returns>The mailbox filter instance specifically for this session.</returns>
-        public virtual IMailboxFilter CreateSessionInstance(ISessionContext context)
+        /// <param name="context">The session context.</param>
+        /// <returns>The mailbox filter for the session.</returns>
+        public virtual IMailboxFilter CreateInstance(ISessionContext context)
         {
             return this;
         }
@@ -18,10 +18,11 @@ namespace SmtpServer.Storage
         /// <summary>
         /// Returns a value indicating whether the given mailbox can be accepted as a sender.
         /// </summary>
+        /// <param name="context">The session context.</param>
         /// <param name="from">The mailbox to test.</param>
         /// <param name="size">The estimated message size to accept.</param>
         /// <returns>The acceptance state of the mailbox.</returns>
-        public virtual Task<MailboxFilterResult> CanAcceptFromAsync(IMailbox @from, int size = 0)
+        public virtual Task<MailboxFilterResult> CanAcceptFromAsync(ISessionContext context, IMailbox @from, int size = 0)
         {
             return Task.FromResult(MailboxFilterResult.Yes);
         }
@@ -29,10 +30,11 @@ namespace SmtpServer.Storage
         /// <summary>
         /// Returns a value indicating whether the given mailbox can be accepted as a recipient to the given sender.
         /// </summary>
+        /// <param name="context">The session context.</param>
         /// <param name="to">The mailbox to test.</param>
         /// <param name="from">The sender's mailbox.</param>
         /// <returns>The acceptance state of the mailbox.</returns>
-        public virtual Task<MailboxFilterResult> CanDeliverToAsync(IMailbox to, IMailbox @from)
+        public virtual Task<MailboxFilterResult> CanDeliverToAsync(ISessionContext context, IMailbox to, IMailbox @from)
         {
             return Task.FromResult(MailboxFilterResult.Yes);
         }
