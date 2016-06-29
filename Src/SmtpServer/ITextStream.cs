@@ -86,6 +86,7 @@ namespace SmtpServer
             if (task == await Task.WhenAny(task, Task.Delay(timeout, cancellationTokenSource.Token)))
             {
                 cancellationTokenSource.Cancel();
+                cancellationTokenSource.Dispose();
 
                 return await task;
             }

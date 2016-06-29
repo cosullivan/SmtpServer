@@ -19,20 +19,51 @@ namespace SampleApp
                 .MailboxFilter(new ConsoleMailboxFilter())
                 .Build();
 
-            var serverTask = RunServerAsync(options, cancellationTokenSource.Token);
-            var clientTask1 = RunClientAsync("A", cancellationTokenSource.Token);
-            var clientTask2 = RunClientAsync("B", cancellationTokenSource.Token);
-            var clientTask3 = RunClientAsync("C", cancellationTokenSource.Token);
+            if (args == null || args.Length == 0)
+            {
+                var serverTask = RunServerAsync(options, cancellationTokenSource.Token);
+                var clientTask1 = RunClientAsync("A", cancellationTokenSource.Token);
+                var clientTask2 = RunClientAsync("B", cancellationTokenSource.Token);
+                var clientTask3 = RunClientAsync("C", cancellationTokenSource.Token);
 
-            Console.WriteLine("Press any key to continue");
-            Console.ReadKey();
+                Console.WriteLine("Press any key to continue");
+                Console.ReadKey();
 
-            cancellationTokenSource.Cancel();
+                cancellationTokenSource.Cancel();
 
-            serverTask.WaitWithoutException();
-            clientTask1.WaitWithoutException();
-            clientTask2.WaitWithoutException();
-            clientTask3.WaitWithoutException();
+                serverTask.WaitWithoutException();
+                clientTask1.WaitWithoutException();
+                clientTask2.WaitWithoutException();
+                clientTask3.WaitWithoutException();
+
+                return;
+            }
+
+            if (args[0] == "server")
+            {
+                var serverTask = RunServerAsync(options, cancellationTokenSource.Token);
+
+                Console.WriteLine("Press any key to continue");
+                Console.ReadKey();
+
+                cancellationTokenSource.Cancel();
+
+                serverTask.WaitWithoutException();
+
+                return;
+            }
+
+            if (args[0] == "client")
+            {
+                var clientTask = RunClientAsync(args[1], cancellationTokenSource.Token);
+
+                Console.WriteLine("Press any key to continue");
+                Console.ReadKey();
+
+                cancellationTokenSource.Cancel();
+
+                clientTask.WaitWithoutException();
+            }
         }
 
         static async Task RunServerAsync(ISmtpServerOptions options, CancellationToken cancellationToken)
@@ -58,8 +89,6 @@ namespace SampleApp
                     try
                     {
                         var message = new MailMessage($"{name}{counter}@test.com", "sample@test.com", $"{name} {counter}", "");
-                        //await smtpClient.SendMailAsync(message).ConfigureAwait(false);
-
                         await Task.Run(() => smtpClient.Send(message), cancellationToken).ConfigureAwait(false);
                     }
                     catch (SmtpException smtpException)
@@ -70,6 +99,11 @@ namespace SampleApp
                     {
                         Console.WriteLine(exception);
                     }
+                }
+
+                if (counter % 1000 == 0)
+                {
+                    System.GC.Collect();
                 }
 
                 counter++;
