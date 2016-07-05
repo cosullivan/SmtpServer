@@ -61,14 +61,14 @@ namespace SmtpServer.Protocol
                 // store the transaction
                 using (var container = new DisposableContainer<IMessageStore>(_messageStoreFactory.CreateInstance(context)))
                 {
-                    var messageId = await container.Instance.SaveAsync(context, context.Transaction, cancellationToken).ConfigureAwait(false);
+                    var response = await container.Instance.SaveAsync(context, context.Transaction, cancellationToken).ConfigureAwait(false);
 
-                    await context.Text.ReplyAsync(new SmtpResponse(SmtpReplyCode.Ok, $"mail accepted ({messageId})"), cancellationToken).ConfigureAwait(false);
+                    await context.Text.ReplyAsync(response, cancellationToken).ConfigureAwait(false);
                 }
             }
             catch (Exception)
             {
-                await context.Text.ReplyAsync(new SmtpResponse(SmtpReplyCode.MailboxUnavailable), cancellationToken).ConfigureAwait(false);
+                await context.Text.ReplyAsync(new SmtpResponse(SmtpReplyCode.TransactionFailed), cancellationToken).ConfigureAwait(false);
             }
         }
     }

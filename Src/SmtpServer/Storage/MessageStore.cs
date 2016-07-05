@@ -1,6 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.Mail;
+using SmtpServer.Protocol;
 
 namespace SmtpServer.Storage
 {
@@ -22,7 +23,7 @@ namespace SmtpServer.Storage
         /// <param name="context">The session context.</param>
         /// <param name="message">The SMTP message to store.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A unique identifier that represents this message in the underlying message store.</returns>
-        public abstract Task<string> SaveAsync(ISessionContext context, IMimeMessage message, CancellationToken cancellationToken);
+        /// <returns>The response code to return that indicates the result of the message being saved.</returns>
+        public abstract Task<SmtpResponse> SaveAsync(ISessionContext context, IMimeMessage message, CancellationToken cancellationToken);
     }
 }

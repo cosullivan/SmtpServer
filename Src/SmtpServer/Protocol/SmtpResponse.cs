@@ -12,9 +12,7 @@
         public static readonly SmtpResponse NoValidRecipientsGiven = new SmtpResponse(SmtpReplyCode.TransactionFailed, "no valid recipients given");
         public static readonly SmtpResponse AuthenticationFailed = new SmtpResponse(SmtpReplyCode.AuthenticationFailed, "authentication failed");
         public static readonly SmtpResponse AuthenticationSuccessful = new SmtpResponse(SmtpReplyCode.AuthenticationSuccessful, "go ahead");
-
-        readonly SmtpReplyCode _replyCode;
-        readonly string _message;
+        public static readonly SmtpResponse TransactionFailed = new SmtpResponse(SmtpReplyCode.TransactionFailed);
 
         /// <summary>
         /// Constructor.
@@ -23,24 +21,18 @@
         /// <param name="message">The reply message.</param>
         public SmtpResponse(SmtpReplyCode replyCode, string message = null)
         {
-            _replyCode = replyCode;
-            _message = message;
+            ReplyCode = replyCode;
+            Message = message;
         }
 
         /// <summary>
         /// Gets the Reply Code.
         /// </summary>
-        public SmtpReplyCode ReplyCode
-        {
-            get { return _replyCode; }
-        }
+        public SmtpReplyCode ReplyCode { get; }
 
         /// <summary>
         /// Gets the repsonse message.
         /// </summary>
-        public string Message
-        {
-            get { return _message; }
-        }
+        public string Message { get; }
     }
 }

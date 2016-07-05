@@ -107,7 +107,6 @@ namespace SampleApp
                 }
 
                 counter++;
-                //await Task.Delay(50, cancellationToken).ConfigureAwait(false);
             }
         }
 
