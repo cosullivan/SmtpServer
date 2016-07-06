@@ -1,5 +1,4 @@
-﻿using System.Net;
-using SmtpServer.Protocol;
+﻿using SmtpServer.Protocol;
 
 namespace SmtpServer
 {
