@@ -15,8 +15,8 @@ At its most basic, it only takes a few lines of code for the server to be listen
 
 ```cs
 var options = new OptionsBuilder()
-    .WithServerName("localhost")
-    .WithPort(25, 587)
+    .ServerName("localhost")
+    .Port(25, 587)
     .Build();
 
 var smtpServer = new SmtpServer.SmtpServer(options);
@@ -27,11 +27,11 @@ await smtpServer.StartAsync(CancellationToken.None);
 There are three hooks that can be implemented; IMessageStore, IMailboxFilter, and IUserAuthenticator.
 ```cs
 var options = new OptionsBuilder()
-    .WithServerName("localhost")
-    .WithPort(25, 587)
-    .WithMessageStore(new ConsoleMessageStore())
-    .WithMailboxFilter(new MailboxFilter())
-    .WithUserAuthenticator(new UserAuthenticator())
+    .ServerName("localhost")
+    .Port(25, 587)
+    .MessageStore(new ConsoleMessageStore())
+    .MailboxFilter(new MailboxFilter())
+    .UserAuthenticator(new UserAuthenticator())
     .Build();
 
 var smtpServer = new SmtpServer.SmtpServer(options);
@@ -41,11 +41,11 @@ await smtpServer.StartAsync(CancellationToken.None);
 ```cs
 public class ConsoleMessageStore : IMessageStore
 {
-    public Task<string> SaveAsync(IMimeMessage message, CancellationToken cancellationToken)
+    public Task<SmtpResponse> SaveAsync(IMimeMessage message, CancellationToken cancellationToken)
     {
         Console.WriteLine(message.Mime);
     
-        return Task.FromResult(String.Empty);
+        return Task.FromResult(SmtpResponse.Ok);
     }
 }
 ```
