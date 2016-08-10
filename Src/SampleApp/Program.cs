@@ -11,7 +11,7 @@ namespace SampleApp
         static void Main(string[] args)
         {
             var cancellationTokenSource = new CancellationTokenSource();
-
+            
             var options = new OptionsBuilder()
                 .ServerName("SmtpServer SampleApp")
                 .Port(9025)

@@ -24,7 +24,7 @@ namespace SampleApp
             Console.WriteLine("To: {0}", String.Join(",", message.To.Select(m => m.AsAddress())));
             Console.WriteLine(message.Mime);
 
-            return Task.FromResult(SmtpResponse.TransactionFailed);
+            return Task.FromResult(SmtpResponse.Ok);
         }
     }
 }
