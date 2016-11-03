@@ -1,5 +1,9 @@
 ﻿using System;
+using System.IO;
+using System.Net;
 using System.Net.Mail;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer;
@@ -11,10 +15,15 @@ namespace SampleApp
         static void Main(string[] args)
         {
             var cancellationTokenSource = new CancellationTokenSource();
-            
+
+            var certificate = CreateCertificate();
+
+            ServicePointManager.ServerCertificateValidationCallback = IgnoreCertificateValidationFailureForTestingOnly;
+
             var options = new OptionsBuilder()
                 .ServerName("SmtpServer SampleApp")
                 .Port(9025)
+                .Certificate(certificate)
                 .MessageStore(new ConsoleMessageStore())
                 .MailboxFilter(new ConsoleMailboxFilter())
                 .Build();
@@ -86,6 +95,7 @@ namespace SampleApp
             {
                 using (var smtpClient = new SmtpClient("localhost", 9025))
                 {
+                    smtpClient.EnableSsl = true;
                     try
                     {
                         var message = new MailMessage($"{name}{counter}@test.com", "sample@test.com", $"{name} {counter}", "");
@@ -118,6 +128,22 @@ namespace SampleApp
         static void OnSmtpServerSessionCompleted(object sender, SessionEventArgs sessionEventArgs)
         {
             Console.WriteLine("SessionCompleted: {0}", sessionEventArgs.Context.RemoteEndPoint);
+        }
+
+        static bool IgnoreCertificateValidationFailureForTestingOnly(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        {
+            return true;
+        }
+        
+        static X509Certificate2 CreateCertificate()
+        {
+            // to create an X509Certificate for testing you need to run MAKECERT.EXE and then PVK2PFX.EXE
+            // http://www.digitallycreated.net/Blog/38/using-makecert-to-create-certificates-for-development
+
+            var certificate = File.ReadAllBytes(@"C:\Dropbox\Documents\Cain\Programming\SmtpServer\SmtpServer.pfx");
+            var password = File.ReadAllText(@"C:\Dropbox\Documents\Cain\Programming\SmtpServer\SmtpServerPassword.txt");
+
+            return new X509Certificate2(certificate, password);
         }
     }
 }
