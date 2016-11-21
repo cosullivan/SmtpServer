@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.Protocol;
 using SmtpServer.Protocol.Text;
+using System.Reflection;
 
 namespace SmtpServer
 {
@@ -45,7 +46,8 @@ namespace SmtpServer
                 {
                     try
                     {
-                        _tcpClient.Close();
+                        // Before is Close.
+                        //_tcpClient.Close();
                         _taskCompletionSource.SetResult(t.IsCompleted);
                     }
                     catch
@@ -96,7 +98,7 @@ namespace SmtpServer
         /// <returns>A task which performs the operation.</returns>
         async Task OutputGreetingAsync(CancellationToken cancellationToken)
         {
-            var version = typeof(SmtpSession).Assembly.GetName().Version;
+            var version = typeof(SmtpSession).GetTypeInfo().Assembly.GetName().Version;
 
             await Context.Text.WriteLineAsync($"220 {_options.ServerName} v{version} ESMTP ready", cancellationToken).ConfigureAwait(false);
             await Context.Text.FlushAsync(cancellationToken).ConfigureAwait(false);

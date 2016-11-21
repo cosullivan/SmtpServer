@@ -1,10 +1,11 @@
 ﻿using System;
-using System.Net.Mail;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.Mail;
 using SmtpServer.Tests.Mocks;
 using Xunit;
+using MailKit.Net.Smtp;
+using MimeKit;
 
 namespace SmtpServer.Tests
 {
@@ -29,11 +30,23 @@ namespace SmtpServer.Tests
         {
             // arrange
             var smtpServer = new SmtpServer(_optionsBuilder.Build());
-            var smtpClient = new SmtpClient("localhost", 25);
             var smtpServerTask = smtpServer.StartAsync(_cancellationTokenSource.Token);
+            var mimeMessage = new MimeKit.MimeMessage();
+            mimeMessage.From.Add(new MailboxAddress("Test", "test1@test.com"));
+            mimeMessage.To.Add(new MailboxAddress("Destinatary", "test2@test.com"));
+            mimeMessage.Subject = "Test";
+            mimeMessage.Body = new TextPart("plain")
+            {
+                Text = "Test message to server"
+            };
 
             // act
-            smtpClient.Send("test1@test.com", "test2@test.com", "Test", "Test Message");
+            using (var client = new SmtpClient())
+            {
+                client.Connect("localhost", 25);
+                client.Send(mimeMessage);
+                client.Disconnect(true);
+            }
 
             // assert
             Assert.Equal(1, _messageStore.Messages.Count);
@@ -46,15 +59,19 @@ namespace SmtpServer.Tests
 
         void Wait(Task smtpServerTask)
         {
-            _cancellationTokenSource.Cancel();
-
             try
             {
+                _cancellationTokenSource.Cancel();
                 smtpServerTask.Wait();
             }
             catch (AggregateException e)
             {
                 e.Handle(exception => exception is OperationCanceledException);
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                throw;
             }
         }
     }
