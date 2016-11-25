@@ -5,7 +5,8 @@
     "emitEntryPoint": true
   },
   "dependencies": {
-    "SmtpServer": "1.0.0-*"
+    "SmtpServer": "1.0.0-*",
+    "MailKit": "1.10.0"
   },
   "frameworks": {
     "netcoreapp1.0": {

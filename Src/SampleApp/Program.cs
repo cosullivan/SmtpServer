@@ -5,6 +5,8 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer;
+using MailKit.Net.Smtp;
+using MimeKit;
 
 namespace SampleApp
 {
@@ -16,7 +18,7 @@ namespace SampleApp
 
             var certificate = CreateCertificate();
 
-            ServicePointManager.ServerCertificateValidationCallback = IgnoreCertificateValidationFailureForTestingOnly;
+            //ServicePointManager.ServerCertificateValidationCallback = IgnoreCertificateValidationFailureForTestingOnly;
 
             var options = new OptionsBuilder()
                 .ServerName("SmtpServer SampleApp")
@@ -91,22 +93,30 @@ namespace SampleApp
             var counter = 1;
             while (cancellationToken.IsCancellationRequested == false)
             {
-                using (var smtpClient = new SmtpClient("localhost", 9025))
+                using (var client = new SmtpClient())
                 {
-                    smtpClient.EnableSsl = true;
                     try
                     {
-                        var message = new MailMessage($"{name}{counter}@test.com", "sample@test.com", $"{name} {counter}", "");
-                        await Task.Run(() => smtpClient.Send(message), cancellationToken).ConfigureAwait(false);
-                    }
-                    catch (SmtpException smtpException)
-                    {
-                        Console.WriteLine(smtpException.StatusCode);
+                        var mimeMessage = new MimeMessage();
+                        mimeMessage.From.Add(new MailboxAddress("Test", "test1@test.com"));
+                        mimeMessage.To.Add(new MailboxAddress("Destinatary", "test2@test.com"));
+                        mimeMessage.Subject = "Test";
+                        mimeMessage.Body = new TextPart("plain")
+                        {
+                            Text = "Test message to server"
+                        };
+
+                        client.Connect("localhost", 9025);
+                        client.SslProtocols = System.Security.Authentication.SslProtocols.Tls | System.Security.Authentication.SslProtocols.Tls11 | System.Security.Authentication.SslProtocols.Tls12;
+                        //client.IsSecure = true;
+                        await client.SendAsync(mimeMessage);
                     }
                     catch (Exception exception)
                     {
                         Console.WriteLine(exception);
                     }
+
+                    client.Disconnect(true);
                 }
 
                 if (counter % 1000 == 0)
