@@ -81,7 +81,7 @@ namespace SmtpServer
 
             try
             {
-                while (cancellationToken.IsCancellationRequested == false)
+                while (!cancellationToken.IsCancellationRequested)
                 {
                     // wait for a client connection
                     var tcpClient = await tcpListener.AcceptTcpClientAsync().WithCancellation(cancellationToken).ConfigureAwait(false);
@@ -97,8 +97,7 @@ namespace SmtpServer
                     session.Run(cancellationToken);
 
                     #pragma warning disable 4014
-                    session.Task
-                        .ContinueWith(t =>
+                    session.Task.ContinueWith(t =>
                         {
                             SmtpSession s;
                             sessions.TryRemove(session, out s);
