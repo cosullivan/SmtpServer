@@ -16,14 +16,14 @@ namespace SampleApp
         {
             var cancellationTokenSource = new CancellationTokenSource();
 
-            var certificate = CreateCertificate();
+            //var certificate = CreateCertificate();
 
             //ServicePointManager.ServerCertificateValidationCallback = IgnoreCertificateValidationFailureForTestingOnly;
 
             var options = new OptionsBuilder()
                 .ServerName("SmtpServer SampleApp")
                 .Port(9025)
-                .Certificate(certificate)
+                //.Certificate(certificate)
                 .MessageStore(new ConsoleMessageStore())
                 .MailboxFilter(new ConsoleMailboxFilter())
                 .Build();
@@ -45,6 +45,7 @@ namespace SampleApp
                 clientTask2.WaitWithoutException();
                 clientTask3.WaitWithoutException();
 
+                cancellationTokenSource.Dispose();
                 return;
             }
 
@@ -59,6 +60,7 @@ namespace SampleApp
 
                 serverTask.WaitWithoutException();
 
+                cancellationTokenSource.Dispose();
                 return;
             }
 
@@ -72,26 +74,34 @@ namespace SampleApp
                 cancellationTokenSource.Cancel();
 
                 clientTask.WaitWithoutException();
+                cancellationTokenSource.Dispose();
             }
         }
 
         static async Task RunServerAsync(ISmtpServerOptions options, CancellationToken cancellationToken)
         {
-            var smtpServer = new SmtpServer.SmtpServer(options);
+            try { 
+                var smtpServer = new SmtpServer.SmtpServer(options);
 
-            smtpServer.SessionCreated += OnSmtpServerSessionCreated;
-            smtpServer.SessionCompleted += OnSmtpServerSessionCompleted;
+                smtpServer.SessionCreated += OnSmtpServerSessionCreated;
+                smtpServer.SessionCompleted += OnSmtpServerSessionCompleted;
 
-            await smtpServer.StartAsync(cancellationToken);
+                await smtpServer.StartAsync(cancellationToken);
 
-            smtpServer.SessionCreated -= OnSmtpServerSessionCreated;
-            smtpServer.SessionCompleted -= OnSmtpServerSessionCompleted;
+                smtpServer.SessionCreated -= OnSmtpServerSessionCreated;
+                smtpServer.SessionCompleted -= OnSmtpServerSessionCompleted;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("SERVER PANIC.");
+                Console.WriteLine(e);
+            }
         }
 
         static async Task RunClientAsync(string name, CancellationToken cancellationToken)
         {
             var counter = 1;
-            while (cancellationToken.IsCancellationRequested == false)
+            while (!cancellationToken.IsCancellationRequested)
             {
                 using (var client = new SmtpClient())
                 {

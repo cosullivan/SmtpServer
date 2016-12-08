@@ -20,8 +20,9 @@ namespace SampleApp
         /// <returns>A unique identifier that represents this message in the underlying message store.</returns>
         public override Task<SmtpResponse> SaveAsync(ISessionContext context, IMimeMessage message, CancellationToken cancellationToken)
         {
+            Console.WriteLine("MemoryServer: {0}{1}", System.Diagnostics.Process.GetCurrentProcess().WorkingSet64/1024/1024, "MB");
             Console.WriteLine("From: {0} ({1})", message.From, context.RemoteEndPoint);
-            Console.WriteLine("To: {0}", String.Join(",", message.To.Select(m => m.AsAddress())));
+            Console.WriteLine("To: {0}", string.Join(",", message.To.Select(m => m.AsAddress())));
             Console.WriteLine(message.Mime);
 
             return Task.FromResult(SmtpResponse.Ok);

@@ -33,9 +33,10 @@ namespace SmtpServer.Tests
         {
             // arrange
             var smtpServer = new SmtpServer(_optionsBuilder.Build());
-            var smtpServerTask = smtpServer.StartAsync(_cancellationTokenSource.Token);
+            using (var smtpClient = new SmtpClient("localhost", 25))
+            {
 
-            // act
+                // act
             using (var client = new SmtpClient())
             {
                 var mimeMessage = new MimeKit.MimeMessage();
@@ -55,25 +56,12 @@ namespace SmtpServer.Tests
                 Assert.Equal("test1@test.com", _messageStore.Messages[0].From.AsAddress());
                 Assert.Equal(1, _messageStore.Messages[0].To.Count);
                 Assert.Equal("test2@test.com", _messageStore.Messages[0].To[0].AsAddress());
-
                 // Some code of SmtpClient disposes _cancellationTokenSource and throw exception if run wait code.
                 // Without SMTP Client code works well.
                 //Wait(smtpServerTask);
 
                 client.Disconnect(true);
             }
-        }
-
-        void Wait(Task smtpServerTask)
-        {
-            _cancellationTokenSource.Cancel();
-            try
-            {
-                smtpServerTask.Wait();
-            }
-            catch (AggregateException e)
-            {
-                e.Handle(exception => exception is OperationCanceledException);
             }
             catch (Exception ex)
             {

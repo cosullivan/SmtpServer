@@ -44,7 +44,7 @@ namespace SmtpServer.Protocol
                 string text;
                 while ((text = await context.Text.ReadLineAsync(TimeSpan.FromSeconds(60), cancellationToken).ConfigureAwait(false)) != ".")
                 {
-                    // need to trim the '.' at the start of the line if it 
+                    // need to trim the '.' at the start of the line if it
                     // exists as this would have been added for transparency
                     // http://tools.ietf.org/html/rfc5321#section-4.5.2
                     context.Transaction.Mime.AppendLine(text.TrimStart('.'));
