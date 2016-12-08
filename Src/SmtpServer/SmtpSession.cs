@@ -3,10 +3,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.Protocol;
 using SmtpServer.Protocol.Text;
+using System;
+using System.Reflection;
 
 namespace SmtpServer
 {
-    internal sealed class SmtpSession
+    internal sealed class SmtpSession : IDisposable
     {
         readonly ISmtpServerOptions _options;
         readonly TcpClient _tcpClient;
@@ -45,7 +47,8 @@ namespace SmtpServer
                 {
                     try
                     {
-                        _tcpClient.Close();
+                        // Before is Close.
+                        //_tcpClient.Close();
                         _taskCompletionSource.SetResult(t.IsCompleted);
                     }
                     catch
@@ -70,13 +73,13 @@ namespace SmtpServer
 
             await OutputGreetingAsync(cancellationToken).ConfigureAwait(false);
 
-            while (_retryCount-- > 0 && Context.IsQuitRequested == false && cancellationToken.IsCancellationRequested == false)
+            while (_retryCount-- > 0 && !Context.IsQuitRequested && !cancellationToken.IsCancellationRequested)
             {
                 var text = await Context.Text.ReadLineAsync(cancellationToken).ConfigureAwait(false);
 
                 SmtpCommand command;
                 SmtpResponse errorResponse;
-                if (_stateMachine.TryAccept(new TokenEnumerator(new StringTokenReader(text)), out command, out errorResponse) == false)
+                if (!_stateMachine.TryAccept(new TokenEnumerator(new StringTokenReader(text)), out command, out errorResponse))
                 {
                     await OuputErrorMessageAsync(errorResponse, cancellationToken).ConfigureAwait(false);
                     continue;
@@ -96,7 +99,7 @@ namespace SmtpServer
         /// <returns>A task which performs the operation.</returns>
         async Task OutputGreetingAsync(CancellationToken cancellationToken)
         {
-            var version = typeof(SmtpSession).Assembly.GetName().Version;
+            var version = typeof(SmtpSession).GetTypeInfo().Assembly.GetName().Version;
 
             await Context.Text.WriteLineAsync($"220 {_options.ServerName} v{version} ESMTP ready", cancellationToken).ConfigureAwait(false);
             await Context.Text.FlushAsync(cancellationToken).ConfigureAwait(false);
@@ -127,5 +130,14 @@ namespace SmtpServer
         {
             get { return _taskCompletionSource.Task; }
         }
+        
+        public void Dispose()
+        {
+            Task.Dispose();
+            Context.Text.Dispose();
+            Context.Quit();
+            _tcpClient.Close();
+        }
+
     }
 }

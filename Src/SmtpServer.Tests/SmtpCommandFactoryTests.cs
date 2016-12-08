@@ -1,7 +1,6 @@
 ﻿using SmtpServer.Protocol;
 using SmtpServer.Protocol.Text;
 using Xunit;
-using Xunit.Extensions;
 
 namespace SmtpServer.Tests
 {

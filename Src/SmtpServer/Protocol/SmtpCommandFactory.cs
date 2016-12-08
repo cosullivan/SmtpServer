@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using SmtpServer.Mail;
 using SmtpServer.Protocol.Text;
 
@@ -8,7 +7,7 @@ namespace SmtpServer.Protocol
 {
     public sealed class SmtpCommandFactory
     {
-        readonly TraceSwitch _logger = new TraceSwitch("SmtpCommandFactory", "SMTP Server Command Factory");
+//        readonly TraceSwitch _logger = new TraceSwitch("SmtpCommandFactory", "SMTP Server Command Factory");
         readonly ISmtpServerOptions _options;
         readonly SmtpParser _parser;
 
@@ -32,7 +31,7 @@ namespace SmtpServer.Protocol
         /// <returns>Returns true if a command could be made, false if not.</returns>
         public bool TryMakeQuit(TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "QUIT"));
+//            Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "QUIT"));
 
             command = null;
             errorResponse = null;
@@ -42,7 +41,7 @@ namespace SmtpServer.Protocol
 
             if (enumerator.Count > 1)
             {
-                _logger.LogVerbose("QUIT command can not have parameters (found {0} parameters).", enumerator.Count);
+//                _logger.LogVerbose("QUIT command can not have parameters (found {0} parameters).", enumerator.Count);
 
                 errorResponse = SmtpResponse.SyntaxError;
                 return false;
@@ -61,7 +60,7 @@ namespace SmtpServer.Protocol
         /// <returns>Returns true if a command could be made, false if not.</returns>
         public bool TryMakeNoop(TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "NOOP"));
+//            Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "NOOP"));
 
             command = null;
             errorResponse = null;
@@ -71,7 +70,7 @@ namespace SmtpServer.Protocol
 
             if (enumerator.Count > 1)
             {
-                _logger.LogVerbose("NOOP command can not have parameters (found {0} parameters).", enumerator.Count);
+//                _logger.LogVerbose("NOOP command can not have parameters (found {0} parameters).", enumerator.Count);
 
                 errorResponse = SmtpResponse.SyntaxError;
                 return false;
@@ -90,7 +89,7 @@ namespace SmtpServer.Protocol
         /// <returns>Returns true if a command could be made, false if not.</returns>
         public bool TryMakeRset(TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "RSET"));
+//            Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "RSET"));
 
             command = null;
             errorResponse = null;
@@ -100,7 +99,7 @@ namespace SmtpServer.Protocol
 
             if (enumerator.Count > 1)
             {
-                _logger.LogVerbose("RSET command can not have parameters (found {0} parameters).", enumerator.Count);
+//                _logger.LogVerbose("RSET command can not have parameters (found {0} parameters).", enumerator.Count);
 
                 errorResponse = SmtpResponse.SyntaxError;
                 return false;
@@ -119,7 +118,7 @@ namespace SmtpServer.Protocol
         /// <returns>Returns true if a command could be made, false if not.</returns>
         public bool TryMakeHelo(TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "HELO"));
+//            Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "HELO"));
 
             command = null;
             errorResponse = null;
@@ -130,7 +129,7 @@ namespace SmtpServer.Protocol
             string domain;
             if (_parser.TryMakeDomain(enumerator, out domain) == false)
             {
-                _logger.LogVerbose("Could not match the domain name (Text={0}).", enumerator.AsText());
+//                _logger.LogVerbose("Could not match the domain name (Text={0}).", enumerator.AsText());
 
                 errorResponse = SmtpResponse.SyntaxError;
                 return false;
@@ -149,7 +148,7 @@ namespace SmtpServer.Protocol
         /// <returns>Returns true if a command could be made, false if not.</returns>
         public bool TryMakeEhlo(TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "EHLO"));
+//            Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "EHLO"));
 
             command = null;
             errorResponse = null;
@@ -184,7 +183,7 @@ namespace SmtpServer.Protocol
         /// <returns>Returns true if a command could be made, false if not.</returns>
         public bool TryMakeMail(TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "MAIL"));
+//            Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "MAIL"));
 
             command = null;
             errorResponse = null;
@@ -204,7 +203,7 @@ namespace SmtpServer.Protocol
             IMailbox mailbox;
             if (_parser.TryMakeReversePath(enumerator, out mailbox) == false)
             {
-                _logger.LogVerbose("Syntax Error (Text={0})", enumerator.AsText());
+//                _logger.LogVerbose("Syntax Error (Text={0})", enumerator.AsText());
 
                 errorResponse = new SmtpResponse(SmtpReplyCode.SyntaxError);
                 return false;
@@ -230,7 +229,7 @@ namespace SmtpServer.Protocol
         /// <returns>Returns true if a command could be made, false if not.</returns>
         public bool TryMakeRcpt(TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "RCPT"));
+//            Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "RCPT"));
 
             command = null;
             errorResponse = null;
@@ -250,7 +249,7 @@ namespace SmtpServer.Protocol
             IMailbox mailbox;
             if (_parser.TryMakePath(enumerator, out mailbox) == false)
             {
-                _logger.LogVerbose("Syntax Error (Text={0})", enumerator.AsText());
+//                _logger.LogVerbose("Syntax Error (Text={0})", enumerator.AsText());
 
                 errorResponse = SmtpResponse.SyntaxError;
                 return false;
@@ -271,7 +270,7 @@ namespace SmtpServer.Protocol
         /// <returns>Returns true if a command could be made, false if not.</returns>
         public bool TryMakeData(TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "DATA"));
+//            Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "DATA"));
 
             command = null;
             errorResponse = null;
@@ -281,7 +280,7 @@ namespace SmtpServer.Protocol
 
             if (enumerator.Count > 1)
             {
-                _logger.LogVerbose("DATA command can not have parameters (Tokens={0})", enumerator.Count);
+//                _logger.LogVerbose("DATA command can not have parameters (Tokens={0})", enumerator.Count);
 
                 errorResponse = SmtpResponse.SyntaxError;
                 return false;
@@ -300,7 +299,7 @@ namespace SmtpServer.Protocol
         /// <returns>Returns true if a command could be made, false if not.</returns>
         public bool TryMakeDbug(TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "DBUG"));
+//            Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "DBUG"));
 
             command = null;
             errorResponse = null;
@@ -310,7 +309,7 @@ namespace SmtpServer.Protocol
 
             if (enumerator.Count > 1)
             {
-                _logger.LogVerbose("DBUG command can not have parameters (Tokens={0})", enumerator.Count);
+//                _logger.LogVerbose("DBUG command can not have parameters (Tokens={0})", enumerator.Count);
 
                 errorResponse = SmtpResponse.SyntaxError;
                 return false;
@@ -329,7 +328,7 @@ namespace SmtpServer.Protocol
         /// <returns>Returns true if a command could be made, false if not.</returns>
         public bool TryMakeStartTls(TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "STARTTLS"));
+//            Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "STARTTLS"));
 
             command = null;
             errorResponse = null;
@@ -339,7 +338,7 @@ namespace SmtpServer.Protocol
 
             if (enumerator.Count > 1)
             {
-                _logger.LogVerbose("STARTTLS command can not have parameters (Tokens={0})", enumerator.Count);
+//                _logger.LogVerbose("STARTTLS command can not have parameters (Tokens={0})", enumerator.Count);
 
                 errorResponse = SmtpResponse.SyntaxError;
                 return false;
@@ -358,7 +357,7 @@ namespace SmtpServer.Protocol
         /// <returns>Returns true if a command could be made, false if not.</returns>
         public bool TryMakeAuth(TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "AUTH"));
+//            Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "AUTH"));
 
             command = null;
             errorResponse = null;
@@ -369,7 +368,7 @@ namespace SmtpServer.Protocol
             AuthenticationMethod method;
             if (Enum.TryParse(enumerator.Peek().Text, true, out method) == false)
             {
-                _logger.LogVerbose("AUTH command requires a valid method (PLAIN or LOGIN)");
+//                _logger.LogVerbose("AUTH command requires a valid method (PLAIN or LOGIN)");
 
                 errorResponse = SmtpResponse.SyntaxError;
                 return false;
@@ -380,7 +379,7 @@ namespace SmtpServer.Protocol
             string parameter = null;
             if (enumerator.Count > 0 && _parser.TryMakeBase64(enumerator, out parameter) == false)
             {
-                _logger.LogVerbose("AUTH parameter must be a Base64 encoded string");
+//                _logger.LogVerbose("AUTH parameter must be a Base64 encoded string");
 
                 errorResponse = SmtpResponse.SyntaxError;
                 return false;
