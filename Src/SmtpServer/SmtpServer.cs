@@ -23,7 +23,7 @@ namespace SmtpServer
         public event EventHandler<SessionEventArgs> SessionCompleted;
 
         readonly ISmtpServerOptions _options;
-        readonly TraceSwitch _logger = new TraceSwitch("SmtpServer", "The SMTP server.");
+        readonly TraceSwitch _logger = new TraceSwitch(nameof(SmtpServer), "The SMTP server.");
 
         /// <summary>
         /// Constructor.
@@ -74,7 +74,10 @@ namespace SmtpServer
         {
             _logger.LogVerbose("Listening on port {0}", endpoint.Port);
 
-            var tcpListener = new TcpListener(endpoint);
+            var tcpListener = new TcpListener(endpoint)
+            {
+                ExclusiveAddressUse = false
+            };
             tcpListener.Start();
 
             // keep track of the running tasks for disposal
@@ -82,11 +85,11 @@ namespace SmtpServer
 
             try
             {
-                while (cancellationToken.IsCancellationRequested == false)
+                while (!cancellationToken.IsCancellationRequested)
                 {
                     // wait for a client connection
                     var tcpClient = await tcpListener.AcceptTcpClientAsync().WithCancellation(cancellationToken).ConfigureAwait(false);
-                    
+
                     _logger.LogVerbose("SMTP client accepted [{0}]", tcpClient.Client.RemoteEndPoint);
 
                     // create a new session to handle the connection
@@ -97,7 +100,7 @@ namespace SmtpServer
 
                     session.Run(cancellationToken);
 
-                    #pragma warning disable 4014
+#pragma warning disable 4014
                     session.Task
                         .ContinueWith(t =>
                         {
@@ -105,13 +108,20 @@ namespace SmtpServer
                             sessions.TryRemove(session, out s);
 
                             OnSessionCompleted(new SessionEventArgs(session.Context));
+                            s.Dispose();
+                            s = null;
                         },
                         cancellationToken);
-                    #pragma warning restore 4014
+#pragma warning restore 4014
                 }
 
                 // the server has been cancelled, wait for the tasks to complete
                 await Task.WhenAll(sessions.Keys.Select(s => s.Task)).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Error on listen for TCP Client.");
+                Console.WriteLine(e);
             }
             finally
             {

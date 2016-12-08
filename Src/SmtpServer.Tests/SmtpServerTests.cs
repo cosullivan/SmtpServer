@@ -12,7 +12,6 @@ namespace SmtpServer.Tests
     {
         readonly MockMessageStore _messageStore;
         readonly OptionsBuilder _optionsBuilder;
-        readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
 
         public SmtpServerTests()
         {
@@ -29,32 +28,18 @@ namespace SmtpServer.Tests
         {
             // arrange
             var smtpServer = new SmtpServer(_optionsBuilder.Build());
-            var smtpClient = new SmtpClient("localhost", 25);
-            var smtpServerTask = smtpServer.StartAsync(_cancellationTokenSource.Token);
-
-            // act
-            smtpClient.Send("test1@test.com", "test2@test.com", "Test", "Test Message");
-
-            // assert
-            Assert.Equal(1, _messageStore.Messages.Count);
-            Assert.Equal("test1@test.com", _messageStore.Messages[0].From.AsAddress());
-            Assert.Equal(1, _messageStore.Messages[0].To.Count);
-            Assert.Equal("test2@test.com", _messageStore.Messages[0].To[0].AsAddress());
-
-            Wait(smtpServerTask);
-        }
-
-        void Wait(Task smtpServerTask)
-        {
-            _cancellationTokenSource.Cancel();
-
-            try
+            var smtpServerTask = smtpServer.StartAsync(CancellationToken.None);
+            using (var smtpClient = new SmtpClient("localhost", 25))
             {
-                smtpServerTask.Wait();
-            }
-            catch (AggregateException e)
-            {
-                e.Handle(exception => exception is OperationCanceledException);
+
+                // act
+                smtpClient.Send("test1@test.com", "test2@test.com", "Test", "Test Message");
+
+                // assert
+                Assert.Equal(1, _messageStore.Messages.Count);
+                Assert.Equal("test1@test.com", _messageStore.Messages[0].From.AsAddress());
+                Assert.Equal(1, _messageStore.Messages[0].To.Count);
+                Assert.Equal("test2@test.com", _messageStore.Messages[0].To[0].AsAddress());
             }
         }
     }

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace SmtpServer
 {
-    public class NetworkTextStream : ITextStream, IDisposable
+    public class NetworkTextStream : ITextStream
     {
         readonly Stream _stream;
         readonly StreamReader _reader;
