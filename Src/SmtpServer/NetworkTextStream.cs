@@ -1,23 +1,15 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Net.Security;
-using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace SmtpServer
 {
-    public class NetworkTextStream : ITextStream, IDisposable
+    public class NetworkTextStream : ITextStream
     {
         readonly Stream _stream;
         readonly StreamReader _reader;
         readonly StreamWriter _writer;
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="client">The client for reading and writing.</param>
-        public NetworkTextStream(TcpClient client) : this(client.GetStream()) { }
 
         /// <summary>
         /// Constructor.

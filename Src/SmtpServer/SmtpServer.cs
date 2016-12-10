@@ -102,7 +102,10 @@ namespace SmtpServer
                         .ContinueWith(t =>
                         {
                             SmtpSession s;
-                            sessions.TryRemove(session, out s);
+                            if (sessions.TryRemove(session, out s))
+                            {
+                                s.Dispose();
+                            }
 
                             OnSessionCompleted(new SessionEventArgs(session.Context));
                         },

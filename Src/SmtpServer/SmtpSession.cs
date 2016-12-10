@@ -1,4 +1,5 @@
-﻿using System.Net.Sockets;
+﻿using System;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.Protocol;
@@ -6,7 +7,7 @@ using SmtpServer.Protocol.Text;
 
 namespace SmtpServer
 {
-    internal sealed class SmtpSession
+    internal sealed class SmtpSession : IDisposable
     {
         readonly ISmtpServerOptions _options;
         readonly TcpClient _tcpClient;
@@ -28,7 +29,7 @@ namespace SmtpServer
 
             Context = new SmtpSessionContext(new SmtpTransaction(), stateMachine, tcpClient.Client.RemoteEndPoint)
             {
-                Text = new NetworkTextStream(tcpClient)
+                Text = new NetworkTextStream(tcpClient.GetStream())
             };
         }
 
@@ -45,7 +46,6 @@ namespace SmtpServer
                 {
                     try
                     {
-                        _tcpClient.Close();
                         _taskCompletionSource.SetResult(t.IsCompleted);
                     }
                     catch
@@ -113,6 +113,17 @@ namespace SmtpServer
             var response = new SmtpResponse(errorResponse.ReplyCode, $"{errorResponse.Message}, {_retryCount} retry(ies) remaining.");
 
             return Context.Text.ReplyAsync(response, cancellationToken);
+        }
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            Context.Text.Dispose();
+
+            _tcpClient.Close();
+            _taskCompletionSource.Task.Dispose();
         }
 
         /// <summary>

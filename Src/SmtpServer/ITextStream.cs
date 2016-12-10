@@ -6,7 +6,7 @@ using SmtpServer.Protocol;
 
 namespace SmtpServer
 {
-    public interface ITextStream
+    public interface ITextStream : IDisposable
     {
         /// <summary>
         /// Reads a line of characters asynchronously from the current stream and returns the data as a string.

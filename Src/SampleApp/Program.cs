@@ -16,14 +16,14 @@ namespace SampleApp
         {
             var cancellationTokenSource = new CancellationTokenSource();
 
-            var certificate = CreateCertificate();
+            //var certificate = CreateCertificate();
 
             ServicePointManager.ServerCertificateValidationCallback = IgnoreCertificateValidationFailureForTestingOnly;
 
             var options = new OptionsBuilder()
                 .ServerName("SmtpServer SampleApp")
                 .Port(9025)
-                .Certificate(certificate)
+                //.Certificate(certificate)
                 .MessageStore(new ConsoleMessageStore())
                 .MailboxFilter(new ConsoleMailboxFilter())
                 .Build();
@@ -95,7 +95,7 @@ namespace SampleApp
             {
                 using (var smtpClient = new SmtpClient("localhost", 9025))
                 {
-                    smtpClient.EnableSsl = true;
+                    //smtpClient.EnableSsl = true;
                     try
                     {
                         var message = new MailMessage($"{name}{counter}@test.com", "sample@test.com", $"{name} {counter}", "");
