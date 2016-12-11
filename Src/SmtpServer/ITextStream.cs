@@ -78,17 +78,19 @@ namespace SmtpServer
                 throw new ArgumentNullException(nameof(stream));
             }
 
-            var cancellationTokenSource = new CancellationTokenSource();
-            cancellationToken.Register(cancellationTokenSource.Cancel);
-
-            var task = stream.ReadLineAsync();
-
-            if (task == await Task.WhenAny(task, Task.Delay(timeout, cancellationTokenSource.Token)))
+            using (var cancellationTokenSource = new CancellationTokenSource())
             {
-                cancellationTokenSource.Cancel();
-                cancellationTokenSource.Dispose();
+                using (cancellationToken.Register(cancellationTokenSource.Cancel))
+                {
+                    var task = stream.ReadLineAsync();
 
-                return await task;
+                    if (task == await Task.WhenAny(task, Task.Delay(timeout, cancellationTokenSource.Token)))
+                    {
+                        cancellationTokenSource.Cancel();
+
+                        return await task;
+                    }
+                }
             }
 
             throw new TimeoutException();
