@@ -3,6 +3,7 @@ using SmtpServer.Mail;
 using SmtpServer.Protocol;
 using SmtpServer.Protocol.Text;
 using Xunit;
+using Xunit.Extensions;
 
 namespace SmtpServer.Tests
 {
@@ -117,20 +118,29 @@ namespace SmtpServer.Tests
             Assert.Equal("123.abc.com", domain);
         }
 
-        [Fact]
-        public void CanMakeMailbox()
+        [Theory]
+        [InlineData("cain.osullivan@gmail.com", "cain.osullivan", "gmail.com")]
+        [InlineData(@"""Abc@def""@example.com", "Abc@def", "example.com")]
+        [InlineData(@"""Abc\@def""@example.com", "Abc@def", "example.com")]
+        [InlineData(@"""Fred Bloggs""@example.com", "Fred Bloggs", "example.com")]
+        [InlineData(@"""Joe\\Blow""@example.com", "Joe\\Blow", "example.com")]
+        [InlineData(@"customer/department=shipping@example.com", "customer/department=shipping", "example.com")]
+        [InlineData(@"$A12345@example.com", "$A12345", "example.com")]
+        [InlineData(@"!def!xyz%abc@example.com", "!def!xyz%abc", "example.com")]
+        [InlineData(@"_somename@example.com", "_somename", "example.com")]
+        public void CanMakeMailbox(string email, string user, string host)
         {
             // arrange
             var parser = new SmtpParser();
             IMailbox mailbox;
 
             // act
-            var made = parser.TryMakeMailbox(new TokenEnumerator(new StringTokenReader("cain.osullivan@gmail.com")), out mailbox);
+            var made = parser.TryMakeMailbox(new TokenEnumerator(new StringTokenReader(email)), out mailbox);
 
             // assert
             Assert.True(made);
-            Assert.Equal("cain.osullivan", mailbox.User);
-            Assert.Equal("gmail.com", mailbox.Host);
+            Assert.Equal(user, mailbox.User);
+            Assert.Equal(host, mailbox.Host);
         }
 
         [Fact]

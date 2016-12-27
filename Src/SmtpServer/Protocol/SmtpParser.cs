@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
 using SmtpServer.Mail;
 using SmtpServer.Protocol.Text;
 
@@ -134,7 +135,7 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            atDomain = String.Format("@{0}", domain);
+            atDomain = $"@{domain}";
 
             return true;
         }
@@ -376,9 +377,7 @@ namespace SmtpServer.Protocol
                 return true;
             }
 
-            // TODO: TryMakeQuotedString(...)
-
-            return false;
+            return TryMake(enumerator, TryMakeQuotedString, out localPart);
         }
 
         /// <summary>
@@ -412,6 +411,107 @@ namespace SmtpServer.Protocol
             return true;
         }
 
+        /// <summary>
+        /// Try to make a quoted-string from the tokens.
+        /// </summary>
+        /// <param name="enumerator">The enumerator to make the quoted-string from.</param>
+        /// <param name="quotedString">The quoted-string that was made, or undefined if it was not made.</param>
+        /// <returns>true if the quoted-string was made, false if not.</returns>
+        /// <remarks><![CDATA[DQUOTE * QcontentSMTP DQUOTE]]></remarks>
+        public bool TryMakeQuotedString(TokenEnumerator enumerator, out string quotedString)
+        {
+            quotedString = null;
+
+            if (enumerator.Take() != new Token(TokenKind.Punctuation, "\""))
+            {
+                return false;
+            }
+
+            while (enumerator.Peek() != new Token(TokenKind.Punctuation, "\""))
+            {
+                string text;
+                if (TryMakeQContentSmtp(enumerator, out text) == false)
+                {
+                    return false;
+                }
+
+                quotedString += text;
+            }
+
+            return enumerator.Take() == new Token(TokenKind.Punctuation, "\"");
+        }
+
+        /// <summary>
+        /// Try to make a QcontentSMTP from the tokens.
+        /// </summary>
+        /// <param name="enumerator">The enumerator to make the text from.</param>
+        /// <param name="text">The text that was made.</param>
+        /// <returns>true if the quoted content was made, false if not.</returns>
+        /// <remarks><![CDATA[qtextSMTP / quoted-pairSMTP]]></remarks>
+        public bool TryMakeQContentSmtp(TokenEnumerator enumerator, out string text)
+        {
+            if (TryMake(enumerator, TryMakeQTextSmtp, out text))
+            {
+                return true;
+            }
+
+            return TryMake(enumerator, TryMakeQuotedPairSmtp, out text);
+        }
+
+        /// <summary>
+        /// Try to make a QTextSMTP from the tokens.
+        /// </summary>
+        /// <param name="enumerator">The enumerator to make the text from.</param>
+        /// <param name="text">The text that was made.</param>
+        /// <returns>true if the quoted text was made, false if not.</returns>
+        /// <remarks><![CDATA[%d32-33 / %d35-91 / %d93-126]]></remarks>
+        public bool TryMakeQTextSmtp(TokenEnumerator enumerator, out string text)
+        {
+            text = null;
+
+            var token = enumerator.Take();
+            switch (token.Kind)
+            {
+                case TokenKind.Text:
+                case TokenKind.Space:
+                case TokenKind.Number:
+                case TokenKind.Symbol:
+                    text += token.Text;
+                    return true;
+
+                case TokenKind.Punctuation:
+                    if (token.Text[0] == '"' || token.Text[0] == '\\')
+                    {
+                        return false;
+                    }
+                    text += token.Text;
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Try to make a quoted pair from the tokens.
+        /// </summary>
+        /// <param name="enumerator">The enumerator to make the text from.</param>
+        /// <param name="text">The text that was made.</param>
+        /// <returns>true if the quoted pair was made, false if not.</returns>
+        /// <remarks><![CDATA[%d92 %d32-126]]></remarks>
+        public bool TryMakeQuotedPairSmtp(TokenEnumerator enumerator, out string text)
+        {
+            text = null;
+
+            if (enumerator.Take() != new Token(TokenKind.Punctuation, '\\'))
+            {
+                return false;
+            }
+
+            text += enumerator.Take().Text;
+
+            return true;
+        }
+        
         /// <summary>
         /// Try to make an "Atom" from the tokens.
         /// </summary>
