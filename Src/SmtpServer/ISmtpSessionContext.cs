@@ -23,5 +23,10 @@ namespace SmtpServer
         /// Gets the current state machine.
         /// </summary>
         ISmtpStateMachine StateMachine { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether a quit has been requested.
+        /// </summary>
+        bool IsQuitRequested { get; }
     }
 }

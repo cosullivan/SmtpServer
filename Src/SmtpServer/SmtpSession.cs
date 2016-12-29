@@ -3,7 +3,6 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.Protocol;
-using SmtpServer.Protocol.Text;
 
 namespace SmtpServer
 {
@@ -11,10 +10,8 @@ namespace SmtpServer
     {
         readonly ISmtpServerOptions _options;
         readonly TcpClient _tcpClient;
-        //readonly SmtpStateMachine _stateMachine;
         TaskCompletionSource<bool> _taskCompletionSource;
-        int _retryCount = 5;
-
+        
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -25,8 +22,7 @@ namespace SmtpServer
         {
             _options = options;
             _tcpClient = tcpClient;
-            //_stateMachine = stateMachine;
-
+            
             Context = new SmtpSessionContext(new SmtpTransaction(), stateMachine, tcpClient.Client.RemoteEndPoint)
             {
                 Text = new NetworkTextStream(tcpClient.GetStream())
@@ -70,23 +66,7 @@ namespace SmtpServer
 
             await OutputGreetingAsync(cancellationToken).ConfigureAwait(false);
 
-            while (_retryCount-- > 0 && Context.IsQuitRequested == false && cancellationToken.IsCancellationRequested == false)
-            {
-                var text = await Context.Text.ReadLineAsync(cancellationToken).ConfigureAwait(false);
-
-                SmtpCommand command;
-                SmtpResponse errorResponse;
-                if (Context.StateMachine.TryAccept(new TokenEnumerator(new StringTokenReader(text)), out command, out errorResponse) == false)
-                {
-                    await OuputErrorMessageAsync(errorResponse, cancellationToken).ConfigureAwait(false);
-                    continue;
-                }
-
-                // the command was a normal command so we can reset the retry count
-                _retryCount = 5;
-
-                await _options.CommandHandler.ExecuteAsync(command, Context, cancellationToken).ConfigureAwait(false);
-            }
+            await _options.Pipeline.ExecuteAsync(Context, cancellationToken);
         }
 
         /// <summary>
@@ -100,19 +80,6 @@ namespace SmtpServer
 
             await Context.Text.WriteLineAsync($"220 {_options.ServerName} v{version} ESMTP ready", cancellationToken).ConfigureAwait(false);
             await Context.Text.FlushAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        /// <summary>
-        /// Output the error message.
-        /// </summary>
-        /// <param name="errorResponse">The response that contains the error message and reply code.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task which performs the operation.</returns>
-        Task OuputErrorMessageAsync(SmtpResponse errorResponse, CancellationToken cancellationToken)
-        {
-            var response = new SmtpResponse(errorResponse.ReplyCode, $"{errorResponse.Message}, {_retryCount} retry(ies) remaining.");
-
-            return Context.Text.ReplyAsync(response, cancellationToken);
         }
 
         /// <summary>

@@ -51,7 +51,7 @@ namespace SmtpServer
         /// <summary>
         /// Gets a value indicating whether a quit has been requested.
         /// </summary>
-        internal bool IsQuitRequested
+        public bool IsQuitRequested
         {
             get { return _isQuitRequested; }
         }

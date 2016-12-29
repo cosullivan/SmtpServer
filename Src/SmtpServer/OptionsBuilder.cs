@@ -16,7 +16,7 @@ namespace SmtpServer
         public ISmtpServerOptions Build()
         {
             _options.MessageStoreFactory = _options.MessageStoreFactory ?? new DoNothingMessageStore();
-            _options.CommandHandler = _options.CommandHandler ?? new DefaultCommandHandler();
+            _options.Pipeline = _options.Pipeline ?? new SmtpCommandPipeline();
 
             return _options;
         }
@@ -109,13 +109,13 @@ namespace SmtpServer
         }
 
         /// <summary>
-        /// Sets the command handler service.
+        /// Sets the command pipeline service.
         /// </summary>
-        /// <param name="commandHandler">The command handler service.</param>
+        /// <param name="pipeline">The command pipeline that executes the commands.</param>
         /// <returns>A OptionsBuilder to continue building on.</returns>
-        public OptionsBuilder CommandHandler(ICommandHandler commandHandler)
+        public OptionsBuilder Pipeline(ISmtpCommandPipeline pipeline)
         {
-            _options.CommandHandler = commandHandler;
+            _options.Pipeline = pipeline;
 
             return this;
         }

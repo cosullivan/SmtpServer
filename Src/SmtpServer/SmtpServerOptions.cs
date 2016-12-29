@@ -79,9 +79,9 @@ namespace SmtpServer
         public IUserAuthenticator UserAuthenticator { get; internal set; }
 
         /// <summary>
-        /// Gets the command hander service.
+        /// Gets the command pipeline service.
         /// </summary>
-        public ICommandHandler CommandHandler { get; internal set; }
+        public ISmtpCommandPipeline Pipeline { get; internal set; }
 
         /// <summary>
         /// Gets a value indicating whether authentication should be allowed on an unsecure session.

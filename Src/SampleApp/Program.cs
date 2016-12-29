@@ -29,7 +29,7 @@ namespace SampleApp
                 //.Certificate(certificate)
                 .MessageStore(new ConsoleMessageStore())
                 .MailboxFilter(new ConsoleMailboxFilter())
-                .CommandHandler(new TracingCommandHandler(Console.Out))
+                .Pipeline(new TracingSmtpCommandPipeline(Console.Out))
                 .Build();
 
             if (args == null || args.Length == 0)

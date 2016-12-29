@@ -6,7 +6,7 @@ using SmtpServer.Protocol;
 
 namespace SmtpServer.Tracing
 {
-    public sealed class TracingCommandHandler : ICommandHandler
+    public sealed class TracingSmtpCommandPipeline : SmtpCommandPipeline
     {
         readonly SmtpCommandVisitor _visitor;
 
@@ -14,7 +14,7 @@ namespace SmtpServer.Tracing
         /// Constructor.
         /// </summary>
         /// <param name="output">The output stream to write the command execution to.</param>
-        public TracingCommandHandler(TextWriter output)
+        public TracingSmtpCommandPipeline(TextWriter output)
         {
             if (output == null)
             {
@@ -31,7 +31,7 @@ namespace SmtpServer.Tracing
         /// <param name="context">The execution context to operate on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which asynchronously performs the execution.</returns>
-        public Task ExecuteAsync(SmtpCommand command, ISmtpSessionContext context, CancellationToken cancellationToken)
+        protected override Task ExecuteAsync(SmtpCommand command, ISmtpSessionContext context, CancellationToken cancellationToken)
         {
             _visitor.Visit(command);
 
