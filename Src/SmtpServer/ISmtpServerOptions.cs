@@ -44,6 +44,11 @@ namespace SmtpServer
         IUserAuthenticator UserAuthenticator { get; }
 
         /// <summary>
+        /// Gets the command handler that executes the commands.
+        /// </summary>
+        ICommandHandler CommandHandler { get; }
+
+        /// <summary>
         /// Gets a value indicating whether authentication should be allowed on an unsecure session.
         /// </summary>
         bool AllowUnsecureAuthentication { get; }

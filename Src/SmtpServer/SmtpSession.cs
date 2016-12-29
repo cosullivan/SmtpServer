@@ -11,7 +11,7 @@ namespace SmtpServer
     {
         readonly ISmtpServerOptions _options;
         readonly TcpClient _tcpClient;
-        readonly SmtpStateMachine _stateMachine;
+        //readonly SmtpStateMachine _stateMachine;
         TaskCompletionSource<bool> _taskCompletionSource;
         int _retryCount = 5;
 
@@ -25,7 +25,7 @@ namespace SmtpServer
         {
             _options = options;
             _tcpClient = tcpClient;
-            _stateMachine = stateMachine;
+            //_stateMachine = stateMachine;
 
             Context = new SmtpSessionContext(new SmtpTransaction(), stateMachine, tcpClient.Client.RemoteEndPoint)
             {
@@ -76,7 +76,7 @@ namespace SmtpServer
 
                 SmtpCommand command;
                 SmtpResponse errorResponse;
-                if (_stateMachine.TryAccept(new TokenEnumerator(new StringTokenReader(text)), out command, out errorResponse) == false)
+                if (Context.StateMachine.TryAccept(new TokenEnumerator(new StringTokenReader(text)), out command, out errorResponse) == false)
                 {
                     await OuputErrorMessageAsync(errorResponse, cancellationToken).ConfigureAwait(false);
                     continue;
@@ -85,7 +85,7 @@ namespace SmtpServer
                 // the command was a normal command so we can reset the retry count
                 _retryCount = 5;
 
-                await command.ExecuteAsync(Context, cancellationToken).ConfigureAwait(false);
+                await _options.CommandHandler.ExecuteAsync(command, Context, cancellationToken).ConfigureAwait(false);
             }
         }
 

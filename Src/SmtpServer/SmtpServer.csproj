@@ -48,8 +48,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Authentication\IUserAuthenticator.cs" />
+    <Compile Include="DefaultCommandHandler.cs" />
     <Compile Include="Extensions\TaskExtensions.cs" />
     <Compile Include="Extensions\TraceSwitchExtensions.cs" />
+    <Compile Include="ICommandHandler.cs" />
     <Compile Include="ISessionContext.cs" />
     <Compile Include="ISmtpSessionContext.cs" />
     <Compile Include="ISmtpServerOptions.cs" />
@@ -85,6 +87,7 @@
     <Compile Include="Protocol\Text\ITokenEnumeratorCheckpoint.cs" />
     <Compile Include="Protocol\Text\TokenReader.cs" />
     <Compile Include="SessionEventArgs.cs" />
+    <Compile Include="Protocol\SmtpCommandVisitor.cs" />
     <Compile Include="SmtpServer.cs" />
     <Compile Include="SmtpServerOptions.cs" />
     <Compile Include="OptionsBuilder.cs" />
@@ -105,6 +108,8 @@
     <Compile Include="Protocol\Text\TokenEnumerator.cs" />
     <Compile Include="Protocol\Text\TokenKind.cs" />
     <Compile Include="Storage\MessageStore.cs" />
+    <Compile Include="Tracing\TracingCommandHandler.cs" />
+    <Compile Include="Tracing\TracingSmtpCommandVisitor.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="SmtpServer.nuspec">

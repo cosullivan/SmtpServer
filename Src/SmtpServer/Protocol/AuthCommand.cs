@@ -10,8 +10,6 @@ namespace SmtpServer.Protocol
     public class AuthCommand : SmtpCommand
     {
         readonly IUserAuthenticator _userAuthenticator;
-        readonly AuthenticationMethod _method;
-        readonly string _parameter;
         string _user;
         string _password;
 
@@ -24,8 +22,9 @@ namespace SmtpServer.Protocol
         public AuthCommand(IUserAuthenticator userAuthenticator, AuthenticationMethod method, string parameter)
         {
             _userAuthenticator = userAuthenticator;
-            _method = method;
-            _parameter = parameter;
+
+            Method = method;
+            Parameter = parameter;
         }
 
         /// <summary>
@@ -36,7 +35,7 @@ namespace SmtpServer.Protocol
         /// <returns>A task which asynchronously performs the execution.</returns>
         public override async Task ExecuteAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
         {
-            switch (_method)
+            switch (Method)
             {
                 case AuthenticationMethod.Plain:
                     if (await TryPlainAsync(context, cancellationToken) == false)
@@ -117,5 +116,15 @@ namespace SmtpServer.Protocol
 
             return true;
         }
+
+        /// <summary>
+        /// The authentication method.
+        /// </summary>
+        public AuthenticationMethod Method { get; }
+
+        /// <summary>
+        /// The athentication parameter.
+        /// </summary>
+        public string Parameter { get; }
     }
 }

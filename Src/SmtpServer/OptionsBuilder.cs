@@ -16,6 +16,7 @@ namespace SmtpServer
         public ISmtpServerOptions Build()
         {
             _options.MessageStoreFactory = _options.MessageStoreFactory ?? new DoNothingMessageStore();
+            _options.CommandHandler = _options.CommandHandler ?? new DefaultCommandHandler();
 
             return _options;
         }
@@ -103,6 +104,18 @@ namespace SmtpServer
         public OptionsBuilder UserAuthenticator(IUserAuthenticator userAuthenticator)
         {
             _options.UserAuthenticator = userAuthenticator;
+
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the command handler service.
+        /// </summary>
+        /// <param name="commandHandler">The command handler service.</param>
+        /// <returns>A OptionsBuilder to continue building on.</returns>
+        public OptionsBuilder CommandHandler(ICommandHandler commandHandler)
+        {
+            _options.CommandHandler = commandHandler;
 
             return this;
         }
