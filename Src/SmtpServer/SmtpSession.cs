@@ -66,7 +66,7 @@ namespace SmtpServer
 
             await OutputGreetingAsync(cancellationToken).ConfigureAwait(false);
 
-            await _options.Pipeline.ExecuteAsync(Context, cancellationToken);
+            await _options.Processor.ExecuteAsync(Context, cancellationToken);
         }
 
         /// <summary>

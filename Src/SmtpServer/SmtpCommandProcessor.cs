@@ -5,20 +5,20 @@ using SmtpServer.Protocol.Text;
 
 namespace SmtpServer
 {
-    public class SmtpCommandPipeline : ISmtpCommandPipeline
+    public class SmtpCommandProcessor : ISmtpCommandProcessor
     {
         readonly int _maxRetries;
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        public SmtpCommandPipeline() : this(5) { }
+        public SmtpCommandProcessor() : this(5) { }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="maxRetries">The maximum number of retries.</param>
-        public SmtpCommandPipeline(int maxRetries)
+        public SmtpCommandProcessor(int maxRetries)
         {
             _maxRetries = maxRetries;
         }
@@ -29,9 +29,10 @@ namespace SmtpServer
         /// <param name="context">The session context to execute the command handler against.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which asynchronously performs the execution.</returns>
-        public async Task ExecuteAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
+        public virtual async Task ExecuteAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
         {
             var retryCount = _maxRetries;
+
             while (retryCount-- > 0 && context.IsQuitRequested == false && cancellationToken.IsCancellationRequested == false)
             {
                 var text = await context.Text.ReadLineAsync(cancellationToken).ConfigureAwait(false);

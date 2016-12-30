@@ -6,7 +6,7 @@ using SmtpServer.Protocol;
 
 namespace SmtpServer.Tracing
 {
-    public sealed class TracingSmtpCommandPipeline : SmtpCommandPipeline
+    public sealed class TracingSmtpCommandProcessor : SmtpCommandProcessor
     {
         readonly SmtpCommandVisitor _visitor;
 
@@ -14,7 +14,7 @@ namespace SmtpServer.Tracing
         /// Constructor.
         /// </summary>
         /// <param name="output">The output stream to write the command execution to.</param>
-        public TracingSmtpCommandPipeline(TextWriter output)
+        public TracingSmtpCommandProcessor(TextWriter output)
         {
             if (output == null)
             {

@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace SmtpServer
 {
-    public interface ISmtpCommandPipeline
+    public interface ISmtpCommandProcessor
     {
         /// <summary>
         /// Execute the command handler against the specified session context.

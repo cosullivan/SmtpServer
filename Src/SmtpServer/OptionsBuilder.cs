@@ -16,7 +16,7 @@ namespace SmtpServer
         public ISmtpServerOptions Build()
         {
             _options.MessageStoreFactory = _options.MessageStoreFactory ?? new DoNothingMessageStore();
-            _options.Pipeline = _options.Pipeline ?? new SmtpCommandPipeline();
+            _options.Processor = _options.Processor ?? new SmtpCommandProcessor();
 
             return _options;
         }
@@ -109,13 +109,13 @@ namespace SmtpServer
         }
 
         /// <summary>
-        /// Sets the command pipeline service.
+        /// Sets the command processor service.
         /// </summary>
-        /// <param name="pipeline">The command pipeline that executes the commands.</param>
+        /// <param name="processor">The command processor that executes the commands.</param>
         /// <returns>A OptionsBuilder to continue building on.</returns>
-        public OptionsBuilder Pipeline(ISmtpCommandPipeline pipeline)
+        public OptionsBuilder Processor(ISmtpCommandProcessor processor)
         {
-            _options.Pipeline = pipeline;
+            _options.Processor = processor;
 
             return this;
         }

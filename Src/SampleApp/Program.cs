@@ -29,15 +29,15 @@ namespace SampleApp
                 //.Certificate(certificate)
                 .MessageStore(new ConsoleMessageStore())
                 .MailboxFilter(new ConsoleMailboxFilter())
-                .Pipeline(new TracingSmtpCommandPipeline(Console.Out))
+                .Processor(new TracingSmtpCommandProcessor(Console.Out))
                 .Build();
 
             if (args == null || args.Length == 0)
             {
                 var serverTask = RunServerAsync(options, cancellationTokenSource.Token);
                 var clientTask1 = RunClientAsync("A", cancellationTokenSource.Token);
-                var clientTask2 = RunClientAsync("B", cancellationTokenSource.Token);
-                var clientTask3 = RunClientAsync("C", cancellationTokenSource.Token);
+                //var clientTask2 = RunClientAsync("B", cancellationTokenSource.Token);
+                //var clientTask3 = RunClientAsync("C", cancellationTokenSource.Token);
 
                 Console.WriteLine("Press any key to continue");
                 Console.ReadKey();
@@ -46,8 +46,8 @@ namespace SampleApp
 
                 serverTask.WaitWithoutException();
                 clientTask1.WaitWithoutException();
-                clientTask2.WaitWithoutException();
-                clientTask3.WaitWithoutException();
+                //clientTask2.WaitWithoutException();
+                //clientTask3.WaitWithoutException();
 
                 return;
             }

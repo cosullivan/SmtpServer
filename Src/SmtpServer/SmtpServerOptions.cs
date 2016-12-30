@@ -79,9 +79,9 @@ namespace SmtpServer
         public IUserAuthenticator UserAuthenticator { get; internal set; }
 
         /// <summary>
-        /// Gets the command pipeline service.
+        /// Gets the command processor service.
         /// </summary>
-        public ISmtpCommandPipeline Pipeline { get; internal set; }
+        public ISmtpCommandProcessor Processor { get; internal set; }
 
         /// <summary>
         /// Gets a value indicating whether authentication should be allowed on an unsecure session.
