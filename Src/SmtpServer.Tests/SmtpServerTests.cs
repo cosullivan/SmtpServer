@@ -1,10 +1,11 @@
 ﻿using System;
-using System.Net.Mail;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.Mail;
 using SmtpServer.Tests.Mocks;
 using Xunit;
+using MailKit.Net.Smtp;
+using MimeKit;
 
 namespace SmtpServer.Tests
 {
@@ -29,11 +30,21 @@ namespace SmtpServer.Tests
         {
             // arrange
             var smtpServer = new SmtpServer(_optionsBuilder.Build());
-            var smtpClient = new SmtpClient("localhost", 25);
+            var smtpClient = new SmtpClient();
             var smtpServerTask = smtpServer.StartAsync(_cancellationTokenSource.Token);
 
+            var message = new MimeKit.MimeMessage();
+            message.From.Add(new MailboxAddress("test1@test.com"));
+            message.To.Add(new MailboxAddress("test2@test.com"));
+            message.Subject = "Test";
+            message.Body = new TextPart("plain")
+            {
+                Text = "Test Message"
+            };
+
             // act
-            smtpClient.Send("test1@test.com", "test2@test.com", "Test", "Test Message");
+            smtpClient.Connect("localhost", 25, false);
+            smtpClient.Send(message);
 
             // assert
             Assert.Equal(1, _messageStore.Messages.Count);
