@@ -31,7 +31,7 @@ namespace SmtpServer.Protocol
 
             var stream = new SslStream(context.Text.GetInnerStream(), true);
 
-            await stream.AuthenticateAsServerAsync(_certificate, false, SslProtocols.Default, true);
+            await stream.AuthenticateAsServerAsync(_certificate, false, SslProtocols.None, true);
 
             context.Text = new NetworkTextStream(stream);
         }

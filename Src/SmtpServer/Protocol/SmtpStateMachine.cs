@@ -197,7 +197,7 @@ namespace SmtpServer.Protocol
             public State(SmtpState stateId)
             {
                 StateId = stateId;
-                Actions = new Dictionary<string, Tuple<TryMakeDelegate, SmtpState>>(StringComparer.InvariantCultureIgnoreCase);
+                Actions = new Dictionary<string, Tuple<TryMakeDelegate, SmtpState>>(StringComparer.OrdinalIgnoreCase);
             }
 
             /// <summary>

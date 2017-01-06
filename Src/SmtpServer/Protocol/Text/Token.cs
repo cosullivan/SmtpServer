@@ -39,7 +39,7 @@ namespace SmtpServer.Protocol.Text
         /// <param name="ch">The character to create the token from.</param>
         public Token(TokenKind kind, char ch) : this()
         {
-            Text = ch.ToString(CultureInfo.InvariantCulture);
+            Text = ch.ToString();
             Kind = kind;
         }
 
@@ -50,7 +50,7 @@ namespace SmtpServer.Protocol.Text
         /// <returns>true if <paramref name="other"/> and this instance are the same type and represent the same value; otherwise, false. </returns>
         public bool Equals(Token other)
         {
-            return String.Equals(Text, other.Text, StringComparison.InvariantCultureIgnoreCase) && Kind == other.Kind;
+            return String.Equals(Text, other.Text, StringComparison.OrdinalIgnoreCase) && Kind == other.Kind;
         }
 
         /// <summary>

@@ -2,14 +2,13 @@
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Net.Mail;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-using Limilabs.Client.SMTP;
 using SmtpServer;
 using SmtpServer.Tracing;
+using MailKit.Net.Smtp;
 
 namespace SampleApp
 {
@@ -21,7 +20,7 @@ namespace SampleApp
 
             //var certificate = CreateCertificate();
 
-            ServicePointManager.ServerCertificateValidationCallback = IgnoreCertificateValidationFailureForTestingOnly;
+            //ServicePointManager.ServerCertificateValidationCallback = IgnoreCertificateValidationFailureForTestingOnly;
 
             var options = new OptionsBuilder()
                 .ServerName("SmtpServer SampleApp")
@@ -97,18 +96,27 @@ namespace SampleApp
             var counter = 1;
             while (cancellationToken.IsCancellationRequested == false)
             {
-                using (var smtpClient = new SmtpClient("localhost", 9025))
+                using (var smtpClient = new SmtpClient())
                 {
+                    smtpClient.Connect("localhost", 9025, false);
                     //smtpClient.EnableSsl = true;
                     try
                     {
-                        var message = new MailMessage($"{name}{counter}@test.com", "sample@test.com", $"{name} {counter}", "");
+                        //var message = new MailMessage($"{name}{counter}@test.com", "sample@test.com", $"{name} {counter}", "");
+                        var message = new MimeKit.MimeMessage();
+                        message.From.Add(new MimeKit.MailboxAddress($"{name}{counter}@test.com"));
+                        message.To.Add(new MimeKit.MailboxAddress("sample@test.com"));
+                        message.Subject = $"{name} {counter}";
+                        message.Body = new MimeKit.TextPart("plain")
+                        {
+                            Text = ""
+                        };
                         await Task.Run(() => smtpClient.Send(message), cancellationToken).ConfigureAwait(false);
                     }
-                    catch (SmtpException smtpException)
-                    {
-                        Console.WriteLine(smtpException.StatusCode);
-                    }
+                    //catch (SmtpException smtpException)
+                    //{
+                    //    Console.WriteLine(smtpException.StatusCode);
+                    //}
                     catch (Exception exception)
                     {
                         Console.WriteLine(exception);
