@@ -8,8 +8,6 @@
         <Version Condition="'$(Version)' == ''">1.0.0.0</Version>
     </PropertyGroup>
 
-    <!--<Import Project="$(Root)Lib\MsBuild\MSBuild.Community.Tasks.Targets" />-->
-
     <Target Name="Clean">
         <ItemGroup>
             <FilesToDelete Include="$(Root)\Src\**\bin\**\*.*" />
@@ -30,18 +28,9 @@
           <Message Text="Version:         $(Version)" />
 
           <!-- Compile -->
-          <MSBuild Projects="$(Root)Src\SmtpServer.sln" Targets="Rebuild" Properties="Configuration=$(Configuration);Platform=Any CPU" />
+          <!--<MSBuild Projects="$(Root)Src\SmtpServer.sln" Targets="Rebuild" Properties="Configuration=$(Configuration);Platform=Any CPU" />-->
+	  <MSBuild Projects="$(Root)Src\SmtpServer\SmtpServer.xproj" Targets="Rebuild" Properties="Configuration=$(Configuration);Platform=Any CPU" />
       
     </Target>
-
-<!--
-    <Target Name="Package" DependsOnTargets="Test">
-        <Exec Command='"$(Root)Src\.nuget\NuGet.exe" pack "$(Root)Src\TaskQueue.Client\TaskQueue.Client.nuspec" -NoDefaultExcludes -BasePath "$(Root)Src\TaskQueue.Client" -OutputDirectory "$(Root)Build"  -Version "$(Version)" -NoPackageAnalysis' />
-    </Target>
-
-    <Target Name="Publish" DependsOnTargets="Package">
-        <Exec Condition="'$(ShouldPublish)' == 'nuget'" Command='"$(Root)Src\.nuget\NuGet.exe" push "$(Root)Build\TaskQueue.Client.$(Version).nupkg" $(NugetKey)' />
-    </Target>
--->
 
 </Project>

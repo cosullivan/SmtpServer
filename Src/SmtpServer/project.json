@@ -1,4 +1,5 @@
 {
+  "version": "2.0.0-Beta1",
   "frameworks": {
     "net45": {
     },
@@ -14,10 +15,11 @@
   "copyright": "Copyright 2016",
   "description": ".NET SmtpServer",
   "packOptions": {
+    "title": "SmtpServer",
     "owners": [ "Cain O'Sullivan" ],
     "tags": [ "Smtp", "SmtpServer" ],
     "summary": ".NET SmtpServer",
-    "requireLicenseAcceptance": false,
-    "releaseNotes": "Initial Version"
+    "projectUrl": "https://github.com/cosullivan/SmtpServer",
+    "requireLicenseAcceptance": false
   }
 }
