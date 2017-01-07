@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Globalization;
 
 namespace SmtpServer.Protocol.Text
 {
@@ -50,7 +49,7 @@ namespace SmtpServer.Protocol.Text
         /// <returns>true if <paramref name="other"/> and this instance are the same type and represent the same value; otherwise, false. </returns>
         public bool Equals(Token other)
         {
-            return String.Equals(Text, other.Text, StringComparison.OrdinalIgnoreCase) && Kind == other.Kind;
+            return Kind == other.Kind && String.Equals(Text, other.Text, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -78,7 +77,7 @@ namespace SmtpServer.Protocol.Text
         {
             unchecked
             {
-                return ((Text != null ? Text.GetHashCode() : 0) * 397) ^ (int)Kind;
+                return ((Text?.GetHashCode() ?? 0) * 397) ^ (int)Kind;
             }
         }
 
@@ -116,11 +115,11 @@ namespace SmtpServer.Protocol.Text
         /// <summary>
         /// Gets the token text.
         /// </summary>
-        public string Text { get; private set; }
+        public string Text { get; }
 
         /// <summary>
         /// Gets the token kind.
         /// </summary>
-        public TokenKind Kind { get; private set; }
+        public TokenKind Kind { get; }
     }
 }

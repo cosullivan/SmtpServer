@@ -35,8 +35,8 @@ namespace SampleApp
             {
                 var serverTask = RunServerAsync(options, cancellationTokenSource.Token);
                 var clientTask1 = RunClientAsync("A", cancellationTokenSource.Token);
-                //var clientTask2 = RunClientAsync("B", cancellationTokenSource.Token);
-                //var clientTask3 = RunClientAsync("C", cancellationTokenSource.Token);
+                var clientTask2 = RunClientAsync("B", cancellationTokenSource.Token);
+                var clientTask3 = RunClientAsync("C", cancellationTokenSource.Token);
 
                 Console.WriteLine("Press any key to continue");
                 Console.ReadKey();
@@ -45,8 +45,8 @@ namespace SampleApp
 
                 serverTask.WaitWithoutException();
                 clientTask1.WaitWithoutException();
-                //clientTask2.WaitWithoutException();
-                //clientTask3.WaitWithoutException();
+                clientTask2.WaitWithoutException();
+                clientTask3.WaitWithoutException();
 
                 return;
             }
@@ -98,11 +98,11 @@ namespace SampleApp
             {
                 using (var smtpClient = new SmtpClient())
                 {
-                    smtpClient.Connect("localhost", 9025, false);
+                    await smtpClient.ConnectAsync("localhost", 9025, false, cancellationToken);
                     //smtpClient.EnableSsl = true;
+
                     try
                     {
-                        //var message = new MailMessage($"{name}{counter}@test.com", "sample@test.com", $"{name} {counter}", "");
                         var message = new MimeKit.MimeMessage();
                         message.From.Add(new MimeKit.MailboxAddress($"{name}{counter}@test.com"));
                         message.To.Add(new MimeKit.MailboxAddress("sample@test.com"));
@@ -111,21 +111,14 @@ namespace SampleApp
                         {
                             Text = ""
                         };
-                        await Task.Run(() => smtpClient.Send(message), cancellationToken).ConfigureAwait(false);
+                        await smtpClient.SendAsync(message, cancellationToken).ConfigureAwait(false);
                     }
-                    //catch (SmtpException smtpException)
-                    //{
-                    //    Console.WriteLine(smtpException.StatusCode);
-                    //}
                     catch (Exception exception)
                     {
                         Console.WriteLine(exception);
                     }
-                }
 
-                if (counter % 1000 == 0)
-                {
-                    System.GC.Collect();
+                    await smtpClient.DisconnectAsync(true, cancellationToken);
                 }
 
                 counter++;

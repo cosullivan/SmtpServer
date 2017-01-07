@@ -1,25 +1,15 @@
-﻿{
-  "version": "1.9.1-*",
-
-  "buildOptions": {
-    "debugType": "portable"
-  },
-
-  "dependencies": {
-    "NETStandard.Library": "1.6.1"
-  },
-
+{
   "frameworks": {
+    "net45": {
+    },
     "netstandard1.6": {
       "dependencies": {
+        "NETStandard.Library": "1.6.1",
         "System.Diagnostics.TraceSource": "4.0.0",
         "System.Net.Security": "4.0.0"
       }
-    },
-    "net45": {
     }
   },
-
   "authors": [ "Cain O'Sullivan" ],
   "copyright": "Copyright 2016",
   "description": ".NET SmtpServer",

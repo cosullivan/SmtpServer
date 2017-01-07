@@ -91,9 +91,9 @@ namespace SmtpServer
             Context.Text.Dispose();
 
             ((IDisposable)_tcpClient).Dispose();
-#if !NETSTANDARD1_6
-            _taskCompletionSource.Task.Dispose();
-#endif
+//#if !NETSTANDARD1_6
+//            _taskCompletionSource.Task.Dispose();
+//#endif
         }
 
         /// <summary>
