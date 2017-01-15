@@ -45,7 +45,6 @@
     <Compile Include="Extensions\TaskExtensions.cs" />
     <Compile Include="Extensions\TraceSwitchExtensions.cs" />
     <Compile Include="ISessionContext.cs" />
-    <Compile Include="ISmtpCommandProcessor.cs" />
     <Compile Include="ISmtpServerOptions.cs" />
     <Compile Include="ISmtpSessionContext.cs" />
     <Compile Include="ISmtpTransaction.cs" />
@@ -85,6 +84,8 @@
     <Compile Include="Protocol\Text\TokenKind.cs" />
     <Compile Include="Protocol\Text\TokenReader.cs" />
     <Compile Include="SessionEventArgs.cs" />
+    <Compile Include="SmtpCommandEventArgs.cs" />
+    <Compile Include="SmtpCommandExecutingEventArgs.cs" />
     <Compile Include="SmtpCommandProcessor.cs" />
     <Compile Include="SmtpServer.cs" />
     <Compile Include="SmtpServerOptions.cs" />
@@ -102,7 +103,6 @@
     <Compile Include="Storage\MailboxFilter.cs" />
     <Compile Include="Storage\MailboxFilterResult.cs" />
     <Compile Include="Storage\MessageStore.cs" />
-    <Compile Include="Tracing\TracingSmtpCommandProcessor.cs" />
     <Compile Include="Tracing\TracingSmtpCommandVisitor.cs" />
   </ItemGroup>
   <ItemGroup>

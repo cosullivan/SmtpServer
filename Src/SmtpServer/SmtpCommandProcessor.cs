@@ -5,20 +5,20 @@ using SmtpServer.Protocol.Text;
 
 namespace SmtpServer
 {
-    public class SmtpCommandProcessor : ISmtpCommandProcessor
+    internal sealed class SmtpCommandProcessor
     {
         readonly int _maxRetries;
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        public SmtpCommandProcessor() : this(5) { }
+        internal SmtpCommandProcessor() : this(5) { }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="maxRetries">The maximum number of retries.</param>
-        public SmtpCommandProcessor(int maxRetries)
+        internal SmtpCommandProcessor(int maxRetries)
         {
             _maxRetries = maxRetries;
         }
@@ -29,7 +29,7 @@ namespace SmtpServer
         /// <param name="context">The session context to execute the command handler against.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which asynchronously performs the execution.</returns>
-        public virtual async Task ExecuteAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
+        internal async Task ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
             var retryCount = _maxRetries;
 
@@ -63,7 +63,7 @@ namespace SmtpServer
         /// <param name="command">The command that was found.</param>
         /// <param name="errorResponse">The error response that indicates why a command could not be accepted.</param>
         /// <returns>true if a valid command was found, false if not.</returns>
-        protected virtual bool TryAccept(ISmtpSessionContext context, string text, out SmtpCommand command, out SmtpResponse errorResponse)
+        bool TryAccept(SmtpSessionContext context, string text, out SmtpCommand command, out SmtpResponse errorResponse)
         {
             return context.StateMachine.TryAccept(new TokenEnumerator(new StringTokenReader(text)), out command, out errorResponse);
         }
@@ -75,8 +75,10 @@ namespace SmtpServer
         /// <param name="context">The execution context to operate on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which asynchronously performs the execution.</returns>
-        protected virtual Task ExecuteAsync(SmtpCommand command, ISmtpSessionContext context, CancellationToken cancellationToken)
+        Task ExecuteAsync(SmtpCommand command, SmtpSessionContext context, CancellationToken cancellationToken)
         {
+            context.RaiseSmtpCommandExecuting(command);
+
             return command.ExecuteAsync(context, cancellationToken);
         }
     }

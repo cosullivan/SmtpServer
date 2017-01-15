@@ -1,3 +1,4 @@
+using System;
 using System.Net;
 using SmtpServer.Protocol;
 
@@ -5,6 +6,11 @@ namespace SmtpServer
 {
     internal class SmtpSessionContext : ISmtpSessionContext
     {
+        /// <summary>
+        /// Fired when a command is about to execute.
+        /// </summary>
+        public event EventHandler<SmtpCommandExecutingEventArgs> CommandExecuting;
+
         bool _isQuitRequested;
 
         /// <summary>
@@ -26,6 +32,15 @@ namespace SmtpServer
         public void Quit()
         {
             _isQuitRequested = true;
+        }
+
+        /// <summary>
+        /// Raise the SMTP command as executing.
+        /// </summary>
+        /// <param name="command">The command that is executing.</param>
+        internal void RaiseSmtpCommandExecuting(SmtpCommand command)
+        {
+            CommandExecuting?.Invoke(this, new SmtpCommandExecutingEventArgs(command));
         }
 
         /// <summary>

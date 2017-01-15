@@ -79,11 +79,6 @@ namespace SmtpServer
         public IUserAuthenticator UserAuthenticator { get; internal set; }
 
         /// <summary>
-        /// Gets the command processor service.
-        /// </summary>
-        public ISmtpCommandProcessor Processor { get; internal set; }
-
-        /// <summary>
         /// Gets a value indicating whether authentication should be allowed on an unsecure session.
         /// </summary>
         public bool AllowUnsecureAuthentication { get; internal set; }

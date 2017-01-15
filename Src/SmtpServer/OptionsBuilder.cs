@@ -16,7 +16,6 @@ namespace SmtpServer
         public ISmtpServerOptions Build()
         {
             _options.MessageStoreFactory = _options.MessageStoreFactory ?? new DoNothingMessageStore();
-            _options.Processor = _options.Processor ?? new SmtpCommandProcessor();
 
             return _options;
         }
@@ -104,18 +103,6 @@ namespace SmtpServer
         public OptionsBuilder UserAuthenticator(IUserAuthenticator userAuthenticator)
         {
             _options.UserAuthenticator = userAuthenticator;
-
-            return this;
-        }
-
-        /// <summary>
-        /// Sets the command processor service.
-        /// </summary>
-        /// <param name="processor">The command processor that executes the commands.</param>
-        /// <returns>A OptionsBuilder to continue building on.</returns>
-        public OptionsBuilder Processor(ISmtpCommandProcessor processor)
-        {
-            _options.Processor = processor;
 
             return this;
         }

@@ -1,7 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
-using System.Net;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -28,7 +26,6 @@ namespace SampleApp
                 //.Certificate(certificate)
                 .MessageStore(new ConsoleMessageStore())
                 .MailboxFilter(new ConsoleMailboxFilter())
-                .Processor(new TracingSmtpCommandProcessor(Console.Out))
                 .Build();
 
             if (args == null || args.Length == 0)
@@ -125,14 +122,23 @@ namespace SampleApp
             }
         }
 
-        static void OnSmtpServerSessionCreated(object sender, SessionEventArgs sessionEventArgs)
+        static void OnSmtpServerSessionCreated(object sender, SessionEventArgs e)
         {
-            Console.WriteLine("SessionCreated: {0}", sessionEventArgs.Context.RemoteEndPoint);
+            Console.WriteLine("SessionCreated: {0}", e.Context.RemoteEndPoint);
+
+            e.Context.CommandExecuting += OnCommandExecuting;
         }
 
-        static void OnSmtpServerSessionCompleted(object sender, SessionEventArgs sessionEventArgs)
+        static void OnCommandExecuting(object sender, SmtpCommandExecutingEventArgs e)
         {
-            Console.WriteLine("SessionCompleted: {0}", sessionEventArgs.Context.RemoteEndPoint);
+            new TracingSmtpCommandVisitor(Console.Out).Visit(e.Command);
+        }
+
+        static void OnSmtpServerSessionCompleted(object sender, SessionEventArgs e)
+        {
+            e.Context.CommandExecuting -= OnCommandExecuting;
+
+            Console.WriteLine("SessionCompleted: {0}", e.Context.RemoteEndPoint);
         }
 
         static bool IgnoreCertificateValidationFailureForTestingOnly(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)

@@ -11,6 +11,7 @@ namespace SmtpServer
     {
         readonly ISmtpServerOptions _options;
         readonly TcpClient _tcpClient;
+        readonly SmtpCommandProcessor _processor = new SmtpCommandProcessor();
         TaskCompletionSource<bool> _taskCompletionSource;
         
         /// <summary>
@@ -67,7 +68,7 @@ namespace SmtpServer
 
             await OutputGreetingAsync(cancellationToken).ConfigureAwait(false);
 
-            await _options.Processor.ExecuteAsync(Context, cancellationToken);
+            await _processor.ExecuteAsync(Context, cancellationToken);
         }
 
         /// <summary>
