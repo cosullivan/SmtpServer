@@ -11,7 +11,7 @@ namespace SmtpServer
     {
         readonly ISmtpServerOptions _options;
         readonly TcpClient _tcpClient;
-        readonly SmtpCommandProcessor _processor = new SmtpCommandProcessor();
+        readonly SmtpCommandProcessor _processor;
         TaskCompletionSource<bool> _taskCompletionSource;
         
         /// <summary>
@@ -24,6 +24,7 @@ namespace SmtpServer
         {
             _options = options;
             _tcpClient = tcpClient;
+            _processor = new SmtpCommandProcessor(options.MaxRetryCount);
             
             Context = new SmtpSessionContext(new SmtpTransaction(), stateMachine, tcpClient.Client.RemoteEndPoint)
             {

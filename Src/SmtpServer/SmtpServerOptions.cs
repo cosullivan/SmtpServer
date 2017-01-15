@@ -19,6 +19,11 @@ namespace SmtpServer
         public int MaxMessageSize { get; internal set; }
 
         /// <summary>
+        /// The maximum number of retries before quitting the session.
+        /// </summary>
+        public int MaxRetryCount { get; internal set; }
+
+        /// <summary>
         /// Gets or sets the SMTP server name.
         /// </summary>
         public string ServerName { get; internal set; }

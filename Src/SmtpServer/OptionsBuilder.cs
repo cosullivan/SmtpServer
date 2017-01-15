@@ -7,7 +7,10 @@ namespace SmtpServer
 {
     public sealed class OptionsBuilder
     {
-        readonly SmtpServerOptions _options = new SmtpServerOptions();
+        readonly SmtpServerOptions _options = new SmtpServerOptions
+        {
+            MaxRetryCount = 5
+        };
 
         /// <summary>
         /// Builds the options that have been set and returns the built instance.
@@ -127,6 +130,18 @@ namespace SmtpServer
         public OptionsBuilder MaxMessageSize(int maxMessageSize)
         {
             _options.MaxMessageSize = maxMessageSize;
+
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the maximum number of retries for a failed command.
+        /// </summary>
+        /// <param name="maxRetryCount">The maximum number of retries allowed for a failed command.</param>
+        /// <returns>A OptionsBuilder to continue building on.</returns>
+        public OptionsBuilder MaxRetryCount(int maxRetryCount)
+        {
+            _options.MaxRetryCount = maxRetryCount;
 
             return this;
         }
