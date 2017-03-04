@@ -46,7 +46,7 @@ public class ConsoleMessageStore : IMessageStore, IMessageStoreFactory
         return this;
     }
 
-    public Task<SmtpResponse> SaveAsync(IMimeMessage message, CancellationToken cancellationToken)
+    public Task<SmtpResponse> SaveAsync(ISessionContext context, IMimeMessage message, CancellationToken cancellationToken)
     {
         Console.WriteLine(message.Mime);
     
