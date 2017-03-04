@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using SmtpServer.Authentication;
 using SmtpServer.Storage;
@@ -9,7 +10,8 @@ namespace SmtpServer
     {
         readonly SmtpServerOptions _options = new SmtpServerOptions
         {
-            MaxRetryCount = 5
+            MaxRetryCount = 5,
+            SupportedSslProtocols = SslProtocols.Tls
         };
 
         /// <summary>
@@ -142,6 +144,18 @@ namespace SmtpServer
         public OptionsBuilder MaxRetryCount(int maxRetryCount)
         {
             _options.MaxRetryCount = maxRetryCount;
+
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the supported SSL protocols.
+        /// </summary>
+        /// <param name="sslProtocols">The supported SSL protocols.</param>
+        /// <returns>A OptionsBuilder to continue building on.</returns>
+        public OptionsBuilder SupportedSslProtocols(SslProtocols sslProtocols)
+        {
+            _options.SupportedSslProtocols = sslProtocols;
 
             return this;
         }

@@ -345,7 +345,7 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            command = new StartTlsCommand(_options.ServerCertificate);
+            command = new StartTlsCommand(_options.ServerCertificate, _options.SupportedSslProtocols);
             return true;
         }
 

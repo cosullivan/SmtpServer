@@ -9,14 +9,17 @@ namespace SmtpServer.Protocol
     public sealed class StartTlsCommand : SmtpCommand
     {
         readonly X509Certificate _certificate;
+        readonly SslProtocols _sslProtocols;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="certificate">The server side certificate to authenticate with.</param>
-        public StartTlsCommand(X509Certificate certificate)
+        /// <param name="sslProtocols">The allowable SSL protocols.</param>
+        public StartTlsCommand(X509Certificate certificate, SslProtocols sslProtocols)
         {
             _certificate = certificate;
+            _sslProtocols = sslProtocols;
         }
 
         /// <summary>
@@ -31,7 +34,7 @@ namespace SmtpServer.Protocol
 
             var stream = new SslStream(context.Text.GetInnerStream(), true);
 
-            await stream.AuthenticateAsServerAsync(_certificate, false, SslProtocols.None, true);
+            await stream.AuthenticateAsServerAsync(_certificate, false, _sslProtocols, true);
 
             context.Text = new NetworkTextStream(stream);
         }

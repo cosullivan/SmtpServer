@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Net;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using SmtpServer.Authentication;
 using SmtpServer.Storage;
@@ -52,5 +53,10 @@ namespace SmtpServer
         /// Gets a value indicating whether authentication should be allowed on an unsecure session.
         /// </summary>
         bool AllowUnsecureAuthentication { get; }
+
+        /// <summary>
+        /// The supported SSL protocols.
+        /// </summary>
+        SslProtocols SupportedSslProtocols { get; }
     }
 }

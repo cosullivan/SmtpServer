@@ -1,5 +1,5 @@
 {
-  "version": "2.1.0",
+  "version": "2.2.0",
   "frameworks": {
     "net45": {
     },
@@ -12,7 +12,7 @@
     }
   },
   "authors": [ "Cain O'Sullivan" ],
-  "copyright": "Copyright 2016",
+  "copyright": "Copyright 2017",
   "description": ".NET SmtpServer",
   "packOptions": {
     "title": "SmtpServer",

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Net.Security;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,6 +25,7 @@ namespace SampleApp
                 .ServerName("SmtpServer SampleApp")
                 .Port(9025)
                 //.Certificate(certificate)
+                .SupportedSslProtocols(SslProtocols.Default)
                 .MessageStore(new ConsoleMessageStore())
                 .MailboxFilter(new ConsoleMailboxFilter())
                 .Build();
