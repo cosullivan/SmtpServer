@@ -39,8 +39,13 @@ await smtpServer.StartAsync(CancellationToken.None);
 ```
 
 ```cs
-public class ConsoleMessageStore : IMessageStore
+public class ConsoleMessageStore : IMessageStore, IMessageStoreFactory
 {
+    public IMessageStore CreateInstance(ISessionContext context)
+    {
+        return this;
+    }
+
     public Task<SmtpResponse> SaveAsync(IMimeMessage message, CancellationToken cancellationToken)
     {
         Console.WriteLine(message.Mime);
