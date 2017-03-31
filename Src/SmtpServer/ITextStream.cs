@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.Protocol;
+using SmtpServer.Protocol.Text;
 
 namespace SmtpServer
 {
@@ -37,6 +38,11 @@ namespace SmtpServer
         /// Gets a value indicating whether or not the text stream is secure.
         /// </summary>
         bool IsSecure { get; }
+
+        /// <summary>
+        /// Gets a transfer encode type identified.
+        /// </summary>
+        TransferEncodeType TransferEncodeType { get; }
     }
 
     public static class TextStreamExtensions

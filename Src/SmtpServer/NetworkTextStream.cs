@@ -2,6 +2,8 @@
 using System.Net.Security;
 using System.Text;
 using System.Threading.Tasks;
+using SmtpServer.Protocol.Text;
+using System;
 
 namespace SmtpServer
 {
@@ -10,6 +12,8 @@ namespace SmtpServer
         readonly Stream _stream;
         readonly StreamReader _reader;
         readonly StreamWriter _writer;
+        readonly TransferEncodeType _transferEncodeType;
+        readonly Encoding _encoding;
 
         /// <summary>
         /// Constructor.
@@ -19,8 +23,12 @@ namespace SmtpServer
         {
             _stream = stream;
 
-            _reader = new StreamReader(stream, Encoding.ASCII);
-            _writer = new StreamWriter(stream, Encoding.ASCII);
+            // TODO: How to discover the transfer encode type?
+            _transferEncodeType = TransferEncodeType.EightBitMime;
+            _encoding = (_transferEncodeType == TransferEncodeType.EightBitMime) ? Encoding.UTF8 : Encoding.ASCII;
+
+            _reader = new StreamReader(stream, Encoding.UTF8);
+            _writer = new StreamWriter(stream, Encoding.UTF8);
         }
 
         /// <summary>
@@ -77,6 +85,17 @@ namespace SmtpServer
         public bool IsSecure
         {
             get { return _stream is SslStream; }
+        }
+
+        /// <summary>
+        /// Get a value of transfer encoding of stream.
+        /// </summary>
+        public TransferEncodeType TransferEncodeType
+        {
+            get
+            {
+                return _transferEncodeType;
+            }
         }
     }
 }

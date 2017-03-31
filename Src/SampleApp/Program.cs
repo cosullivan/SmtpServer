@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 using SmtpServer;
 using SmtpServer.Tracing;
 using MailKit.Net.Smtp;
+using System.Net.Mail;
+using System.Net.Mime;
 
 namespace SampleApp
 {
@@ -75,6 +77,23 @@ namespace SampleApp
 
                 clientTask.WaitWithoutException();
             }
+
+            if (args[0] == "8bit")
+            {
+                var serverTask = RunServerAsync(options, cancellationTokenSource.Token);
+                var clientTask1 = RunClientAsync("A", cancellationTokenSource.Token);
+
+                Console.WriteLine("Press any key to continue");
+                Console.ReadKey();
+
+                cancellationTokenSource.Cancel();
+
+                serverTask.WaitWithoutException();
+                clientTask1.WaitWithoutException();
+
+                return;
+            }
+
         }
 
         static async Task RunServerAsync(ISmtpServerOptions options, CancellationToken cancellationToken)
@@ -95,7 +114,7 @@ namespace SampleApp
             var counter = 1;
             while (cancellationToken.IsCancellationRequested == false)
             {
-                using (var smtpClient = new SmtpClient())
+                using (var smtpClient = new MailKit.Net.Smtp.SmtpClient())
                 {
                     await smtpClient.ConnectAsync("localhost", 9025, false, cancellationToken);
                     //smtpClient.EnableSsl = true;
@@ -119,6 +138,66 @@ namespace SampleApp
 
                     await smtpClient.DisconnectAsync(true, cancellationToken);
                 }
+
+                counter++;
+            }
+        }
+
+        static async Task RunClient8bitAsync(string name, CancellationToken cancellationToken)
+        {
+            var counter = 1;
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                var message = new MailMessage("ronaldo.lambda@gmail.com", "suporte@encontact.com.br")
+                {
+                    Subject = "Assunto teste acento çãõáéíóú",
+                    IsBodyHtml = false,
+                    Body = null
+                };
+                using (AlternateView body = AlternateView.CreateAlternateViewFromString(
+                        "Assunto teste acento çãõáéíóú - Nro:" + counter,
+                        message.BodyEncoding,
+                        message.IsBodyHtml ? "text/html" : null))
+                {
+                    body.TransferEncoding = TransferEncoding.EightBit;
+                    message.AlternateViews.Add(body);
+                    try
+                    {
+                        using (var smtp = new System.Net.Mail.SmtpClient("localhost", 9025))
+                        {
+                            smtp.Send(message);
+                        }
+                        Console.WriteLine("E-mail enviado com sucesso.");
+                    }
+                    catch (SmtpException ex)
+                    {
+                        Console.WriteLine("Erro ao enviar email. Ex:" + ex.Message);
+                        System.Diagnostics.Debug.WriteLine(
+                            ex.Message);
+                    }
+                }
+                //using (var smtpClient = new SmtpClient())
+                //{
+                //    await smtpClient.ConnectAsync("localhost", 9025, false, cancellationToken);
+                //    try
+                //    {
+                //        var message = new MimeKit.MimeMessage();
+                //        message.From.Add(new MimeKit.MailboxAddress($"{name}{counter}@test.com"));
+                //        message.To.Add(new MimeKit.MailboxAddress("sample@test.com"));
+                //        message.Subject = $"{name} {counter}";
+                //        message.Body = new MimeKit.TextPart(MimeKit.Text.TextFormat.Plain)
+                //        {
+                //            Text = "áéíóú"
+                //        };
+                //        await smtpClient.SendAsync(message, cancellationToken).ConfigureAwait(false);
+                //    }
+                //    catch (Exception exception)
+                //    {
+                //        Console.WriteLine(exception);
+                //    }
+
+                //    await smtpClient.DisconnectAsync(true, cancellationToken);
+                //}
 
                 counter++;
             }

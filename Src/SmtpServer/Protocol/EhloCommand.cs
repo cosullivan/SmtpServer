@@ -50,7 +50,7 @@ namespace SmtpServer.Protocol
         {
             yield return "PIPELINING";
 
-            if (session.Text.IsSecure == false && _options.ServerCertificate != null)
+            if (!session.Text.IsSecure && _options.ServerCertificate != null)
             {
                 yield return "STARTTLS";
             }
@@ -63,6 +63,11 @@ namespace SmtpServer.Protocol
             if (IsPlainLoginAllowed(session))
             {
                 yield return "AUTH PLAIN LOGIN";
+            }
+
+            if(session.Text.TransferEncodeType == Text.TransferEncodeType.EightBitMime)
+            {
+                yield return "8BITMIME";
             }
         }
 
