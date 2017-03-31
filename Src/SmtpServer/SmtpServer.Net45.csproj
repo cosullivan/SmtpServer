@@ -81,6 +81,7 @@
     <Compile Include="Protocol\Text\StringTokenReader.cs" />
     <Compile Include="Protocol\Text\Token.cs" />
     <Compile Include="Protocol\Text\TokenEnumerator.cs" />
+    <Compile Include="Protocol\Text\TransferEncodeType.cs" />
     <Compile Include="Protocol\Text\TokenKind.cs" />
     <Compile Include="Protocol\Text\TokenReader.cs" />
     <Compile Include="SessionEventArgs.cs" />
