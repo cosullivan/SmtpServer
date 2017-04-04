@@ -244,17 +244,18 @@ namespace SmtpServer.Tests
             IDictionary<string, string> parameters;
 
             // act
-            var made = parser.TryMakeMailParameters(new TokenEnumerator(new StringTokenReader("SIZE=123 ABC=DEF ZZZ=123")), out parameters);
+            var made = parser.TryMakeMailParameters(new TokenEnumerator(new StringTokenReader("SIZE=123 ABC=DEF ABCDE ZZZ=123")), out parameters);
 
             // assert
             Assert.True(made);
-            Assert.Equal(3, parameters.Count);
+            Assert.Equal(4, parameters.Count);
             Assert.True(parameters.ContainsKey("SIZE"));
             Assert.Equal(parameters["SIZE"], "123");
             Assert.True(parameters.ContainsKey("ABC"));
             Assert.Equal(parameters["ABC"], "DEF");
             Assert.True(parameters.ContainsKey("ZZZ"));
             Assert.Equal(parameters["ZZZ"], "123");
+            Assert.True(parameters.ContainsKey("ABCDE"));
         }
     }
 }

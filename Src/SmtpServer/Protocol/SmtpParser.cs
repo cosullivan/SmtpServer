@@ -609,7 +609,7 @@ namespace SmtpServer.Protocol
                 }
 
                 parameters.Add(parameter);
-                enumerator.TakeWhile(t => t.Kind == TokenKind.Space);
+                enumerator.TakeWhile(TokenKind.Space);
             }
 
             return parameters.Count > 0;
@@ -632,10 +632,18 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            if (enumerator.Take() != new Token(TokenKind.Symbol, "="))
+            if (enumerator.Peek().Kind == TokenKind.None || enumerator.Peek().Kind == TokenKind.Space)
+            {
+                parameter = new KeyValuePair<string, string>(keyword, null);
+                return true;
+            }
+
+            if (enumerator.Peek() != new Token(TokenKind.Symbol, "="))
             {
                 return false;
             }
+
+            enumerator.Take();
 
             string value;
             if (TryMake(enumerator, TryMakeEsmtpValue, out value) == false)
