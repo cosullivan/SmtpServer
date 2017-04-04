@@ -55,6 +55,36 @@ namespace SmtpServer.Tests
             Wait(smtpServerTask);
         }
 
+        [Fact]
+        public void CanReceive8BitMimeMessage()
+        {
+            // arrange
+            var smtpServer = new SmtpServer(_optionsBuilder.Build());
+            var smtpClient = new SmtpClient();
+            var smtpServerTask = smtpServer.StartAsync(_cancellationTokenSource.Token);
+
+            var message = new MimeKit.MimeMessage();
+            message.From.Add(new MailboxAddress("test1@test.com"));
+            message.To.Add(new MailboxAddress("test2@test.com"));
+            message.Subject = "Assunto teste acento çãõáéíóú";
+            message.Body = new TextPart("plain")
+            {
+                Text = "Assunto teste acento çãõáéíóú"
+            };
+
+            // act
+            smtpClient.Connect("localhost", 25, false);
+            smtpClient.Send(message);
+
+            // assert
+            Assert.Equal(1, _messageStore.Messages.Count);
+            //Assert.Equal("Assunto teste acento çãõáéíóú", _messageStore.Messages[0].Mime);
+            //Assert.Equal(1, _messageStore.Messages[0].To.Count);
+            //Assert.Equal("test2@test.com", _messageStore.Messages[0].To[0].AsAddress());
+
+            Wait(smtpServerTask);
+        }
+
         void Wait(Task smtpServerTask)
         {
             _cancellationTokenSource.Cancel();

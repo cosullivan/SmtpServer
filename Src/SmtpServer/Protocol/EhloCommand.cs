@@ -49,6 +49,7 @@ namespace SmtpServer.Protocol
         IEnumerable<string> GetExtensions(ISmtpSessionContext session)
         {
             yield return "PIPELINING";
+            yield return "8BITMIME";
 
             if (session.Text.IsSecure == false && _options.ServerCertificate != null)
             {

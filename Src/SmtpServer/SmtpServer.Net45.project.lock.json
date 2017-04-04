@@ -1,5 +1,4 @@
 {
-  "locked": false,
   "version": 2,
   "targets": {
     ".NETFramework,Version=v4.5": {},
@@ -10,6 +9,24 @@
     "": [],
     ".NETFramework,Version=v4.5": []
   },
-  "tools": {},
-  "projectFileToolGroups": {}
+  "packageFolders": {
+    "C:\\Users\\Cain\\.nuget\\packages\\": {}
+  },
+  "project": {
+    "restore": {
+      "projectUniqueName": "C:\\Dev\\SmtpServer\\Src\\SmtpServer\\SmtpServer.Net45.csproj",
+      "projectName": "SmtpServer.Net45",
+      "projectPath": "C:\\Dev\\SmtpServer\\Src\\SmtpServer\\SmtpServer.Net45.csproj",
+      "projectJsonPath": "C:\\Dev\\SmtpServer\\Src\\SmtpServer\\SmtpServer.Net45.project.json",
+      "projectStyle": "ProjectJson"
+    },
+    "frameworks": {
+      "net45": {}
+    },
+    "runtimes": {
+      "win": {
+        "#import": []
+      }
+    }
+  }
 }

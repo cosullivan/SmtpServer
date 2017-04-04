@@ -210,6 +210,8 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
+            enumerator.TakeWhile(TokenKind.Space);
+
             // match the optional (ESMTP) parameters
             IDictionary<string, string> parameters;
             if (_parser.TryMakeMailParameters(enumerator, out parameters) == false)

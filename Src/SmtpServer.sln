@@ -1,13 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26228.9
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{A965DCEA-280B-447A-B5C5-4089C444C2B7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmtpServer.Benchmark", "SmtpServer.Benchmark\SmtpServer.Benchmark.csproj", "{40D4AF5E-03B1-4133-9381-FE45060F22F5}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "SmtpServer", "SmtpServer\SmtpServer.xproj", "{9C02E11A-62E1-494F-9B4A-37B68863EB89}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SmtpServer", "SmtpServer\SmtpServer.csproj", "{9C02E11A-62E1-494F-9B4A-37B68863EB89}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmtpServer.Net45", "SmtpServer\SmtpServer.Net45.csproj", "{C73C78EA-96ED-48B0-8EF2-834AF0A94516}"
 EndProject
