@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using SmtpServer.Mail;
 using SmtpServer.Protocol;
 
@@ -71,7 +72,9 @@ namespace SmtpServer.Tracing
         /// <param name="command">The command that is being visited.</param>
         protected override void Visit(MailCommand command)
         {
-            _output.WriteLine("MAIL: Address={0}", command.Address.AsAddress());
+            _output.WriteLine("MAIL: Address={0} Parameters={1}", 
+                command.Address.AsAddress(),
+                String.Join(",", command.Parameters.Select(kvp => $"{kvp.Key}={kvp.Value}")));
         }
 
         /// <summary>

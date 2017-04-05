@@ -241,7 +241,7 @@ namespace SmtpServer.Tests
         {
             // arrange
             var parser = new SmtpParser();
-            IDictionary<string, string> parameters;
+            IReadOnlyDictionary<string, string> parameters;
 
             // act
             var made = parser.TryMakeMailParameters(new TokenEnumerator(new StringTokenReader("SIZE=123 ABC=DEF ABCDE ZZZ=123")), out parameters);

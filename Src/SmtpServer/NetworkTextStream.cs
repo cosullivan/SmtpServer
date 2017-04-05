@@ -15,12 +15,19 @@ namespace SmtpServer
         /// Constructor.
         /// </summary>
         /// <param name="stream">The stream for reading and writing.</param>
-        public NetworkTextStream(Stream stream)
+        public NetworkTextStream(Stream stream) : this(stream, Encoding.ASCII) { }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="stream">The stream for reading and writing.</param>
+        /// <param name="encoding">The encoding for the stream.</param>
+        public NetworkTextStream(Stream stream, Encoding encoding)
         {
             _stream = stream;
 
-            _reader = new StreamReader(stream, Encoding.ASCII);
-            _writer = new StreamWriter(stream, Encoding.ASCII);
+            _reader = new StreamReader(stream, encoding);
+            _writer = new StreamWriter(stream, encoding);
         }
 
         /// <summary>

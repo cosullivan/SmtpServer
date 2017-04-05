@@ -9,29 +9,20 @@ namespace SmtpServer.Protocol
 {
     public sealed class MailCommand : SmtpCommand
     {
-        readonly IMailbox _address;
-        readonly IDictionary<string, string> _parameters;
-        readonly IMailboxFilterFactory _mailboxFilterFactory;
-        readonly int _maxMessageSize;
-
+        readonly ISmtpServerOptions _options;
+        
         /// <summary>
         /// Constructor.
         /// </summary>
+        /// <param name="options">The options that the server was created with.</param>
         /// <param name="address">The address.</param>
         /// <param name="parameters">The list of extended (ESMTP) parameters.</param>
-        /// <param name="mailboxFilterFactory">The mailbox filter factory to create the filters from.</param>
-        /// <param name="maxMessageSize">The maximum message size (0 for no limit).</param>
-        public MailCommand(IMailbox address, IDictionary<string, string> parameters, IMailboxFilterFactory mailboxFilterFactory, int maxMessageSize = 0)
+        public MailCommand(ISmtpServerOptions options, IMailbox address, IReadOnlyDictionary<string, string> parameters)
         {
-            if (mailboxFilterFactory == null)
-            {
-                throw new ArgumentNullException(nameof(mailboxFilterFactory));
-            }
+            _options = options;
 
-            _address = address;
-            _parameters = parameters;
-            _mailboxFilterFactory = mailboxFilterFactory;
-            _maxMessageSize = maxMessageSize;
+            Address = address;
+            Parameters = parameters;
         }
 
         /// <summary>
@@ -48,18 +39,19 @@ namespace SmtpServer.Protocol
             var size = GetMessageSize();
 
             // check against the server supplied maximum
-            if (_maxMessageSize > 0 && size > _maxMessageSize)
+            if (_options.MaxMessageSize > 0 && size > _options.MaxMessageSize)
             {
                 await context.Text.ReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken);
                 return;
             }
 
-            using (var container = new DisposableContainer<IMailboxFilter>(_mailboxFilterFactory.CreateInstance(context)))
+            using (var container = new DisposableContainer<IMailboxFilter>(_options.MailboxFilterFactory.CreateInstance(context)))
             {
                 switch (await container.Instance.CanAcceptFromAsync(context, Address, size))
                 {
                     case MailboxFilterResult.Yes:
-                        context.Transaction.From = _address;
+                        context.Transaction.From = Address;
+                        context.TransferEncoding = GetTransferEncoding() ?? context.TransferEncoding;
                         await context.Text.ReplyAsync(SmtpResponse.Ok, cancellationToken);
                         return;
 
@@ -81,13 +73,37 @@ namespace SmtpServer.Protocol
         }
 
         /// <summary>
+        /// Returns the content transfer encoding if it has been specified through the extended mail parameters.
+        /// </summary>
+        /// <returns>The required content transfer encoding to use.</returns>
+        ContentEncoding? GetTransferEncoding()
+        {
+            if (Is8BitMime())
+            {
+                return ContentEncoding.EightBit;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Returns a value indicating whethere or not the client has specified that the message body is in 8BITMIME.
+        /// </summary>
+        /// <returns>true if the message body is in 8BITMIME format, false if not.</returns>
+        bool Is8BitMime()
+        {
+            string value;
+            return Parameters.TryGetValue("BODY", out value) && String.Equals(value, "8BITMIME", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
         /// Gets the estimated message size supplied from the ESMTP command extension.
         /// </summary>
         /// <returns>The estimated message size that was supplied by the client.</returns>
         int GetMessageSize()
         {
             string value;
-            if (_parameters.TryGetValue("SIZE", out value) == false)
+            if (Parameters.TryGetValue("SIZE", out value) == false)
             {
                 return 0;
             }
@@ -104,9 +120,11 @@ namespace SmtpServer.Protocol
         /// <summary>
         /// Gets the address that the mail is from.
         /// </summary>
-        public IMailbox Address
-        {
-            get { return _address; }
-        }
+        public IMailbox Address { get; }
+
+        /// <summary>
+        /// The list of extended mail parameters.
+        /// </summary>
+        public IReadOnlyDictionary<string, string> Parameters { get; }
     }
 }

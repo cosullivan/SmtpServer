@@ -596,22 +596,24 @@ namespace SmtpServer.Protocol
         /// <param name="parameters">The mail parameters that were made.</param>
         /// <returns>true if the mail parameters can be made, false if not.</returns>
         /// <remarks><![CDATA[esmtp-param *(SP esmtp-param)]]></remarks>
-        public bool TryMakeMailParameters(TokenEnumerator enumerator, out IDictionary<string, string> parameters)
+        public bool TryMakeMailParameters(TokenEnumerator enumerator, out IReadOnlyDictionary<string, string> parameters)
         {
-            parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var dictionary = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             while (enumerator.Peek().Kind != TokenKind.None)
             {
                 KeyValuePair<string, string> parameter;
                 if (TryMake(enumerator, TryMakeEsmtpParameter, out parameter) == false)
                 {
+                    parameters = null;
                     return false;
                 }
 
-                parameters.Add(parameter);
+                dictionary.Add(parameter.Key, parameter.Value);
                 enumerator.TakeWhile(TokenKind.Space);
             }
 
+            parameters = dictionary;
             return parameters.Count > 0;
         }
 

@@ -213,13 +213,13 @@ namespace SmtpServer.Protocol
             enumerator.TakeWhile(TokenKind.Space);
 
             // match the optional (ESMTP) parameters
-            IDictionary<string, string> parameters;
+            IReadOnlyDictionary<string, string> parameters;
             if (_parser.TryMakeMailParameters(enumerator, out parameters) == false)
             {
                 parameters = new Dictionary<string, string>();
             }
 
-            command = new MailCommand(mailbox, parameters, _options.MailboxFilterFactory);
+            command = new MailCommand(_options, mailbox, parameters);
             return true;
         }
 

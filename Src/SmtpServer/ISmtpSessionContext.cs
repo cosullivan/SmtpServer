@@ -15,6 +15,11 @@ namespace SmtpServer
         ITextStream Text { get; set; }
 
         /// <summary>
+        /// The transfer encoding that is required for the message.
+        /// </summary>
+        ContentEncoding TransferEncoding { get; set; }
+
+        /// <summary>
         /// Gets the current transaction.
         /// </summary>
         ISmtpTransaction Transaction { get; }

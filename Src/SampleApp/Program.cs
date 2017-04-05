@@ -12,6 +12,7 @@ using SmtpServer;
 using SmtpServer.Tracing;
 using MailKit.Net.Smtp;
 using MimeKit;
+using MimeKit.Text;
 using SmtpClient = MailKit.Net.Smtp.SmtpClient;
 
 namespace SampleApp
@@ -41,18 +42,18 @@ namespace SampleApp
                 .MailboxFilter(new ConsoleMailboxFilter())
                 .Build();
 
-            var s = RunServerAsync(options, cancellationTokenSource.Token);
+            //var s = RunServerAsync(options, cancellationTokenSource.Token);
             //var c = RunClientAsync("A", cancellationTokenSource.Token);
 
-            Console.WriteLine("Press any key to continue");
-            Console.ReadKey();
+            //Console.WriteLine("Press any key to continue");
+            //Console.ReadKey();
 
-            cancellationTokenSource.Cancel();
+            //cancellationTokenSource.Cancel();
 
-            s.WaitWithoutException();
+            //s.WaitWithoutException();
             //c.WaitWithoutException();
 
-            return;
+            //return;
 
             if (args == null || args.Length == 0)
             {
@@ -129,21 +130,14 @@ namespace SampleApp
                         var message = new MimeKit.MimeMessage();
                         message.From.Add(new MimeKit.MailboxAddress($"{name}{counter}@test.com"));
                         message.To.Add(new MimeKit.MailboxAddress("sample@test.com"));
-                        //message.Subject = $"{name} {counter}";
-                        message.Subject = "Assunto teste acento çãõáéíóú";
-                        //message.Body = new MimeKit.TextPart("plain")
-                        //{
-                        //    Text = ""
-                        //};
-                        message.Body = new MimeKit.MimePart()
+                        message.Subject = $"{name} {counter}";
+
+                        message.Body = new TextPart(TextFormat.Plain)
                         {
-                            ContentTransferEncoding = MimeKit.ContentEncoding.EightBit
+                            Text = "Assunto teste acento çãõáéíóú",
+                            //Text = "Assunto teste acento",
                         };
 
-                        //var builder = new BodyBuilder();
-                        //builder.Attachments.Add(
-                        //    new MultipartAlternative() { ContentEncoding = ContentEncoding.EightBit});
-                        //message.Prepare(MimeKit.EncodingConstraint.EightBit);
                         await smtpClient.SendAsync(message, cancellationToken).ConfigureAwait(false);
                     }
                     catch (Exception exception)
@@ -157,48 +151,6 @@ namespace SampleApp
                 counter++;
             }
         }
-
-        //static async Task RunClientAsync(string name, CancellationToken cancellationToken)
-        //{
-        //    var counter = 1;
-        //    while (cancellationToken.IsCancellationRequested == false)
-        //    {
-        //        var message = new MailMessage("test@gmail.com", "receiveaccount@test.com")
-        //        {
-        //            Subject = "Subject test çãõáéíóú",
-        //            IsBodyHtml = false,
-        //            Body = null
-        //        };
-
-        //        using (AlternateView body = AlternateView.CreateAlternateViewFromString(
-        //            "Body special char çãõáéíóú",
-        //            message.BodyEncoding,
-        //            message.IsBodyHtml ? "text/html" : null))
-        //        {
-        //            message.SubjectEncoding = System.Text.Encoding.UTF7;
-        //            body.TransferEncoding = TransferEncoding.EightBit;
-        //            message.AlternateViews.Add(body);
-        //            try
-        //            {
-        //                using (var smtp = new System.Net.Mail.SmtpClient("127.0.0.1", 9025))
-        //                {
-        //                    smtp.DeliveryFormat = SmtpDeliveryFormat.International;
-        //                    smtp.EnableSsl = false;
-        //                    smtp.Send(message);
-        //                }
-        //                Console.WriteLine("Sent with success.");
-        //            }
-        //            catch (SmtpException ex)
-        //            {
-        //                Console.WriteLine("Error on sent. Ex:" + ex.Message);
-        //                System.Diagnostics.Debug.WriteLine(
-        //                    ex.Message);
-        //            }
-        //        }
-
-        //        counter++;
-        //    }
-        //}
 
         static void OnSmtpServerSessionCreated(object sender, SessionEventArgs e)
         {
