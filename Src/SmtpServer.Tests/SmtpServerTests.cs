@@ -78,9 +78,6 @@ namespace SmtpServer.Tests
 
             // assert
             Assert.Equal(1, _messageStore.Messages.Count);
-            //Assert.Equal("Assunto teste acento çãõáéíóú", _messageStore.Messages[0].Mime);
-            //Assert.Equal(1, _messageStore.Messages[0].To.Count);
-            //Assert.Equal("test2@test.com", _messageStore.Messages[0].To[0].AsAddress());
 
             Wait(smtpServerTask);
         }
