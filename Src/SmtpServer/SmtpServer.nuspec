@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>EnkiSmtpServer</id>
+    <version>1.6.5-beta</version>
+    <authors>Cain</authors>
+    <owners>Cain</owners>
+    <licenseUrl>https://github.com/cosullivan/SmtpServer/blob/master/LICENSE</licenseUrl>
+    <projectUrl>https://github.com/cosullivan/SmtpServer</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Smtp Server write in C#</description>
+    <releaseNotes>Update to work with 8bit email.</releaseNotes>
+    <copyright>Copyright 2017</copyright>
+    <tags>smtp email server</tags>
+  </metadata>
+  <files>
+    <file src="bin\Debug\netstandard1.3\*.dll" target="lib\netstandard1.3" />
+    <file src="bin\Debug\net45\*.dll" target="lib\net45" />
+  </files>
+</package>
