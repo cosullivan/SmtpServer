@@ -27,7 +27,7 @@ namespace SmtpServer.Protocol
         /// <param name="context">The execution context to operate on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which asynchronously performs the execution.</returns>
-        public override async Task ExecuteAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
+        internal override async Task ExecuteAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
         {
             var greeting = $"{_options.ServerName} Hello {DomainOrAddress}, haven't we met before?";
             var output = new[] { greeting }.Union(GetExtensions(context)).ToArray();

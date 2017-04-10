@@ -2,7 +2,7 @@
 
 namespace SmtpServer
 {
-    public interface ISmtpSessionContext : ISessionContext
+    internal interface ISmtpSessionContext : ISessionContext
     {
         /// <summary>
         /// Indicates to the session that it should quit.
@@ -17,12 +17,12 @@ namespace SmtpServer
         /// <summary>
         /// The transfer encoding that is required for the message.
         /// </summary>
-        ContentEncoding TransferEncoding { get; set; }
+        ContentTransferEncoding TransferEncoding { get; set; }
 
         /// <summary>
         /// Gets the current transaction.
         /// </summary>
-        ISmtpTransaction Transaction { get; }
+        ISmtpMessageTransaction Transaction { get; }
 
         /// <summary>
         /// Gets the current state machine.

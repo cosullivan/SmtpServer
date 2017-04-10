@@ -13,7 +13,7 @@ namespace SmtpServer.Protocol
         /// <param name="context">The execution context to operate on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which asynchronously performs the execution.</returns>
-        public override Task ExecuteAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
+        internal override Task ExecuteAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
         {
             context.Quit();
 

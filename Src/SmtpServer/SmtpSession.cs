@@ -26,7 +26,7 @@ namespace SmtpServer
             _tcpClient = tcpClient;
             _processor = new SmtpCommandProcessor(options.MaxRetryCount);
             
-            Context = new SmtpSessionContext(new SmtpTransaction(), stateMachine, tcpClient.Client.RemoteEndPoint)
+            Context = new SmtpSessionContext(new SmtpMessageTransaction(), stateMachine, tcpClient.Client.RemoteEndPoint)
             {
                 Text = new NetworkTextStream(tcpClient.GetStream())
             };

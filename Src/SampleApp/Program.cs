@@ -19,13 +19,22 @@ namespace SampleApp
 {
     class Program
     {
+        // https://tools.ietf.org/html/rfc2045
+
         static void Main(string[] args)
         {
-            //var content = "Subject test çãõáéíóú";
-            //var reader =new StreamReader(new MemoryStream(Encoding.UTF8.GetBytes(content)), Encoding.UTF8);
-            //Console.WriteLine(reader.ReadToEnd());
-            //return;
-
+            //IMessage
+            //  - MessageType
+            //  - Data (Stream)
+            //IPlainTextMessage : IMessage
+            //IMimeMessage : IMessage
+            //  - MimeVersion
+            //  - ContentType
+            //  - ContentTransferEncoding
+            //IMessageReader
+            //  - ReadAsync()
+            //IPlainTextReader
+            //IMimeMessageReader    - this would upgrade the stream to read the correct format
 
             var cancellationTokenSource = new CancellationTokenSource();
 
@@ -42,18 +51,18 @@ namespace SampleApp
                 .MailboxFilter(new ConsoleMailboxFilter())
                 .Build();
 
-            //var s = RunServerAsync(options, cancellationTokenSource.Token);
-            //var c = RunClientAsync("A", cancellationTokenSource.Token);
+            var s = RunServerAsync(options, cancellationTokenSource.Token);
+            var c = RunClientAsync("A", cancellationTokenSource.Token);
 
-            //Console.WriteLine("Press any key to continue");
-            //Console.ReadKey();
+            Console.WriteLine("Press any key to continue");
+            Console.ReadKey();
 
-            //cancellationTokenSource.Cancel();
+            cancellationTokenSource.Cancel();
 
-            //s.WaitWithoutException();
-            //c.WaitWithoutException();
+            s.WaitWithoutException();
+            c.WaitWithoutException();
 
-            //return;
+            return;
 
             if (args == null || args.Length == 0)
             {

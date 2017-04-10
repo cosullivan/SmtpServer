@@ -1,8 +1,6 @@
-﻿using SmtpServer.Mail;
-
-namespace SmtpServer
+﻿namespace SmtpServer
 {
-    public interface ISmtpTransaction : IMimeMessage
+    internal interface ISmtpMessageTransaction : IMessageTransaction
     {
         /// <summary>
         /// Reset the current transaction.

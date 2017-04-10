@@ -31,7 +31,7 @@ namespace SmtpServer.Protocol
         /// <param name="context">The execution context to operate on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which asynchronously performs the execution.</returns>
-        public override async Task ExecuteAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
+        internal override async Task ExecuteAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
         {
             context.Transaction.Reset();
 
@@ -76,24 +76,20 @@ namespace SmtpServer.Protocol
         /// Returns the content transfer encoding if it has been specified through the extended mail parameters.
         /// </summary>
         /// <returns>The required content transfer encoding to use.</returns>
-        ContentEncoding? GetTransferEncoding()
-        {
-            if (Is8BitMime())
-            {
-                return ContentEncoding.EightBit;
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Returns a value indicating whethere or not the client has specified that the message body is in 8BITMIME.
-        /// </summary>
-        /// <returns>true if the message body is in 8BITMIME format, false if not.</returns>
-        bool Is8BitMime()
+        ContentTransferEncoding? GetTransferEncoding()
         {
             string value;
-            return Parameters.TryGetValue("BODY", out value) && String.Equals(value, "8BITMIME", StringComparison.OrdinalIgnoreCase);
+            if (Parameters.TryGetValue("BODY", out value) == false)
+            {
+                return ContentTransferEncoding.SevenBit;
+            }
+
+            if (String.Equals(value, "8BITMIME", StringComparison.OrdinalIgnoreCase))
+            {
+                return ContentTransferEncoding.EightBit;
+            }
+
+            return ContentTransferEncoding.SevenBit;
         }
 
         /// <summary>

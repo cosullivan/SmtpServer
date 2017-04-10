@@ -1,9 +1,10 @@
 ﻿using System.Collections.Generic;
-using System.Text;
+using SmtpServer.Content;
+using SmtpServer.Mail;
 
-namespace SmtpServer.Mail
+namespace SmtpServer
 {
-    public interface IMimeMessage
+    public interface IMessageTransaction
     {
         /// <summary>
         /// Gets or sets the mailbox that is sending the message.
@@ -16,8 +17,8 @@ namespace SmtpServer.Mail
         IList<IMailbox> To { get; }
 
         /// <summary>
-        /// Gets the MIME content.
+        /// Gets the message that was read.
         /// </summary>
-        StringBuilder Mime { get; }
+        IMessage Message { get; set; }
     }
 }

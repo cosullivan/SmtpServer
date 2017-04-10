@@ -19,7 +19,7 @@ namespace SmtpServer
         /// <param name="transaction">The SMTP transaction.</param>
         /// <param name="stateMachine">The current state machine for the session.</param>
         /// <param name="remoteEndPoint">The remote endpoint of the client making the connection.</param>
-        internal SmtpSessionContext(ISmtpTransaction transaction, ISmtpStateMachine stateMachine, EndPoint remoteEndPoint)
+        internal SmtpSessionContext(ISmtpMessageTransaction transaction, ISmtpStateMachine stateMachine, EndPoint remoteEndPoint)
         {
             Transaction = transaction;
             StateMachine = stateMachine;
@@ -51,12 +51,12 @@ namespace SmtpServer
         /// <summary>
         /// The transfer encoding that is required for the message.
         /// </summary>
-        public ContentEncoding TransferEncoding { get; set; }
+        public ContentTransferEncoding TransferEncoding { get; set; }
 
         /// <summary>
         /// Gets the current transaction.
         /// </summary>
-        public ISmtpTransaction Transaction { get; }
+        public ISmtpMessageTransaction Transaction { get; }
 
         /// <summary>
         /// Gets the current state machine.
