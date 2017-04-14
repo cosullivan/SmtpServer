@@ -1,4 +1,4 @@
-﻿namespace SmtpServer.Protocol.Text
+﻿namespace SmtpServer.Text
 {
     public enum TokenKind
     {

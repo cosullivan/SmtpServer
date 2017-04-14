@@ -45,12 +45,15 @@
     <Compile Include="Content\IMessage.cs" />
     <Compile Include="Content\IMessageReader.cs" />
     <Compile Include="Content\IMimeMessage.cs" />
-    <Compile Include="Content\IPlainMessage.cs" />
+    <Compile Include="Content\ITextMessage.cs" />
     <Compile Include="Content\MessageReaderFactory.cs" />
     <Compile Include="Content\MessageType.cs" />
-    <Compile Include="Content\PlainMessage.cs" />
-    <Compile Include="Content\PlainMessageReader.cs" />
+    <Compile Include="Content\MimeMessage.cs" />
+    <Compile Include="Content\MimeMessageReader.cs" />
+    <Compile Include="Content\TextMessage.cs" />
+    <Compile Include="Content\TextMessageReader.cs" />
     <Compile Include="Extensions\StreamReaderExtensions.cs" />
+    <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="Extensions\TaskExtensions.cs" />
     <Compile Include="Extensions\TraceSwitchExtensions.cs" />
     <Compile Include="IMessageTransaction.cs" />
@@ -61,6 +64,7 @@
     <Compile Include="ITextStream.cs" />
     <Compile Include="Mail\IMailbox.cs" />
     <Compile Include="Mail\Mailbox.cs" />
+    <Compile Include="Mime\MimeParser.cs" />
     <Compile Include="NetworkTextStream.cs" />
     <Compile Include="OptionsBuilder.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -86,12 +90,6 @@
     <Compile Include="Protocol\SmtpState.cs" />
     <Compile Include="Protocol\SmtpStateMachine.cs" />
     <Compile Include="Protocol\StartTlsCommand.cs" />
-    <Compile Include="Protocol\Text\ITokenEnumeratorCheckpoint.cs" />
-    <Compile Include="Protocol\Text\StringTokenReader.cs" />
-    <Compile Include="Protocol\Text\Token.cs" />
-    <Compile Include="Protocol\Text\TokenEnumerator.cs" />
-    <Compile Include="Protocol\Text\TokenKind.cs" />
-    <Compile Include="Protocol\Text\TokenReader.cs" />
     <Compile Include="SessionEventArgs.cs" />
     <Compile Include="SmtpCommandEventArgs.cs" />
     <Compile Include="SmtpCommandExecutingEventArgs.cs" />
@@ -112,6 +110,12 @@
     <Compile Include="Storage\MailboxFilter.cs" />
     <Compile Include="Storage\MailboxFilterResult.cs" />
     <Compile Include="Storage\MessageStore.cs" />
+    <Compile Include="Text\StringTokenReader.cs" />
+    <Compile Include="Text\Token.cs" />
+    <Compile Include="Text\TokenEnumerator.cs" />
+    <Compile Include="Text\TokenKind.cs" />
+    <Compile Include="Text\TokenParser.cs" />
+    <Compile Include="Text\TokenReader.cs" />
     <Compile Include="Tracing\TracingSmtpCommandVisitor.cs" />
   </ItemGroup>
   <ItemGroup>

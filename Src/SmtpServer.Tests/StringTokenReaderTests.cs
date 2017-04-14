@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using SmtpServer.Protocol.Text;
+using SmtpServer.Text;
 using Xunit;
 
 namespace SmtpServer.Tests

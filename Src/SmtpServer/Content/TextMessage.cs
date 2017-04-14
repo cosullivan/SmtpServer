@@ -2,13 +2,13 @@ using System.IO;
 
 namespace SmtpServer.Content
 {
-    internal sealed class PlainMessage : IPlainMessage
+    internal sealed class TextMessage : ITextMessage
     {
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="content">The content for the message.</param>
-        public PlainMessage(Stream content)
+        public TextMessage(Stream content)
         {
             Content = content;
         }
@@ -18,7 +18,7 @@ namespace SmtpServer.Content
         /// </summary>
         public MessageType Type
         {
-            get { return MessageType.Plain; }
+            get { return MessageType.Text; }
         }
 
         /// <summary>

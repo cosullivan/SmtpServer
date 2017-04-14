@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer;
+using SmtpServer.Content;
 using SmtpServer.Mail;
 using SmtpServer.Protocol;
 using SmtpServer.Storage;
@@ -24,7 +25,7 @@ namespace SampleApp
             Console.WriteLine("From: {0} ({1})", transaction.From, context.RemoteEndPoint);
             Console.WriteLine("To: {0}", String.Join(",", transaction.To.Select(m => m.AsAddress())));
 
-            Console.WriteLine(new StreamReader(transaction.Message.Content).ReadToEnd());
+            Console.WriteLine(new StreamReader(((ITextMessage)transaction.Message).Content).ReadToEnd());
 
             return Task.FromResult(SmtpResponse.Ok);
         }

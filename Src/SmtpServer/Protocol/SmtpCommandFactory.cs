@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using SmtpServer.Mail;
-using SmtpServer.Protocol.Text;
+using SmtpServer.Text;
 
 namespace SmtpServer.Protocol
 {

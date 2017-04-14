@@ -1,5 +1,5 @@
 ﻿using SmtpServer.Protocol;
-using SmtpServer.Protocol.Text;
+using SmtpServer.Text;
 using Xunit;
 using Xunit.Extensions;
 

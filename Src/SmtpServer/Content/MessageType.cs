@@ -3,12 +3,12 @@
     public enum MessageType
     {
         /// <summary>
-        /// A plain ASCII message.
+        /// A plain text ASCII message (adhering to the 822 RFC).
         /// </summary>
-        Plain,
+        Text,
 
         /// <summary>
-        /// A MIME encoded message.
+        /// A MIME encoded message (adhering to the 2045 RFC).
         /// </summary>
         Mime
     }

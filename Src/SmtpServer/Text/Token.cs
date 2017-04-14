@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 
-namespace SmtpServer.Protocol.Text
+namespace SmtpServer.Text
 {
     [DebuggerDisplay("[{Kind}] {Text}")]
     public struct Token

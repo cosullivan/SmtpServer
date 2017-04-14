@@ -13,6 +13,8 @@ using SmtpServer.Tracing;
 using MailKit.Net.Smtp;
 using MimeKit;
 using MimeKit.Text;
+using SmtpServer.Mime;
+using SmtpServer.Text;
 using SmtpClient = MailKit.Net.Smtp.SmtpClient;
 
 namespace SampleApp
@@ -23,18 +25,13 @@ namespace SampleApp
 
         static void Main(string[] args)
         {
-            //IMessage
-            //  - MessageType
-            //  - Data (Stream)
-            //IPlainTextMessage : IMessage
-            //IMimeMessage : IMessage
-            //  - MimeVersion
-            //  - ContentType
-            //  - ContentTransferEncoding
-            //IMessageReader
-            //  - ReadAsync()
-            //IPlainTextReader
-            //IMimeMessageReader    - this would upgrade the stream to read the correct format
+            var text = "MIME-Version: 1.0";
+            var parser = new SmtpServer.Mime.MimeParser(new TokenEnumerator(new StringTokenReader(text)));
+
+            parser.TryMakeMimeVersion(out MimeVersion version);
+            Console.WriteLine(version);
+
+            return;
 
             var cancellationTokenSource = new CancellationTokenSource();
 

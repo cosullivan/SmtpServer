@@ -1,6 +1,4 @@
-﻿using System.IO;
-
-namespace SmtpServer.Content
+﻿namespace SmtpServer.Content
 {
     public sealed class MimeMessage : IMimeMessage
     {
@@ -8,11 +6,9 @@ namespace SmtpServer.Content
         /// Constructor.
         /// </summary>
         /// <param name="version">The MIME version.</param>
-        /// <param name="content">The MIME content.</param>
-        public MimeMessage(decimal version, Stream content)
+        public MimeMessage(decimal version)
         {
             Version = version;
-            Content = content;
         }
 
         /// <summary>
@@ -27,10 +23,5 @@ namespace SmtpServer.Content
         {
             get { return MessageType.Mime; }
         }
-
-        /// <summary>
-        /// The message content.
-        /// </summary>
-        public Stream Content { get; set; }
     }
 }

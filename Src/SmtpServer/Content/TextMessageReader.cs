@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SmtpServer.Content
 {
-    internal sealed class PlainMessageReader : IMessageReader
+    internal sealed class TextMessageReader : IMessageReader
     {
         readonly Stream _stream;
 
@@ -14,7 +14,7 @@ namespace SmtpServer.Content
         /// Constructor.
         /// </summary>
         /// <param name="stream">The stream that is being read from.</param>
-        public PlainMessageReader(Stream stream)
+        public TextMessageReader(Stream stream)
         {
             _stream = stream;
         }
@@ -31,7 +31,7 @@ namespace SmtpServer.Content
             var stream = await ReceiveShortLineContentAsync(reader, cancellationToken).ConfigureAwait(false);
             stream.Position = 0;
 
-            return new PlainMessage(stream);
+            return new TextMessage(stream);
         }
 
         /// <summary>

@@ -2,12 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace SmtpServer.Protocol.Text
+namespace SmtpServer.Text
 {
     public sealed class TokenEnumerator
     {
         readonly Token[] _tokens;
-        int _index = 0;
 
         /// <summary>
         /// Constructor.
@@ -53,9 +52,9 @@ namespace SmtpServer.Protocol.Text
         /// <returns>The token at the given number of tokens past the current index, or Token.None if no token exists.</returns>
         public Token Peek(int count = 0)
         {
-            if (_index + count < _tokens.Length)
+            if (Index + count < _tokens.Length)
             {
-                return _tokens[_index + count];
+                return _tokens[Index + count];
             }
 
             return Token.None;
@@ -89,7 +88,7 @@ namespace SmtpServer.Protocol.Text
         /// <returns>The last token that was consumed.</returns>
         public Token Take(int count = 1)
         {
-            _index += count;
+            Index += count;
 
             // return the last token that was consumed
             return Peek(-1);
@@ -105,49 +104,16 @@ namespace SmtpServer.Protocol.Text
         }
 
         /// <summary>
-        /// Create a checkpoint on the enumerator that can be rolled back to.
-        /// </summary>
-        /// <returns>The checkpoint handle.</returns>
-        internal ITokenEnumeratorCheckpoint Checkpoint()
-        {
-            return new TokenEnumeratorCheckpoint(this);
-        }
-
-        /// <summary>
         /// Gets the number of tokens left in the enumerator.
         /// </summary>
         public int Count
         {
-            get { return Math.Max(0, _tokens.Length - _index); }
+            get { return Math.Max(0, _tokens.Length - Index); }
         }
 
-        internal class TokenEnumeratorCheckpoint : ITokenEnumeratorCheckpoint
-        {
-            readonly TokenEnumerator _tokenEnumerator;
-            readonly int _index;
-
-            /// <summary>
-            /// Constructor.
-            /// </summary>
-            /// <param name="tokenEnumerator">The token enumerator to create the checkpoint on.</param>
-            internal TokenEnumeratorCheckpoint(TokenEnumerator tokenEnumerator)
-            {
-                _tokenEnumerator = tokenEnumerator;
-                _index = tokenEnumerator._index;
-            }
-
-            /// <summary>
-            /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-            /// </summary>
-            public void Dispose() { }
-
-            /// <summary>
-            /// Rollback to the previous position in the numerator.
-            /// </summary>
-            public void Rollback()
-            {
-                _tokenEnumerator._index = _index;
-            }
-        }
+        /// <summary>
+        /// The current index into the tokens.
+        /// </summary>
+        public int Index { get; internal set; }
     }
 }

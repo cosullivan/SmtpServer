@@ -1,4 +1,4 @@
-﻿using SmtpServer.Protocol.Text;
+﻿using SmtpServer.Text;
 
 namespace SmtpServer.Protocol
 {

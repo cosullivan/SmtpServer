@@ -14,7 +14,7 @@ namespace SmtpServer.Content
         /// <returns>The message reader for the given stream.</returns>
         public Task<IMessageReader> CreateInstanceAsync(Stream stream, CancellationToken cancellationToken = default(CancellationToken))
         {
-            IMessageReader reader = new PlainMessageReader(stream);
+            IMessageReader reader = new TextMessageReader(stream);
 
             return Task.FromResult(reader);
         }

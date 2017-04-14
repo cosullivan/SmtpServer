@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SmtpServer.Protocol.Text
+namespace SmtpServer.Text
 {
     public sealed class StringTokenReader : TokenReader
     {

@@ -27,11 +27,9 @@ namespace SmtpServer.Content
         {
             var reader = new StreamReader(_stream, Encoding.UTF8);
 
-            HERE: IMimeMessage should have a Message Headers and then the content/body
-
             Stream stream = null;
 
-            return new MimeMessage(1.0m, stream);
+            return new MimeMessage(1.0m);
         }
     }
 }

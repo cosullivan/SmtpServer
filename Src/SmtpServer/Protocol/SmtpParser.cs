@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using SmtpServer.Mail;
-using SmtpServer.Protocol.Text;
+using SmtpServer.Text;
 
 namespace SmtpServer.Protocol
 {
@@ -788,15 +788,14 @@ namespace SmtpServer.Protocol
         /// <returns>true if the matching function successfully made a match, false if not.</returns>
         static bool TryMake<T>(TokenEnumerator enumerator, TryMakeDelegate<T> make, out T found)
         {
-            using (var checkpoint = enumerator.Checkpoint())
-            {
-                if (make(enumerator, out found))
-                {
-                    return true;
-                }
+            var index = enumerator.Index;
 
-                checkpoint.Rollback();
+            if (make(enumerator, out found))
+            {
+                return true;
             }
+
+            enumerator.Index = index;
 
             return false;
         }
