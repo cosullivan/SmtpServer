@@ -48,7 +48,6 @@
     <Compile Include="Content\ITextMessage.cs" />
     <Compile Include="Content\MessageReaderFactory.cs" />
     <Compile Include="Content\MessageType.cs" />
-    <Compile Include="Content\MimeMessage.cs" />
     <Compile Include="Content\MimeMessageReader.cs" />
     <Compile Include="Content\TextMessage.cs" />
     <Compile Include="Content\TextMessageReader.cs" />
