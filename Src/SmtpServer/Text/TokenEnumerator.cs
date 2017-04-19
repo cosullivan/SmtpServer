@@ -84,11 +84,10 @@ namespace SmtpServer.Text
         /// <summary>
         /// Take the given number of tokens.
         /// </summary>
-        /// <param name="count">The number of tokens to consume.</param>
         /// <returns>The last token that was consumed.</returns>
-        public Token Take(int count = 1)
+        public Token Take()
         {
-            Index += count;
+            Index += 1;
 
             // return the last token that was consumed
             return Peek(-1);

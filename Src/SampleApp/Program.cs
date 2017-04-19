@@ -84,6 +84,21 @@ namespace SampleApp
                     return await TextTokenAsync(cancellationToken).ConfigureAwait(false);
                 }
 
+                if (Char.IsNumber(ch))
+                {
+                    return await NumberTokenAsync(cancellationToken).ConfigureAwait(false);
+                }
+
+                return SingleCharacterToken(ch);
+            }
+
+            /// <summary>
+            /// Creates a single character token that represents the given character.
+            /// </summary>
+            /// <param name="ch">The character to create the token for.</param>
+            /// <returns>The token that represents the given character.</returns>
+            Token SingleCharacterToken(char ch)
+            {
                 _index++;
 
                 if (Char.IsPunctuation(ch))
@@ -112,6 +127,16 @@ namespace SampleApp
             async Task<Token> TextTokenAsync(CancellationToken cancellationToken)
             {
                 return CreateToken(TokenKind.Text, await ConsumeAsync(Char.IsLetterOrDigit, cancellationToken));
+            }
+
+            /// <summary>
+            /// Returns a Number token from the current position.
+            /// </summary>
+            /// <param name="cancellationToken">The cancellation token.</param>
+            /// <returns>The number token that was found at the current position.</returns>
+            async Task<Token> NumberTokenAsync(CancellationToken cancellationToken)
+            {
+                return CreateToken(TokenKind.Number, await ConsumeAsync(Char.IsDigit, cancellationToken));
             }
 
             /// <summary>
@@ -175,6 +200,55 @@ namespace SampleApp
             }
         }
 
+        public sealed class TokenEnumerator2
+        {
+            readonly StreamTokenReader _tokenReader;
+            Token _peek = default(Token);
+
+            /// <summary>
+            /// Constructor.
+            /// </summary>
+            /// <param name="tokenReader">The token reader.</param>
+            public TokenEnumerator2(StreamTokenReader tokenReader)
+            {
+                _tokenReader = tokenReader;
+            }
+
+            /// <summary>
+            /// Peek at the next token.
+            /// </summary>
+            /// <param name="cancellationToken">The cancellation token.</param>
+            /// <returns>The token at the given number of tokens past the current index, or Token.None if no token exists.</returns>
+            public async Task<Token> PeekAsync(CancellationToken cancellationToken = default(CancellationToken))
+            {
+                if (_peek == default(Token))
+                {
+                    _peek = await _tokenReader.NextTokenAsync(cancellationToken);
+                }
+
+                return _peek;
+            }
+
+            /// <summary>
+            /// Take the given number of tokens.
+            /// </summary>
+            /// <param name="cancellationToken">The cancellation token.</param>
+            /// <returns>The last token that was consumed.</returns>
+            public async Task<Token> TakeAsync(CancellationToken cancellationToken = default(CancellationToken))
+            {
+                var token = _peek;
+
+                if (token == default(Token))
+                {
+                    return await _tokenReader.NextTokenAsync(cancellationToken);
+                }
+
+                _peek = default(Token);
+
+                return token;
+            }
+        }
+
         static void Main(string[] args)
         {
             //var text = "MIME-Version: 1.0";
@@ -200,10 +274,10 @@ namespace SampleApp
             {
                 var reader = new StreamTokenReader(stream, 5);
 
-                Token token;
-                while ((token = reader.NextTokenAsync().Result) != Token.None)
+                var enumerator = new TokenEnumerator2(reader);
+                while (enumerator.PeekAsync().Result != Token.None)
                 {
-                    Console.WriteLine(token);
+                    Console.WriteLine(enumerator.TakeAsync().Result);
                 }
             }
 
