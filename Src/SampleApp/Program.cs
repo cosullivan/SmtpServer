@@ -126,7 +126,7 @@ namespace SampleApp
             /// <returns>The text token that was found at the current position.</returns>
             async Task<Token> TextTokenAsync(CancellationToken cancellationToken)
             {
-                return CreateToken(TokenKind.Text, await ConsumeAsync(Char.IsLetterOrDigit, cancellationToken));
+                return CreateToken(TokenKind.Text, await ConsumeAsync(Char.IsLetter, cancellationToken));
             }
 
             /// <summary>
@@ -200,7 +200,24 @@ namespace SampleApp
             }
         }
 
-        public sealed class TokenEnumerator2
+        public interface ITokenEnumerator
+        {
+            /// <summary>
+            /// Peek at the next token.
+            /// </summary>
+            /// <param name="cancellationToken">The cancellation token.</param>
+            /// <returns>The token at the given number of tokens past the current index, or Token.None if no token exists.</returns>
+            Task<Token> PeekAsync(CancellationToken cancellationToken = default(CancellationToken));
+
+            /// <summary>
+            /// Take the given number of tokens.
+            /// </summary>
+            /// <param name="cancellationToken">The cancellation token.</param>
+            /// <returns>The last token that was consumed.</returns>
+            Task<Token> TakeAsync(CancellationToken cancellationToken = default(CancellationToken));
+        }
+
+        public sealed class TokenEnumerator2 : ITokenEnumerator
         {
             readonly StreamTokenReader _tokenReader;
             Token _peek = default(Token);
@@ -249,6 +266,132 @@ namespace SampleApp
             }
         }
 
+        public interface ITokenEnumeratorCheckpoint : IDisposable
+        {
+            /// <summary>
+            /// Rollback to the checkpoint;
+            /// </summary>
+            void Rollback();
+        }
+
+        public class TransactionalTokenEnumerator : ITokenEnumerator
+        {
+            readonly ITokenEnumerator _tokenEnumerator;
+            readonly Stack<TokenEnumeratorCheckpoint> _checkpoints = new Stack<TokenEnumeratorCheckpoint>();
+            
+            /// <summary>
+            /// Constructor.
+            /// </summary>
+            /// <param name="tokenEnumerator">The inner enumerator to buffer.</param>
+            public TransactionalTokenEnumerator(ITokenEnumerator tokenEnumerator)
+            {
+                _tokenEnumerator = tokenEnumerator;
+                _checkpoints.Push(new TokenEnumeratorCheckpoint(this));
+            }
+
+            /// <summary>
+            /// Peek at the next token.
+            /// </summary>
+            /// <param name="cancellationToken">The cancellation token.</param>
+            /// <returns>The token at the given number of tokens past the current index, or Token.None if no token exists.</returns>
+            public async Task<Token> PeekAsync(CancellationToken cancellationToken = default(CancellationToken))
+            {
+                var checkpoint = _checkpoints.Peek();
+
+                if (checkpoint.Index >= checkpoint.Tokens.Count)
+                {
+                    checkpoint.Tokens.Add(await _tokenEnumerator.TakeAsync(cancellationToken));
+                }
+
+                return checkpoint.Tokens[checkpoint.Index];
+            }
+
+            /// <summary>
+            /// Take the given number of tokens.
+            /// </summary>
+            /// <param name="cancellationToken">The cancellation token.</param>
+            /// <returns>The last token that was consumed.</returns>
+            public async Task<Token> TakeAsync(CancellationToken cancellationToken = default(CancellationToken))
+            {
+                var token = await PeekAsync(cancellationToken);
+
+                var checkpoint = _checkpoints.Peek();
+                checkpoint.Index++;
+
+                if (_checkpoints.Count == 1)
+                {
+                    checkpoint.Tokens.RemoveRange(0, checkpoint.Index);
+                    checkpoint.Index = 0;
+                }
+
+                return token;
+            }
+
+            /// <summary>
+            /// Create a checkpoint that will ensure the tokens are kept in the buffer from this point forward.
+            /// </summary>
+            /// <returns>A disposable instance that is used to release the checkpoint.</returns>
+            public ITokenEnumeratorCheckpoint Checkpoint()
+            {
+                _checkpoints.Push(new TokenEnumeratorCheckpoint(this));
+
+                return _checkpoints.Peek();
+            }
+
+            #region TokenEnumeratorCheckpoint
+
+            class TokenEnumeratorCheckpoint : ITokenEnumeratorCheckpoint
+            {
+                readonly TransactionalTokenEnumerator _enumerator;
+
+                /// <summary>
+                /// Constructor.
+                /// </summary>
+                /// <param name="enumerator">The enumerator that is being checkpointed.</param>
+                public TokenEnumeratorCheckpoint(TransactionalTokenEnumerator enumerator)
+                {
+                    _enumerator = enumerator;
+
+                    Tokens = new List<Token>();
+                }
+
+                /// <summary>
+                /// Rollback to the checkpoint;
+                /// </summary>
+                public void Rollback()
+                {
+                    var source = _enumerator._checkpoints.Pop();
+
+                    var destination = _enumerator._checkpoints.Peek();
+                    destination.Tokens.AddRange(source.Tokens);
+                }
+
+                /// <summary>
+                /// Release the checkpoint.
+                /// </summary>
+                public void Dispose()
+                {
+                    var source = _enumerator._checkpoints.Pop();
+
+                    var destination = _enumerator._checkpoints.Peek();
+                    destination.Tokens.AddRange(source.Tokens);
+                    destination.Index += source.Index;
+                }
+
+                /// <summary>
+                /// The tokens for this checkpoint.
+                /// </summary>
+                internal List<Token> Tokens { get; }
+
+                /// <summary>
+                /// The position into the list of tokens.
+                /// </summary>
+                internal int Index { get; set; }
+            }
+
+            #endregion
+        }
+
         static void Main(string[] args)
         {
             //var text = "MIME-Version: 1.0";
@@ -269,16 +412,45 @@ namespace SampleApp
             //Console.WriteLine(mimeMessage);
 
             var webClient = new WebClient();
-            using (var stream = webClient.OpenRead("http://memberzonedev.org"))
-            //using (var stream = new System.IO.MemoryStream(Encoding.ASCII.GetBytes("abc-d.3e.fghijkl-mno")))
+            //using (var stream = webClient.OpenRead("http://memberzonedev.org"))
+            using (var stream = new System.IO.MemoryStream(Encoding.ASCII.GetBytes("a1b2c3d4e5f6g7")))
             {
                 var reader = new StreamTokenReader(stream, 5);
 
-                var enumerator = new TokenEnumerator2(reader);
-                while (enumerator.PeekAsync().Result != Token.None)
-                {
-                    Console.WriteLine(enumerator.TakeAsync().Result);
-                }
+                var enumerator = new TransactionalTokenEnumerator(new TokenEnumerator2(reader));
+                //while (enumerator.PeekAsync().Result != Token.None)
+                //{
+                //    Console.WriteLine(enumerator.TakeAsync().Result);
+                //}
+
+                enumerator.PeekAsync().Wait();
+                Console.WriteLine(enumerator.TakeAsync().Result);
+
+                enumerator.PeekAsync().Wait();
+                Console.WriteLine(enumerator.TakeAsync().Result);
+
+                var checkpoint = enumerator.Checkpoint();
+
+                enumerator.PeekAsync().Wait();
+                Console.WriteLine(enumerator.TakeAsync().Result);
+
+                checkpoint.Dispose();
+
+                checkpoint = enumerator.Checkpoint();
+
+                enumerator.PeekAsync().Wait();
+                Console.WriteLine(enumerator.TakeAsync().Result);
+
+                enumerator.PeekAsync().Wait();
+                Console.WriteLine(enumerator.TakeAsync().Result);
+
+                enumerator.PeekAsync().Wait();
+                Console.WriteLine(enumerator.TakeAsync().Result);
+
+                checkpoint.Rollback();
+
+                enumerator.PeekAsync().Wait();
+                Console.WriteLine(enumerator.TakeAsync().Result);
             }
 
             return;

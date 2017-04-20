@@ -5,36 +5,36 @@
         /// <summary>
         /// No token has been defined.
         /// </summary>
-        None = 0,
+        None = 1,
 
         /// <summary>
         /// A text.
         /// </summary>
-        Text,
+        Text = 2,
 
         /// <summary>
         /// A number.
         /// </summary>
-        Number,
+        Number = 3,
 
         /// <summary>
         /// A symbol.
         /// </summary>
-        Symbol,
+        Symbol = 4,
 
         /// <summary>
         /// A punctuation.
         /// </summary>
-        Punctuation,
+        Punctuation = 5,
 
         /// <summary>
         /// A single space character.
         /// </summary>
-        Space,
+        Space = 6,
 
         /// <summary>
         /// Unknown.
         /// </summary>
-        Other,
+        Other = 7,
     }
 }
