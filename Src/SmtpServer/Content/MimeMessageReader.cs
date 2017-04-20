@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.Mime;
+using SmtpServer.Text;
 
 namespace SmtpServer.Content
 {
@@ -32,9 +33,13 @@ namespace SmtpServer.Content
 
         Task<MimeMessage> ReadMessageAsync(CancellationToken cancellationToken)
         {
-            var reader = new StreamReader(_stream, Encoding.UTF8);
+            //var reader = new StreamReader(_stream, Encoding.UTF8);
             //reader.ReadLineAsync()
             //var headers = await ReadMessageHeadersAsync(cancellationToken);
+
+            var tokenReader = new StreamTokenReader(_stream);
+
+            //HERE: MimeParser.TryMakeMimeHeaders(out )
 
             return null;
         }

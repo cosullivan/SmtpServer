@@ -26,6 +26,11 @@ namespace SampleApp
     // https://tools.ietf.org/html/rfc2045
     class Program
     {
+        static (int a, int b) Test(int c)
+        {
+            return (1, 2);
+        }
+
         static void Main(string[] args)
         {
             //var text = "MIME-Version: 1.0";
@@ -40,52 +45,24 @@ namespace SampleApp
             //parser.TryMakeContentType(out ContentType contentType);
             //Console.WriteLine(contentType);
 
-            //var mimeMessageReader = new MimeMessageReader(File.OpenRead(@"C:\Dev\temp\msg.txt"));
-            //var mimeMessage = mimeMessageReader.ReadAsync().Result;
+            var mimeMessageReader = new MimeMessageReader(File.OpenRead(@"C:\Dev\temp\msg.txt"));
+            var mimeMessage = mimeMessageReader.ReadAsync().Result;
 
-            //Console.WriteLine(mimeMessage);
+            Console.WriteLine(mimeMessage);
 
-            var webClient = new WebClient();
-            //using (var stream = webClient.OpenRead("http://memberzonedev.org"))
-            using (var stream = new System.IO.MemoryStream(Encoding.ASCII.GetBytes("a1b2c3d4e5f6g7")))
-            {
-                var reader = new StreamTokenReader(stream, 5);
+            //var webClient = new WebClient();
+            ////using (var stream = webClient.OpenRead("http://memberzonedev.org"))
+            //using (var stream = new System.IO.MemoryStream(Encoding.ASCII.GetBytes("a 1b2 c3d 4e5f6g 7")))
+            //{
+            //    var reader = new StreamTokenReader(stream, 5);
 
-                var enumerator = new TokenEnumerator2(reader);
-                //while (enumerator.PeekAsync().Result != Token.None)
-                //{
-                //    Console.WriteLine(enumerator.TakeAsync().Result);
-                //}
+            //    var enumerator = new TokenEnumerator2(reader, ignoreWhiteSpace: true);
 
-                enumerator.PeekAsync().Wait();
-                Console.WriteLine(enumerator.TakeAsync().Result);
-
-                enumerator.PeekAsync().Wait();
-                Console.WriteLine(enumerator.TakeAsync().Result);
-
-                var checkpoint = enumerator.Checkpoint();
-
-                enumerator.PeekAsync().Wait();
-                Console.WriteLine(enumerator.TakeAsync().Result);
-
-                checkpoint.Dispose();
-
-                checkpoint = enumerator.Checkpoint();
-
-                enumerator.PeekAsync().Wait();
-                Console.WriteLine(enumerator.TakeAsync().Result);
-
-                enumerator.PeekAsync().Wait();
-                Console.WriteLine(enumerator.TakeAsync().Result);
-
-                enumerator.PeekAsync().Wait();
-                Console.WriteLine(enumerator.TakeAsync().Result);
-
-                checkpoint.Rollback();
-
-                enumerator.PeekAsync().Wait();
-                Console.WriteLine(enumerator.TakeAsync().Result);
-            }
+            //    while (enumerator.PeekAsync().Result != Token.None)
+            //    {
+            //        Console.WriteLine(enumerator.TakeAsync().Result);
+            //    }
+            //}
 
             return;
 

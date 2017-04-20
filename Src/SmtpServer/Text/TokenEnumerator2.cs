@@ -7,15 +7,18 @@ namespace SmtpServer.Text
     public sealed class TokenEnumerator2 : ITokenEnumerator
     {
         readonly StreamTokenReader _tokenReader;
+        readonly bool _ignoreWhiteSpace;
         readonly Stack<TokenEnumeratorCheckpoint> _checkpoints = new Stack<TokenEnumeratorCheckpoint>();
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="tokenReader">The token reader.</param>
-        public TokenEnumerator2(StreamTokenReader tokenReader)
+        /// <param name="ignoreWhiteSpace">Indicates whether or not to ignore whitespace.</param>
+        public TokenEnumerator2(StreamTokenReader tokenReader, bool ignoreWhiteSpace = false)
         {
             _tokenReader = tokenReader;
+            _ignoreWhiteSpace = ignoreWhiteSpace;
             _checkpoints.Push(new TokenEnumeratorCheckpoint(this));
         }
 
@@ -30,7 +33,14 @@ namespace SmtpServer.Text
 
             if (checkpoint.Index >= checkpoint.Tokens.Count)
             {
-                checkpoint.Tokens.Add(await _tokenReader.NextTokenAsync(cancellationToken));
+                var token = await _tokenReader.NextTokenAsync(cancellationToken);
+
+                while (_ignoreWhiteSpace && token.Kind == TokenKind.Space)
+                {
+                    token = await _tokenReader.NextTokenAsync(cancellationToken);
+                }
+
+                checkpoint.Tokens.Add(token);
             }
 
             return checkpoint.Tokens[checkpoint.Index];

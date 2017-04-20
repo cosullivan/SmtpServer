@@ -14,7 +14,7 @@
         /// Constructor.
         /// </summary>
         /// <param name="enumerator">The token enumerator to handle the incoming tokens.</param>
-        protected TokenParser(TokenEnumerator enumerator)
+        protected TokenParser(ITokenEnumerator enumerator)
         {
             Enumerator = enumerator;
         }
@@ -27,20 +27,21 @@
         /// <returns>true if the match could be made, false if not.</returns>
         protected bool TryMake<TOut>(TryMakeDelegate<TOut> @delegate, out TOut found)
         {
-            var index = Enumerator.Index;
+            var checkpoint = Enumerator.Checkpoint();
 
             if (@delegate(out found) == false)
             {
-                Enumerator.Index = index;
+                checkpoint.Rollback();
                 return false;
             }
 
+            checkpoint.Dispose();
             return true;
         }
 
         /// <summary>
         /// Returns the enumerator to handle the incoming tokens.
         /// </summary>
-        protected TokenEnumerator Enumerator { get; }
+        protected ITokenEnumerator Enumerator { get; }
     }
 }

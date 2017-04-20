@@ -1,8 +1,7 @@
 ﻿using System;
-using System.CodeDom;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Linq;
+using System.Threading.Tasks;
 using SmtpServer.Content;
 using SmtpServer.Text;
 
@@ -99,10 +98,7 @@ namespace SmtpServer.Mime
         /// <summary>
         /// The message type.
         /// </summary>
-        MessageType IMessage.Type
-        {
-            get { return MessageType.Mime; }
-        }
+        MessageType IMessage.Type => MessageType.Mime;
 
         /// <summary>
         /// The MIME version.
@@ -147,80 +143,6 @@ namespace SmtpServer.Mime
         public string Value { get; }
     }
 
-    public sealed class MessageParser : TokenParser
-    {
-        static readonly Token SpaceToken = new Token(TokenKind.Space, ' ');
-        static readonly Token ColonToken = new Token(TokenKind.Punctuation, ':');
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="enumerator">The token enumerator to handle the incoming tokens.</param>
-        public MessageParser(TokenEnumerator enumerator) : base(enumerator) { }
-
-        /// <summary>
-        /// Attempt to make a MIME field name.
-        /// </summary>
-        /// <param name="name">The name of the field that was made.</param>
-        /// <returns>true if a field name could be made, false if not.</returns>
-        /// <remarks><![CDATA[1*<any CHAR, excluding CTLs, SPACE, and ":">]]></remarks>
-        public bool TryMakeFieldName(out string name)
-        {
-            name = null;
-
-            var token = Enumerator.Peek();
-            while (token != Token.None && token != SpaceToken && token != ColonToken)
-            {
-                token = Enumerator.Take();
-                switch (token.Kind)
-                {
-                    case TokenKind.Text:
-                    case TokenKind.Number:
-                        break;
-
-                    case TokenKind.Space:
-                    case TokenKind.Punctuation:
-                        if (token.Text[0] <= 31)
-                        {
-                            return false;
-                        }
-                        break;
-
-                    default:
-                        return false;
-                }
-
-                name += token.Text;
-                token = Enumerator.Peek();
-            }
-
-            return name != null;
-        }
-
-        //public bool TryMakeFieldBody(out string body)
-        //{
-        //    body = null;
-        //    return true;
-        //}
-
-        //public bool TryMakeFieldBodyContents(out string name)
-        //{
-        //    name = null;
-        //    return true;
-        //}
-
-        /// <summary>
-        /// Attempt to make the end of the line.
-        /// </summary>
-        /// <returns>true if the end of line could be made, false if not.</returns>
-        bool TryMakeEnd()
-        {
-            Enumerator.TakeWhile(TokenKind.Space);
-
-            return Enumerator.Peek() == Token.None;
-        }
-    }
-
     // https://tools.ietf.org/html/rfc822#section-3.2
     // https://tools.ietf.org/html/rfc2045
     // http://docs.roguewave.com/sourcepro/11.1/html/protocolsug/10-1.html
@@ -249,369 +171,328 @@ namespace SmtpServer.Mime
         /// Constructor.
         /// </summary>
         /// <param name="enumerator">The token enumerator to handle the incoming tokens.</param>
-        public MimeParser(TokenEnumerator enumerator) : base(enumerator) { }
+        public MimeParser(ITokenEnumerator enumerator) : base(enumerator) { }
 
         /// <summary>
         /// Attempt to make a MIME version header.
         /// </summary>
         /// <param name="version">The MIME version header that was made.</param>
         /// <returns>true if the MIME version header could be made, false if not.</returns>
-        public bool TryMakeMimeVersion(out MimeVersion version)
+        public bool TryMakeMimeVersionAsync(out MimeVersion version)
         {
             version = null;
 
-            if (TryMakeFieldName(out string name) == false || name.CaseInsensitiveEquals("MIME-Version") == false)
-            {
-                return false;
-            }
-
-            Enumerator.TakeWhile(TokenKind.Space);
-
-            if (Enumerator.Take() != ColonToken)
-            {
-                return false;
-            }
-
-            Enumerator.TakeWhile(TokenKind.Space);
-
-            if (TryMakeDecimal(out decimal number) == false)
-            {
-                return false;
-            }
-            version = new MimeVersion(number);
-
-            return TryMakeEnd();
-        }
-
-        /// <summary>
-        /// Attempt to make a content type.
-        /// </summary>
-        /// <param name="contentType">The content type that was made.</param>
-        /// <returns>true if a content type could be made, false if not.</returns>
-        /// <remarks><![CDATA["Content-Type" ":" type "/" subtype]]></remarks>
-        public bool TryMakeContentType(out ContentType contentType)
-        {
-            contentType = null;
-
-            if (TryMakeFieldName(out string name) == false || name.CaseInsensitiveEquals("Content-Type") == false)
-            {
-                return false;
-            }
-
-            if (TryMakeMediaType(out string mediaType) == false)
-            {
-                return false;
-            }
-
-            if (TryMakeSubType(out string subType) == false)
-            {
-                return false;
-            }
-
-            TryMake(TryMakeParameterList, out Dictionary<string, string> parameters);
-
-            contentType = new ContentType(mediaType, subType, parameters ?? new Dictionary<string, string>());
-
-            return TryMakeEnd();
-        }
-
-        /// <summary>
-        /// Attempt to make a content type media type.
-        /// </summary>
-        /// <param name="type">The type that was made.</param>
-        /// <returns>true if a media type could be made, false if not.</returns>
-        bool TryMakeMediaType(out string type)
-        {
-            return TryMake(TryMakeDescreteType, out type) || TryMake(TryMakeCompositeType, out type);
-        }
-
-        /// <summary>
-        /// Attempt to make a content type subtype.
-        /// </summary>
-        /// <param name="type">The type that was made.</param>
-        /// <returns>true if a subtype could be made, false if not.</returns>
-        bool TryMakeSubType(out string type)
-        {
-            return TryMake(TryMakeExtensionToken, out type) || TryMake(TryMakeIanaToken, out type);
-        }
-
-        /// <summary>
-        /// Attempt to make a descrete type.
-        /// </summary>
-        /// <param name="type">The descrete type that was made.</param>
-        /// <returns>true if a descrete type could be made, false if not.</returns>
-        bool TryMakeDescreteType(out string type)
-        {
-            if (DescreteTypeTokens.Contains(Enumerator.Peek()))
-            {
-                type = Enumerator.Take().Text;
-                return true;
-            }
-
-            return TryMakeExtensionToken(out type);
-        }
-
-        /// <summary>
-        /// Attempt to make a composite type.
-        /// </summary>
-        /// <param name="type">The composite type that was made.</param>
-        /// <returns>true if a composite type could be made, false if not.</returns>
-        bool TryMakeCompositeType(out string type)
-        {
-            if (CompositeTypeTokens.Contains(Enumerator.Peek()))
-            {
-                type = Enumerator.Take().Text;
-                return true;
-            }
-
-            return TryMakeExtensionToken(out type);
-        }
-
-        /// <summary>
-        /// Attempt to make an extension token.
-        /// </summary>
-        /// <param name="token">The extension token that was made.</param>
-        /// <returns>true if an extension token could be made, false if not.</returns>
-        bool TryMakeExtensionToken(out string token)
-        {
-            return TryMake(TryMakeIetfToken, out token) || TryMake(TryMakeXToken, out token);
-        }
-
-        bool TryMakeIetfToken(out string token)
-        {
-            token = null;
-
+            //if (TryMakeFieldName(out string name) == false || name.CaseInsensitiveEquals("MIME-Version") == false)
+            //{
+            //    return false;
+            //}
             return false;
+            //Enumerator.TakeWhile(TokenKind.Space);
+
+            //if (Enumerator.Take() != ColonToken)
+            //{
+            //    return false;
+            //}
+
+            //Enumerator.TakeWhile(TokenKind.Space);
+
+            //if (TryMakeDecimal(out decimal number) == false)
+            //{
+            //    return false;
+            //}
+            //version = new MimeVersion(number);
+
+            //return TryMakeEnd();
         }
 
-        bool TryMakeXToken(out string token)
-        {
-            token = null;
+        ///// <summary>
+        ///// Attempt to make a content type.
+        ///// </summary>
+        ///// <param name="contentType">The content type that was made.</param>
+        ///// <returns>true if a content type could be made, false if not.</returns>
+        ///// <remarks><![CDATA["Content-Type" ":" type "/" subtype]]></remarks>
+        //public bool TryMakeContentType(out ContentType contentType)
+        //{
+        //    contentType = null;
 
-            return false;
-        }
+        //    if (TryMakeFieldName(out string name) == false || name.CaseInsensitiveEquals("Content-Type") == false)
+        //    {
+        //        return false;
+        //    }
 
-        bool TryMakeIanaToken(out string token)
-        {
-            token = null;
+        //    if (TryMakeMediaType(out string mediaType) == false)
+        //    {
+        //        return false;
+        //    }
 
-            return false;
-        }
+        //    if (TryMakeSubType(out string subType) == false)
+        //    {
+        //        return false;
+        //    }
 
-        /// <summary>
-        /// Attempt to make a parameter list.
-        /// </summary>
-        /// <param name="parameters">The parameter list that was made.</param>
-        /// <returns>true if the parameter list coud be made, false if not.</returns>
-        bool TryMakeParameterList(out Dictionary<string, string> parameters)
-        {
-            parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        //    TryMake(TryMakeParameterList, out Dictionary<string, string> parameters);
 
-            Enumerator.TakeWhile(TokenKind.Space);
-            while (Enumerator.Peek() == SemiColonToken)
-            {
-                Enumerator.Take();
+        //    contentType = new ContentType(mediaType, subType, parameters ?? new Dictionary<string, string>());
 
-                if (TryMakeParameterAttribute(out string attribute) == false)
-                {
-                    return false;
-                }
+        //    return TryMakeEnd();
+        //}
 
-                Enumerator.TakeWhile(TokenKind.Space);
+        ///// <summary>
+        ///// Attempt to make a content type media type.
+        ///// </summary>
+        ///// <param name="type">The type that was made.</param>
+        ///// <returns>true if a media type could be made, false if not.</returns>
+        //bool TryMakeMediaType(out string type)
+        //{
+        //    return TryMake(TryMakeDescreteType, out type) || TryMake(TryMakeCompositeType, out type);
+        //}
 
-                if (Enumerator.Take() != EqualsToken)
-                {
-                    return false;
-                }
+        ///// <summary>
+        ///// Attempt to make a content type subtype.
+        ///// </summary>
+        ///// <param name="type">The type that was made.</param>
+        ///// <returns>true if a subtype could be made, false if not.</returns>
+        //bool TryMakeSubType(out string type)
+        //{
+        //    return TryMake(TryMakeExtensionToken, out type) || TryMake(TryMakeIanaToken, out type);
+        //}
 
-                Enumerator.TakeWhile(TokenKind.Space);
+        ///// <summary>
+        ///// Attempt to make a descrete type.
+        ///// </summary>
+        ///// <param name="type">The descrete type that was made.</param>
+        ///// <returns>true if a descrete type could be made, false if not.</returns>
+        //bool TryMakeDescreteType(out string type)
+        //{
+        //    if (DescreteTypeTokens.Contains(Enumerator.Peek()))
+        //    {
+        //        type = Enumerator.Take().Text;
+        //        return true;
+        //    }
 
-                if (TryMakeParameterValue(out string value) == false)
-                {
-                    return false;
-                }
+        //    return TryMakeExtensionToken(out type);
+        //}
 
-                parameters[attribute] = value;
+        ///// <summary>
+        ///// Attempt to make a composite type.
+        ///// </summary>
+        ///// <param name="type">The composite type that was made.</param>
+        ///// <returns>true if a composite type could be made, false if not.</returns>
+        //bool TryMakeCompositeType(out string type)
+        //{
+        //    if (CompositeTypeTokens.Contains(Enumerator.Peek()))
+        //    {
+        //        type = Enumerator.Take().Text;
+        //        return true;
+        //    }
 
-                Enumerator.TakeWhile(TokenKind.Space);
-            }
+        //    return TryMakeExtensionToken(out type);
+        //}
 
-            return true;
-        }
+        ///// <summary>
+        ///// Attempt to make an extension token.
+        ///// </summary>
+        ///// <param name="token">The extension token that was made.</param>
+        ///// <returns>true if an extension token could be made, false if not.</returns>
+        //bool TryMakeExtensionToken(out string token)
+        //{
+        //    return TryMake(TryMakeIetfToken, out token) || TryMake(TryMakeXToken, out token);
+        //}
 
-        /// <summary>
-        /// Attempt to make a content type parameter.
-        /// </summary>
-        /// <param name="attribute">The attribute for the parameter.</param>
-        /// <param name="value">The value for the parameter.</param>
-        /// <returns>true if the parameter could be made, false if not.</returns>
-        bool TryMakeParameter(out string attribute, out string value)
-        {
-            value = null;
+        //bool TryMakeIetfToken(out string token)
+        //{
+        //    token = null;
 
-            if (TryMakeParameterAttribute(out attribute) == false)
-            {
-                return false;
-            }
+        //    return false;
+        //}
 
-            Enumerator.TakeWhile(TokenKind.Space);
+        //bool TryMakeXToken(out string token)
+        //{
+        //    token = null;
 
-            if (Enumerator.Take() != EqualsToken)
-            {
-                return false;
-            }
+        //    return false;
+        //}
 
-            Enumerator.TakeWhile(TokenKind.Space);
+        //bool TryMakeIanaToken(out string token)
+        //{
+        //    token = null;
 
-            return TryMakeParameterValue(out value);
-        }
+        //    return false;
+        //}
 
-        bool TryMakeParameterAttribute(out string attribute)
-        {
-            attribute = null;
+        ///// <summary>
+        ///// Attempt to make a parameter list.
+        ///// </summary>
+        ///// <param name="parameters">The parameter list that was made.</param>
+        ///// <returns>true if the parameter list coud be made, false if not.</returns>
+        //bool TryMakeParameterList(out Dictionary<string, string> parameters)
+        //{
+        //    parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            return false;
-        }
+        //    Enumerator.TakeWhile(TokenKind.Space);
+        //    while (Enumerator.Peek() == SemiColonToken)
+        //    {
+        //        Enumerator.Take();
 
-        bool TryMakeParameterValue(out string value)
-        {
-            value = null;
+        //        if (TryMakeParameterAttribute(out string attribute) == false)
+        //        {
+        //            return false;
+        //        }
 
-            return false;
-        }
+        //        Enumerator.TakeWhile(TokenKind.Space);
 
-        bool TryMakeToken(out string token)
-        {
-            token = null;
+        //        if (Enumerator.Take() != EqualsToken)
+        //        {
+        //            return false;
+        //        }
 
-            return false;
-        }
+        //        Enumerator.TakeWhile(TokenKind.Space);
 
-        bool TryMakeQuotedString(out string quotedString)
-        {
-            quotedString = null;
+        //        if (TryMakeParameterValue(out string value) == false)
+        //        {
+        //            return false;
+        //        }
 
-            return false;
-        }
+        //        parameters[attribute] = value;
 
-        /// <summary>
-        /// Attempt to make the end of the line.
-        /// </summary>
-        /// <returns>true if the end of line could be made, false if not.</returns>
-        bool TryMakeEnd()
-        {
-            Enumerator.TakeWhile(TokenKind.Space);
+        //        Enumerator.TakeWhile(TokenKind.Space);
+        //    }
 
-            return Enumerator.Peek() == Token.None;
-        }
+        //    return true;
+        //}
 
-        /// <summary>
-        /// Attempt to make a decimal number.
-        /// </summary>
-        /// <param name="number">The decimal number that was made.</param>
-        /// <returns>true if the decimal number was made, false if not.</returns>
-        bool TryMakeDecimal(out decimal number)
-        {
-            number = default(decimal);
+        ///// <summary>
+        ///// Attempt to make a content type parameter.
+        ///// </summary>
+        ///// <param name="attribute">The attribute for the parameter.</param>
+        ///// <param name="value">The value for the parameter.</param>
+        ///// <returns>true if the parameter could be made, false if not.</returns>
+        //bool TryMakeParameter(out string attribute, out string value)
+        //{
+        //    value = null;
 
-            if (Enumerator.Peek().Kind != TokenKind.Number)
-            {
-                return false;
-            }
-            var scale = Enumerator.Take().Text;
+        //    if (TryMakeParameterAttribute(out attribute) == false)
+        //    {
+        //        return false;
+        //    }
 
-            if (Enumerator.Take() != DecimalPointToken)
-            {
-                return false;
-            }
+        //    Enumerator.TakeWhile(TokenKind.Space);
 
-            if (Enumerator.Peek().Kind != TokenKind.Number)
-            {
-                return false;
-            }
+        //    if (Enumerator.Take() != EqualsToken)
+        //    {
+        //        return false;
+        //    }
+
+        //    Enumerator.TakeWhile(TokenKind.Space);
+
+        //    return TryMakeParameterValue(out value);
+        //}
+
+        //bool TryMakeParameterAttribute(out string attribute)
+        //{
+        //    attribute = null;
+
+        //    return false;
+        //}
+
+        //bool TryMakeParameterValue(out string value)
+        //{
+        //    value = null;
+
+        //    return false;
+        //}
+
+        //bool TryMakeToken(out string token)
+        //{
+        //    token = null;
+
+        //    return false;
+        //}
+
+        //bool TryMakeQuotedString(out string quotedString)
+        //{
+        //    quotedString = null;
+
+        //    return false;
+        //}
+
+        ///// <summary>
+        ///// Attempt to make the end of the line.
+        ///// </summary>
+        ///// <returns>true if the end of line could be made, false if not.</returns>
+        //Task<bool> TryMakeEndAsync()
+        //{
+        //    Enumerator.TakeWhile(TokenKind.Space);
+
+        //    return Enumerator.Peek() == Token.None;
+        //}
+
+        ///// <summary>
+        ///// Attempt to make a decimal number.
+        ///// </summary>
+        ///// <param name="number">The decimal number that was made.</param>
+        ///// <returns>true if the decimal number was made, false if not.</returns>
+        //bool TryMakeDecimal(out decimal number)
+        //{
+        //    number = default(decimal);
+
+        //    if (Enumerator.Peek().Kind != TokenKind.Number)
+        //    {
+        //        return false;
+        //    }
+        //    var scale = Enumerator.Take().Text;
+
+        //    if (Enumerator.Take() != DecimalPointToken)
+        //    {
+        //        return false;
+        //    }
+
+        //    if (Enumerator.Peek().Kind != TokenKind.Number)
+        //    {
+        //        return false;
+        //    }
             
-            number = Decimal.Parse($"{scale}.{Enumerator.Take().Text}");
-            return true;
-        }
-
-        //public bool TryMakeField(out MimeHeader header)
-        //{
-        //    header = null;
-
-        //    string name;
-        //    if (TryMake(TryMakeFieldName, out name) == false)
-        //    {
-        //        return false;
-        //    }
-
-        //    Enumerator.TakeWhile(TokenKind.Space);
-
-        //    if (Enumerator.Take() != ColonToken)
-        //    {
-        //        return false;
-        //    }
-
-        //    Enumerator.TakeWhile(TokenKind.Space);
-
-        //    string body;
-        //    if (TryMake(TryMakeFieldBody, out body) == false)
-        //    {
-        //        return false;
-        //    }
-
-        //    header = new MimeHeader(name, body);
+        //    number = Decimal.Parse($"{scale}.{Enumerator.Take().Text}");
         //    return true;
         //}
 
-        /// <summary>
-        /// Attempt to make a MIME field name.
-        /// </summary>
-        /// <param name="name">The name of the field that was made.</param>
-        /// <returns>true if a field name could be made, false if not.</returns>
-        /// <remarks><![CDATA[1*<any CHAR, excluding CTLs, SPACE, and ":">]]></remarks>
-        public bool TryMakeFieldName(out string name)
-        {
-            name = null;
-
-            var token = Enumerator.Peek();
-            while (token != Token.None && token != SpaceToken && token != ColonToken)
-            {
-                token = Enumerator.Take();
-                switch (token.Kind)
-                {
-                    case TokenKind.Text:
-                    case TokenKind.Number:
-                        break;
-
-                    case TokenKind.Space:
-                    case TokenKind.Punctuation:
-                        if (token.Text[0] <= 31)
-                        {
-                            return false;
-                        }
-                        break;
-
-                    default:
-                        return false;
-                }
-
-                name += token.Text;
-                token = Enumerator.Peek();
-            }
-
-            return name != null;
-        }
-
-        //public bool TryMakeFieldBody(out string body)
-        //{
-        //    body = null;
-        //    return true;
-        //}
-
-        //public bool TryMakeFieldBodyContents(out string name)
+        ///// <summary>
+        ///// Attempt to make a MIME field name.
+        ///// </summary>
+        ///// <param name="name">The name of the field that was made.</param>
+        ///// <returns>true if a field name could be made, false if not.</returns>
+        ///// <remarks><![CDATA[1*<any CHAR, excluding CTLs, SPACE, and ":">]]></remarks>
+        //public bool TryMakeFieldName(out string name)
         //{
         //    name = null;
-        //    return true;
+
+        //    var token = Enumerator.Peek();
+        //    while (token != Token.None && token != SpaceToken && token != ColonToken)
+        //    {
+        //        token = Enumerator.Take();
+        //        switch (token.Kind)
+        //        {
+        //            case TokenKind.Text:
+        //            case TokenKind.Number:
+        //                break;
+
+        //            case TokenKind.Space:
+        //            case TokenKind.Punctuation:
+        //                if (token.Text[0] <= 31)
+        //                {
+        //                    return false;
+        //                }
+        //                break;
+
+        //            default:
+        //                return false;
+        //        }
+
+        //        name += token.Text;
+        //        token = Enumerator.Peek();
+        //    }
+
+        //    return name != null;
         //}
     }
 }
