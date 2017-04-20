@@ -18,5 +18,11 @@ namespace SmtpServer.Text
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The last token that was consumed.</returns>
         Task<Token> TakeAsync(CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Create a checkpoint that will ensure the tokens are kept in the buffer from this point forward.
+        /// </summary>
+        /// <returns>A disposable instance that is used to release the checkpoint.</returns>
+        ITokenEnumeratorCheckpoint Checkpoint();
     }
 }

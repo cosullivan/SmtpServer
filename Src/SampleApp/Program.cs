@@ -51,7 +51,7 @@ namespace SampleApp
             {
                 var reader = new StreamTokenReader(stream, 5);
 
-                var enumerator = new TransactionalTokenEnumerator(new TokenEnumerator2(reader));
+                var enumerator = new TokenEnumerator2(reader);
                 //while (enumerator.PeekAsync().Result != Token.None)
                 //{
                 //    Console.WriteLine(enumerator.TakeAsync().Result);

@@ -119,7 +119,6 @@
     <Compile Include="Text\TokenKind.cs" />
     <Compile Include="Text\TokenParser.cs" />
     <Compile Include="Text\TokenReader.cs" />
-    <Compile Include="Text\TransactionalTokenEnumerator.cs" />
     <Compile Include="Tracing\TracingSmtpCommandVisitor.cs" />
   </ItemGroup>
   <ItemGroup>
