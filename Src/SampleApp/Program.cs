@@ -26,11 +26,6 @@ namespace SampleApp
     // https://tools.ietf.org/html/rfc2045
     class Program
     {
-        static (int a, int b) Test(int c)
-        {
-            return (1, 2);
-        }
-
         static void Main(string[] args)
         {
             //var text = "MIME-Version: 1.0";
@@ -46,17 +41,24 @@ namespace SampleApp
             //Console.WriteLine(contentType);
 
             var mimeMessageReader = new MimeMessageReader(File.OpenRead(@"C:\Dev\temp\msg.txt"));
-            var mimeMessage = mimeMessageReader.ReadAsync().Result;
-
-            Console.WriteLine(mimeMessage);
+            try
+            {
+                var mimeMessage = mimeMessageReader.ReadAsync().Result;
+                Console.WriteLine(mimeMessage);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
 
             //var webClient = new WebClient();
             ////using (var stream = webClient.OpenRead("http://memberzonedev.org"))
-            //using (var stream = new System.IO.MemoryStream(Encoding.ASCII.GetBytes("a 1b2 c3d 4e5f6g 7")))
+            //using (var stream = new System.IO.MemoryStream(Encoding.ASCII.GetBytes("abcd\r\n1234")))
             //{
             //    var reader = new StreamTokenReader(stream, 5);
 
-            //    var enumerator = new TokenEnumerator2(reader, ignoreWhiteSpace: true);
+            //    var enumerator = new TokenEnumerator2(reader, ignoreWhiteSpace: false);
 
             //    while (enumerator.PeekAsync().Result != Token.None)
             //    {

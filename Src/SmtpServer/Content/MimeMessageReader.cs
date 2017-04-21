@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -31,42 +32,58 @@ namespace SmtpServer.Content
             return await ReadMessageAsync(cancellationToken);
         }
 
-        Task<MimeMessage> ReadMessageAsync(CancellationToken cancellationToken)
+        /// <summary>
+        /// Read the contents of the message.
+        /// </summary>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The MIME message that was read.</returns>
+        async Task<MimeMessage> ReadMessageAsync(CancellationToken cancellationToken)
         {
-            //var reader = new StreamReader(_stream, Encoding.UTF8);
-            //reader.ReadLineAsync()
-            //var headers = await ReadMessageHeadersAsync(cancellationToken);
-
-            var tokenReader = new StreamTokenReader(_stream);
-
-            //HERE: MimeParser.TryMakeMimeHeaders(out )
+            var headers = await ReadMimeHeadersAsync(cancellationToken);
 
             return null;
         }
 
-        Task<IEnumerable<IMimeHeader>> ReadMimeHeadersAsync(CancellationToken cancellationToken)
+        /// <summary>
+        /// Read the MIME headers.
+        /// </summary>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The list of MIME headers that were read.</returns>
+        async Task<IEnumerable<IMimeHeader>> ReadMimeHeadersAsync(CancellationToken cancellationToken)
         {
+            var tokens = await ReadMimeHeaderTokensAsync(cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            foreach (var token in tokens)
+            {
+                Console.WriteLine(token);
+            }
+
             return null;
         }
-        
-        //async Task<IReadOnlyList<MimeHeader>> ReadMessageHeadersAsync(CancellationToken cancellationToken)
-        //{
-        //    HERE: implement the StreamTokenReader which understands the tokens from
-        //    the stream and potentially knows about he End of the header section and body section?
 
-        //        Needs to be a ReadNextAsync() 
+        /// <summary>
+        /// Read the MIME headers.
+        /// </summary>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The list of MIME headers that were read.</returns>
+        async Task<IEnumerable<Token>> ReadMimeHeaderTokensAsync(CancellationToken cancellationToken)
+        {
+            var reader = new StreamTokenReader(_stream);
+            var tokens = new List<Token>();
 
+            Token token;
+            while ((token = await reader.NextTokenAsync(cancellationToken)) != Token.None)
+            {
+                if (tokens.Count > 1 && tokens[tokens.Count - 1] == Token.NewLine && token == Token.NewLine)
+                {
+                    return tokens;
+                }
 
-        //    var tokenReader = new StreamTokenReader(_stream, ignoreWhiteSpace: true);
-        //    //var headers = await ReadMessageHeadersAsync(cancellationToken);
-        //    var mimeParser = new MimeParser(tokenReader);
+                tokens.Add(token);
+            }
 
-        //    if (mimeParser.TryMakeMimeHeaders(out IReadOnlyList<MimeHeader> headers))
-        //    {
-        //        return headers;
-        //    }
-
-        //    return null;
-        //}
+            return tokens;
+        }
     }
 }

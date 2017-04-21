@@ -33,8 +33,13 @@
         Space = 6,
 
         /// <summary>
+        /// A new line token, defined as CRLF.
+        /// </summary>
+        NewLine = 7,
+
+        /// <summary>
         /// Unknown.
         /// </summary>
-        Other = 7,
+        Other = 8,
     }
 }

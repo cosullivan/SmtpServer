@@ -37,21 +37,43 @@ namespace SmtpServer.Text
         }
 
         /// <summary>
-        /// Reads the next token.
+        /// Ensure the buffer is full for a read operation.
         /// </summary>
+        /// <param name="cancellationToken">The cancellation token,</param>
+        /// <returns>Returns a value indicating whether there was no more data to fill the buffer.</returns>
+        Task<bool> EnsureBufferAsync(CancellationToken cancellationToken)
+        {
+            return EnsureBufferAsync(_buffer, cancellationToken);
+        }
+
+        /// <summary>
+        /// Ensure that the buffer is full for a read operation.
+        /// </summary>
+        /// <param name="buffer">The new buffer to use.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The next token that was read.</returns>
-        public async Task<Token> NextTokenAsync(CancellationToken cancellationToken = default(CancellationToken))
+        /// <returns>Returns a value indicating whether there was no more data to fill the buffer.</returns>
+        async Task<bool> EnsureBufferAsync(byte[] buffer, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             if (_index >= _bytesRead)
             {
                 _index = 0;
+                _buffer = buffer;
                 _bytesRead = await _stream.ReadAsync(_buffer, 0, _buffer.Length, cancellationToken).ConfigureAwait(false);
             }
 
-            if (_bytesRead == 0)
+            return _bytesRead > 0;
+        }
+
+        /// <summary>
+        /// Reads the next token.
+        /// </summary>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The next token that was read.</returns>
+        public async Task<Token> NextTokenAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (await EnsureBufferAsync(cancellationToken) == false)
             {
                 return Token.None;
             }
@@ -66,6 +88,11 @@ namespace SmtpServer.Text
             if (Char.IsNumber(ch))
             {
                 return await NumberTokenAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            if (ch == 13)
+            {
+                return await NewLineTokenAsync(cancellationToken).ConfigureAwait(false);
             }
 
             return SingleCharacterToken(ch);
@@ -132,29 +159,64 @@ namespace SmtpServer.Text
         }
 
         /// <summary>
+        /// Returns a New Line token from the current position.
+        /// </summary>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The new line token that was found at the current position.</returns>
+        async Task<Token> NewLineTokenAsync(CancellationToken cancellationToken)
+        {
+            _index++;
+
+            if (await EnsureBufferAsync(cancellationToken) == false)
+            {
+                return new Token(TokenKind.Space, (char)13);
+            }
+
+            var segments = await ConsumeAsync(ch => ch == 10, 1, cancellationToken);
+            if (segments[0].Count == 1)
+            {
+                return Token.NewLine;
+            }
+
+            // if we couldnt fine an immediate LF then we return the CR by itself.
+            return new Token(TokenKind.Space, (char)13);
+        }
+
+        /// <summary>
         /// Returns a continuous segment of characters matching the predicate.
         /// </summary>
         /// <param name="predicate">The predicate to apply to the characters for the continuous segment.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The array segment that defines a continuous segment of characters that have matched the predicate.</returns>
-        async Task<IReadOnlyList<ArraySegment<byte>>> ConsumeAsync(Func<char, bool> predicate, CancellationToken cancellationToken)
+        Task<IReadOnlyList<ArraySegment<byte>>> ConsumeAsync(Func<char, bool> predicate, CancellationToken cancellationToken)
         {
-            var segments = new List<ArraySegment<byte>> { Consume(predicate) };
+            return ConsumeAsync(predicate, Int32.MaxValue, cancellationToken);
+        }
+
+        /// <summary>
+        /// Returns a continuous segment of characters matching the predicate.
+        /// </summary>
+        /// <param name="predicate">The predicate to apply to the characters for the continuous segment.</param>
+        /// <param name="limit">The limit to the number of characters to consume.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The array segment that defines a continuous segment of characters that have matched the predicate.</returns>
+        async Task<IReadOnlyList<ArraySegment<byte>>> ConsumeAsync(Func<char, bool> predicate, int limit, CancellationToken cancellationToken)
+        {
+            var segments = new List<ArraySegment<byte>> { Consume(predicate, limit) };
 
             while (_index >= _bytesRead)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                _index = 0;
-                _buffer = new byte[_buffer.Length];
-                _bytesRead = await _stream.ReadAsync(_buffer, 0, _buffer.Length, cancellationToken).ConfigureAwait(false);
-
-                if (_bytesRead == 0 || predicate((char)_buffer[0]) == false)
+                if (await EnsureBufferAsync(new byte[_buffer.Length], cancellationToken) == false)
                 {
                     return segments;
                 }
 
-                segments.Add(Consume(predicate));
+                if (limit <= 0 || predicate((char)_buffer[0]) == false)
+                {
+                    return segments;
+                }
+
+                segments.Add(Consume(predicate, limit));
             }
 
             return segments;
@@ -164,13 +226,14 @@ namespace SmtpServer.Text
         /// Returns a continuous segment of characters matching the predicate.
         /// </summary>
         /// <param name="predicate">The predicate to apply to the characters for the continuous segment.</param>
+        /// <param name="limit">The limit to the number of characters to consume.</param>
         /// <returns>The array segment that defines a continuous segment of characters that have matched the predicate.</returns>
-        ArraySegment<byte> Consume(Func<char, bool> predicate)
+        ArraySegment<byte> Consume(Func<char, bool> predicate, int limit)
         {
             var start = _index;
 
             var current = (char)_buffer[_index];
-            while (predicate(current) && ++_index < _bytesRead)
+            while (limit-- > 0 && predicate(current) && ++_index < _bytesRead)
             {
                 current = (char)_buffer[_index];
             }

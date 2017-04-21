@@ -12,6 +12,11 @@ namespace SmtpServer.Text
         public static readonly Token None = new Token(TokenKind.None);
 
         /// <summary>
+        /// Represents a new line token.
+        /// </summary>
+        public static readonly Token NewLine = new Token(TokenKind.NewLine);
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="kind">The token kind.</param>
