@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.Content;
 using SmtpServer.Text;
@@ -143,6 +144,38 @@ namespace SmtpServer.Mime
         public string Value { get; }
     }
 
+    public struct MakeResult<TValue>
+    {
+        public static readonly MakeResult<TValue> Failed = new MakeResult<TValue>(false);
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="result">The result that indicates whether a match was a success or not.</param>
+        public MakeResult(bool result) : this(result, default(TValue)) { }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="result">The result that indicates whether a match was a success or not.</param>
+        /// <param name="value">The value of the match.</param>
+        public MakeResult(bool result, TValue value)
+        {
+            Result = result;
+            Value = value;
+        }
+
+        /// <summary>
+        /// Indicates whether or not a make operation was a success.
+        /// </summary>
+        public bool Result { get; }
+
+        /// <summary>
+        /// The value that was made.
+        /// </summary>
+        public TValue Value { get; }
+    }
+
     // https://tools.ietf.org/html/rfc822#section-3.2
     // https://tools.ietf.org/html/rfc2045
     // http://docs.roguewave.com/sourcepro/11.1/html/protocolsug/10-1.html
@@ -176,17 +209,23 @@ namespace SmtpServer.Mime
         /// <summary>
         /// Attempt to make a MIME version header.
         /// </summary>
-        /// <param name="version">The MIME version header that was made.</param>
-        /// <returns>true if the MIME version header could be made, false if not.</returns>
-        public bool TryMakeMimeVersionAsync(out MimeVersion version)
+        /// <returns>The result of the operation that indicates the state and optionally value.</returns>
+        public async Task<MakeResult<MimeVersion>> TryMakeMimeVersionAsync()
         {
-            version = null;
+            //version = null;
+
+            var name = await TryMakeFieldNameAsync().ReturnOnAnyThread();
+            if (name.Result == false || name.Value.CaseInsensitiveEquals("MIME-Version") == false)
+            {
+                return MakeResult<MimeVersion>.Failed;
+            }
+
 
             //if (TryMakeFieldName(out string name) == false || name.CaseInsensitiveEquals("MIME-Version") == false)
             //{
             //    return false;
             //}
-            return false;
+            return MakeResult<MimeVersion>.Failed;
             //Enumerator.TakeWhile(TokenKind.Space);
 
             //if (Enumerator.Take() != ColonToken)
@@ -203,6 +242,44 @@ namespace SmtpServer.Mime
             //version = new MimeVersion(number);
 
             //return TryMakeEnd();
+        }
+
+        /// <summary>
+        /// Attempt to make a MIME field name.
+        /// </summary>
+        /// <returns>The result of the operation that indicates the state and optionally value.</returns>
+        /// <remarks><![CDATA[1*<any CHAR, excluding CTLs, SPACE, and ":">]]></remarks>
+        public async Task<MakeResult<string>> TryMakeFieldNameAsync()
+        {
+            string name = null;
+
+            var token = await Enumerator.PeekAsync().ReturnOnAnyThread();
+            while (token != Token.None && token != SpaceToken && token != ColonToken)
+            {
+                token = await Enumerator.TakeAsync().ReturnOnAnyThread();
+                switch (token.Kind)
+                {
+                    case TokenKind.Text:
+                    case TokenKind.Number:
+                        break;
+
+                    case TokenKind.Space:
+                    case TokenKind.Punctuation:
+                        if (token.Text[0] <= 31)
+                        {
+                            return MakeResult<string>.Failed;
+                        }
+                        break;
+
+                    default:
+                        return MakeResult<string>.Failed;
+                }
+
+                name += token.Text;
+                token = await Enumerator.PeekAsync().ReturnOnAnyThread();
+            }
+
+            return new MakeResult<string>(name != null, name);
         }
 
         ///// <summary>
@@ -451,7 +528,7 @@ namespace SmtpServer.Mime
         //    {
         //        return false;
         //    }
-            
+
         //    number = Decimal.Parse($"{scale}.{Enumerator.Take().Text}");
         //    return true;
         //}

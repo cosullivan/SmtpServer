@@ -69,21 +69,27 @@ namespace SmtpServer.Content
         /// <returns>The list of MIME headers that were read.</returns>
         async Task<IEnumerable<Token>> ReadMimeHeaderTokensAsync(CancellationToken cancellationToken)
         {
-            var reader = new StreamTokenReader(_stream);
-            var tokens = new List<Token>();
+            //var tokens = new List<Token>();
+            //var reader = new StreamTokenReader(_stream);
 
-            Token token;
-            while ((token = await reader.NextTokenAsync(cancellationToken)) != Token.None)
-            {
-                if (tokens.Count > 1 && tokens[tokens.Count - 1] == Token.NewLine && token == Token.NewLine)
-                {
-                    return tokens;
-                }
+            //Token token;
+            //while ((token = await reader.NextTokenAsync(cancellationToken)) != Token.None)
+            //{
+            //    if (tokens.Count > 1 && tokens[tokens.Count - 1] == Token.NewLine && token == Token.NewLine)
+            //    {
+            //        return tokens;
+            //    }
 
-                tokens.Add(token);
-            }
+            //    tokens.Add(token);
+            //}
 
-            return tokens;
+            //return tokens;
+
+            var parser = new MimeParser(new TokenEnumerator2(new StreamTokenReader(_stream), ignoreWhiteSpace: true));
+
+            var result = await parser.TryMakeMimeVersionAsync();
+
+            return null;
         }
     }
 }
