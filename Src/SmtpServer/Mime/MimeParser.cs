@@ -13,10 +13,12 @@ namespace SmtpServer.Mime
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="number">The mime version.</param>
-        public MimeVersion(decimal number)
+        /// <param name="major">The major version number.</param>
+        /// <param name="minor">The minor version number.</param>
+        public MimeVersion(int major, int minor)
         {
-            Number = number;
+            Major = major;
+            Minor = minor;
         }
 
         /// <summary>
@@ -25,9 +27,14 @@ namespace SmtpServer.Mime
         public string Name => "MIME-Version";
 
         /// <summary>
-        /// The version number.
+        /// The major version number.
         /// </summary>
-        public decimal Number { get; }
+        public int Major { get; }
+
+        /// <summary>
+        /// The minor version number.
+        /// </summary>
+        public int Minor { get; }
     }
 
     public sealed class ContentType : IMimeHeader
@@ -212,36 +219,38 @@ namespace SmtpServer.Mime
         /// <returns>The result of the operation that indicates the state and optionally value.</returns>
         public async Task<MakeResult<MimeVersion>> TryMakeMimeVersionAsync()
         {
-            //version = null;
-
             var name = await TryMakeFieldNameAsync().ReturnOnAnyThread();
             if (name.Result == false || name.Value.CaseInsensitiveEquals("MIME-Version") == false)
             {
                 return MakeResult<MimeVersion>.Failed;
             }
 
+            if (await Enumerator.TakeAsync().ReturnOnAnyThread() != ColonToken)
+            {
+                return MakeResult<MimeVersion>.Failed;
+            }
 
-            //if (TryMakeFieldName(out string name) == false || name.CaseInsensitiveEquals("MIME-Version") == false)
-            //{
-            //    return false;
-            //}
-            return MakeResult<MimeVersion>.Failed;
-            //Enumerator.TakeWhile(TokenKind.Space);
+            var major = await Enumerator.TakeAsync().ReturnOnAnyThread();
+            if (major.Kind != TokenKind.Number)
+            {
+                return MakeResult<MimeVersion>.Failed;
+            }
 
-            //if (Enumerator.Take() != ColonToken)
-            //{
-            //    return false;
-            //}
+            if (await Enumerator.TakeAsync().ReturnOnAnyThread() != DecimalPointToken)
+            {
+                return MakeResult<MimeVersion>.Failed;
+            }
 
-            //Enumerator.TakeWhile(TokenKind.Space);
+            var minor = await Enumerator.TakeAsync().ReturnOnAnyThread();
+            if (minor.Kind != TokenKind.Number)
+            {
+                return MakeResult<MimeVersion>.Failed;
+            }
 
-            //if (TryMakeDecimal(out decimal number) == false)
-            //{
-            //    return false;
-            //}
-            //version = new MimeVersion(number);
+            // TODO - do I need to make the end here??
+            // return TryMakeEnd();
 
-            //return TryMakeEnd();
+            return new MakeResult<MimeVersion>(true, new MimeVersion(Int32.Parse(major.Text), Int32.Parse(minor.Text)));
         }
 
         /// <summary>
