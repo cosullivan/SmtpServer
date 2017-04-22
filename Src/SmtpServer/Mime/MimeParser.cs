@@ -151,37 +151,37 @@ namespace SmtpServer.Mime
         public string Value { get; }
     }
 
-    public struct MakeResult<TValue>
-    {
-        public static readonly MakeResult<TValue> Failed = new MakeResult<TValue>(false);
+    //public struct MakeResult<TValue>
+    //{
+    //    public static readonly MakeResult<TValue> Failed = new MakeResult<TValue>(false);
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="result">The result that indicates whether a match was a success or not.</param>
-        public MakeResult(bool result) : this(result, default(TValue)) { }
+    //    /// <summary>
+    //    /// Constructor.
+    //    /// </summary>
+    //    /// <param name="result">The result that indicates whether a match was a success or not.</param>
+    //    public MakeResult(bool result) : this(result, default(TValue)) { }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="result">The result that indicates whether a match was a success or not.</param>
-        /// <param name="value">The value of the match.</param>
-        public MakeResult(bool result, TValue value)
-        {
-            Result = result;
-            Value = value;
-        }
+    //    /// <summary>
+    //    /// Constructor.
+    //    /// </summary>
+    //    /// <param name="result">The result that indicates whether a match was a success or not.</param>
+    //    /// <param name="value">The value of the match.</param>
+    //    public MakeResult(bool result, TValue value)
+    //    {
+    //        Result = result;
+    //        Value = value;
+    //    }
 
-        /// <summary>
-        /// Indicates whether or not a make operation was a success.
-        /// </summary>
-        public bool Result { get; }
+    //    /// <summary>
+    //    /// Indicates whether or not a make operation was a success.
+    //    /// </summary>
+    //    public bool Result { get; }
 
-        /// <summary>
-        /// The value that was made.
-        /// </summary>
-        public TValue Value { get; }
-    }
+    //    /// <summary>
+    //    /// The value that was made.
+    //    /// </summary>
+    //    public TValue Value { get; }
+    //}
 
     // https://tools.ietf.org/html/rfc822#section-3.2
     // https://tools.ietf.org/html/rfc2045
@@ -217,79 +217,118 @@ namespace SmtpServer.Mime
         /// Attempt to make a MIME version header.
         /// </summary>
         /// <returns>The result of the operation that indicates the state and optionally value.</returns>
-        public async Task<MakeResult<MimeVersion>> TryMakeMimeVersionAsync()
+        public bool TryMakeMimeVersion(out MimeVersion version)
         {
-            var name = await TryMakeFieldNameAsync().ReturnOnAnyThread();
-            if (name.Result == false || name.Value.CaseInsensitiveEquals("MIME-Version") == false)
+            version = null;
+
+            if (TryMakeFieldName(out string name) == false || name.CaseInsensitiveEquals("MIME-Version") == false)
             {
-                return MakeResult<MimeVersion>.Failed;
+                return false;
             }
 
-            if (await Enumerator.TakeAsync().ReturnOnAnyThread() != ColonToken)
+            if (Enumerator.Take() != ColonToken)
             {
-                return MakeResult<MimeVersion>.Failed;
+                return false;
             }
 
-            var major = await Enumerator.TakeAsync().ReturnOnAnyThread();
+            var major = Enumerator.Take();
             if (major.Kind != TokenKind.Number)
             {
-                return MakeResult<MimeVersion>.Failed;
+                return false;
             }
 
-            if (await Enumerator.TakeAsync().ReturnOnAnyThread() != DecimalPointToken)
+            if (Enumerator.Take() != DecimalPointToken)
             {
-                return MakeResult<MimeVersion>.Failed;
+                return false;
             }
 
-            var minor = await Enumerator.TakeAsync().ReturnOnAnyThread();
+            var minor = Enumerator.Take();
             if (minor.Kind != TokenKind.Number)
             {
-                return MakeResult<MimeVersion>.Failed;
+                return false;
             }
 
-            // TODO - do I need to make the end here??
-            // return TryMakeEnd();
-
-            return new MakeResult<MimeVersion>(true, new MimeVersion(Int32.Parse(major.Text), Int32.Parse(minor.Text)));
+            version = new MimeVersion(Int32.Parse(major.Text), Int32.Parse(minor.Text));
+            return true;
         }
 
-        /// <summary>
-        /// Attempt to make a MIME field name.
-        /// </summary>
-        /// <returns>The result of the operation that indicates the state and optionally value.</returns>
-        /// <remarks><![CDATA[1*<any CHAR, excluding CTLs, SPACE, and ":">]]></remarks>
-        public async Task<MakeResult<string>> TryMakeFieldNameAsync()
-        {
-            string name = null;
+        ///// <summary>
+        ///// Attempt to make a MIME version header.
+        ///// </summary>
+        ///// <returns>The result of the operation that indicates the state and optionally value.</returns>
+        //public async Task<MakeResult<MimeVersion>> TryMakeMimeVersionAsync()
+        //{
+        //    var name = await TryMakeFieldNameAsync().ReturnOnAnyThread();
+        //    if (name.Result == false || name.Value.CaseInsensitiveEquals("MIME-Version") == false)
+        //    {
+        //        return MakeResult<MimeVersion>.Failed;
+        //    }
 
-            var token = await Enumerator.PeekAsync().ReturnOnAnyThread();
-            while (token != Token.None && token != SpaceToken && token != ColonToken)
-            {
-                token = await Enumerator.TakeAsync().ReturnOnAnyThread();
-                switch (token.Kind)
-                {
-                    case TokenKind.Text:
-                    case TokenKind.Number:
-                        break;
+        //    if (await Enumerator.TakeAsync().ReturnOnAnyThread() != ColonToken)
+        //    {
+        //        return MakeResult<MimeVersion>.Failed;
+        //    }
 
-                    case TokenKind.Space:
-                    case TokenKind.Punctuation:
-                        if (token.Text[0] <= 31)
-                        {
-                            return MakeResult<string>.Failed;
-                        }
-                        break;
+        //    var major = await Enumerator.TakeAsync().ReturnOnAnyThread();
+        //    if (major.Kind != TokenKind.Number)
+        //    {
+        //        return MakeResult<MimeVersion>.Failed;
+        //    }
 
-                    default:
-                        return MakeResult<string>.Failed;
-                }
+        //    if (await Enumerator.TakeAsync().ReturnOnAnyThread() != DecimalPointToken)
+        //    {
+        //        return MakeResult<MimeVersion>.Failed;
+        //    }
 
-                name += token.Text;
-                token = await Enumerator.PeekAsync().ReturnOnAnyThread();
-            }
+        //    var minor = await Enumerator.TakeAsync().ReturnOnAnyThread();
+        //    if (minor.Kind != TokenKind.Number)
+        //    {
+        //        return MakeResult<MimeVersion>.Failed;
+        //    }
 
-            return new MakeResult<string>(name != null, name);
-        }
+        //    // TODO - do I need to make the end here??
+        //    // return TryMakeEnd();
+
+        //    return new MakeResult<MimeVersion>(true, new MimeVersion(Int32.Parse(major.Text), Int32.Parse(minor.Text)));
+        //}
+
+        ///// <summary>
+        ///// Attempt to make a MIME field name.
+        ///// </summary>
+        ///// <returns>The result of the operation that indicates the state and optionally value.</returns>
+        ///// <remarks><![CDATA[1*<any CHAR, excluding CTLs, SPACE, and ":">]]></remarks>
+        //public async Task<MakeResult<string>> TryMakeFieldNameAsync()
+        //{
+        //    string name = null;
+
+        //    var token = await Enumerator.PeekAsync().ReturnOnAnyThread();
+        //    while (token != Token.None && token != SpaceToken && token != ColonToken)
+        //    {
+        //        token = await Enumerator.TakeAsync().ReturnOnAnyThread();
+        //        switch (token.Kind)
+        //        {
+        //            case TokenKind.Text:
+        //            case TokenKind.Number:
+        //                break;
+
+        //            case TokenKind.Space:
+        //            case TokenKind.Punctuation:
+        //                if (token.Text[0] <= 31)
+        //                {
+        //                    return MakeResult<string>.Failed;
+        //                }
+        //                break;
+
+        //            default:
+        //                return MakeResult<string>.Failed;
+        //        }
+
+        //        name += token.Text;
+        //        token = await Enumerator.PeekAsync().ReturnOnAnyThread();
+        //    }
+
+        //    return new MakeResult<string>(name != null, name);
+        //}
 
         ///// <summary>
         ///// Attempt to make a content type.
@@ -542,43 +581,43 @@ namespace SmtpServer.Mime
         //    return true;
         //}
 
-        ///// <summary>
-        ///// Attempt to make a MIME field name.
-        ///// </summary>
-        ///// <param name="name">The name of the field that was made.</param>
-        ///// <returns>true if a field name could be made, false if not.</returns>
-        ///// <remarks><![CDATA[1*<any CHAR, excluding CTLs, SPACE, and ":">]]></remarks>
-        //public bool TryMakeFieldName(out string name)
-        //{
-        //    name = null;
+        /// <summary>
+        /// Attempt to make a MIME field name.
+        /// </summary>
+        /// <param name="name">The name of the field that was made.</param>
+        /// <returns>true if a field name could be made, false if not.</returns>
+        /// <remarks><![CDATA[1*<any CHAR, excluding CTLs, SPACE, and ":">]]></remarks>
+        public bool TryMakeFieldName(out string name)
+        {
+            name = null;
 
-        //    var token = Enumerator.Peek();
-        //    while (token != Token.None && token != SpaceToken && token != ColonToken)
-        //    {
-        //        token = Enumerator.Take();
-        //        switch (token.Kind)
-        //        {
-        //            case TokenKind.Text:
-        //            case TokenKind.Number:
-        //                break;
+            var token = Enumerator.Peek();
+            while (token != Token.None && token != SpaceToken && token != ColonToken)
+            {
+                token = Enumerator.Take();
+                switch (token.Kind)
+                {
+                    case TokenKind.Text:
+                    case TokenKind.Number:
+                        break;
 
-        //            case TokenKind.Space:
-        //            case TokenKind.Punctuation:
-        //                if (token.Text[0] <= 31)
-        //                {
-        //                    return false;
-        //                }
-        //                break;
+                    case TokenKind.Space:
+                    case TokenKind.Punctuation:
+                        if (token.Text[0] <= 31)
+                        {
+                            return false;
+                        }
+                        break;
 
-        //            default:
-        //                return false;
-        //        }
+                    default:
+                        return false;
+                }
 
-        //        name += token.Text;
-        //        token = Enumerator.Peek();
-        //    }
+                name += token.Text;
+                token = Enumerator.Peek();
+            }
 
-        //    return name != null;
-        //}
+            return name != null;
+        }
     }
 }

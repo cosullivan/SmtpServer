@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -54,10 +55,17 @@ namespace SmtpServer.Content
             var tokens = await ReadMimeHeaderTokensAsync(cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
 
-            foreach (var token in tokens)
-            {
-                Console.WriteLine(token);
-            }
+            tokens = tokens.Where(t => t.Kind != TokenKind.Space).ToList();
+
+            //var enumerator = new TokenEnumerator2(tokens);
+            //while (enumerator.Peek() != Token.None)
+            //{
+            //    Console.WriteLine(enumerator.Take());
+            //}
+
+            var mimeParser = new MimeParser(new TokenEnumerator2(tokens));
+            mimeParser.TryMakeMimeVersion(out MimeVersion version);
+            Console.WriteLine(version);
 
             return null;
         }
@@ -67,29 +75,23 @@ namespace SmtpServer.Content
         /// </summary>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The list of MIME headers that were read.</returns>
-        async Task<IEnumerable<Token>> ReadMimeHeaderTokensAsync(CancellationToken cancellationToken)
+        async Task<IReadOnlyList<Token>> ReadMimeHeaderTokensAsync(CancellationToken cancellationToken)
         {
-            //var tokens = new List<Token>();
-            //var reader = new StreamTokenReader(_stream);
+            var tokens = new List<Token>();
+            var reader = new StreamTokenReader(_stream);
 
-            //Token token;
-            //while ((token = await reader.NextTokenAsync(cancellationToken)) != Token.None)
-            //{
-            //    if (tokens.Count > 1 && tokens[tokens.Count - 1] == Token.NewLine && token == Token.NewLine)
-            //    {
-            //        return tokens;
-            //    }
+            Token token;
+            while ((token = await reader.NextTokenAsync(cancellationToken)) != Token.None)
+            {
+                if (tokens.Count > 1 && tokens[tokens.Count - 1] == Token.NewLine && token == Token.NewLine)
+                {
+                    return tokens;
+                }
 
-            //    tokens.Add(token);
-            //}
+                tokens.Add(token);
+            }
 
-            //return tokens;
-
-            var parser = new MimeParser(new TokenEnumerator2(new StreamTokenReader(_stream), ignoreWhiteSpace: true));
-
-            var result = await parser.TryMakeMimeVersionAsync();
-
-            return null;
+            return tokens;
         }
     }
 }
