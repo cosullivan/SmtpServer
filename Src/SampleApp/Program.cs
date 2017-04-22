@@ -28,6 +28,8 @@ namespace SampleApp
     {
         static void Main(string[] args)
         {
+            //Console.WriteLine(Char.IsPunctuation((char)34));
+            //return;
             //var text = "MIME-Version: 1.0";
             //var parser = new SmtpServer.Mime.MimeParser(new TokenEnumerator(new StringTokenReader(text)));
 

@@ -133,11 +133,20 @@ namespace SmtpServer.Mime
         /// Constructor.
         /// </summary>
         /// <param name="name">The name of the MIME header.</param>
-        /// <param name="value">The value for the MIME header.</param>
-        public MimeHeader(string name, string value)
+        /// <param name="tokens">The list of tokens that make up the field body.</param>
+        public MimeHeader(string name, IReadOnlyList<Token> tokens)
         {
             Name = name;
-            Value = value;
+            Tokens = tokens;
+        }
+
+        /// <summary>
+        /// Returns a string representation of the header.
+        /// </summary>
+        /// <returns>The string representation of the header.</returns>
+        public override string ToString()
+        {
+            return $"{Name}:{Value}";
         }
 
         /// <summary>
@@ -146,9 +155,17 @@ namespace SmtpServer.Mime
         public string Name { get; }
 
         /// <summary>
+        /// The list of tokens that make up the field body.
+        /// </summary>
+        public IReadOnlyList<Token> Tokens { get; }
+
+        /// <summary>
         /// The value for the header.
         /// </summary>
-        public string Value { get; }
+        public string Value
+        {
+            get { return String.Concat(Tokens.Select(token => token.Text)); }
+        }
     }
 
     //public struct MakeResult<TValue>
@@ -189,6 +206,10 @@ namespace SmtpServer.Mime
     public sealed class MimeParser : TokenParser
     {
         static readonly Token SpaceToken = new Token(TokenKind.Space, ' ');
+        static readonly Token CrToken = new Token(TokenKind.Space, (char)13);
+        static readonly Token LfToken = new Token(TokenKind.Space, (char)10);
+        static readonly Token HtabToken = new Token(TokenKind.Space, (char)9);
+        static readonly Token QuoteToken = new Token(TokenKind.Punctuation, (char)34);
         static readonly Token ColonToken = new Token(TokenKind.Punctuation, ':');
         static readonly Token DecimalPointToken = new Token(TokenKind.Punctuation, '.');
         static readonly Token EqualsToken = new Token(TokenKind.Symbol, '=');
@@ -226,10 +247,7 @@ namespace SmtpServer.Mime
                 return false;
             }
 
-            if (Enumerator.Take() != ColonToken)
-            {
-                return false;
-            }
+            Enumerator.Skip(TokenKind.Space);
 
             var major = Enumerator.Take();
             if (major.Kind != TokenKind.Number)
@@ -249,86 +267,9 @@ namespace SmtpServer.Mime
             }
 
             version = new MimeVersion(Int32.Parse(major.Text), Int32.Parse(minor.Text));
-            return true;
+
+            return TryMakeEnd();
         }
-
-        ///// <summary>
-        ///// Attempt to make a MIME version header.
-        ///// </summary>
-        ///// <returns>The result of the operation that indicates the state and optionally value.</returns>
-        //public async Task<MakeResult<MimeVersion>> TryMakeMimeVersionAsync()
-        //{
-        //    var name = await TryMakeFieldNameAsync().ReturnOnAnyThread();
-        //    if (name.Result == false || name.Value.CaseInsensitiveEquals("MIME-Version") == false)
-        //    {
-        //        return MakeResult<MimeVersion>.Failed;
-        //    }
-
-        //    if (await Enumerator.TakeAsync().ReturnOnAnyThread() != ColonToken)
-        //    {
-        //        return MakeResult<MimeVersion>.Failed;
-        //    }
-
-        //    var major = await Enumerator.TakeAsync().ReturnOnAnyThread();
-        //    if (major.Kind != TokenKind.Number)
-        //    {
-        //        return MakeResult<MimeVersion>.Failed;
-        //    }
-
-        //    if (await Enumerator.TakeAsync().ReturnOnAnyThread() != DecimalPointToken)
-        //    {
-        //        return MakeResult<MimeVersion>.Failed;
-        //    }
-
-        //    var minor = await Enumerator.TakeAsync().ReturnOnAnyThread();
-        //    if (minor.Kind != TokenKind.Number)
-        //    {
-        //        return MakeResult<MimeVersion>.Failed;
-        //    }
-
-        //    // TODO - do I need to make the end here??
-        //    // return TryMakeEnd();
-
-        //    return new MakeResult<MimeVersion>(true, new MimeVersion(Int32.Parse(major.Text), Int32.Parse(minor.Text)));
-        //}
-
-        ///// <summary>
-        ///// Attempt to make a MIME field name.
-        ///// </summary>
-        ///// <returns>The result of the operation that indicates the state and optionally value.</returns>
-        ///// <remarks><![CDATA[1*<any CHAR, excluding CTLs, SPACE, and ":">]]></remarks>
-        //public async Task<MakeResult<string>> TryMakeFieldNameAsync()
-        //{
-        //    string name = null;
-
-        //    var token = await Enumerator.PeekAsync().ReturnOnAnyThread();
-        //    while (token != Token.None && token != SpaceToken && token != ColonToken)
-        //    {
-        //        token = await Enumerator.TakeAsync().ReturnOnAnyThread();
-        //        switch (token.Kind)
-        //        {
-        //            case TokenKind.Text:
-        //            case TokenKind.Number:
-        //                break;
-
-        //            case TokenKind.Space:
-        //            case TokenKind.Punctuation:
-        //                if (token.Text[0] <= 31)
-        //                {
-        //                    return MakeResult<string>.Failed;
-        //                }
-        //                break;
-
-        //            default:
-        //                return MakeResult<string>.Failed;
-        //        }
-
-        //        name += token.Text;
-        //        token = await Enumerator.PeekAsync().ReturnOnAnyThread();
-        //    }
-
-        //    return new MakeResult<string>(name != null, name);
-        //}
 
         ///// <summary>
         ///// Attempt to make a content type.
@@ -541,45 +482,88 @@ namespace SmtpServer.Mime
         //    return false;
         //}
 
-        ///// <summary>
-        ///// Attempt to make the end of the line.
-        ///// </summary>
-        ///// <returns>true if the end of line could be made, false if not.</returns>
-        //Task<bool> TryMakeEndAsync()
-        //{
-        //    Enumerator.TakeWhile(TokenKind.Space);
+        internal bool TryMakeField(out IMimeHeader mimeHeader)
+        {
+            mimeHeader = null;
 
-        //    return Enumerator.Peek() == Token.None;
-        //}
+            if (TryMakeFieldName(out string name) == false)
+            {
+                return false;
+            }
 
-        ///// <summary>
-        ///// Attempt to make a decimal number.
-        ///// </summary>
-        ///// <param name="number">The decimal number that was made.</param>
-        ///// <returns>true if the decimal number was made, false if not.</returns>
-        //bool TryMakeDecimal(out decimal number)
-        //{
-        //    number = default(decimal);
+            if (TryMakeFieldBody(out List<Token> body) == false)
+            {
+                return false;
+            }
 
-        //    if (Enumerator.Peek().Kind != TokenKind.Number)
-        //    {
-        //        return false;
-        //    }
-        //    var scale = Enumerator.Take().Text;
+            mimeHeader = new MimeHeader(name, body);
 
-        //    if (Enumerator.Take() != DecimalPointToken)
-        //    {
-        //        return false;
-        //    }
+            return TryMakeEnd();
+        }
 
-        //    if (Enumerator.Peek().Kind != TokenKind.Number)
-        //    {
-        //        return false;
-        //    }
+        internal bool TryMakeFieldBody(out List<Token> body)
+        {
+            if (TryMakeFieldBodyContents(out body) == false)
+            {
+                return false;
+            }
 
-        //    number = Decimal.Parse($"{scale}.{Enumerator.Take().Text}");
-        //    return true;
-        //}
+            while (TryMake(TryMakeCrlfLwsp, out Token token))
+            {
+                body.AddRange(new[] { Token.NewLine, token });
+
+                if (TryMakeFieldBodyContents(out List<Token> bodyContents) == false)
+                {
+                    return false;
+                }
+
+                body.AddRange(bodyContents);
+            }
+
+            return true;
+        }
+
+        internal bool TryMakeCrlfLwsp(out Token token)
+        {
+            token = default(Token);
+
+            if (Enumerator.Take() != Token.NewLine)
+            {
+                return false;
+            }
+
+            return TryMakeLwsp(out token);
+        }
+        
+        internal bool TryMakeLwsp(out Token token)
+        {
+            token = Enumerator.Take();
+
+            return token == SpaceToken || token == SpaceToken;
+        }
+
+        internal bool TryMakeFieldBodyContents(out List<Token> bodyContents)
+        {
+            bodyContents = new List<Token>();
+
+            while (Enumerator.Peek() != Token.NewLine)
+            {
+                bodyContents.Add(Enumerator.Take());
+            }
+
+            return bodyContents.Count > 0;
+        }
+
+        /// <summary>
+        /// Attempt to make the end of the line.
+        /// </summary>
+        /// <returns>true if the end of line could be made, false if not.</returns>
+        internal bool TryMakeEnd()
+        {
+            Enumerator.Skip(TokenKind.Space);
+
+            return Enumerator.Take() == Token.NewLine;
+        }
 
         /// <summary>
         /// Attempt to make a MIME field name.
@@ -587,7 +571,7 @@ namespace SmtpServer.Mime
         /// <param name="name">The name of the field that was made.</param>
         /// <returns>true if a field name could be made, false if not.</returns>
         /// <remarks><![CDATA[1*<any CHAR, excluding CTLs, SPACE, and ":">]]></remarks>
-        public bool TryMakeFieldName(out string name)
+        internal bool TryMakeFieldName(out string name)
         {
             name = null;
 
@@ -617,7 +601,7 @@ namespace SmtpServer.Mime
                 token = Enumerator.Peek();
             }
 
-            return name != null;
+            return name != null && Enumerator.Take() == ColonToken;
         }
     }
 }
