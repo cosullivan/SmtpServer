@@ -61,9 +61,13 @@ namespace SmtpServer.Content
             //mimeParser.TryMakeMimeVersion(out MimeVersion version);
             //Console.WriteLine(version);
 
-            var result = mimeParser.TryMakeField(out IMimeHeader header);
+            //var result = mimeParser.TryMakeField(out IMimeHeader header);
+            //Console.WriteLine(result);
+            //Console.WriteLine(header);
+
+            var result = mimeParser.TryMakeFieldList(out List<IMimeHeader> headers);
             Console.WriteLine(result);
-            Console.WriteLine(header);
+            Console.WriteLine(headers);
 
             return null;
         }

@@ -482,6 +482,33 @@ namespace SmtpServer.Mime
         //    return false;
         //}
 
+        /// <summary>
+        /// Attempt to make a mime header field list.
+        /// </summary>
+        /// <param name="mimeHeaders">The list of headers that was found.</param>
+        /// <returns>true if a header field list could be made, false if not.</returns>
+        internal bool TryMakeFieldList(out List<IMimeHeader> mimeHeaders)
+        {
+            mimeHeaders = new List<IMimeHeader>();
+
+            while (Enumerator.Peek() != Token.None)
+            {
+                if (TryMakeField(out IMimeHeader mimeHeader) == false)
+                {
+                    return false;
+                }
+
+                mimeHeaders.Add(mimeHeader);
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Attempt to make a field.
+        /// </summary>
+        /// <param name="mimeHeader">The mime header that was made.</param>
+        /// <returns>true if a MIME header field could be made, false if not.</returns>
         internal bool TryMakeField(out IMimeHeader mimeHeader)
         {
             mimeHeader = null;
@@ -501,6 +528,11 @@ namespace SmtpServer.Mime
             return TryMakeEnd();
         }
 
+        /// <summary>
+        /// Attempt to make a MIME header field body.
+        /// </summary>
+        /// <param name="body">The list of tokens that were matched for the body.</param>
+        /// <returns>true if a MIME header field body could be made, false if not.</returns>
         internal bool TryMakeFieldBody(out List<Token> body)
         {
             if (TryMakeFieldBodyContents(out body) == false)
@@ -508,9 +540,9 @@ namespace SmtpServer.Mime
                 return false;
             }
 
-            while (TryMake(TryMakeCrlfLwsp, out Token token))
+            while (TryMake(TryMakeCrlfLwsp, out Token token1, out Token token2))
             {
-                body.AddRange(new[] { Token.NewLine, token });
+                body.AddRange(new[] { token1, token2 });
 
                 if (TryMakeFieldBodyContents(out List<Token> bodyContents) == false)
                 {
@@ -523,25 +555,37 @@ namespace SmtpServer.Mime
             return true;
         }
 
-        internal bool TryMakeCrlfLwsp(out Token token)
+        /// <summary>
+        /// Attempt to make a CRLF LWSP component.
+        /// </summary>
+        /// <param name="token1">The CRLF token that was made.</param>
+        /// <param name="token2">The LWSP token that was made.</param>
+        /// <returns>true if the CRLF LWSP token combination could be made.</returns>
+        /// <remarks>This represents the long line folding tokens.</remarks>
+        internal bool TryMakeCrlfLwsp(out Token token1, out Token token2)
         {
-            token = default(Token);
+            token1 = Enumerator.Take();
 
-            if (Enumerator.Take() != Token.NewLine)
-            {
-                return false;
-            }
-
-            return TryMakeLwsp(out token);
+            return TryMakeLwsp(out token2) && token1 == Token.NewLine;
         }
         
+        /// <summary>
+        /// Try make a LWSP token.
+        /// </summary>
+        /// <param name="token">The token that was made.</param>
+        /// <returns>true if the LWSP token could be made, false if not.</returns>
         internal bool TryMakeLwsp(out Token token)
         {
             token = Enumerator.Take();
 
-            return token == SpaceToken || token == SpaceToken;
+            return token == SpaceToken || token == HtabToken;
         }
 
+        /// <summary>
+        /// Attempt to make the field body contents.
+        /// </summary>
+        /// <param name="bodyContents">The list of tokens that were made for the contents of the field body.</param>
+        /// <returns>true if the field body contents could be made, false if not.</returns>
         internal bool TryMakeFieldBodyContents(out List<Token> bodyContents)
         {
             bodyContents = new List<Token>();
