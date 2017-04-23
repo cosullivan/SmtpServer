@@ -1,68 +1,103 @@
 ﻿using System;
 using System.Collections.Generic;
 using SmtpServer.Text;
+using System.Linq;
 
 namespace SmtpServer.Mime
 {
-    //public struct MakeResult<TValue>
-    //{
-    //    public static readonly MakeResult<TValue> Failed = new MakeResult<TValue>(false);
-
-    //    /// <summary>
-    //    /// Constructor.
-    //    /// </summary>
-    //    /// <param name="result">The result that indicates whether a match was a success or not.</param>
-    //    public MakeResult(bool result) : this(result, default(TValue)) { }
-
-    //    /// <summary>
-    //    /// Constructor.
-    //    /// </summary>
-    //    /// <param name="result">The result that indicates whether a match was a success or not.</param>
-    //    /// <param name="value">The value of the match.</param>
-    //    public MakeResult(bool result, TValue value)
-    //    {
-    //        Result = result;
-    //        Value = value;
-    //    }
-
-    //    /// <summary>
-    //    /// Indicates whether or not a make operation was a success.
-    //    /// </summary>
-    //    public bool Result { get; }
-
-    //    /// <summary>
-    //    /// The value that was made.
-    //    /// </summary>
-    //    public TValue Value { get; }
-    //}
-
     // https://tools.ietf.org/html/rfc822#section-3.2
     // https://tools.ietf.org/html/rfc2045
     // http://docs.roguewave.com/sourcepro/11.1/html/protocolsug/10-1.html
     public sealed class MimeParser : TokenParser
     {
-        static readonly Token SpaceToken = new Token(TokenKind.Space, ' ');
-        static readonly Token CrToken = new Token(TokenKind.Space, (char)13);
-        static readonly Token LfToken = new Token(TokenKind.Space, (char)10);
-        static readonly Token HtabToken = new Token(TokenKind.Space, (char)9);
-        static readonly Token QuoteToken = new Token(TokenKind.Punctuation, (char)34);
-        static readonly Token ColonToken = new Token(TokenKind.Punctuation, ':');
-        static readonly Token DecimalPointToken = new Token(TokenKind.Punctuation, '.');
-        static readonly Token EqualsToken = new Token(TokenKind.Symbol, '=');
-        static readonly Token SemiColonToken = new Token(TokenKind.Punctuation, ';');
-        static readonly Token[] DescreteTypeTokens = 
+        #region Tokens
+
+        static class Tokens
         {
-            new Token(TokenKind.Text, "text"),
-            new Token(TokenKind.Text, "image"),
-            new Token(TokenKind.Text, "audio"),
-            new Token(TokenKind.Text, "video"),
-            new Token(TokenKind.Text, "application")
-        };
-        static readonly Token[] CompositeTypeTokens =
-        {
-            new Token(TokenKind.Text, "message"),
-            new Token(TokenKind.Text, "multipart"),
-        };
+            // ReSharper disable InconsistentNaming
+            internal static readonly Token Space = new Token(TokenKind.Space, ' ');
+            internal static readonly Token CR = new Token(TokenKind.Space, (char)13);
+            internal static readonly Token LF = new Token(TokenKind.Space, (char)10);
+            internal static readonly Token HTAB = new Token(TokenKind.Space, (char)9);
+            internal static readonly Token Quote = new Token(TokenKind.Punctuation, (char)34);
+            internal static readonly Token Colon = new Token(TokenKind.Punctuation, ':');
+            internal static readonly Token DecimalPoint = new Token(TokenKind.Punctuation, '.');
+            internal static readonly Token Equal = new Token(TokenKind.Symbol, '=');
+            internal static readonly Token Dash = new Token(TokenKind.Symbol, '-');
+            internal static readonly Token SemiColon = new Token(TokenKind.Punctuation, ';');
+            internal static readonly Token ForwardSlash = new Token(TokenKind.Punctuation, '/');
+            internal static readonly Token BackSlash = new Token(TokenKind.Punctuation, '\\');
+            internal static readonly Token[] DescreteTypes =
+            {
+                new Token(TokenKind.Text, "text"),
+                new Token(TokenKind.Text, "image"),
+                new Token(TokenKind.Text, "audio"),
+                new Token(TokenKind.Text, "video"),
+                new Token(TokenKind.Text, "application")
+            };
+            internal static readonly Token[] CompositeTypes =
+            {
+                new Token(TokenKind.Text, "message"),
+                new Token(TokenKind.Text, "multipart"),
+            };
+            internal static readonly Token[] TSpecials = new[]
+            {
+                Token.Create('('),
+                Token.Create(')'),
+                Token.Create('<'),
+                Token.Create('>'),
+                Token.Create('@'),
+                Token.Create(','),
+                Token.Create(';'),
+                Token.Create(':'),
+                Token.Create('\\'),
+                Token.Create('"'),
+                Token.Create('/'),
+                Token.Create('['),
+                Token.Create(']'),
+                Token.Create('?'),
+                Token.Create('=')
+            };
+            internal static readonly Token[] CTL = new[]
+            {
+                Token.Create((char)0),
+                Token.Create((char)1),
+                Token.Create((char)2),
+                Token.Create((char)3),
+                Token.Create((char)4),
+                Token.Create((char)5),
+                Token.Create((char)6),
+                Token.Create((char)7),
+                Token.Create((char)8),
+                Token.Create((char)9),
+                Token.Create((char)10),
+                Token.Create((char)11),
+                Token.Create((char)12),
+                Token.Create((char)13),
+                Token.Create((char)14),
+                Token.Create((char)15),
+                Token.Create((char)16),
+                Token.Create((char)17),
+                Token.Create((char)18),
+                Token.Create((char)19),
+                Token.Create((char)20),
+                Token.Create((char)21),
+                Token.Create((char)22),
+                Token.Create((char)23),
+                Token.Create((char)24),
+                Token.Create((char)25),
+                Token.Create((char)26),
+                Token.Create((char)27),
+                Token.Create((char)28),
+                Token.Create((char)29),
+                Token.Create((char)30),
+                Token.Create((char)31),
+                Token.Create((char)127),
+            };
+            // ReSharper restore InconsistentNaming
+        }
+
+        #endregion
 
         /// <summary>
         /// Constructor.
@@ -109,7 +144,8 @@ namespace SmtpServer.Mime
         /// <returns>true if a MIME header field could be made, false if not.</returns>
         internal bool TryMakeKnownField(out IMimeHeader mimeHeader)
         {
-            return TryMake(TryMakeMimeVersion, out mimeHeader);
+            return TryMake(TryMakeMimeVersion, out mimeHeader)
+                || TryMake(TryMakeContentType, out mimeHeader);
         }
         
         /// <summary>
@@ -186,7 +222,7 @@ namespace SmtpServer.Mime
         {
             token = Enumerator.Take();
 
-            return token == SpaceToken || token == HtabToken;
+            return token == Tokens.Space || token == Tokens.HTAB;
         }
 
         /// <summary>
@@ -227,7 +263,7 @@ namespace SmtpServer.Mime
                 return false;
             }
 
-            if (Enumerator.Take() != DecimalPointToken)
+            if (Enumerator.Take() != Tokens.DecimalPoint)
             {
                 return false;
             }
@@ -243,216 +279,407 @@ namespace SmtpServer.Mime
             return TryMakeEnd();
         }
 
-        ///// <summary>
-        ///// Attempt to make a content type.
-        ///// </summary>
-        ///// <param name="contentType">The content type that was made.</param>
-        ///// <returns>true if a content type could be made, false if not.</returns>
-        ///// <remarks><![CDATA["Content-Type" ":" type "/" subtype]]></remarks>
-        //public bool TryMakeContentType(out ContentType contentType)
-        //{
-        //    contentType = null;
+        /// <summary>
+        /// Attempt to make a content type.
+        /// </summary>
+        /// <param name="contentType">The content type that was made.</param>
+        /// <returns>true if a content type could be made, false if not.</returns>
+        /// <remarks><![CDATA["Content-Type" ":" type "/" subtype]]></remarks>
+        internal bool TryMakeContentType(out IMimeHeader contentType)
+        {
+            contentType = null;
 
-        //    if (TryMakeFieldName(out string name) == false || name.CaseInsensitiveEquals("Content-Type") == false)
-        //    {
-        //        return false;
-        //    }
+            if (TryMakeFieldName(out string name) == false || name.CaseInsensitiveEquals("Content-Type") == false)
+            {
+                return false;
+            }
 
-        //    if (TryMakeMediaType(out string mediaType) == false)
-        //    {
-        //        return false;
-        //    }
+            Enumerator.Skip(TokenKind.Space);
 
-        //    if (TryMakeSubType(out string subType) == false)
-        //    {
-        //        return false;
-        //    }
+            if (TryMakeMediaType(out string mediaType) == false)
+            {
+                return false;
+            }
 
-        //    TryMake(TryMakeParameterList, out Dictionary<string, string> parameters);
+            if (Enumerator.Take() != Tokens.ForwardSlash)
+            {
+                return false;
+            }
 
-        //    contentType = new ContentType(mediaType, subType, parameters ?? new Dictionary<string, string>());
+            if (TryMakeMediaSubType(out string mediaSubType) == false)
+            {
+                return false;
+            }
 
-        //    return TryMakeEnd();
-        //}
+            if (TryMake(TryMakeOptionalParameterList, out Dictionary<string, string> parameters) == false)
+            {
+                return false;
+            }
 
-        ///// <summary>
-        ///// Attempt to make a content type media type.
-        ///// </summary>
-        ///// <param name="type">The type that was made.</param>
-        ///// <returns>true if a media type could be made, false if not.</returns>
-        //bool TryMakeMediaType(out string type)
-        //{
-        //    return TryMake(TryMakeDescreteType, out type) || TryMake(TryMakeCompositeType, out type);
-        //}
+            contentType = new ContentType(mediaType, mediaSubType, parameters ?? new Dictionary<string, string>());
 
-        ///// <summary>
-        ///// Attempt to make a content type subtype.
-        ///// </summary>
-        ///// <param name="type">The type that was made.</param>
-        ///// <returns>true if a subtype could be made, false if not.</returns>
-        //bool TryMakeSubType(out string type)
-        //{
-        //    return TryMake(TryMakeExtensionToken, out type) || TryMake(TryMakeIanaToken, out type);
-        //}
+            return TryMakeEnd();
+        }
 
-        ///// <summary>
-        ///// Attempt to make a descrete type.
-        ///// </summary>
-        ///// <param name="type">The descrete type that was made.</param>
-        ///// <returns>true if a descrete type could be made, false if not.</returns>
-        //bool TryMakeDescreteType(out string type)
-        //{
-        //    if (DescreteTypeTokens.Contains(Enumerator.Peek()))
-        //    {
-        //        type = Enumerator.Take().Text;
-        //        return true;
-        //    }
+        /// <summary>
+        /// Attempt to make a media type.
+        /// </summary>
+        /// <param name="type">The type that was made.</param>
+        /// <returns>true if a media type could be made, false if not.</returns>
+        /// <remarks><![CDATA[discrete-type / composite-type]]></remarks>
+        bool TryMakeMediaType(out string type)
+        {
+            return TryMake(TryMakeDescreteType, out type) || TryMake(TryMakeCompositeType, out type);
+        }
 
-        //    return TryMakeExtensionToken(out type);
-        //}
+        /// <summary>
+        /// Attempt to make a media subtype.
+        /// </summary>
+        /// <param name="type">The type that was made.</param>
+        /// <returns>true if a subtype could be made, false if not.</returns>
+        /// <remarks><![CDATA[extension-token / iana-token]]></remarks>
+        bool TryMakeMediaSubType(out string type)
+        {
+            return TryMake(TryMakeExtensionToken, out type) || TryMake(TryMakeIanaToken, out type);
+        }
 
-        ///// <summary>
-        ///// Attempt to make a composite type.
-        ///// </summary>
-        ///// <param name="type">The composite type that was made.</param>
-        ///// <returns>true if a composite type could be made, false if not.</returns>
-        //bool TryMakeCompositeType(out string type)
-        //{
-        //    if (CompositeTypeTokens.Contains(Enumerator.Peek()))
-        //    {
-        //        type = Enumerator.Take().Text;
-        //        return true;
-        //    }
+        /// <summary>
+        /// Attempt to make a descrete type.
+        /// </summary>
+        /// <param name="type">The descrete type that was made.</param>
+        /// <returns>true if a descrete type could be made, false if not.</returns>
+        /// <remarks><![CDATA["text" / "image" / "audio" / "video" / "application" / extension-token]]></remarks>
+        bool TryMakeDescreteType(out string type)
+        { 
+            if (Tokens.DescreteTypes.Contains(Enumerator.Peek()))
+            {
+                type = Enumerator.Take().Text;
+                return true;
+            }
 
-        //    return TryMakeExtensionToken(out type);
-        //}
+            return TryMakeExtensionToken(out type);
+        }
 
-        ///// <summary>
-        ///// Attempt to make an extension token.
-        ///// </summary>
-        ///// <param name="token">The extension token that was made.</param>
-        ///// <returns>true if an extension token could be made, false if not.</returns>
-        //bool TryMakeExtensionToken(out string token)
-        //{
-        //    return TryMake(TryMakeIetfToken, out token) || TryMake(TryMakeXToken, out token);
-        //}
+        /// <summary>
+        /// Attempt to make a composite type.
+        /// </summary>
+        /// <param name="type">The composite type that was made.</param>
+        /// <returns>true if a composite type could be made, false if not.</returns>
+        /// <remarks><![CDATA["message" / "multipart" / extension-token]]></remarks>
+        bool TryMakeCompositeType(out string type)
+        {
+            if (Tokens.CompositeTypes.Contains(Enumerator.Peek()))
+            {
+                type = Enumerator.Take().Text;
+                return true;
+            }
 
-        //bool TryMakeIetfToken(out string token)
-        //{
-        //    token = null;
+            return TryMakeExtensionToken(out type);
+        }
 
-        //    return false;
-        //}
+        /// <summary>
+        /// Attempt to make an extension token.
+        /// </summary>
+        /// <param name="token">The extension token that was made.</param>
+        /// <returns>true if an extension token could be made, false if not.</returns>
+        /// <remarks><![CDATA[ietf-token / x-token]]></remarks>
+        bool TryMakeExtensionToken(out string token)
+        {
+            return TryMake(TryMakeIetfToken, out token) || TryMake(TryMakeXToken, out token);
+        }
 
-        //bool TryMakeXToken(out string token)
-        //{
-        //    token = null;
+        /// <summary>
+        /// Attempt to make an IETF token.
+        /// </summary>
+        /// <param name="token">The IETF token that was matched.</param>
+        /// <returns>true if an IETF token could be made, false if not.</returns>
+        /// <remarks>An extension token defined by a standards-track RFC and registered with IANA.</remarks>
+        bool TryMakeIetfToken(out string token)
+        {
+            token = null;
 
-        //    return false;
-        //}
+            return false;
+        }
 
-        //bool TryMakeIanaToken(out string token)
-        //{
-        //    token = null;
+        /// <summary>
+        /// Attempt to make an XToken.
+        /// </summary>
+        /// <param name="xtoken">The name of the x-token that was made.</param>
+        /// <returns>true if an XToken could be made, false if not.</returns>
+        /// <remarks>The two characters "X-" or "x-" followed, with no intervening white space, by any token.</remarks>
+        bool TryMakeXToken(out string xtoken)
+        {
+            xtoken = Enumerator.Take().Text;
 
-        //    return false;
-        //}
+            if (xtoken == null || xtoken.CaseInsensitiveEquals("X") == false)
+            {
+                return false;
+            }
 
-        ///// <summary>
-        ///// Attempt to make a parameter list.
-        ///// </summary>
-        ///// <param name="parameters">The parameter list that was made.</param>
-        ///// <returns>true if the parameter list coud be made, false if not.</returns>
-        //bool TryMakeParameterList(out Dictionary<string, string> parameters)
-        //{
-        //    parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (Enumerator.Take() != Tokens.Dash)
+            {
+                return false;
+            }
 
-        //    Enumerator.TakeWhile(TokenKind.Space);
-        //    while (Enumerator.Peek() == SemiColonToken)
-        //    {
-        //        Enumerator.Take();
+            if (TryMakeToken(out string token) == false)
+            {
+                return false;
+            }
 
-        //        if (TryMakeParameterAttribute(out string attribute) == false)
-        //        {
-        //            return false;
-        //        }
+            xtoken += "-" + token;
+            return true;
+        }
 
-        //        Enumerator.TakeWhile(TokenKind.Space);
+        /// <summary>
+        /// Attempt to make an IANA token.
+        /// </summary>
+        /// <param name="token">The token that was made.</param>
+        /// <returns>true if a token could be made, false if not.</returns>
+        /// <remarks>A publicly-defined extension token. Tokens of this form must be registered with IANA as specified in RFC 2048</remarks>
+        bool TryMakeIanaToken(out string token)
+        {
+            return TryMakeRegName(out token);
+        }
 
-        //        if (Enumerator.Take() != EqualsToken)
-        //        {
-        //            return false;
-        //        }
+        /// <summary>
+        /// Attempt to make an IANA registered name.
+        /// </summary>
+        /// <param name="name">The registered name that was made.</param>
+        /// <returns>true if a registered name could be made, false if not.</returns>
+        /// <remarks>This comes from a stricter interperetation according to RFC4288.</remarks>
+        /// <remarks><![CDATA[1*127reg-name-chars]]></remarks>
+        bool TryMakeRegName(out string name)
+        {
+            name = null;
 
-        //        Enumerator.TakeWhile(TokenKind.Space);
+            var token = Enumerator.Peek();
+            while (new[] { Token.None, Token.NewLine, Tokens.Space, Tokens.SemiColon }.Contains(token) == false)
+            {
+                if (TryMakeRegNameChars(out token) == false)
+                {
+                    return false;
+                }
 
-        //        if (TryMakeParameterValue(out string value) == false)
-        //        {
-        //            return false;
-        //        }
+                name += token.Text;
+                token = Enumerator.Peek();
+            }
 
-        //        parameters[attribute] = value;
+            return name?.Length <= 127;
+        }
 
-        //        Enumerator.TakeWhile(TokenKind.Space);
-        //    }
+        /// <summary>
+        /// Attempt to make an IANA registered name character subset.
+        /// </summary>
+        /// <param name="token">The registered name character subset that was made.</param>
+        /// <returns>true if a registered name character subset could be made, false if not.</returns>
+        /// <remarks><![CDATA[ALPHA / DIGIT / "!" / "#" / "$" / "&" / "." / "+" / "-" / "^" / "_"]]></remarks>
+        bool TryMakeRegNameChars(out Token token)
+        {
+            token = Enumerator.Take();
 
-        //    return true;
-        //}
+            switch (token.Kind)
+            {
+                case TokenKind.Text:
+                case TokenKind.Number:
+                    return true;
 
-        ///// <summary>
-        ///// Attempt to make a content type parameter.
-        ///// </summary>
-        ///// <param name="attribute">The attribute for the parameter.</param>
-        ///// <param name="value">The value for the parameter.</param>
-        ///// <returns>true if the parameter could be made, false if not.</returns>
-        //bool TryMakeParameter(out string attribute, out string value)
-        //{
-        //    value = null;
+                case TokenKind.Punctuation:
+                case TokenKind.Symbol:
+                    var allowable = new char[] { '!', '#', '$', '&', '.', '+', '-', '^', '_' };
+                    return token.Text.Length == 1 && allowable.Contains(token.Text[0]);
+            }
 
-        //    if (TryMakeParameterAttribute(out attribute) == false)
-        //    {
-        //        return false;
-        //    }
+            return false;
+        }
 
-        //    Enumerator.TakeWhile(TokenKind.Space);
+        /// <summary>
+        /// Attempt to make a parameter list.
+        /// </summary>
+        /// <param name="parameters">The parameter list that was made.</param>
+        /// <returns>true if the parameter list coud be made, false if not.</returns>
+        bool TryMakeOptionalParameterList(out Dictionary<string, string> parameters)
+        {
+            parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-        //    if (Enumerator.Take() != EqualsToken)
-        //    {
-        //        return false;
-        //    }
+            Enumerator.Skip(TokenKind.Space);
 
-        //    Enumerator.TakeWhile(TokenKind.Space);
+            if (Enumerator.Peek() == Tokens.SemiColon)
+            {
+                return TryMakeParameterList(out parameters);
+            }
 
-        //    return TryMakeParameterValue(out value);
-        //}
+            return true;
+        }
 
-        //bool TryMakeParameterAttribute(out string attribute)
-        //{
-        //    attribute = null;
+        /// <summary>
+        /// Attempt to make a parameter list.
+        /// </summary>
+        /// <param name="parameters">The parameter list that was made.</param>
+        /// <returns>true if the parameter list coud be made, false if not.</returns>
+        bool TryMakeParameterList(out Dictionary<string, string> parameters)
+        {
+            parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-        //    return false;
-        //}
+            while (Enumerator.Peek() == Tokens.SemiColon)
+            {
+                Enumerator.Take();
+                Enumerator.Skip(TokenKind.Space);
 
-        //bool TryMakeParameterValue(out string value)
-        //{
-        //    value = null;
+                if (TryMakeParameter(out string attribute, out string value) == false)
+                {
+                    return false;
+                }
 
-        //    return false;
-        //}
+                parameters[attribute] = value;
 
-        //bool TryMakeToken(out string token)
-        //{
-        //    token = null;
+                Enumerator.Skip(TokenKind.Space);
+            }
 
-        //    return false;
-        //}
+            return true;
+        }
 
-        //bool TryMakeQuotedString(out string quotedString)
-        //{
-        //    quotedString = null;
+        /// <summary>
+        /// Attempt to make a content type parameter.
+        /// </summary>
+        /// <param name="attribute">The attribute for the parameter.</param>
+        /// <param name="value">The value for the parameter.</param>
+        /// <returns>true if the parameter could be made, false if not.</returns>
+        /// <remarks><![CDATA[attribute "=" value]]></remarks>
+        bool TryMakeParameter(out string attribute, out string value)
+        {
+            value = null;
 
-        //    return false;
-        //}
+            if (TryMakeParameterAttribute(out attribute) == false)
+            {
+                return false;
+            }
+
+            Enumerator.Skip(TokenKind.Space);
+
+            if (Enumerator.Take() != Tokens.Equal)
+            {
+                return false;
+            }
+
+            Enumerator.Skip(TokenKind.Space);
+
+            return TryMakeParameterValue(out value);
+        }
+
+        /// <summary>
+        /// Attempt to make a parameter attribute.
+        /// </summary>
+        /// <param name="attribute">The name of the attribute that was made.</param>
+        /// <returns>true if an attribute could be made, false if not.</returns>
+        /// <remarks><![CDATA[token]]></remarks>
+        bool TryMakeParameterAttribute(out string attribute)
+        {
+            return TryMakeToken(out attribute);
+        }
+
+        /// <summary>
+        /// Attempt to make a parameter value.
+        /// </summary>
+        /// <param name="value">The value of the attribute that was made.</param>
+        /// <returns>true if an parameter value could be made, false if not.</returns>
+        /// <remarks><![CDATA[token / quoted-string]]></remarks>
+        bool TryMakeParameterValue(out string value)
+        {
+            return TryMake(TryMakeToken, out value) || TryMakeQuotedString(out value);
+        }
+
+        /// <summary>
+        /// Attempt to make a token.
+        /// </summary>
+        /// <param name="token">The token value that was made.</param>
+        /// <returns>true if a token value could be made, false if not.</returns>
+        /// <remarks><![CDATA[1*<any (US-ASCII) CHAR except SPACE, CTLs, or tspecials>]]></remarks>
+        bool TryMakeToken(out string token)
+        {
+            var t = Enumerator.Take();
+            token = t.Text;
+
+            switch (t.Kind)
+            {
+                case TokenKind.Text:
+                case TokenKind.Number:
+                    return true;
+
+                case TokenKind.Space:
+                case TokenKind.NewLine:
+                    return false;
+
+                default:
+                    return Tokens.TSpecials.Contains(t) == false
+                        && Tokens.CTL.Contains(t) == false;
+            }
+        }
+
+        /// <summary>
+        /// Attempt to make a quoted string.
+        /// </summary>
+        /// <param name="text">The quoted string value that was made.</param>
+        /// <returns>true if a quoted string value could be made, false if not.</returns>
+        /// <remarks><![CDATA[" 1*token "]]></remarks>
+        bool TryMakeQuotedString(out string text)
+        {
+            text = null;
+
+            if (Enumerator.Take() != Tokens.Quote)
+            {
+                return false;
+            }
+
+            while (Enumerator.Peek() != Tokens.Quote)
+            {
+                string t;
+                if (TryMake(TryMakeQText, out t) == false && TryMake(TryMakeQuotedString, out t) == false)
+                {
+                    return false;
+                }
+
+                text += t;
+            }
+
+            Enumerator.Take();
+
+            return true;
+        }
+
+        /// <summary>
+        /// Attempt to make a QText string.
+        /// </summary>
+        /// <param name="text">The QText string value that was made.</param>
+        /// <returns>true if a QText string value could be made, false if not.</returns>
+        /// <remarks><![CDATA[<any CHAR excepting <">, "\" & CR, and including, linear-white-space>]]></remarks>
+        bool TryMakeQText(out string text)
+        {
+            var token = Enumerator.Take();
+            text = token.Text;
+
+            return new[] { Tokens.Quote, Tokens.BackSlash, Tokens.CR }.Contains(token) == false;
+        }
+
+        /// <summary>
+        /// Attempt to make a quoted pair string.
+        /// </summary>
+        /// <param name="text">The quoted pair string value that was made.</param>
+        /// <returns>true if a quoted pair string value could be made, false if not.</returns>
+        /// <remarks><![CDATA[<any CHAR excepting <">, "\" & CR, and including, linear-white-space>]]></remarks>
+        bool TryMakeQuotedPair(out string text)
+        {
+            text = null;
+
+            if (Enumerator.Take() != Tokens.BackSlash)
+            {
+                return false;
+            }
+
+            var token = Enumerator.Take();
+            text = token.Text;
+
+            return text.Length == 1 && text[0] <= 127;
+        }
 
         /// <summary>
         /// Attempt to make the end of the line.
@@ -476,7 +703,7 @@ namespace SmtpServer.Mime
             name = null;
 
             var token = Enumerator.Peek();
-            while (token != Token.None && token != SpaceToken && token != ColonToken)
+            while (token != Token.None && token != Tokens.Space && token != Tokens.Colon)
             {
                 token = Enumerator.Take();
                 switch (token.Kind)
@@ -501,7 +728,7 @@ namespace SmtpServer.Mime
                 token = Enumerator.Peek();
             }
 
-            return name != null && Enumerator.Take() == ColonToken;
+            return name != null && Enumerator.Take() == Tokens.Colon;
         }
     }
 }

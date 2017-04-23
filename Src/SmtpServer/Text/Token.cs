@@ -48,6 +48,51 @@ namespace SmtpServer.Text
         }
 
         /// <summary>
+        /// Create a token for the given character.
+        /// </summary>
+        /// <param name="ch">The character to create the token for.</param>
+        /// <returns>The token that was created.</returns>
+        public static Token Create(char ch)
+        {
+            return new Token(KindOf(ch), ch);
+        }
+
+        /// <summary>
+        /// Returns the token kind for the given character.
+        /// </summary>
+        /// <param name="ch">The character to return the token kind for.</param>
+        /// <returns>The token kind for the given character.</returns>
+        public static TokenKind KindOf(char ch)
+        {
+            if (Char.IsLetter(ch))
+            {
+                return TokenKind.Text;
+            }
+
+            if (Char.IsDigit(ch))
+            {
+                return TokenKind.Number;
+            }
+
+            if (Char.IsSymbol(ch))
+            {
+                return TokenKind.Symbol;
+            }
+
+            if (Char.IsPunctuation(ch))
+            {
+                return TokenKind.Punctuation;
+            }
+
+            if (Char.IsWhiteSpace(ch))
+            {
+                return TokenKind.Space;
+            }
+
+            return TokenKind.Other;
+        }
+
+        /// <summary>
         /// Indicates whether this instance and a specified object are equal.
         /// </summary>
         /// <param name="other">Another object to compare to. </param>

@@ -7,13 +7,13 @@ namespace SmtpServer.Mime
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="type">The media type.</param>
-        /// <param name="subtype">The subtype.</param>
+        /// <param name="mediaType">The media type.</param>
+        /// <param name="mediaSubType">The subtype.</param>
         /// <param name="parameters">The list of parameters.</param>
-        public ContentType(string type, string subtype, IReadOnlyDictionary<string, string> parameters)
+        public ContentType(string mediaType, string mediaSubType, IReadOnlyDictionary<string, string> parameters)
         {
-            Type = type;
-            SubType = subtype;
+            MediaType = mediaType;
+            MediaSubType = mediaSubType;
             Parameters = parameters;
         }
 
@@ -25,12 +25,12 @@ namespace SmtpServer.Mime
         /// <summary>
         /// The media type.
         /// </summary>
-        public string Type { get; }
+        public string MediaType { get; }
 
         /// <summary>
         /// The subtype.
         /// </summary>
-        public string SubType { get; }
+        public string MediaSubType { get; }
 
         /// <summary>
         /// The list of parameters.
