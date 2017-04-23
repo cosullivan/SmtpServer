@@ -53,15 +53,7 @@ namespace SmtpServer.Content
             var tokens = await ReadMimeHeaderTokensAsync(cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
 
-            //tokens = tokens.Where(t => t.Kind != TokenKind.Space).ToList();
-
             var mimeParser = new MimeParser(new TokenEnumerator2(tokens));
-            //mimeParser.TryMakeMimeVersion(out MimeVersion version);
-            //Console.WriteLine(version);
-
-            //var result = mimeParser.TryMakeField(out IMimeHeader header);
-            //Console.WriteLine(result);
-            //Console.WriteLine(header);
 
             var result = mimeParser.TryMakeFieldList(out List<IMimeHeader> headers);
             Console.WriteLine(result);
