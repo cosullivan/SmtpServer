@@ -1,4 +1,6 @@
-﻿namespace SmtpServer.Text
+﻿using System.Linq;
+
+namespace SmtpServer.Text
 {
     public abstract class TokenParser
     {
@@ -27,6 +29,28 @@
         protected TokenParser(ITokenEnumerator enumerator)
         {
             Enumerator = enumerator;
+        }
+
+        /// <summary>
+        /// Try to take the tokens in sequence.
+        /// </summary>
+        /// <param name="tokens">The list of tokens to take in sequence.</param>
+        /// <returns>true if the given list of tokens could be made in sequence, false if not.</returns>
+        protected bool TryTakeTokens(params Token[] tokens)
+        {
+            var checkpoint = Enumerator.Checkpoint();
+
+            foreach (var token in tokens)
+            {
+                if (Enumerator.Take() != token)
+                {
+                    checkpoint.Rollback();
+                    return false;
+                }
+            }
+
+            checkpoint.Dispose();
+            return true;
         }
 
         /// <summary>

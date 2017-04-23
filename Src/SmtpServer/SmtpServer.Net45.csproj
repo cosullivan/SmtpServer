@@ -63,6 +63,7 @@
     <Compile Include="ITextStream.cs" />
     <Compile Include="Mail\IMailbox.cs" />
     <Compile Include="Mail\Mailbox.cs" />
+    <Compile Include="Mime\ContentTransferEncoding.cs" />
     <Compile Include="Mime\ContentType.cs" />
     <Compile Include="Mime\IMimeHeader.cs" />
     <Compile Include="Mime\MimeEntity.cs" />

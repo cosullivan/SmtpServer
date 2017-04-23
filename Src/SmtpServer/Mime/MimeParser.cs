@@ -5,9 +5,6 @@ using System.Linq;
 
 namespace SmtpServer.Mime
 {
-    // https://tools.ietf.org/html/rfc822#section-3.2
-    // https://tools.ietf.org/html/rfc2045
-    // http://docs.roguewave.com/sourcepro/11.1/html/protocolsug/10-1.html
     public sealed class MimeParser : TokenParser
     {
         #region Tokens
@@ -27,19 +24,6 @@ namespace SmtpServer.Mime
             internal static readonly Token SemiColon = new Token(TokenKind.Punctuation, ';');
             internal static readonly Token ForwardSlash = new Token(TokenKind.Punctuation, '/');
             internal static readonly Token BackSlash = new Token(TokenKind.Punctuation, '\\');
-            internal static readonly Token[] DescreteTypes =
-            {
-                new Token(TokenKind.Text, "text"),
-                new Token(TokenKind.Text, "image"),
-                new Token(TokenKind.Text, "audio"),
-                new Token(TokenKind.Text, "video"),
-                new Token(TokenKind.Text, "application")
-            };
-            internal static readonly Token[] CompositeTypes =
-            {
-                new Token(TokenKind.Text, "message"),
-                new Token(TokenKind.Text, "multipart"),
-            };
             internal static readonly Token[] TSpecials = new[]
             {
                 Token.Create('('),
@@ -94,6 +78,19 @@ namespace SmtpServer.Mime
                 Token.Create((char)31),
                 Token.Create((char)127),
             };
+            internal static readonly Token[] DescreteTypes =
+            {
+                new Token(TokenKind.Text, "text"),
+                new Token(TokenKind.Text, "image"),
+                new Token(TokenKind.Text, "audio"),
+                new Token(TokenKind.Text, "video"),
+                new Token(TokenKind.Text, "application")
+            };
+            internal static readonly Token[] CompositeTypes =
+            {
+                new Token(TokenKind.Text, "message"),
+                new Token(TokenKind.Text, "multipart"),
+            };
             // ReSharper restore InconsistentNaming
         }
 
@@ -145,7 +142,8 @@ namespace SmtpServer.Mime
         internal bool TryMakeKnownField(out IMimeHeader mimeHeader)
         {
             return TryMake(TryMakeMimeVersion, out mimeHeader)
-                || TryMake(TryMakeContentType, out mimeHeader);
+                || TryMake(TryMakeContentType, out mimeHeader)
+                || TryMake(TryMakeContentTransferEncoding, out mimeHeader);
         }
         
         /// <summary>
@@ -319,6 +317,131 @@ namespace SmtpServer.Mime
             contentType = new ContentType(mediaType, mediaSubType, parameters ?? new Dictionary<string, string>());
 
             return TryMakeEnd();
+        }
+
+        /// <summary>
+        /// Attempt to make a content transfer encoding.
+        /// </summary>
+        /// <param name="contentTransferEncoding">The content transfer encoding that was made.</param>
+        /// <returns>true if a content transfer encoding could be made, false if not.</returns>
+        /// <remarks><![CDATA["Content-Transfer-Encoding" ":" mechanism]]></remarks>
+        internal bool TryMakeContentTransferEncoding(out IMimeHeader contentTransferEncoding)
+        {
+            contentTransferEncoding = null;
+
+            if (TryMakeFieldName(out string name) == false || name.CaseInsensitiveEquals("Content-Transfer-Encoding") == false)
+            {
+                return false;
+            }
+
+            Enumerator.Skip(TokenKind.Space);
+
+            if (TryMakeContentTransferEncodingMechanism(out string mechanism) == false)
+            {
+                return false;
+            }
+
+            if (ContentTransferEncoding.KnownEncodings.TryGetValue(mechanism, out ContentTransferEncoding knownEncoding))
+            {
+                contentTransferEncoding = knownEncoding;
+                return TryMakeEnd();
+            }
+
+            contentTransferEncoding = new ContentTransferEncoding(mechanism);
+            return TryMakeEnd();
+        }
+
+        /// <summary>
+        /// Attempt to make a content transfer encoding mechanism.
+        /// </summary>
+        /// <param name="mechanism">The content transfer encoding mechanism that was made.</param>
+        /// <returns>true if a content transfer encoding mechanism could be made, false if not.</returns>
+        /// <remarks><![CDATA["7bit" / "8bit" / "binary" / "quoted-printable" / "base64" / ietf-token / x-token]]></remarks>
+        internal bool TryMakeContentTransferEncodingMechanism(out string mechanism)
+        {
+            return TryMake(TryMakeKnownContentTransferEncodingMechanism, out mechanism) 
+                || TryMake(TryMakeIetfToken, out mechanism)
+                || TryMake(TryMakeXToken, out mechanism);
+        }
+
+        /// <summary>
+        /// Attempt to make a known content transfer encoding mechanism.
+        /// </summary>
+        /// <param name="mechanism">The content transfer encoding mechanism that was made.</param>
+        /// <returns>true if a content transfer encoding mechanism could be made, false if not.</returns>
+        /// <remarks><![CDATA["7bit" / "8bit" / "binary" / "quoted-printable" / "base64"]]></remarks>
+        internal bool TryMakeKnownContentTransferEncodingMechanism(out string mechanism)
+        {
+            return TryMake(TryMake7BitContentTransferEncodingMechanism, out mechanism)
+                || TryMake(TryMake8BitContentTransferEncodingMechanism, out mechanism)
+                || TryMake(TryMakeBinaryContentTransferEncodingMechanism, out mechanism)
+                || TryMake(TryMakeBase64ContentTransferEncodingMechanism, out mechanism)
+                || TryMake(TryMakeQuotedPrintableContentTransferEncodingMechanism, out mechanism);
+        }
+
+        /// <summary>
+        /// Attempt to make a known 7Bit content transfer encoding mechanism.
+        /// </summary>
+        /// <param name="mechanism">The content transfer encoding mechanism that was made.</param>
+        /// <returns>true if a content transfer encoding mechanism could be made, false if not.</returns>
+        /// <remarks><![CDATA["7bit"]]></remarks>
+        internal bool TryMake7BitContentTransferEncodingMechanism(out string mechanism)
+        {
+            mechanism = "7bit";
+
+            return TryTakeTokens(new Token(TokenKind.Number, "7"), new Token(TokenKind.Text, "bit"));
+        }
+
+        /// <summary>
+        /// Attempt to make a known 8bit content transfer encoding mechanism.
+        /// </summary>
+        /// <param name="mechanism">The content transfer encoding mechanism that was made.</param>
+        /// <returns>true if a content transfer encoding mechanism could be made, false if not.</returns>
+        /// <remarks><![CDATA["8bit"]]></remarks>
+        internal bool TryMake8BitContentTransferEncodingMechanism(out string mechanism)
+        {
+            mechanism = "8bit";
+
+            return TryTakeTokens(new Token(TokenKind.Number, "8"), new Token(TokenKind.Text, "bit"));
+        }
+
+        /// <summary>
+        /// Attempt to make a known binary content transfer encoding mechanism.
+        /// </summary>
+        /// <param name="mechanism">The content transfer encoding mechanism that was made.</param>
+        /// <returns>true if a content transfer encoding mechanism could be made, false if not.</returns>
+        /// <remarks><![CDATA["binary"]]></remarks>
+        internal bool TryMakeBinaryContentTransferEncodingMechanism(out string mechanism)
+        {
+            mechanism = Enumerator.Take().Text;
+
+            return mechanism.CaseInsensitiveEquals("binary");
+        }
+
+        /// <summary>
+        /// Attempt to make a known Base64 content transfer encoding mechanism.
+        /// </summary>
+        /// <param name="mechanism">The content transfer encoding mechanism that was made.</param>
+        /// <returns>true if a content transfer encoding mechanism could be made, false if not.</returns>
+        /// <remarks><![CDATA["base64"]]></remarks>
+        internal bool TryMakeBase64ContentTransferEncodingMechanism(out string mechanism)
+        {
+            mechanism = "base64";
+
+            return TryTakeTokens(new Token(TokenKind.Text, "base"), new Token(TokenKind.Number, "64"));
+        }
+
+        /// <summary>
+        /// Attempt to make a known Quoted-Printable content transfer encoding mechanism.
+        /// </summary>
+        /// <param name="mechanism">The content transfer encoding mechanism that was made.</param>
+        /// <returns>true if a content transfer encoding mechanism could be made, false if not.</returns>
+        /// <remarks><![CDATA["quoted-printable"]]></remarks>
+        internal bool TryMakeQuotedPrintableContentTransferEncodingMechanism(out string mechanism)
+        {
+            mechanism = "quoted-printable";
+
+            return TryTakeTokens(new Token(TokenKind.Text, "quoted"), Tokens.Dash, new Token(TokenKind.Text, "printable"));
         }
 
         /// <summary>
