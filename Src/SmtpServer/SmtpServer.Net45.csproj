@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>SmtpServer</RootNamespace>
     <AssemblyName>SmtpServer</AssemblyName>
-    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -69,6 +69,7 @@
     <Compile Include="Mime\MimeEntity.cs" />
     <Compile Include="Mime\MimeHeader.cs" />
     <Compile Include="Mime\MimeMessage.cs" />
+    <Compile Include="Mime\MimeParseException.cs" />
     <Compile Include="Mime\MimeParser.cs" />
     <Compile Include="Mime\MimeVersion.cs" />
     <Compile Include="NetworkTextStream.cs" />
@@ -118,7 +119,9 @@
     <Compile Include="Storage\MessageStore.cs" />
     <Compile Include="Text\ITokenEnumerator.cs" />
     <Compile Include="Text\ITokenEnumeratorCheckpoint.cs" />
+    <Compile Include="Text\StreamReader2.cs" />
     <Compile Include="Text\StreamTokenReader.cs" />
+    <Compile Include="Text\StringTokenReader2.cs" />
     <Compile Include="Text\StringTokenReader.cs" />
     <Compile Include="Text\Token.cs" />
     <Compile Include="Text\TokenEnumerator.cs" />

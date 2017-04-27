@@ -26,6 +26,22 @@ namespace SampleApp
     // https://tools.ietf.org/html/rfc2045
     class Program
     {
+        static string MIME = @"MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary=frontier
+
+This is a message with multiple parts in MIME format.
+--frontier
+Content-Type: text/plain
+
+This is the body of the message.
+--frontier
+Content-Type: application/octet-stream
+Content-Transfer-Encoding: base64
+
+PGh0bWw+CiAgPGhlYWQ+CiAgPC9oZWFkPgogIDxib2R5PgogICAgPHA+VGhpcyBpcyB0aGUg
+Ym9keSBvZiB0aGUgbWVzc2FnZS48L3A+CiAgPC9ib2R5Pgo8L2h0bWw+Cg==
+--frontier--";
+
         static void Main(string[] args)
         {
             //Console.WriteLine(Char.IsPunctuation((char)34));
@@ -42,11 +58,30 @@ namespace SampleApp
             //parser.TryMakeContentType(out ContentType contentType);
             //Console.WriteLine(contentType);
 
-            var mimeMessageReader = new MimeMessageReader(File.OpenRead(@"C:\Dev\temp\msg.txt"));
+            ////var mimeMessageReader = new MimeMessageReader(File.OpenRead(@"C:\Dev\temp\msg.txt"));
+            //var mimeMessageReader = new MimeMessageReader(File.OpenRead(@"C:\Dev\Enron Corpus\maildir\allen-p\inbox\31_"));
+            ////var mimeMessageReader = new MimeMessageReader(new MemoryStream(Encoding.ASCII.GetBytes(MIME)));
+            //try
+            //{
+            //    var mimeMessage = mimeMessageReader.ReadAsync().Result;
+            //    Console.WriteLine(mimeMessage);
+            //}
+            //catch (Exception e)
+            //{
+            //    Console.WriteLine(e);
+            //    throw;
+            //}
+
+            //var mimeMessageReader = new MimeMessageReader(File.OpenRead(@"C:\Dev\temp\msg.txt"));
+            var mimeMessageSerializer = new MimeMessageReader();
+            //var mimeMessageReader = new MimeMessageReader(new MemoryStream(Encoding.ASCII.GetBytes(MIME)));
             try
             {
-                var mimeMessage = mimeMessageReader.ReadAsync().Result;
+                //File.OpenRead(@"C:\Dev\Enron Corpus\maildir\allen-p\inbox\31_")
+                var mimeMessage = mimeMessageSerializer.DeserializeAsync(File.OpenRead(@"C:\Dev\Enron Corpus\maildir\allen-p\inbox\31_")).Result;
                 Console.WriteLine(mimeMessage);
+
+                var t = new Token(TokenKind.Text, new ArraySegment<byte>(_buffer, 10, 20));
             }
             catch (Exception e)
             {

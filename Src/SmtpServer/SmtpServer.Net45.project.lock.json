@@ -1,13 +1,13 @@
 {
   "version": 2,
   "targets": {
-    ".NETFramework,Version=v4.6.2": {},
-    ".NETFramework,Version=v4.6.2/win": {}
+    ".NETFramework,Version=v4.5": {},
+    ".NETFramework,Version=v4.5/win": {}
   },
   "libraries": {},
   "projectFileDependencyGroups": {
     "": [],
-    ".NETFramework,Version=v4.6.2": []
+    ".NETFramework,Version=v4.5": []
   },
   "packageFolders": {
     "C:\\Users\\Cain\\.nuget\\packages\\": {}
@@ -21,7 +21,7 @@
       "projectStyle": "ProjectJson"
     },
     "frameworks": {
-      "net462": {}
+      "net45": {}
     },
     "runtimes": {
       "win": {

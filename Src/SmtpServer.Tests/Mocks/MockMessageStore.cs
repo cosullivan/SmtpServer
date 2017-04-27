@@ -8,18 +8,18 @@ namespace SmtpServer.Tests.Mocks
 {
     public class MockMessageStore : MessageStore
     {
-        readonly List<IMessageTransaction> _messages = new List<IMessageTransaction>();
+        public MockMessageStore()
+        {
+            Messages = new List<IMessageTransaction>();
+        }
 
         public override Task<SmtpResponse> SaveAsync(ISessionContext context, IMessageTransaction transaction, CancellationToken cancellationToken)
         {
-            _messages.Add(transaction);
+            Messages.Add(transaction);
 
             return Task.FromResult(SmtpResponse.Ok);
         }
 
-        public List<IMessageTransaction> Messages
-        {
-            get { return _messages; }
-        }
+        public List<IMessageTransaction> Messages { get; }
     }
 }

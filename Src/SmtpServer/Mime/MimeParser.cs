@@ -24,7 +24,7 @@ namespace SmtpServer.Mime
             internal static readonly Token SemiColon = new Token(TokenKind.Punctuation, ';');
             internal static readonly Token ForwardSlash = new Token(TokenKind.Punctuation, '/');
             internal static readonly Token BackSlash = new Token(TokenKind.Punctuation, '\\');
-            internal static readonly Token[] TSpecials = new[]
+            internal static readonly Token[] TSpecials = 
             {
                 Token.Create('('),
                 Token.Create(')'),
@@ -42,7 +42,7 @@ namespace SmtpServer.Mime
                 Token.Create('?'),
                 Token.Create('=')
             };
-            internal static readonly Token[] CTL = new[]
+            internal static readonly Token[] CTL = 
             {
                 Token.Create((char)0),
                 Token.Create((char)1),
@@ -131,7 +131,12 @@ namespace SmtpServer.Mime
         /// <returns>true if a MIME header field could be made, false if not.</returns>
         internal bool TryMakeField(out IMimeHeader mimeHeader)
         {
-            return TryMake(TryMakeKnownField, out mimeHeader) || TryMakeUnknownField(out mimeHeader);
+            if (TryMake(TryMakeKnownField, out mimeHeader) || TryMakeUnknownField(out mimeHeader))
+            {
+                return TryMakeEnd();
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -167,7 +172,7 @@ namespace SmtpServer.Mime
 
             mimeHeader = new MimeHeader(name, body);
 
-            return TryMakeEnd();
+            return true;
         }
 
         /// <summary>
@@ -232,7 +237,7 @@ namespace SmtpServer.Mime
         {
             bodyContents = new List<Token>();
 
-            while (Enumerator.Peek() != Token.NewLine)
+            while (Enumerator.Peek() != Token.NewLine && Enumerator.Peek() != Token.None)
             {
                 bodyContents.Add(Enumerator.Take());
             }
@@ -273,8 +278,7 @@ namespace SmtpServer.Mime
             }
 
             version = new MimeVersion(Int32.Parse(major.Text), Int32.Parse(minor.Text));
-
-            return TryMakeEnd();
+            return true;
         }
 
         /// <summary>
@@ -315,8 +319,7 @@ namespace SmtpServer.Mime
             }
 
             contentType = new ContentType(mediaType, mediaSubType, parameters ?? new Dictionary<string, string>());
-
-            return TryMakeEnd();
+            return true;
         }
 
         /// <summary>
@@ -344,11 +347,11 @@ namespace SmtpServer.Mime
             if (ContentTransferEncoding.KnownEncodings.TryGetValue(mechanism, out ContentTransferEncoding knownEncoding))
             {
                 contentTransferEncoding = knownEncoding;
-                return TryMakeEnd();
+                return true;
             }
 
             contentTransferEncoding = new ContentTransferEncoding(mechanism);
-            return TryMakeEnd();
+            return true;
         }
 
         /// <summary>
@@ -719,6 +722,26 @@ namespace SmtpServer.Mime
         /// <remarks><![CDATA[1*<any (US-ASCII) CHAR except SPACE, CTLs, or tspecials>]]></remarks>
         bool TryMakeToken(out string token)
         {
+            if (TryMakePartialToken(out token) == false)
+            {
+                return false;
+            }
+
+            while (TryMake(TryMakePartialToken, out string found))
+            {
+                token += found;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Attempt to make part of a token.
+        /// </summary>
+        /// <param name="token">The token value that was made.</param>
+        /// <returns>true if part of a token value could be made, false if not.</returns>
+        bool TryMakePartialToken(out string token)
+        {
             var t = Enumerator.Take();
             token = t.Text;
 
@@ -728,6 +751,7 @@ namespace SmtpServer.Mime
                 case TokenKind.Number:
                     return true;
 
+                case TokenKind.None:
                 case TokenKind.Space:
                 case TokenKind.NewLine:
                     return false;

@@ -30,6 +30,33 @@ namespace SmtpServer.Mime
         }
 
         /// <summary>
+        /// Returns a value indicating the equality of the two objects.
+        /// </summary>
+        /// <param name="left">The left hand side of the comparisson.</param>
+        /// <param name="right">The right hand side of the comparisson.</param>
+        /// <returns>true if the left and right side are equal, false if not.</returns>
+        public static bool operator ==(ContentTransferEncoding left, ContentTransferEncoding right)
+        {
+            if (ReferenceEquals(left, null) && ReferenceEquals(right, null))
+            {
+                return true;
+            }
+
+            return ReferenceEquals(left, null) == false && left.Equals(right);
+        }
+
+        /// <summary>
+        /// Returns a value indicating the inequality of the two objects.
+        /// </summary>
+        /// <param name="left">The left hand side of the comparisson.</param>
+        /// <param name="right">The right hand side of the comparisson.</param>
+        /// <returns>false if the left and right side are equal, true if not.</returns>
+        public static bool operator !=(ContentTransferEncoding left, ContentTransferEncoding right)
+        {
+            return (left == right) == false;
+        }
+
+        /// <summary>
         /// Returns a value indicating whether or not the given instance is equal to the current instance.
         /// </summary>
         /// <param name="obj">The object to compare with.</param>

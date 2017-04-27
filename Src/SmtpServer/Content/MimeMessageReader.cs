@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.Mime;
@@ -8,7 +10,27 @@ using SmtpServer.Text;
 
 namespace SmtpServer.Content
 {
-    public sealed class MimeMessageReader : IMessageReader
+    public interface IMessageSerializer
+    {
+        /// <summary>
+        /// Serialize the message to a stream.
+        /// </summary>
+        /// <param name="message">The message to serialize.</param>
+        /// <param name="stream">The stream to serialize the message to.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The stream that the message was serialized to.</returns>
+        Task SerializeAsync(IMessage message, Stream stream, CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Deserialize a message from the stream.
+        /// </summary>
+        /// <param name="stream">The stream to deserialize the message from.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The message that was deserialized.</returns>
+        Task<IMessage> DeserializeAsync(Stream stream, CancellationToken cancellationToken = default(CancellationToken));
+    }
+
+    public sealed class MimeMessageReader : IMessageReader, IMessageSerializer
     {
         readonly Stream _stream;
 
@@ -22,68 +44,240 @@ namespace SmtpServer.Content
         }
 
         /// <summary>
+        /// Constructor.
+        /// </summary>
+        public MimeMessageReader() { }
+
+        /// <summary>
+        /// Serialize the message to a stream.
+        /// </summary>
+        /// <param name="message">The message to serialize.</param>
+        /// <param name="stream">The stream to serialize the message to.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The stream that the message was serialized to.</returns>
+        public Task SerializeAsync(IMessage message, Stream stream, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Deserialize a message from the stream.
+        /// </summary>
+        /// <param name="stream">The stream to deserialize the message from.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The message that was deserialized.</returns>
+        public async Task<IMessage> DeserializeAsync(Stream stream, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            var entity = await new Deserializer(stream, cancellationToken).DeserializeMimeEntityAsync();
+
+            return null;
+        }
+
+        /// <summary>
         /// Read a message 
         /// </summary>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The message that was read from the stream.</returns>
         public async Task<IMessage> ReadAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            return await ReadMessageAsync(cancellationToken);
+            //return await ReadMessageAsync(cancellationToken);
+            throw new NotImplementedException();
         }
+        
+        #region Deserializer
 
-        /// <summary>
-        /// Read the contents of the message.
-        /// </summary>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The MIME message that was read.</returns>
-        async Task<MimeMessage> ReadMessageAsync(CancellationToken cancellationToken)
+        class Deserializer
         {
-            var headers = await ReadMimeHeadersAsync(cancellationToken);
+            readonly StreamReader2 _stream;
+            readonly CancellationToken _cancellationToken;
 
-            return null;
-        }
-
-        /// <summary>
-        /// Read the MIME headers.
-        /// </summary>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The list of MIME headers that were read.</returns>
-        async Task<IEnumerable<IMimeHeader>> ReadMimeHeadersAsync(CancellationToken cancellationToken)
-        {
-            var tokens = await ReadMimeHeaderTokensAsync(cancellationToken);
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var mimeParser = new MimeParser(new TokenEnumerator2(tokens));
-
-            var result = mimeParser.TryMakeFieldList(out List<IMimeHeader> headers);
-            Console.WriteLine(result);
-            Console.WriteLine(headers);
-
-            return null;
-        }
-
-        /// <summary>
-        /// Read the MIME headers.
-        /// </summary>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The list of MIME headers that were read.</returns>
-        async Task<IReadOnlyList<Token>> ReadMimeHeaderTokensAsync(CancellationToken cancellationToken)
-        {
-            var tokens = new List<Token>();
-            var reader = new StreamTokenReader(_stream);
-
-            Token token;
-            while ((token = await reader.NextTokenAsync(cancellationToken)) != Token.None)
+            /// <summary>
+            /// Constructor.
+            /// </summary>
+            /// <param name="stream">The stream to deserialize from.</param>
+            /// <param name="cancellationToken">The cancellation token.</param>
+            public Deserializer(Stream stream, CancellationToken cancellationToken)
             {
-                if (tokens.Count > 1 && tokens[tokens.Count - 1] == Token.NewLine && token == Token.NewLine)
-                {
-                    return tokens;
-                }
-
-                tokens.Add(token);
+                _stream = new StreamReader2(stream);
+                _cancellationToken = cancellationToken;
             }
 
-            return tokens;
+            /// <summary>
+            /// Read a MIME entity from the current position in the stream.
+            /// </summary>
+            /// <returns>The MIME entity that was read from the stream.</returns>
+            public async Task<MimeEntity> DeserializeMimeEntityAsync()
+            {
+                var headers = await DeserializeMimeHeadersAsync().ReturnOnAnyThread();
+
+                switch (GetMediaType(headers).ToLower())
+                {
+                    case "multipart":
+                        break;
+
+                    case "message":
+                        break;
+
+                    default:
+                        return await DeserializeMimePartAsync(headers);
+                }
+
+                throw new NotSupportedException();
+            }
+
+            /// <summary>
+            /// Returns the media type that has been specified in the headers.
+            /// </summary>
+            /// <param name="headers">The list of headers that could possible contain the media type.</param>
+            /// <returns>The media type that has been defined.</returns>
+            static string GetMediaType(IReadOnlyList<IMimeHeader> headers)
+            {
+                // TODO: check the MIME-Version to make sure the content type 
+                // should exist otherwise allow for a default version type
+
+                var type = headers.OfType<ContentType>().Last();
+
+                return type.MediaType;
+            }
+
+            /// <summary>
+            /// Deserialize a MIME part from the current position in the stream.
+            /// </summary>
+            /// <param name="headers">The list of headers to create the MIME part with.</param>
+            /// <returns>The MIME part that was created from the current position in the stream.</returns>
+            async Task<MimePart> DeserializeMimePartAsync(IReadOnlyList<IMimeHeader> headers)
+            {
+                var transferEncoding = headers.OfType<ContentTransferEncoding>().SingleOrDefault() ?? ContentTransferEncoding.SevenBit;
+
+                return new MimePart(headers, await DeserializeMimePartAsync(transferEncoding));
+            }
+
+            /// <summary>
+            /// Deserialize a MIME part from the current position in the stream.
+            /// </summary>
+            /// <param name="transferEncoding">The transfer encoding to use when reading the message contents.</param>
+            /// <returns>The MIME part that was created from the current position in the stream.</returns>
+            async Task<Stream> DeserializeMimePartAsync(ContentTransferEncoding transferEncoding)
+            {
+                if (transferEncoding == ContentTransferEncoding.SevenBit)
+                {
+                    return await ReadPlainTextAsync(Encoding.ASCII).ReturnOnAnyThread();
+                }
+
+                if (transferEncoding == ContentTransferEncoding.EightBit)
+                {
+                    return await ReadPlainTextAsync(Encoding.UTF8).ReturnOnAnyThread();
+                }
+
+                throw new NotImplementedException();
+            }
+
+            /// <summary>
+            /// Read an unencoded/plain text message from the current position in the stream.
+            /// </summary>
+            /// <param name="textEncoding">The text encoding to apply to the text mesage.</param>
+            /// <returns>The stream that represents the message contents that was read.</returns>
+            async Task<Stream> ReadPlainTextAsync(Encoding textEncoding)
+            {
+                var stream = await ReadShortLineContentAsync(textEncoding).ReturnOnAnyThread();
+                stream.Position = 0;
+
+                return stream;
+            }
+
+            /// <summary>
+            /// Receive the message content in short line format.
+            /// </summary>
+            /// <param name="encoding">The encoding to use when reading the message content.</param>
+            /// <returns>A task which asynchronously performs the operation.</returns>
+            async Task<Stream> ReadShortLineContentAsync(Encoding encoding)
+            {
+                //var reader = new StreamReader(_stream, encoding);
+                //var writer = new StreamWriter(new MemoryStream(), encoding);
+
+                //try
+                //{
+                //    string text;
+                //    while ((text = await reader.ReadLineAsync(TimeSpan.FromSeconds(60), _cancellationToken).ReturnOnAnyThread()) != ".")
+                //    {
+                //        // need to trim the '.' at the start of the line if it 
+                //        // exists as this would have been added for transparency
+                //        // http://tools.ietf.org/html/rfc5321#section-4.5.2
+                //        writer.WriteLine(text.TrimStart('.'));
+                //        writer.Flush();
+                //    }
+                //}
+                //catch (TimeoutException)
+                //{
+                //    // TODO: not sure what the best thing to do here is
+                //    throw;
+                //}
+
+                //return writer.BaseStream;
+
+                //var reader = new StreamReader(_stream, encoding);
+                var writer = new StreamWriter(new MemoryStream(), encoding);
+
+                HERE: maybe the simple version here is some sort of "MimeStreamReader" or "BlockStreamReader"
+                that can read the different parts as they are probably all terminated by the same endings?
+                it would need the ability to change encoding, or perhaps not if the delimeters are the same?
+
+                try
+                {
+                    await _stream.ReadWhileAsync()
+                }
+                catch (TimeoutException)
+                {
+                    // TODO: not sure what the best thing to do here is
+                    throw;
+                }
+
+                return writer.BaseStream;
+            }
+
+            /// <summary>
+            /// Read the MIME headers.
+            /// </summary>
+            /// <returns>The list of MIME headers that were read.</returns>
+            async Task<IReadOnlyList<IMimeHeader>> DeserializeMimeHeadersAsync()
+            {
+                var tokens = await ReadMimeHeaderTokensAsync().ReturnOnAnyThread();
+                _cancellationToken.ThrowIfCancellationRequested();
+
+                var mimeParser = new MimeParser(new TokenEnumerator2(tokens));
+
+                if (mimeParser.TryMakeFieldList(out List<IMimeHeader> headers) == false)
+                {
+                    throw new MimeParseException("Could not match the MIME headers.");
+                }
+
+                return headers;
+            }
+
+            /// <summary>
+            /// Read the MIME headers.
+            /// </summary>
+            /// <returns>The list of MIME headers that were read.</returns>
+            async Task<IReadOnlyList<Token>> ReadMimeHeaderTokensAsync()
+            {
+                var tokens = new List<Token>();
+                var reader = new StreamTokenReader(_stream, Encoding.UTF8);
+
+                Token token;
+                while ((token = await reader.NextTokenAsync(_cancellationToken)) != Token.None)
+                {
+                    if (tokens.Count > 1 && tokens[tokens.Count - 1] == Token.NewLine && token == Token.NewLine)
+                    {
+                        return tokens;
+                    }
+
+                    tokens.Add(token);
+                }
+
+                return tokens;
+            }
         }
+
+        #endregion
     }
 }

@@ -66,7 +66,7 @@ namespace SmtpServer.Text
         {
             var start = _index;
 
-            while (IsEof(_index) == false && Char.IsLetterOrDigit(_input[_index + 1]))
+            while (IsEof(_index) == false && Char.IsLetter(_input[_index + 1]))
             {
                 _index++;
             }
