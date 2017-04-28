@@ -81,7 +81,7 @@ Ym9keSBvZiB0aGUgbWVzc2FnZS48L3A+CiAgPC9ib2R5Pgo8L2h0bWw+Cg==
                 var mimeMessage = mimeMessageSerializer.DeserializeAsync(File.OpenRead(@"C:\Dev\Enron Corpus\maildir\allen-p\inbox\31_")).Result;
                 Console.WriteLine(mimeMessage);
 
-                var t = new Token(TokenKind.Text, new ArraySegment<byte>(_buffer, 10, 20));
+                
             }
             catch (Exception e)
             {
