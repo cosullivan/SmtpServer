@@ -179,61 +179,61 @@ namespace SmtpServer.Content
             /// <returns>The stream that represents the message contents that was read.</returns>
             async Task<Stream> ReadPlainTextAsync(Encoding textEncoding)
             {
-                var stream = await ReadShortLineContentAsync(textEncoding).ReturnOnAnyThread();
-                stream.Position = 0;
+                //var stream = await ReadShortLineContentAsync(textEncoding).ReturnOnAnyThread();
+                //stream.Position = 0;
 
-                return stream;
+                //return stream;
+                
+                var x = await _reader.ReadUntilAsync(new byte[] { 13, 10, 46, 13, 10 }, _cancellationToken);
+
+                return null;
             }
 
-            /// <summary>
-            /// Receive the message content in short line format.
-            /// </summary>
-            /// <param name="encoding">The encoding to use when reading the message content.</param>
-            /// <returns>A task which asynchronously performs the operation.</returns>
-            async Task<Stream> ReadShortLineContentAsync(Encoding encoding)
-            {
-                //var reader = new StreamReader(_stream, encoding);
-                //var writer = new StreamWriter(new MemoryStream(), encoding);
+            ///// <summary>
+            ///// Receive the message content in short line format.
+            ///// </summary>
+            ///// <param name="encoding">The encoding to use when reading the message content.</param>
+            ///// <returns>A task which asynchronously performs the operation.</returns>
+            //async Task<Stream> ReadShortLineContentAsync(Encoding encoding)
+            //{
+            //    //var reader = new StreamReader(_stream, encoding);
+            //    //var writer = new StreamWriter(new MemoryStream(), encoding);
 
-                //try
-                //{
-                //    string text;
-                //    while ((text = await reader.ReadLineAsync(TimeSpan.FromSeconds(60), _cancellationToken).ReturnOnAnyThread()) != ".")
-                //    {
-                //        // need to trim the '.' at the start of the line if it 
-                //        // exists as this would have been added for transparency
-                //        // http://tools.ietf.org/html/rfc5321#section-4.5.2
-                //        writer.WriteLine(text.TrimStart('.'));
-                //        writer.Flush();
-                //    }
-                //}
-                //catch (TimeoutException)
-                //{
-                //    // TODO: not sure what the best thing to do here is
-                //    throw;
-                //}
+            //    //try
+            //    //{
+            //    //    string text;
+            //    //    while ((text = await reader.ReadLineAsync(TimeSpan.FromSeconds(60), _cancellationToken).ReturnOnAnyThread()) != ".")
+            //    //    {
+            //    //        // need to trim the '.' at the start of the line if it 
+            //    //        // exists as this would have been added for transparency
+            //    //        // http://tools.ietf.org/html/rfc5321#section-4.5.2
+            //    //        writer.WriteLine(text.TrimStart('.'));
+            //    //        writer.Flush();
+            //    //    }
+            //    //}
+            //    //catch (TimeoutException)
+            //    //{
+            //    //    // TODO: not sure what the best thing to do here is
+            //    //    throw;
+            //    //}
 
-                //return writer.BaseStream;
+            //    //return writer.BaseStream;
 
-                //var reader = new StreamReader(_stream, encoding);
-                var writer = new StreamWriter(new MemoryStream(), encoding);
-
-                //HERE: maybe the simple version here is some sort of "MimeStreamReader" or "BlockStreamReader"
-                //that can read the different parts as they are probably all terminated by the same endings?
-                //it would need the ability to change encoding, or perhaps not if the delimeters are the same?
-
-                try
-                {
+            //    //var reader = new StreamReader(_stream, encoding);
+            //    var writer = new StreamWriter(new MemoryStream(), encoding);
+                
+            //    try
+            //    {
                     
-                }
-                catch (TimeoutException)
-                {
-                    // TODO: not sure what the best thing to do here is
-                    throw;
-                }
+            //    }
+            //    catch (TimeoutException)
+            //    {
+            //        // TODO: not sure what the best thing to do here is
+            //        throw;
+            //    }
 
-                return writer.BaseStream;
-            }
+            //    return writer.BaseStream;
+            //}
 
             /// <summary>
             /// Read the MIME headers.
@@ -271,47 +271,49 @@ namespace SmtpServer.Content
             /// Read a content block that is completed by a null line.
             /// </summary>
             /// <returns>The stream that makes up the content block.</returns>
-            async Task<IReadOnlyList<ArraySegment<byte>>> ReadMimeContentBlockAsync()
+            Task<IReadOnlyList<ArraySegment<byte>>> ReadMimeContentBlockAsync()
             {
-                // ReSharper disable InconsistentNaming
-                const int WaitForFirstCR = 0;
-                const int WaitForFirstLF = 1;
-                const int WaitForSecondCR = 2;
-                const int WaitForSecondLF = 3;
-                const int Terminate = 4;
-                // ReSharper restore InconsistentNaming
+                return _reader.ReadUntilAsync(new byte[] { 13, 10, 13, 10 }, _cancellationToken);
 
-                var state = WaitForFirstCR;
-                return await _reader.ReadWhileAsync(current =>
-                {
-                    switch (state)
-                    {
-                        case WaitForFirstCR:
-                            if (current == 13)
-                            {
-                                state = WaitForFirstLF;
-                            }
-                            break;
+                //// ReSharper disable InconsistentNaming
+                //const int WaitForFirstCR = 0;
+                //const int WaitForFirstLF = 1;
+                //const int WaitForSecondCR = 2;
+                //const int WaitForSecondLF = 3;
+                //const int Terminate = 4;
+                //// ReSharper restore InconsistentNaming
 
-                        case WaitForFirstLF:
-                            state = current == 10 ? WaitForSecondCR : WaitForFirstCR;
-                            break;
+                //var state = WaitForFirstCR;
+                //return await _reader.ReadWhileAsync(current =>
+                //{
+                //    switch (state)
+                //    {
+                //        case WaitForFirstCR:
+                //            if (current == 13)
+                //            {
+                //                state = WaitForFirstLF;
+                //            }
+                //            break;
 
-                        case WaitForSecondCR:
-                            state = current == 13 ? WaitForSecondLF : WaitForFirstCR;
-                            break;
+                //        case WaitForFirstLF:
+                //            state = current == 10 ? WaitForSecondCR : WaitForFirstCR;
+                //            break;
 
-                        case WaitForSecondLF:
-                            state = current == 10 ? Terminate : WaitForFirstCR;
-                            break;
+                //        case WaitForSecondCR:
+                //            state = current == 13 ? WaitForSecondLF : WaitForFirstCR;
+                //            break;
 
-                        case Terminate:
-                            return false;
-                    }
+                //        case WaitForSecondLF:
+                //            state = current == 10 ? Terminate : WaitForFirstCR;
+                //            break;
 
-                    return true;
-                }, 
-                _cancellationToken);
+                //        case Terminate:
+                //            return false;
+                //    }
+
+                //    return true;
+                //}, 
+                //_cancellationToken);
             }
         }
 

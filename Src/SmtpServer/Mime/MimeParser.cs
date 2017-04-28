@@ -109,16 +109,35 @@ namespace SmtpServer.Mime
         {
             mimeHeaders = new List<IMimeHeader>();
 
-            while (Enumerator.Peek() != Token.None)
+            if (Enumerator.Peek() == Token.None)
             {
-                if (TryMakeField(out IMimeHeader mimeHeader) == false)
-                {
-                    return false;
-                }
+                return false;
+            }
 
+            while (TryMake(TryMakeField, out IMimeHeader mimeHeader))
+            {
                 mimeHeaders.Add(mimeHeader);
             }
 
+            return TryMakeEnd();
+        }
+
+        /// <summary>
+        /// Attempt to make the end of the headers.
+        /// </summary>
+        /// <returns>true if the end of line could be made, false if not.</returns>
+        internal bool TryMakeEnd()
+        {
+            while (Enumerator.Peek() != Token.None)
+            {
+                Enumerator.Skip(TokenKind.Space);
+
+                if (Enumerator.Take() != Token.NewLine)
+                {
+                    return false;
+                }
+            }
+            
             return true;
         }
 
@@ -131,7 +150,7 @@ namespace SmtpServer.Mime
         {
             if (TryMake(TryMakeKnownField, out mimeHeader) || TryMakeUnknownField(out mimeHeader))
             {
-                return TryMakeEnd();
+                return TryMakeFieldEnd();
             }
 
             return false;
@@ -830,7 +849,7 @@ namespace SmtpServer.Mime
         /// Attempt to make the end of the line.
         /// </summary>
         /// <returns>true if the end of line could be made, false if not.</returns>
-        internal bool TryMakeEnd()
+        internal bool TryMakeFieldEnd()
         {
             Enumerator.Skip(TokenKind.Space);
 

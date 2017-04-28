@@ -113,20 +113,14 @@ namespace SmtpServer.Text
         /// <returns>The new line token that was found at the current position.</returns>
         Token NewLineToken()
         {
-            _index++;
-
-            if (IsEof(_index))
+            if (IsEof(++_index) && Token.IsLF(ElementAt(_index)) == false)
             {
                 return new Token(TokenKind.Space, (char)13);
             }
 
-            if (ConsumeWhile(Token.IsLF, 1).Any())
-            {
-                return Token.NewLine;
-            }
+            _index++;
 
-            // if we couldnt find an immediate LF then we return the CR by itself.
-            return new Token(TokenKind.Space, (char)13);
+            return Token.NewLine;
         }
 
         /// <summary>
@@ -152,9 +146,14 @@ namespace SmtpServer.Text
         IEnumerable<byte> ConsumeWhile(Func<byte, bool> predicate, int limit)
         {
             var current = ElementAt(_index);
-            while (limit-- > 0 && predicate(current) && IsEof(++_index) == false)
+            while (limit-- > 0 && predicate(current))
             {
                 yield return current;
+
+                if (IsEof(++_index))
+                {
+                    yield break;
+                }
 
                 current = ElementAt(_index);
             }
@@ -167,7 +166,7 @@ namespace SmtpServer.Text
         /// <returns>true if the given index is at the end of the input, false if not.</returns>
         bool IsEof(int index)
         {
-            return index + 1 >= _length;
+            return index >= _length;
         }
     }
 }

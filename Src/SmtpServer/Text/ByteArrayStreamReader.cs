@@ -60,6 +60,36 @@ namespace SmtpServer.Text
         }
 
         /// <summary>
+        /// Returns a continuous segment of bytes until the given sequence is reached.
+        /// </summary>
+        /// <param name="sequence">The sequence to match to enable the read operation to complete.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The array segment that defines a continuous segment of characters that have matched the predicate.</returns>
+        public async Task<IReadOnlyList<ArraySegment<byte>>> ReadUntilAsync(byte[] sequence, CancellationToken cancellationToken)
+        {
+            var found = 0;
+            return await ReadWhileAsync(current =>
+            {
+                if (found >= sequence.Length)
+                {
+                    return false;
+                }
+
+                if (current == sequence[found])
+                {
+                    found++;
+                }
+                else
+                {
+                    found = 0;
+                }
+
+                return true;
+            }, 
+            cancellationToken);
+        }
+
+        /// <summary>
         /// Returns a continuous segment of characters matching the predicate.
         /// </summary>
         /// <param name="predicate">The predicate to apply to the characters for the continuous segment.</param>
@@ -79,7 +109,12 @@ namespace SmtpServer.Text
         /// <returns>The array segment that defines a continuous segment of characters that have matched the predicate.</returns>
         public async Task<IReadOnlyList<ArraySegment<byte>>> ReadWhileAsync(Func<byte, bool> predicate, long limit, CancellationToken cancellationToken)
         {
-            var segments = new List<ArraySegment<byte>>();
+            if (await ReadBufferAsync(new byte[_buffer.Length], cancellationToken) == false)
+            {
+                return new List<ArraySegment<byte>>();
+            }
+
+            var segments = new List<ArraySegment<byte>> { Consume(predicate, limit) };
 
             while (_index >= _bytesRead)
             {
