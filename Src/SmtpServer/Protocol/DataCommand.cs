@@ -95,7 +95,8 @@ namespace SmtpServer.Protocol
                     // need to trim the '.' at the start of the line if it 
                     // exists as this would have been added for transparency
                     // http://tools.ietf.org/html/rfc5321#section-4.5.2
-                    context.Transaction.Mime.AppendLine(text.TrimStart('.'));
+                    var line = (!string.IsNullOrWhiteSpace(text) && text.Length > 1 && text.Substring(0, 1) == ".") ? text.Substring(1) : text;
+                    context.Transaction.Mime.AppendLine(line);
                 }
             }
             catch (TimeoutException)
