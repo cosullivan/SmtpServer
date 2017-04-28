@@ -6,15 +6,12 @@ namespace SmtpServer.Text
     [DebuggerDisplay("[{Kind}] {Text}")]
     public struct Token
     {
-        /// <summary>
-        /// Represents no token.
-        /// </summary>
+        // ReSharper disable InconsistentNaming
         public static readonly Token None = new Token(TokenKind.None);
-
-        /// <summary>
-        /// Represents a new line token.
-        /// </summary>
         public static readonly Token NewLine = new Token(TokenKind.NewLine);
+        public static readonly Token CR = new Token(TokenKind.Space, (char)13);
+        public static readonly Token LF = new Token(TokenKind.Space, (char)10);
+        // ReSharper restore InconsistentNaming
 
         /// <summary>
         /// Constructor.
@@ -54,37 +51,37 @@ namespace SmtpServer.Text
         /// <returns>The token that was created.</returns>
         public static Token Create(char ch)
         {
-            return new Token(KindOf(ch), ch);
+            return Create((byte) ch);
         }
 
         /// <summary>
-        /// Returns the token kind for the given character.
+        /// Create a token for the given byte value.
         /// </summary>
-        /// <param name="ch">The character to return the token kind for.</param>
-        /// <returns>The token kind for the given character.</returns>
-        public static TokenKind KindOf(char ch)
+        /// <param name="b">The byte value to create the token for.</param>
+        /// <returns>The token that was created.</returns>
+        public static Token Create(byte b)
         {
-            if (Char.IsLetter(ch))
+            return new Token(KindOf(b), (char)b);
+        }
+
+        /// <summary>
+        /// Returns the token kind for the given byte value.
+        /// </summary>
+        /// <param name="value">The byte value to return the token kind for.</param>
+        /// <returns>The token kind for the given byte value.</returns>
+        public static TokenKind KindOf(byte value)
+        {
+            if (IsText(value))
             {
                 return TokenKind.Text;
             }
 
-            if (Char.IsDigit(ch))
+            if (IsNumber(value))
             {
                 return TokenKind.Number;
             }
 
-            if (Char.IsSymbol(ch))
-            {
-                return TokenKind.Symbol;
-            }
-
-            if (Char.IsPunctuation(ch))
-            {
-                return TokenKind.Punctuation;
-            }
-
-            if (Char.IsWhiteSpace(ch))
+            if (IsWhiteSpace(value))
             {
                 return TokenKind.Space;
             }
@@ -92,6 +89,88 @@ namespace SmtpServer.Text
             return TokenKind.Other;
         }
 
+        /// <summary>
+        /// Returns a value indicating whether or not the given byte is considered a carriage return (CR).
+        /// </summary>
+        /// <param name="value">The value to test.</param>
+        /// <returns>true if the value is considered a carriage return (CR) character, false if not.</returns>
+        // ReSharper disable once InconsistentNaming
+        public static bool IsCR(byte value)
+        {
+            return value == 13;
+        }
+
+        /// <summary>
+        /// Returns a value indicating whether or not the given byte is considered a line feed (LF).
+        /// </summary>
+        /// <param name="value">The value to test.</param>
+        /// <returns>true if the value is considered a line feed (LF) character, false if not.</returns>
+        // ReSharper disable once InconsistentNaming
+        public static bool IsLF(byte value)
+        {
+            return value == 10;
+        }
+
+        /// <summary>
+        /// Returns a value indicating whether or not the given byte is considered a text character.
+        /// </summary>
+        /// <param name="value">The value to test.</param>
+        /// <returns>true if the value is considered a text character, false if not.</returns>
+        public static bool IsText(byte value)
+        {
+            return IsBetween(value, 65, 90) || IsBetween(value, 97, 122);
+        }
+
+        /// <summary>
+        /// Returns a value indicating whether or not the given byte is considered a digit character.
+        /// </summary>
+        /// <param name="value">The value to test.</param>
+        /// <returns>true if the value is considered a digit character, false if not.</returns>
+        public static bool IsNumber(byte value)
+        {
+            return IsBetween(value, 48, 57);
+        }
+
+        /// <summary>
+        /// Returns a value indicating whether or not the given byte is considered a whitespace.
+        /// </summary>
+        /// <param name="value">The value to test.</param>
+        /// <returns>true if the value is considered a whitespace character, false if not.</returns>
+        public static bool IsWhiteSpace(byte value)
+        {
+            return value == 32 || IsBetween(value, 9, 13);
+        }
+
+        ///// <summary>
+        ///// Returns a value indicating whether or not the given byte is considered punctuation.
+        ///// </summary>
+        ///// <param name="value">The value to test.</param>
+        ///// <returns>true if the value is considered a punctuation character, false if not.</returns>
+        //public static bool IsPunctuation(byte value)
+        //{
+        //    return IsBetween(value, 33, 35) 
+        //        || IsBetween(value, 37, 42) 
+        //        || IsBetween(value, 44, 47) 
+        //        || IsBetween(value, 58, 59) 
+        //        || IsBetween(value, 63, 64) 
+        //        || IsBetween(value, 91, 93)
+        //        || value == 95 
+        //        || value == 123
+        //        || value == 125;
+        //}
+
+        /// <summary>
+        /// Returns a value indicating whether or not the given value is inclusively between a given range.
+        /// </summary>
+        /// <param name="value">The value to test.</param>
+        /// <param name="low">The lower value of the range.</param>
+        /// <param name="high">The higher value of the range.</param>
+        /// <returns>true if the value is between the range, false if not.</returns>
+        static bool IsBetween(byte value, byte low, byte high)
+        {
+            return value >= low && value <= high;
+        }
+        
         /// <summary>
         /// Indicates whether this instance and a specified object are equal.
         /// </summary>

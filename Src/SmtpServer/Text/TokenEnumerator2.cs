@@ -11,7 +11,7 @@ namespace SmtpServer.Text
         /// Constructor.
         /// </summary>
         /// <param name="tokenReader">The token reader to read the tokens from.</param>
-        public TokenEnumerator2(StringTokenReader2 tokenReader) : this(tokenReader.ToList()) { }
+        public TokenEnumerator2(TokenReader tokenReader) : this(tokenReader.ToList()) { }
 
         /// <summary>
         /// Constructor.

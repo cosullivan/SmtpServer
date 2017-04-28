@@ -13,17 +13,15 @@ namespace SmtpServer.Mime
         {
             // ReSharper disable InconsistentNaming
             internal static readonly Token Space = new Token(TokenKind.Space, ' ');
-            internal static readonly Token CR = new Token(TokenKind.Space, (char)13);
-            internal static readonly Token LF = new Token(TokenKind.Space, (char)10);
             internal static readonly Token HTAB = new Token(TokenKind.Space, (char)9);
-            internal static readonly Token Quote = new Token(TokenKind.Punctuation, (char)34);
-            internal static readonly Token Colon = new Token(TokenKind.Punctuation, ':');
-            internal static readonly Token DecimalPoint = new Token(TokenKind.Punctuation, '.');
-            internal static readonly Token Equal = new Token(TokenKind.Symbol, '=');
-            internal static readonly Token Dash = new Token(TokenKind.Symbol, '-');
-            internal static readonly Token SemiColon = new Token(TokenKind.Punctuation, ';');
-            internal static readonly Token ForwardSlash = new Token(TokenKind.Punctuation, '/');
-            internal static readonly Token BackSlash = new Token(TokenKind.Punctuation, '\\');
+            internal static readonly Token Quote = new Token(TokenKind.Other, (char)34);
+            internal static readonly Token Colon = new Token(TokenKind.Other, ':');
+            internal static readonly Token DecimalPoint = new Token(TokenKind.Other, '.');
+            internal static readonly Token Equal = new Token(TokenKind.Other, '=');
+            internal static readonly Token Dash = new Token(TokenKind.Other, '-');
+            internal static readonly Token SemiColon = new Token(TokenKind.Other, ';');
+            internal static readonly Token ForwardSlash = new Token(TokenKind.Other, '/');
+            internal static readonly Token BackSlash = new Token(TokenKind.Other, '\\');
             internal static readonly Token[] TSpecials = 
             {
                 Token.Create('('),
@@ -44,39 +42,39 @@ namespace SmtpServer.Mime
             };
             internal static readonly Token[] CTL = 
             {
-                Token.Create((char)0),
-                Token.Create((char)1),
-                Token.Create((char)2),
-                Token.Create((char)3),
-                Token.Create((char)4),
-                Token.Create((char)5),
-                Token.Create((char)6),
-                Token.Create((char)7),
-                Token.Create((char)8),
-                Token.Create((char)9),
-                Token.Create((char)10),
-                Token.Create((char)11),
-                Token.Create((char)12),
-                Token.Create((char)13),
-                Token.Create((char)14),
-                Token.Create((char)15),
-                Token.Create((char)16),
-                Token.Create((char)17),
-                Token.Create((char)18),
-                Token.Create((char)19),
-                Token.Create((char)20),
-                Token.Create((char)21),
-                Token.Create((char)22),
-                Token.Create((char)23),
-                Token.Create((char)24),
-                Token.Create((char)25),
-                Token.Create((char)26),
-                Token.Create((char)27),
-                Token.Create((char)28),
-                Token.Create((char)29),
-                Token.Create((char)30),
-                Token.Create((char)31),
-                Token.Create((char)127),
+                Token.Create(0),
+                Token.Create(1),
+                Token.Create(2),
+                Token.Create(3),
+                Token.Create(4),
+                Token.Create(5),
+                Token.Create(6),
+                Token.Create(7),
+                Token.Create(8),
+                Token.Create(9),
+                Token.Create(10),
+                Token.Create(11),
+                Token.Create(12),
+                Token.Create(13),
+                Token.Create(14),
+                Token.Create(15),
+                Token.Create(16),
+                Token.Create(17),
+                Token.Create(18),
+                Token.Create(19),
+                Token.Create(20),
+                Token.Create(21),
+                Token.Create(22),
+                Token.Create(23),
+                Token.Create(24),
+                Token.Create(25),
+                Token.Create(26),
+                Token.Create(27),
+                Token.Create(28),
+                Token.Create(29),
+                Token.Create(30),
+                Token.Create(31),
+                Token.Create(127),
             };
             internal static readonly Token[] DescreteTypes =
             {
@@ -609,8 +607,7 @@ namespace SmtpServer.Mime
                 case TokenKind.Number:
                     return true;
 
-                case TokenKind.Punctuation:
-                case TokenKind.Symbol:
+                case TokenKind.Other:
                     var allowable = new char[] { '!', '#', '$', '&', '.', '+', '-', '^', '_' };
                     return token.Text.Length == 1 && allowable.Contains(token.Text[0]);
             }
@@ -756,10 +753,11 @@ namespace SmtpServer.Mime
                 case TokenKind.NewLine:
                     return false;
 
-                default:
-                    return Tokens.TSpecials.Contains(t) == false
-                        && Tokens.CTL.Contains(t) == false;
+                case TokenKind.Other:
+                    return Tokens.TSpecials.Contains(t) == false && Tokens.CTL.Contains(t) == false;
             }
+
+            return false;
         }
 
         /// <summary>
@@ -804,7 +802,7 @@ namespace SmtpServer.Mime
             var token = Enumerator.Take();
             text = token.Text;
 
-            return new[] { Tokens.Quote, Tokens.BackSlash, Tokens.CR }.Contains(token) == false;
+            return new[] { Tokens.Quote, Tokens.BackSlash, Token.CR }.Contains(token) == false;
         }
 
         /// <summary>
@@ -860,7 +858,7 @@ namespace SmtpServer.Mime
                         break;
 
                     case TokenKind.Space:
-                    case TokenKind.Punctuation:
+                    case TokenKind.Other:
                         if (token.Text[0] <= 31)
                         {
                             return false;

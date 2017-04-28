@@ -117,10 +117,10 @@
     <Compile Include="Storage\MailboxFilter.cs" />
     <Compile Include="Storage\MailboxFilterResult.cs" />
     <Compile Include="Storage\MessageStore.cs" />
+    <Compile Include="Text\ByteArrayStreamReader.cs" />
+    <Compile Include="Text\ByteArrayTokenReader.cs" />
     <Compile Include="Text\ITokenEnumerator.cs" />
     <Compile Include="Text\ITokenEnumeratorCheckpoint.cs" />
-    <Compile Include="Text\StreamReader2.cs" />
-    <Compile Include="Text\StreamTokenReader.cs" />
     <Compile Include="Text\StringTokenReader2.cs" />
     <Compile Include="Text\StringTokenReader.cs" />
     <Compile Include="Text\Token.cs" />
