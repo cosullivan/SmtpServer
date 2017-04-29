@@ -8,20 +8,15 @@ namespace SmtpServer.Protocol
 {
     public sealed class DataCommand : SmtpCommand
     {
-        readonly IMessageStoreFactory _messageStoreFactory;
+        readonly ISmtpServerOptions _options;
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="messageStoreFactory">The message store factory.</param>
-        public DataCommand(IMessageStoreFactory messageStoreFactory)
+        /// <param name="options">The options that the server is running within.</param>
+        public DataCommand(ISmtpServerOptions options)
         {
-            if (messageStoreFactory == null)
-            {
-                throw new ArgumentNullException(nameof(messageStoreFactory));
-            }
-
-            _messageStoreFactory = messageStoreFactory;
+            _options = options;
         }
 
         /// <summary>
@@ -45,7 +40,7 @@ namespace SmtpServer.Protocol
             try
             {
                 // store the transaction
-                using (var container = new DisposableContainer<IMessageStore>(_messageStoreFactory.CreateInstance(context)))
+                using (var container = new DisposableContainer<IMessageStore>(_options.MessageStoreFactory.CreateInstance(context)))
                 {
                     var response = await container.Instance.SaveAsync(context, context.Transaction, cancellationToken).ConfigureAwait(false);
 
@@ -66,14 +61,14 @@ namespace SmtpServer.Protocol
         /// <returns>A task which asynchronously performs the operation.</returns>
         async Task ReceiveContentAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
         {
-            if (context.TransferEncoding == ContentEncoding.EightBit)
+            if (context.TransferEncoding == ContentEncoding.EightBit || _options.DefaultContentEncoding == ContentEncoding.EightBit)
             {
                 context.Text = new NetworkTextStream(context.Text.GetInnerStream(), Encoding.UTF8);
             }
 
             await ReceiveShortLineContentAsync(context, cancellationToken);
 
-            if (context.TransferEncoding == ContentEncoding.EightBit)
+            if (context.TransferEncoding == ContentEncoding.EightBit || _options.DefaultContentEncoding == ContentEncoding.EightBit)
             {
                 context.Text = new NetworkTextStream(context.Text.GetInnerStream(), Encoding.ASCII);
             }

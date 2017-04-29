@@ -14,6 +14,7 @@ using SmtpServer.Tracing;
 using MailKit.Net.Smtp;
 using MimeKit;
 using MimeKit.Text;
+using ContentEncoding = SmtpServer.Protocol.ContentEncoding;
 using SmtpClient = MailKit.Net.Smtp.SmtpClient;
 
 namespace SampleApp
@@ -35,6 +36,7 @@ namespace SampleApp
                 .SupportedSslProtocols(SslProtocols.Default)
                 .MessageStore(new ConsoleMessageStore())
                 .MailboxFilter(new ConsoleMailboxFilter())
+                .DefaultContentEncoding(ContentEncoding.EightBit)
                 .Build();
 
             var s = RunServerAsync(options, cancellationTokenSource.Token);
@@ -130,11 +132,11 @@ namespace SampleApp
                         var message = new MimeKit.MimeMessage();
                         message.From.Add(new MimeKit.MailboxAddress($"{name}{counter}@test.com"));
                         message.To.Add(new MimeKit.MailboxAddress("sample@test.com"));
-                        message.Subject = $"{name} {counter}";
+                        message.Subject = $"Subject test çãõáéíóú";
 
                         message.Body = new TextPart(TextFormat.Plain)
                         {
-                            Text = "Test Message",
+                            Text = "Test Message Body special char çãõáéíóú",
                         };
 
                         await smtpClient.SendAsync(message, cancellationToken).ConfigureAwait(false);

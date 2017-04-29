@@ -2,6 +2,7 @@
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using SmtpServer.Authentication;
+using SmtpServer.Protocol;
 using SmtpServer.Storage;
 
 namespace SmtpServer
@@ -156,6 +157,18 @@ namespace SmtpServer
         public OptionsBuilder SupportedSslProtocols(SslProtocols sslProtocols)
         {
             _options.SupportedSslProtocols = sslProtocols;
+
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the default content encoding for a message body.
+        /// </summary>
+        /// <param name="encoding">The default content encoding for a message.</param>
+        /// <returns>A OptionsBuilder to continue building on.</returns>
+        public OptionsBuilder DefaultContentEncoding(ContentEncoding encoding)
+        {
+            _options.DefaultContentEncoding = encoding;
 
             return this;
         }

@@ -289,7 +289,7 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            command = new DataCommand(_options.MessageStoreFactory);
+            command = new DataCommand(_options);
             return true;
         }
 

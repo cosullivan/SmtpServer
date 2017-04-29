@@ -5,6 +5,7 @@ using System.Net;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using SmtpServer.Authentication;
+using SmtpServer.Protocol;
 using SmtpServer.Storage;
 
 namespace SmtpServer
@@ -93,5 +94,10 @@ namespace SmtpServer
         /// The supported SSL protocols.
         /// </summary>
         public SslProtocols SupportedSslProtocols { get; internal set; }
+
+        /// <summary>
+        /// The default content encoding for a message.
+        /// </summary>
+        public ContentEncoding DefaultContentEncoding { get; internal set; }
     }
 }
