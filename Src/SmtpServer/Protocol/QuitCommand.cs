@@ -5,7 +5,11 @@ namespace SmtpServer.Protocol
 {
     public sealed class QuitCommand : SmtpCommand
     {
-        public static readonly SmtpCommand Instance = new QuitCommand();
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="options">The server options.</param>
+        internal QuitCommand(ISmtpServerOptions options) : base(options) { }
 
         /// <summary>
         /// Execute the command.

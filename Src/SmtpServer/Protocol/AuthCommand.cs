@@ -3,26 +3,22 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using SmtpServer.Authentication;
 
 namespace SmtpServer.Protocol
 {
     public class AuthCommand : SmtpCommand
     {
-        readonly IUserAuthenticator _userAuthenticator;
         string _user;
         string _password;
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="userAuthenticator">The user authenticator.</param>
+        /// <param name="options">The server options.</param>
         /// <param name="method">The authentication method.</param>
         /// <param name="parameter">The authentication parameter.</param>
-        public AuthCommand(IUserAuthenticator userAuthenticator, AuthenticationMethod method, string parameter)
+        internal AuthCommand(ISmtpServerOptions options, AuthenticationMethod method, string parameter) : base(options)
         {
-            _userAuthenticator = userAuthenticator;
-
             Method = method;
             Parameter = parameter;
         }
@@ -54,7 +50,7 @@ namespace SmtpServer.Protocol
                     break;
             }
 
-            if (await _userAuthenticator.AuthenticateAsync(_user, _password).ConfigureAwait(false) == false)
+            if (await Options.UserAuthenticator.AuthenticateAsync(_user, _password).ConfigureAwait(false) == false)
             {
                 await context.Text.ReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ConfigureAwait(false);
                 return;

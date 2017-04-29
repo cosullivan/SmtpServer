@@ -8,23 +8,14 @@ namespace SmtpServer.Protocol
 {
     public sealed class RcptCommand : SmtpCommand
     {
-        readonly IMailbox _address;
-        readonly IMailboxFilterFactory _mailboxFilterFactory;
-
         /// <summary>
         /// Constructor.
         /// </summary>
+        /// <param name="options">The server options.</param>
         /// <param name="address">The address.</param>
-        /// <param name="mailboxFilterFactory">The mailbox filter factory to use.</param>
-        public RcptCommand(IMailbox address, IMailboxFilterFactory mailboxFilterFactory)
+        internal RcptCommand(ISmtpServerOptions options, IMailbox address) : base(options)
         {
-            if (mailboxFilterFactory == null)
-            {
-                throw new ArgumentNullException(nameof(mailboxFilterFactory));
-            }
-
-            _address = address;
-            _mailboxFilterFactory = mailboxFilterFactory;
+            Address = address;
         }
 
         /// <summary>
@@ -35,12 +26,12 @@ namespace SmtpServer.Protocol
         /// <returns>A task which asynchronously performs the execution.</returns>
         internal override async Task ExecuteAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
         {
-            using (var container = new DisposableContainer<IMailboxFilter>(_mailboxFilterFactory.CreateInstance(context)))
+            using (var container = new DisposableContainer<IMailboxFilter>(Options.MailboxFilterFactory.CreateInstance(context)))
             {
-                switch (await container.Instance.CanDeliverToAsync(context, _address, context.Transaction.From))
+                switch (await container.Instance.CanDeliverToAsync(context, Address, context.Transaction.From))
                 {
                     case MailboxFilterResult.Yes:
-                        context.Transaction.To.Add(_address);
+                        context.Transaction.To.Add(Address);
                         await context.Text.ReplyAsync(SmtpResponse.Ok, cancellationToken);
                         return;
 
@@ -60,9 +51,6 @@ namespace SmtpServer.Protocol
         /// <summary>
         /// Gets the address that the mail is to.
         /// </summary>
-        public IMailbox Address
-        {
-            get { return _address; }
-        }
+        public IMailbox Address { get; }
     }
 }

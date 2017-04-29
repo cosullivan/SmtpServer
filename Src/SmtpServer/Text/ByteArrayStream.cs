@@ -58,8 +58,6 @@ namespace SmtpServer.Text
         /// <returns>The total number of bytes read into the buffer. This can be less than the number of bytes requested if that many bytes are not currently available, or zero (0) if the end of the stream has been reached.</returns>
         public override int Read(byte[] buffer, int offset, int count)
         {
-            TODO
-
             throw new NotImplementedException();
         }
 

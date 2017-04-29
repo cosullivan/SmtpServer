@@ -5,7 +5,11 @@ namespace SmtpServer.Protocol
 {
     public sealed class NoopCommand : SmtpCommand
     {
-        public static readonly SmtpCommand Instance = new NoopCommand();
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="options">The server options.</param>
+        internal NoopCommand(ISmtpServerOptions options) : base(options) { }
 
         /// <summary>
         /// Execute the command.

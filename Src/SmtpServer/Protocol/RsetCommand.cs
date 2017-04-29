@@ -5,7 +5,11 @@ namespace SmtpServer.Protocol
 {
     public sealed class RsetCommand : SmtpCommand
     {
-        public static readonly SmtpCommand Instance = new RsetCommand();
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="options">The server options.</param>
+        internal RsetCommand(ISmtpServerOptions options) : base(options) { }
 
         /// <summary>
         /// Execute the command.

@@ -16,14 +16,11 @@ namespace SmtpServer.Content
         /// <summary>
         /// The message type.
         /// </summary>
-        public MessageType Type
-        {
-            get { return MessageType.Text; }
-        }
+        public MessageType Type => MessageType.Text;
 
         /// <summary>
         /// The message content.
         /// </summary>
-        public Stream Content { get; set; }
+        public Stream Content { get; }
     }
 }

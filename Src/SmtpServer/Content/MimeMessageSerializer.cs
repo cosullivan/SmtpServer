@@ -10,44 +10,8 @@ using SmtpServer.Text;
 
 namespace SmtpServer.Content
 {
-    public interface IMessageSerializer
+    public sealed class MimeMessageSerializer : IMessageSerializer
     {
-        /// <summary>
-        /// Serialize the message to a stream.
-        /// </summary>
-        /// <param name="message">The message to serialize.</param>
-        /// <param name="stream">The stream to serialize the message to.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The stream that the message was serialized to.</returns>
-        Task SerializeAsync(IMessage message, Stream stream, CancellationToken cancellationToken = default(CancellationToken));
-
-        /// <summary>
-        /// Deserialize a message from the stream.
-        /// </summary>
-        /// <param name="stream">The stream to deserialize the message from.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The message that was deserialized.</returns>
-        Task<IMessage> DeserializeAsync(Stream stream, CancellationToken cancellationToken = default(CancellationToken));
-    }
-
-    public sealed class MimeMessageReader : IMessageReader, IMessageSerializer
-    {
-        readonly Stream _stream;
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="stream">The stream that is being read from.</param>
-        public MimeMessageReader(Stream stream)
-        {
-            _stream = stream;
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public MimeMessageReader() { }
-
         /// <summary>
         /// Serialize the message to a stream.
         /// </summary>
@@ -71,17 +35,6 @@ namespace SmtpServer.Content
             var entity = await new Deserializer(stream, cancellationToken).DeserializeMimeEntityAsync();
 
             return null;
-        }
-
-        /// <summary>
-        /// Read a message 
-        /// </summary>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The message that was read from the stream.</returns>
-        public async Task<IMessage> ReadAsync(CancellationToken cancellationToken = default(CancellationToken))
-        {
-            //return await ReadMessageAsync(cancellationToken);
-            throw new NotImplementedException();
         }
         
         #region Deserializer

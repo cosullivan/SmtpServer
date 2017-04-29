@@ -9,18 +9,14 @@ namespace SmtpServer.Protocol
 {
     public sealed class MailCommand : SmtpCommand
     {
-        readonly ISmtpServerOptions _options;
-        
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="options">The options that the server was created with.</param>
+        /// <param name="options">The server options.</param>
         /// <param name="address">The address.</param>
         /// <param name="parameters">The list of extended (ESMTP) parameters.</param>
-        public MailCommand(ISmtpServerOptions options, IMailbox address, IReadOnlyDictionary<string, string> parameters)
+        internal MailCommand(ISmtpServerOptions options, IMailbox address, IReadOnlyDictionary<string, string> parameters) : base(options)
         {
-            _options = options;
-
             Address = address;
             Parameters = parameters;
         }
@@ -39,13 +35,13 @@ namespace SmtpServer.Protocol
             var size = GetMessageSize();
 
             // check against the server supplied maximum
-            if (_options.MaxMessageSize > 0 && size > _options.MaxMessageSize)
+            if (Options.MaxMessageSize > 0 && size > Options.MaxMessageSize)
             {
                 await context.Text.ReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken);
                 return;
             }
 
-            using (var container = new DisposableContainer<IMailboxFilter>(_options.MailboxFilterFactory.CreateInstance(context)))
+            using (var container = new DisposableContainer<IMailboxFilter>(Options.MailboxFilterFactory.CreateInstance(context)))
             {
                 switch (await container.Instance.CanAcceptFromAsync(context, Address, size))
                 {

@@ -48,7 +48,7 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            command = QuitCommand.Instance;
+            command = new QuitCommand(_options);
             return true;
         }
 
@@ -77,7 +77,7 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            command = NoopCommand.Instance;
+            command = new NoopCommand(_options);
             return true;
         }
 
@@ -106,7 +106,7 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            command = RsetCommand.Instance;
+            command = new RsetCommand(_options);
             return true;
         }
 
@@ -136,7 +136,7 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            command = new HeloCommand(domain);
+            command = new HeloCommand(_options, domain);
             return true;
         }
 
@@ -160,14 +160,14 @@ namespace SmtpServer.Protocol
             string domain;
             if (_parser.TryMakeDomain(enumerator, out domain))
             {
-                command = new EhloCommand(domain, _options);
+                command = new EhloCommand(_options, domain);
                 return true;
             }
 
             string address;
             if (_parser.TryMakeAddressLiteral(enumerator, out address))
             {
-                command = new EhloCommand(address, _options);
+                command = new EhloCommand(_options, address);
                 return true;
             }
 
@@ -260,7 +260,7 @@ namespace SmtpServer.Protocol
 
             // TODO: support optional service extension parameters here
 
-            command = new RcptCommand(mailbox, _options.MailboxFilterFactory);
+            command = new RcptCommand(_options, mailbox);
             return true;
         }
 
@@ -289,7 +289,7 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            command = new DataCommand(_options.MessageStoreFactory);
+            command = new DataCommand(_options);
             return true;
         }
 
@@ -318,7 +318,7 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            command = DbugCommand.Instance;
+            command = new DbugCommand(_options);
             return true;
         }
 
@@ -347,7 +347,7 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            command = new StartTlsCommand(_options.ServerCertificate, _options.SupportedSslProtocols);
+            command = new StartTlsCommand(_options);
             return true;
         }
 
@@ -388,7 +388,7 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            command = new AuthCommand(_options.UserAuthenticator, method, parameter);
+            command = new AuthCommand(_options, method, parameter);
             return true;
         }
     }

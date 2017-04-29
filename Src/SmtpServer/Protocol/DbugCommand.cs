@@ -5,7 +5,11 @@ namespace SmtpServer.Protocol
 {
     public sealed class DbugCommand : SmtpCommand
     {
-        public static readonly SmtpCommand Instance = new DbugCommand();
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="options">The server options.</param>
+        internal DbugCommand(ISmtpServerOptions options) : base(options) { }
 
         /// <summary>
         /// Execute the command.

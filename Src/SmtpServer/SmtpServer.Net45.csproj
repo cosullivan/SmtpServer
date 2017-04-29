@@ -43,14 +43,14 @@
   <ItemGroup>
     <Compile Include="Authentication\IUserAuthenticator.cs" />
     <Compile Include="Content\IMessage.cs" />
-    <Compile Include="Content\IMessageReader.cs" />
+    <Compile Include="Content\IMessageSerializer.cs" />
     <Compile Include="Content\IMimeMessage.cs" />
     <Compile Include="Content\ITextMessage.cs" />
-    <Compile Include="Content\MessageReaderFactory.cs" />
+    <Compile Include="Content\MessageSerializerFactory.cs" />
     <Compile Include="Content\MessageType.cs" />
-    <Compile Include="Content\MimeMessageReader.cs" />
+    <Compile Include="Content\MimeMessageSerializer.cs" />
     <Compile Include="Content\TextMessage.cs" />
-    <Compile Include="Content\TextMessageReader.cs" />
+    <Compile Include="Content\TextMessageSerializer.cs" />
     <Compile Include="Extensions\StreamReaderExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="Extensions\TaskExtensions.cs" />

@@ -1,6 +1,4 @@
 ﻿using System.Net.Security;
-using System.Security.Authentication;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -8,19 +6,11 @@ namespace SmtpServer.Protocol
 {
     public sealed class StartTlsCommand : SmtpCommand
     {
-        readonly X509Certificate _certificate;
-        readonly SslProtocols _sslProtocols;
-
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="certificate">The server side certificate to authenticate with.</param>
-        /// <param name="sslProtocols">The allowable SSL protocols.</param>
-        public StartTlsCommand(X509Certificate certificate, SslProtocols sslProtocols)
-        {
-            _certificate = certificate;
-            _sslProtocols = sslProtocols;
-        }
+        /// <param name="options">The server options.</param>
+        internal StartTlsCommand(ISmtpServerOptions options) : base(options) { }
 
         /// <summary>
         /// Execute the command.
@@ -34,7 +24,7 @@ namespace SmtpServer.Protocol
 
             var stream = new SslStream(context.Text.GetInnerStream(), true);
 
-            await stream.AuthenticateAsServerAsync(_certificate, false, _sslProtocols, true);
+            await stream.AuthenticateAsServerAsync(Options.ServerCertificate, false, Options.SupportedSslProtocols, true);
 
             context.Text = new NetworkTextStream(stream);
         }

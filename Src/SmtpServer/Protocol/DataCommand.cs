@@ -8,22 +8,13 @@ namespace SmtpServer.Protocol
 {
     public sealed class DataCommand : SmtpCommand
     {
-        readonly IMessageStoreFactory _messageStoreFactory;
-        readonly MessageReaderFactory _messageReaderFactory = new MessageReaderFactory();
+        readonly MessageSerializerFactory _messageReaderFactory = new MessageSerializerFactory();
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="messageStoreFactory">The message store factory.</param>
-        public DataCommand(IMessageStoreFactory messageStoreFactory)
-        {
-            if (messageStoreFactory == null)
-            {
-                throw new ArgumentNullException(nameof(messageStoreFactory));
-            }
-
-            _messageStoreFactory = messageStoreFactory;
-        }
+        /// <param name="options">The server options.</param>
+        internal DataCommand(ISmtpServerOptions options) : base(options) { }
 
         /// <summary>
         /// Execute the command.
@@ -46,7 +37,7 @@ namespace SmtpServer.Protocol
             try
             {
                 // store the transaction
-                using (var container = new DisposableContainer<IMessageStore>(_messageStoreFactory.CreateInstance(context)))
+                using (var container = new DisposableContainer<IMessageStore>(Options.MessageStoreFactory.CreateInstance(context)))
                 {
                     var response = await container.Instance.SaveAsync(context, context.Transaction, cancellationToken).ConfigureAwait(false);
 
@@ -67,9 +58,11 @@ namespace SmtpServer.Protocol
         /// <returns>A task which asynchronously performs the operation.</returns>
         async Task<IMessage> ReadMessageAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
         {
-            var reader = await _messageReaderFactory.CreateInstanceAsync(context.Text.GetInnerStream(), cancellationToken).ConfigureAwait(false);
+            //var reader = await _messageReaderFactory.CreateInstanceAsync(context.Text.GetInnerStream(), cancellationToken).ConfigureAwait(false);
 
-            return await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+            //return await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+
+            throw new NotImplementedException();
         }
     }
 }

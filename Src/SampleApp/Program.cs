@@ -73,7 +73,7 @@ Ym9keSBvZiB0aGUgbWVzc2FnZS48L3A+CiAgPC9ib2R5Pgo8L2h0bWw+Cg==
             //}
 
             //var mimeMessageReader = new MimeMessageReader(File.OpenRead(@"C:\Dev\temp\msg.txt"));
-            var mimeMessageSerializer = new MimeMessageReader();
+            var mimeMessageSerializer = new MimeMessageSerializer();
             //var mimeMessageReader = new MimeMessageReader(new MemoryStream(Encoding.ASCII.GetBytes(MIME)));
             try
             {
