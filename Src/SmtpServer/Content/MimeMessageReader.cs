@@ -179,14 +179,9 @@ namespace SmtpServer.Content
             /// <returns>The stream that represents the message contents that was read.</returns>
             async Task<Stream> ReadPlainTextAsync(Encoding textEncoding)
             {
-                //var stream = await ReadShortLineContentAsync(textEncoding).ReturnOnAnyThread();
-                //stream.Position = 0;
+                // TODO: need to handle dot-stuffing here
 
-                //return stream;
-                
-                var x = await _reader.ReadUntilAsync(new byte[] { 13, 10, 46, 13, 10 }, _cancellationToken);
-
-                return null;
+                return new ByteArrayStream(await _reader.ReadUntilAsync(new byte[] { 13, 10, 46, 13, 10 }, _cancellationToken));
             }
 
             ///// <summary>
@@ -274,46 +269,6 @@ namespace SmtpServer.Content
             Task<IReadOnlyList<ArraySegment<byte>>> ReadMimeContentBlockAsync()
             {
                 return _reader.ReadUntilAsync(new byte[] { 13, 10, 13, 10 }, _cancellationToken);
-
-                //// ReSharper disable InconsistentNaming
-                //const int WaitForFirstCR = 0;
-                //const int WaitForFirstLF = 1;
-                //const int WaitForSecondCR = 2;
-                //const int WaitForSecondLF = 3;
-                //const int Terminate = 4;
-                //// ReSharper restore InconsistentNaming
-
-                //var state = WaitForFirstCR;
-                //return await _reader.ReadWhileAsync(current =>
-                //{
-                //    switch (state)
-                //    {
-                //        case WaitForFirstCR:
-                //            if (current == 13)
-                //            {
-                //                state = WaitForFirstLF;
-                //            }
-                //            break;
-
-                //        case WaitForFirstLF:
-                //            state = current == 10 ? WaitForSecondCR : WaitForFirstCR;
-                //            break;
-
-                //        case WaitForSecondCR:
-                //            state = current == 13 ? WaitForSecondLF : WaitForFirstCR;
-                //            break;
-
-                //        case WaitForSecondLF:
-                //            state = current == 10 ? Terminate : WaitForFirstCR;
-                //            break;
-
-                //        case Terminate:
-                //            return false;
-                //    }
-
-                //    return true;
-                //}, 
-                //_cancellationToken);
             }
         }
 

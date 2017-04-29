@@ -117,6 +117,7 @@
     <Compile Include="Storage\MailboxFilter.cs" />
     <Compile Include="Storage\MailboxFilterResult.cs" />
     <Compile Include="Storage\MessageStore.cs" />
+    <Compile Include="Text\ByteArrayStream.cs" />
     <Compile Include="Text\ByteArrayStreamReader.cs" />
     <Compile Include="Text\ByteArrayTokenReader.cs" />
     <Compile Include="Text\ITokenEnumerator.cs" />
