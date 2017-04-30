@@ -40,7 +40,7 @@ namespace SampleApp
                 .Build();
 
             var s = RunServerAsync(options, cancellationTokenSource.Token);
-            var c = RunClientAsync("A", 1, cancellationTokenSource.Token);
+            //var c = RunClientAsync("A", 1, cancellationTokenSource.Token);
 
             Console.WriteLine("Press any key to continue");
             Console.ReadKey();
@@ -48,7 +48,7 @@ namespace SampleApp
             cancellationTokenSource.Cancel();
 
             s.WaitWithoutException();
-            c.WaitWithoutException();
+            //c.WaitWithoutException();
 
             //return;
 
