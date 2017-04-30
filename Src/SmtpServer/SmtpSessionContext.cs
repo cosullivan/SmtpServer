@@ -1,5 +1,6 @@
 using System;
 using System.Net;
+using SmtpServer.IO;
 using SmtpServer.Protocol;
 
 namespace SmtpServer
@@ -10,8 +11,6 @@ namespace SmtpServer
         /// Fired when a command is about to execute.
         /// </summary>
         public event EventHandler<SmtpCommandExecutingEventArgs> CommandExecuting;
-
-        bool _isQuitRequested;
 
         /// <summary>
         /// Constructor.
@@ -31,7 +30,7 @@ namespace SmtpServer
         /// </summary>
         public void Quit()
         {
-            _isQuitRequested = true;
+            IsQuitRequested = true;
         }
 
         /// <summary>
@@ -46,7 +45,7 @@ namespace SmtpServer
         /// <summary>
         /// Gets or sets the text stream to read from and write to.
         /// </summary>
-        public ITextStream Text { get; set; }
+        public INetworkClient Text { get; set; }
 
         /// <summary>
         /// The transfer encoding that is required for the message.
@@ -71,9 +70,6 @@ namespace SmtpServer
         /// <summary>
         /// Gets a value indicating whether a quit has been requested.
         /// </summary>
-        public bool IsQuitRequested
-        {
-            get { return _isQuitRequested; }
-        }
+        public bool IsQuitRequested { get; private set; }
     }
 }

@@ -56,6 +56,8 @@
     <Compile Include="Extensions\TaskExtensions.cs" />
     <Compile Include="Extensions\TraceSwitchExtensions.cs" />
     <Compile Include="IMessageTransaction.cs" />
+    <Compile Include="IO\INetworkClient.cs" />
+    <Compile Include="IO\NetworkClient.cs" />
     <Compile Include="ISessionContext.cs" />
     <Compile Include="ISmtpMessageTransaction.cs" />
     <Compile Include="ISmtpServerOptions.cs" />
@@ -117,7 +119,7 @@
     <Compile Include="Storage\MailboxFilter.cs" />
     <Compile Include="Storage\MailboxFilterResult.cs" />
     <Compile Include="Storage\MessageStore.cs" />
-    <Compile Include="Text\ByteArrayStream.cs" />
+    <Compile Include="IO\ByteArrayStream.cs" />
     <Compile Include="Text\ByteArrayStreamReader.cs" />
     <Compile Include="Text\ByteArrayTokenReader.cs" />
     <Compile Include="Text\ITokenEnumerator.cs" />

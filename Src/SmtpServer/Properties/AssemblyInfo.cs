@@ -15,6 +15,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyCulture("")]
 #if DEBUG
 [assembly: InternalsVisibleTo("SmtpServer.Tests")]
+[assembly: InternalsVisibleTo("SampleApp")]
 //[assembly: InternalsVisibleTo("SmtpServer.Tests,PublicKey=" +
 //"0024000004800000940000000602000000240000525341310004000001000100e9268fca1f93be" +
 //"b8bdd9d4299feca817e004b5d8f85a44c88f96cc66b131040d7b2a792118dad456a29fb0c2ba0a" +

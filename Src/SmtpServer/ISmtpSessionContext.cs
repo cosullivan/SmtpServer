@@ -1,4 +1,5 @@
-﻿using SmtpServer.Protocol;
+﻿using SmtpServer.IO;
+using SmtpServer.Protocol;
 
 namespace SmtpServer
 {
@@ -12,7 +13,7 @@ namespace SmtpServer
         /// <summary>
         /// Gets or sets the text stream to read from and write to.
         /// </summary>
-        ITextStream Text { get; set; }
+        INetworkClient Text { get; }
 
         /// <summary>
         /// The transfer encoding that is required for the message.

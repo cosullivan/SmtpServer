@@ -3,13 +3,15 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace SmtpServer.Text
+namespace SmtpServer.IO
 {
     internal sealed class ByteArrayStream : Stream
     {
         readonly IReadOnlyList<ArraySegment<byte>> _segments;
         readonly int _length;
-        
+        int _segmentIndex = 0;
+        int _index = 0;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -58,7 +60,30 @@ namespace SmtpServer.Text
         /// <returns>The total number of bytes read into the buffer. This can be less than the number of bytes requested if that many bytes are not currently available, or zero (0) if the end of the stream has been reached.</returns>
         public override int Read(byte[] buffer, int offset, int count)
         {
-            throw new NotImplementedException();
+            var remaining = count;
+
+            while (remaining > 0 && _segmentIndex < _segments.Count)
+            {
+                var segment = _segments[_segmentIndex];
+
+                if (_index >= segment.Count)
+                {
+                    _index = 0;
+
+                    if (++_segmentIndex > _segments.Count)
+                    {
+                        break;
+                    }
+                }
+
+                var length = Math.Min(segment.Count - _index, remaining);
+                Buffer.BlockCopy(segment.Array, segment.Offset + _index, buffer, offset + count - remaining, length);
+
+                _index += length;
+                remaining -= length;
+            }
+
+            return count - remaining;
         }
 
         /// <summary>
@@ -100,6 +125,35 @@ namespace SmtpServer.Text
         /// When overridden in a derived class, gets or sets the position within the current stream.
         /// </summary>
         /// <returns>The current position within the stream.</returns>
-        public override long Position { get; set; }
+        public override long Position
+        {
+            get
+            {
+                var position = 0;
+
+                for (var i = 0; i < _segmentIndex; i++)
+                {
+                    position += _segments[i].Count;
+                }
+
+                return position + _index;
+            }
+            set
+            {
+                var position = (int)value;
+
+                for (_segmentIndex = 0; _segmentIndex < _segments.Count; _segmentIndex++)
+                {
+                    if (position < _segments[_segmentIndex].Count)
+                    {
+                        break;
+                    }
+
+                    position -= _segments[_segmentIndex].Count;
+                }
+
+                _index = position;
+            }
+        }
     }
 }

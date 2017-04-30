@@ -18,6 +18,7 @@ using MailKit.Net.Smtp;
 using MimeKit;
 using MimeKit.Text;
 using SmtpServer.Content;
+using SmtpServer.IO;
 using SmtpServer.Mime;
 using SmtpServer.Text;
 using ContentType = SmtpServer.Mime.ContentType;
@@ -112,9 +113,6 @@ Ym9keSBvZiB0aGUgbWVzc2FnZS48L3A+CiAgPC9ib2R5Pgo8L2h0bWw+Cg==
             {
                 var stream = new ByteStream(file);
 
-                HERE: what other methods on the stream will be needed?
-                how is the best way to filter the dot stuffing and is that up to the server?
-
                 //string line;
                 //while ((line = stream.ReadLineAsync(Encoding.ASCII).Result) != null)
                 //{
@@ -123,6 +121,24 @@ Ym9keSBvZiB0aGUgbWVzc2FnZS48L3A+CiAgPC9ib2R5Pgo8L2h0bWw+Cg==
 
                 var buffers = stream.ReadBlockAsync().Result;
                 Console.WriteLine(buffers.Count);
+
+                var x = new ByteArrayStream(buffers);
+                var reader = new StreamReader(x);
+                string line;
+                while ((line = reader.ReadLineAsync().Result) != null)
+                {
+                    Console.WriteLine(line);
+                }
+
+                x.Position = 400;
+
+                Console.WriteLine(x.Position);
+
+                reader = new StreamReader(x);
+                while ((line = reader.ReadLineAsync().Result) != null)
+                {
+                    Console.WriteLine(line);
+                }
             }
 
             return;
@@ -286,270 +302,5 @@ Ym9keSBvZiB0aGUgbWVzc2FnZS48L3A+CiAgPC9ib2R5Pgo8L2h0bWw+Cg==
 
             return new X509Certificate2(certificate, password);
         }
-    }
-
-    public interface IByteStream
-    {
-        /// <summary>
-        /// Returns a series a buffer segments whilst the predicate is satisfied.
-        /// </summary>
-        /// <param name="predicate">The predicate to apply to the bytes for the continuous segment.</param>
-        /// <param name="count">The number of bytes to consume.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The list of buffers that contain the bytes matching while the predicate was true.</returns>
-        Task<IReadOnlyList<ArraySegment<byte>>> ReadAsync(Func<byte, bool> predicate, long count, CancellationToken cancellationToken = default(CancellationToken));
-
-        /// <summary>
-        /// Write a list of byte array segments.
-        /// </summary>
-        /// <param name="buffers">The list of array segment buffers to write.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task that asynchronously performs the operation.</returns>
-        Task WriteAsync(IReadOnlyList<ArraySegment<byte>> buffers, CancellationToken cancellationToken = default(CancellationToken));
-
-        /// <summary>
-        /// Flush the write buffers to the stream.
-        /// </summary>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task that represents the asynchronous flush operation.</returns>
-        Task FlushAsync(CancellationToken cancellationToken = default(CancellationToken));
-
-        /// <summary>
-        /// Upgrade to a secure stream.
-        /// </summary>
-        /// <param name="certificate">The X509Certificate used to authenticate the server.</param>
-        /// <param name="protocols">The value that represents the protocol used for authentication.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task that asynchronously performs the operation.</returns>
-        Task UpgradeAsync(X509Certificate certificate, SslProtocols protocols, CancellationToken cancellationToken = default(CancellationToken));
-
-        /// <summary>
-        /// Returns a value indicating whether or not the stream is secure.
-        /// </summary>
-        bool IsSecure { get; }
-    }
-
-    public static class ByteStreamExtensions
-    {
-        /// <summary>
-        /// Returns a continuous segment of bytes until the given sequence is reached.
-        /// </summary>
-        /// <param name="stream">The byte stream to perform the operation on.</param>
-        /// <param name="sequence">The sequence to match to enable the read operation to complete.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The array segment that defines a continuous segment of characters that have matched the predicate.</returns>
-        public static async Task<IReadOnlyList<ArraySegment<byte>>> ReadUntilAsync(this IByteStream stream, byte[] sequence, CancellationToken cancellationToken)
-        {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-
-            var found = 0;
-            return await stream.ReadAsync(current =>
-            {
-                if (found >= sequence.Length)
-                {
-                    return false;
-                }
-
-                if (current == sequence[found])
-                {
-                    found++;
-                }
-                else
-                {
-                    found = 0;
-                }
-
-                return true;
-            },
-            Int32.MaxValue,
-            cancellationToken);
-        }
-
-        /// <summary>
-        /// Read a line from the byte stream.
-        /// </summary>
-        /// <param name="stream">The stream to read a line from.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The string that was read from the stream.</returns>
-        public static Task<string> ReadLineAsync(this IByteStream stream, CancellationToken cancellationToken = default(CancellationToken))
-        {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-
-            return ReadLineAsync(stream, Encoding.ASCII, cancellationToken);
-        }
-
-        /// <summary>
-        /// Read a line from the byte stream.
-        /// </summary>
-        /// <param name="stream">The stream to read a line from.</param>
-        /// <param name="encoding">The encoding to use when converting the bytes to a text representation.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The string that was read from the stream.</returns>
-        public static async Task<string> ReadLineAsync(this IByteStream stream, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
-        {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-
-            var buffers = await stream.ReadUntilAsync(new byte[] { 13, 10 }, cancellationToken);
-            var count = buffers.Sum(buffer => buffer.Count);
-
-            return buffers.Count == 0
-                ? null
-                : encoding.GetString(buffers.SelectMany(buffer => buffer).Take(count - 2).ToArray());
-        }
-
-        /// <summary>
-        /// Read a blank-line delimated block.
-        /// </summary>
-        /// <param name="stream">The stream to read a line from.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The buffers that were read until the block was terminated.</returns>
-        public static Task<IReadOnlyList<ArraySegment<byte>>> ReadBlockAsync(this IByteStream stream, CancellationToken cancellationToken = default(CancellationToken))
-        {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-
-            return stream.ReadUntilAsync(new byte[] { 13, 10, 13, 10 }, cancellationToken);
-        }
-    }
-
-    public sealed class ByteStream : IByteStream
-    {
-        readonly Stream _stream;
-        readonly int _bufferLength;
-        byte[] _buffer;
-        int _bytesRead = -1;
-        int _index;
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="stream">The stream to return the tokens from.</param>
-        /// <param name="bufferLength">The buffer length to read.</param>
-        internal ByteStream(Stream stream, int bufferLength = 64)
-        {
-            _stream = stream;
-            _bufferLength = bufferLength;
-        }
-
-        /// <summary>
-        /// Returns a series a buffer segments whilst the predicate is satisfied.
-        /// </summary>
-        /// <param name="predicate">The predicate to apply to the bytes for the continuous segment.</param>
-        /// <param name="count">The number of bytes to consume.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The list of buffers that contain the bytes matching while the predicate was true.</returns>
-        public async Task<IReadOnlyList<ArraySegment<byte>>> ReadAsync(Func<byte, bool> predicate, long count, CancellationToken cancellationToken = default(CancellationToken))
-        {
-            if (await ReadBufferAsync(cancellationToken) == false)
-            {
-                return new List<ArraySegment<byte>>();
-            }
-
-            var segments = new List<ArraySegment<byte>> { Consume(predicate, count) };
-
-            while (_index >= _bytesRead)
-            {
-                if (await ReadBufferAsync(cancellationToken) == false)
-                {
-                    return segments;
-                }
-
-                if (count <= 0 || predicate(_buffer[0]) == false)
-                {
-                    return segments;
-                }
-
-                segments.Add(Consume(predicate, count));
-            }
-
-            return segments;
-        }
-
-        /// <summary>
-        /// Write a list of byte array segments.
-        /// </summary>
-        /// <param name="buffers">The list of array segment buffers to write.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task that asynchronously performs the operation.</returns>
-        public Task WriteAsync(IReadOnlyList<ArraySegment<byte>> buffers, CancellationToken cancellationToken = default(CancellationToken))
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Flush the write buffers to the stream.
-        /// </summary>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task that represents the asynchronous flush operation.</returns>
-        public Task FlushAsync(CancellationToken cancellationToken = default(CancellationToken))
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Upgrade to a secure stream.
-        /// </summary>
-        /// <param name="certificate">The X509Certificate used to authenticate the server.</param>
-        /// <param name="protocols">The value that represents the protocol used for authentication.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task that asynchronously performs the operation.</returns>
-        public Task UpgradeAsync(X509Certificate certificate, SslProtocols protocols, CancellationToken cancellationToken = default(CancellationToken))
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Ensure that the buffer is full for a read operation.
-        /// </summary>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>Returns a value indicating whether there was no more data to fill the buffer.</returns>
-        async Task<bool> ReadBufferAsync(CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            if (_index >= _bytesRead)
-            {
-                _index = 0;
-                _buffer = new byte[_bufferLength];
-                _bytesRead = await _stream.ReadAsync(_buffer, 0, _buffer.Length, cancellationToken).ReturnOnAnyThread();
-            }
-
-            return _bytesRead > 0;
-        }
-
-        /// <summary>
-        /// Returns a continuous segment of characters matching the predicate.
-        /// </summary>
-        /// <param name="predicate">The predicate to apply to the characters for the continuous segment.</param>
-        /// <param name="limit">The limit to the number of characters to consume.</param>
-        /// <returns>The array segment that defines a continuous segment of characters that have matched the predicate.</returns>
-        ArraySegment<byte> Consume(Func<byte, bool> predicate, long limit)
-        {
-            var start = _index;
-
-            var current = _buffer[_index];
-            while (limit-- > 0 && predicate(current) && ++_index < _bytesRead)
-            {
-                current = _buffer[_index];
-            }
-
-            return new ArraySegment<byte>(_buffer, start, _index - start);
-        }
-
-        /// <summary>
-        /// Returns a value indicating whether or not the stream is secure.
-        /// </summary>
-        public bool IsSecure { get; private set; }
     }
 }
