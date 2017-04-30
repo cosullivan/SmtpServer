@@ -8,8 +8,6 @@ namespace SmtpServer.Protocol
 {
     public sealed class DataCommand : SmtpCommand
     {
-        readonly MessageSerializerFactory _messageReaderFactory = new MessageSerializerFactory();
-
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -56,13 +54,12 @@ namespace SmtpServer.Protocol
         /// <param name="context">The SMTP session context to receive the message within.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which asynchronously performs the operation.</returns>
-        async Task<IMessage> ReadMessageAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
+        Task<IMessage> ReadMessageAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
         {
-            //var reader = await _messageReaderFactory.CreateInstanceAsync(context.Text.GetInnerStream(), cancellationToken).ConfigureAwait(false);
+            // TODO: replace with switchable version
+            var serializer = new MessageSerializerFactory().CreateInstance();
 
-            //return await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
-
-            throw new NotImplementedException();
+            return serializer.DeserializeAsync(context.Text.GetInnerStream(), cancellationToken);
         }
     }
 }
