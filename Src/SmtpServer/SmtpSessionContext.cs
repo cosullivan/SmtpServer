@@ -1,5 +1,6 @@
 using System;
 using System.Net;
+using System.Net.Sockets;
 using SmtpServer.IO;
 using SmtpServer.Protocol;
 
@@ -15,14 +16,15 @@ namespace SmtpServer
         /// <summary>
         /// Constructor.
         /// </summary>
+        /// <param name="tcpClient">The TCP client that the session is connected with.</param>
         /// <param name="transaction">The SMTP transaction.</param>
         /// <param name="stateMachine">The current state machine for the session.</param>
-        /// <param name="remoteEndPoint">The remote endpoint of the client making the connection.</param>
-        internal SmtpSessionContext(ISmtpMessageTransaction transaction, ISmtpStateMachine stateMachine, EndPoint remoteEndPoint)
+        internal SmtpSessionContext(TcpClient tcpClient, ISmtpMessageTransaction transaction, ISmtpStateMachine stateMachine)
         {
             Transaction = transaction;
             StateMachine = stateMachine;
-            RemoteEndPoint = remoteEndPoint;
+            RemoteEndPoint = tcpClient.Client.RemoteEndPoint;
+            Text = new NetworkClient(tcpClient.GetStream());
         }
 
         /// <summary>
@@ -43,9 +45,9 @@ namespace SmtpServer
         }
 
         /// <summary>
-        /// Gets or sets the text stream to read from and write to.
+        /// Gets the text stream to read from and write to.
         /// </summary>
-        public INetworkClient Text { get; set; }
+        public INetworkClient Text { get; }
 
         /// <summary>
         /// The transfer encoding that is required for the message.

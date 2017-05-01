@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using SmtpServer.IO;
 
 namespace SmtpServer.Protocol
 {

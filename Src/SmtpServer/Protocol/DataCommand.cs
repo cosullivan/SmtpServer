@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using SmtpServer.Content;
+using SmtpServer.IO;
+using SmtpServer.Mail;
 using SmtpServer.Storage;
 
 namespace SmtpServer.Protocol
@@ -56,10 +57,9 @@ namespace SmtpServer.Protocol
         /// <returns>A task which asynchronously performs the operation.</returns>
         Task<IMessage> ReadMessageAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
         {
-            // TODO: replace with switchable version
             var serializer = new MessageSerializerFactory().CreateInstance();
 
-            return serializer.DeserializeAsync(context.Text.GetInnerStream(), cancellationToken);
+            return serializer.DeserializeAsync(context.Text, cancellationToken);
         }
     }
 }

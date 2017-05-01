@@ -1,6 +1,6 @@
 ﻿using SmtpServer.Mime;
 
-namespace SmtpServer.Content
+namespace SmtpServer.Mail
 {
     public interface IMimeMessage : IMessage
     {

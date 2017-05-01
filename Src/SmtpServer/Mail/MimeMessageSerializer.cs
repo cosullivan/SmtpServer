@@ -9,7 +9,7 @@ using SmtpServer.IO;
 using SmtpServer.Mime;
 using SmtpServer.Text;
 
-namespace SmtpServer.Content
+namespace SmtpServer.Mail
 {
     public sealed class MimeMessageSerializer : IMessageSerializer
     {
@@ -28,31 +28,33 @@ namespace SmtpServer.Content
         /// <summary>
         /// Deserialize a message from the stream.
         /// </summary>
-        /// <param name="stream">The stream to deserialize the message from.</param>
+        /// <param name="networkClient">The network client to deserialize the message from.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The message that was deserialized.</returns>
-        public async Task<IMessage> DeserializeAsync(Stream stream, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<IMessage> DeserializeAsync(INetworkClient networkClient, CancellationToken cancellationToken = default(CancellationToken))
         {
-            var entity = await new Deserializer(stream, cancellationToken).DeserializeMimeEntityAsync();
+            throw new NotImplementedException();
 
-            return null;
+            //var entity = await new Deserializer(stream, cancellationToken).DeserializeMimeEntityAsync();
+
+            //return null;
         }
         
         #region Deserializer
 
         class Deserializer
         {
-            readonly ByteArrayStreamReader _reader;
+            readonly INetworkClient _networkClient;
             readonly CancellationToken _cancellationToken;
 
             /// <summary>
             /// Constructor.
             /// </summary>
-            /// <param name="stream">The stream to deserialize from.</param>
+            /// <param name="networkClient">The network client to deserialize from.</param>
             /// <param name="cancellationToken">The cancellation token.</param>
-            public Deserializer(Stream stream, CancellationToken cancellationToken)
+            public Deserializer(INetworkClient networkClient, CancellationToken cancellationToken)
             {
-                _reader = new ByteArrayStreamReader(stream);
+                _networkClient = networkClient;
                 _cancellationToken = cancellationToken;
             }
 
@@ -135,54 +137,8 @@ namespace SmtpServer.Content
             {
                 // TODO: need to handle dot-stuffing here
 
-                return new ByteArrayStream(await _reader.ReadUntilAsync(new byte[] { 13, 10, 46, 13, 10 }, _cancellationToken));
+                return new ByteArrayStream(await _networkClient.ReadUntilAsync(new byte[] { 13, 10, 46, 13, 10 }, _cancellationToken));
             }
-
-            ///// <summary>
-            ///// Receive the message content in short line format.
-            ///// </summary>
-            ///// <param name="encoding">The encoding to use when reading the message content.</param>
-            ///// <returns>A task which asynchronously performs the operation.</returns>
-            //async Task<Stream> ReadShortLineContentAsync(Encoding encoding)
-            //{
-            //    //var reader = new StreamReader(_stream, encoding);
-            //    //var writer = new StreamWriter(new MemoryStream(), encoding);
-
-            //    //try
-            //    //{
-            //    //    string text;
-            //    //    while ((text = await reader.ReadLineAsync(TimeSpan.FromSeconds(60), _cancellationToken).ReturnOnAnyThread()) != ".")
-            //    //    {
-            //    //        // need to trim the '.' at the start of the line if it 
-            //    //        // exists as this would have been added for transparency
-            //    //        // http://tools.ietf.org/html/rfc5321#section-4.5.2
-            //    //        writer.WriteLine(text.TrimStart('.'));
-            //    //        writer.Flush();
-            //    //    }
-            //    //}
-            //    //catch (TimeoutException)
-            //    //{
-            //    //    // TODO: not sure what the best thing to do here is
-            //    //    throw;
-            //    //}
-
-            //    //return writer.BaseStream;
-
-            //    //var reader = new StreamReader(_stream, encoding);
-            //    var writer = new StreamWriter(new MemoryStream(), encoding);
-                
-            //    try
-            //    {
-                    
-            //    }
-            //    catch (TimeoutException)
-            //    {
-            //        // TODO: not sure what the best thing to do here is
-            //        throw;
-            //    }
-
-            //    return writer.BaseStream;
-            //}
 
             /// <summary>
             /// Read the MIME headers.
@@ -208,21 +164,12 @@ namespace SmtpServer.Content
             /// <returns>The list of MIME headers that were read.</returns>
             async Task<IReadOnlyList<Token>> ReadMimeHeaderTokensAsync()
             {
-                var tokenReader = new ByteArrayTokenReader(await ReadMimeContentBlockAsync().ReturnOnAnyThread());
+                var tokenReader = new ByteArrayTokenReader(await _networkClient.ReadBlockAsync(_cancellationToken).ReturnOnAnyThread());
 
                 //https://tools.ietf.org/html/rfc6531
                 //https://tools.ietf.org/html/rfc6532
 
                 return tokenReader.ToList();
-            }
-
-            /// <summary>
-            /// Read a content block that is completed by a null line.
-            /// </summary>
-            /// <returns>The stream that makes up the content block.</returns>
-            Task<IReadOnlyList<ArraySegment<byte>>> ReadMimeContentBlockAsync()
-            {
-                return _reader.ReadUntilAsync(new byte[] { 13, 10, 13, 10 }, _cancellationToken);
             }
         }
 

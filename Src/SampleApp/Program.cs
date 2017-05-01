@@ -17,7 +17,6 @@ using SmtpServer.Tracing;
 using MailKit.Net.Smtp;
 using MimeKit;
 using MimeKit.Text;
-using SmtpServer.Content;
 using SmtpServer.IO;
 using SmtpServer.Mime;
 using SmtpServer.Text;
@@ -111,31 +110,10 @@ Ym9keSBvZiB0aGUgbWVzc2FnZS48L3A+CiAgPC9ib2R5Pgo8L2h0bWw+Cg==
 
             using (var file = File.OpenRead(@"C:\Dev\Enron Corpus\maildir\allen-p\inbox\31_"))
             {
-                var stream = new ByteStream(file);
+                var client = new NetworkClient(file);
 
-                //string line;
-                //while ((line = stream.ReadLineAsync(Encoding.ASCII).Result) != null)
-                //{
-                //    Console.WriteLine(line);
-                //}
-
-                var buffers = stream.ReadBlockAsync().Result;
-                Console.WriteLine(buffers.Count);
-
-                var x = new ByteArrayStream(buffers);
-                var reader = new StreamReader(x);
                 string line;
-                while ((line = reader.ReadLineAsync().Result) != null)
-                {
-                    Console.WriteLine(line);
-                }
-
-                x.Position = 400;
-
-                Console.WriteLine(x.Position);
-
-                reader = new StreamReader(x);
-                while ((line = reader.ReadLineAsync().Result) != null)
+                while ((line = client.ReadLineAsync().Result) != null)
                 {
                     Console.WriteLine(line);
                 }
@@ -250,7 +228,7 @@ Ym9keSBvZiB0aGUgbWVzc2FnZS48L3A+CiAgPC9ib2R5Pgo8L2h0bWw+Cg==
 
                         message.Body = new TextPart(TextFormat.Plain)
                         {
-                            Text = "Assunto teste acento çãõáéíóú",
+                            Text = ".Assunto teste acento çãõáéíóú",
                             //Text = "Assunto teste acento",
                         };
 

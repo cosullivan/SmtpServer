@@ -1,4 +1,4 @@
-﻿namespace SmtpServer.Content
+﻿namespace SmtpServer.Mail
 {
     public enum MessageType
     {

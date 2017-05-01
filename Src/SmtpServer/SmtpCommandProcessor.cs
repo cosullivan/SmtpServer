@@ -1,5 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
+using SmtpServer.IO;
 using SmtpServer.Protocol;
 using SmtpServer.Text;
 
@@ -35,7 +36,7 @@ namespace SmtpServer
 
             while (retryCount-- > 0 && context.IsQuitRequested == false && cancellationToken.IsCancellationRequested == false)
             {
-                var text = await context.Text.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+                var text = await context.Text.ReadLineAsync(cancellationToken).ReturnOnAnyThread();
 
                 SmtpCommand command;
                 SmtpResponse errorResponse;

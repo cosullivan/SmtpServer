@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -10,8 +11,8 @@ namespace SmtpServer.IO
 {
     public sealed class NetworkClient : INetworkClient
     {
-        readonly Stream _stream;
         readonly int _bufferLength;
+        Stream _stream;
         byte[] _buffer;
         int _bytesRead = -1;
         int _index;
@@ -34,36 +35,44 @@ namespace SmtpServer.IO
         {
             _stream?.Dispose();
         }
-
+        
         /// <summary>
-        /// Returns a series a buffer segments whilst the predicate is satisfied.
+        /// Returns a series a buffer segments until the continuation predicate indicates that the method should complete.
         /// </summary>
-        /// <param name="predicate">The predicate to apply to the bytes for the continuous segment.</param>
+        /// <param name="continue">The predicate to apply to the byte to determine if the function should continue reading.</param>
         /// <param name="count">The number of bytes to consume.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The list of buffers that contain the bytes matching while the predicate was true.</returns>
-        public async Task<IReadOnlyList<ArraySegment<byte>>> ReadAsync(Func<byte, bool> predicate, long count, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task<IReadOnlyList<ArraySegment<byte>>> ReadAsync(Func<byte, bool> @continue, long count, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (await ReadBufferAsync(cancellationToken) == false)
             {
                 return new List<ArraySegment<byte>>();
             }
 
-            var segments = new List<ArraySegment<byte>> { Consume(predicate, count) };
-
-            while (_index >= _bytesRead)
+            if (TryConsume(@continue, ref count, out ArraySegment<byte> segment) == false)
             {
+                return new List<ArraySegment<byte>> { segment };
+            }
+
+            var segments = new List<ArraySegment<byte>> { segment };
+
+            while (_index >= _bytesRead && count > 0)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 if (await ReadBufferAsync(cancellationToken) == false)
                 {
                     return segments;
                 }
 
-                if (count <= 0 || predicate(_buffer[0]) == false)
+                if (TryConsume(@continue, ref count, out segment) == false)
                 {
+                    segments.Add(segment);
                     return segments;
                 }
 
-                segments.Add(Consume(predicate, count));
+                segments.Add(segment);
             }
 
             return segments;
@@ -75,9 +84,14 @@ namespace SmtpServer.IO
         /// <param name="buffers">The list of array segment buffers to write.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task that asynchronously performs the operation.</returns>
-        public Task WriteAsync(IReadOnlyList<ArraySegment<byte>> buffers, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task WriteAsync(IReadOnlyList<ArraySegment<byte>> buffers, CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            foreach (var buffer in buffers)
+            {
+                await _stream.WriteAsync(buffer.Array, buffer.Offset, buffer.Count, cancellationToken);
+
+                cancellationToken.ThrowIfCancellationRequested();
+            }
         }
 
         /// <summary>
@@ -87,7 +101,7 @@ namespace SmtpServer.IO
         /// <returns>A task that represents the asynchronous flush operation.</returns>
         public Task FlushAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            return _stream.FlushAsync(cancellationToken);
         }
 
         /// <summary>
@@ -97,9 +111,14 @@ namespace SmtpServer.IO
         /// <param name="protocols">The value that represents the protocol used for authentication.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task that asynchronously performs the operation.</returns>
-        public Task UpgradeAsync(X509Certificate certificate, SslProtocols protocols, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task UpgradeAsync(X509Certificate certificate, SslProtocols protocols, CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            var stream = new SslStream(_stream, true);
+
+            await stream.AuthenticateAsServerAsync(certificate, false, protocols, true);
+            IsSecure = true;
+
+            _stream = stream;
         }
 
         /// <summary>
@@ -120,24 +139,32 @@ namespace SmtpServer.IO
 
             return _bytesRead > 0;
         }
-
+        
         /// <summary>
-        /// Returns a continuous segment of characters matching the predicate.
+        /// Consumes the bytes from the buffer until the continuation function indicates that it should complete.
         /// </summary>
-        /// <param name="predicate">The predicate to apply to the characters for the continuous segment.</param>
-        /// <param name="limit">The limit to the number of characters to consume.</param>
-        /// <returns>The array segment that defines a continuous segment of characters that have matched the predicate.</returns>
-        ArraySegment<byte> Consume(Func<byte, bool> predicate, long limit)
+        /// <param name="continue">The continuation function to determine whether the consume operation should stop.</param>
+        /// <param name="limit">The limit to the number of bytes to read.</param>
+        /// <param name="buffer">The buffer that contains the data that was consumed.</param>
+        /// <returns>true if the operation should continue reading, false if not.</returns>
+        bool TryConsume(Func<byte, bool> @continue, ref long limit, out ArraySegment<byte> buffer)
         {
             var start = _index;
 
             var current = _buffer[_index];
-            while (limit-- > 0 && predicate(current) && ++_index < _bytesRead)
+            while (limit-- > 0 && ++_index < _bytesRead)
             {
+                if (@continue(current) == false)
+                {
+                    buffer = new ArraySegment<byte>(_buffer, start, _index - start);
+                    return false;
+                }
+
                 current = _buffer[_index];
             }
 
-            return new ArraySegment<byte>(_buffer, start, _index - start);
+            buffer = new ArraySegment<byte>(_buffer, start, _index - start);
+            return @continue(current);
         }
 
         /// <summary>

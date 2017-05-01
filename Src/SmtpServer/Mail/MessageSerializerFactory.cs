@@ -1,4 +1,4 @@
-namespace SmtpServer.Content
+namespace SmtpServer.Mail
 {
     public sealed class MessageSerializerFactory
     {

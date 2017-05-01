@@ -1,6 +1,6 @@
 using System.IO;
 
-namespace SmtpServer.Content
+namespace SmtpServer.Mail
 {
     public interface ITextMessage : IMessage
     {

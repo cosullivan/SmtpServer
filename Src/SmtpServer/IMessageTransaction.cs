@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using SmtpServer.Content;
 using SmtpServer.Mail;
 
 namespace SmtpServer

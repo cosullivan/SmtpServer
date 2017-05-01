@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using SmtpServer.Mail;
-using SmtpServer.Content;
 
 namespace SmtpServer
 {

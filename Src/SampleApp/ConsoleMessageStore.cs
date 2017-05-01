@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer;
-using SmtpServer.Content;
 using SmtpServer.Mail;
 using SmtpServer.Protocol;
 using SmtpServer.Storage;

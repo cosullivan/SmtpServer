@@ -1,6 +1,6 @@
 using System.IO;
 
-namespace SmtpServer.Content
+namespace SmtpServer.Mail
 {
     internal sealed class TextMessage : ITextMessage
     {

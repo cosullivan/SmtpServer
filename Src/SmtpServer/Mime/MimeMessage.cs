@@ -1,4 +1,4 @@
-using SmtpServer.Content;
+using SmtpServer.Mail;
 
 namespace SmtpServer.Mime
 {

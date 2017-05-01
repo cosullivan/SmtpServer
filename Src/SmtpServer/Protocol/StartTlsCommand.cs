@@ -1,6 +1,6 @@
-﻿using System.Net.Security;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
+using SmtpServer.IO;
 
 namespace SmtpServer.Protocol
 {
@@ -21,12 +21,7 @@ namespace SmtpServer.Protocol
         internal override async Task ExecuteAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
         {
             await context.Text.ReplyAsync(SmtpResponse.ServiceReady, cancellationToken);
-
-            var stream = new SslStream(context.Text.GetInnerStream(), true);
-
-            await stream.AuthenticateAsServerAsync(Options.ServerCertificate, false, Options.SupportedSslProtocols, true);
-
-            context.Text = new NetworkTextStream(stream);
+            await context.Text.UpgradeAsync(Options.ServerCertificate, Options.SupportedSslProtocols, cancellationToken);
         }
     }
 }

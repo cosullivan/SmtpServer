@@ -42,15 +42,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Authentication\IUserAuthenticator.cs" />
-    <Compile Include="Content\IMessage.cs" />
-    <Compile Include="Content\IMessageSerializer.cs" />
-    <Compile Include="Content\IMimeMessage.cs" />
-    <Compile Include="Content\ITextMessage.cs" />
-    <Compile Include="Content\MessageSerializerFactory.cs" />
-    <Compile Include="Content\MessageType.cs" />
-    <Compile Include="Content\MimeMessageSerializer.cs" />
-    <Compile Include="Content\TextMessage.cs" />
-    <Compile Include="Content\TextMessageSerializer.cs" />
+    <Compile Include="Mail\IMessage.cs" />
+    <Compile Include="Mail\IMessageSerializer.cs" />
+    <Compile Include="Mail\IMimeMessage.cs" />
+    <Compile Include="Mail\ITextMessage.cs" />
+    <Compile Include="Mail\MessageSerializerFactory.cs" />
+    <Compile Include="Mail\MessageType.cs" />
+    <Compile Include="Mail\MimeMessageSerializer.cs" />
+    <Compile Include="Mail\TextMessage.cs" />
+    <Compile Include="Mail\TextMessageSerializer.cs" />
     <Compile Include="Extensions\StreamReaderExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="Extensions\TaskExtensions.cs" />
@@ -62,7 +62,6 @@
     <Compile Include="ISmtpMessageTransaction.cs" />
     <Compile Include="ISmtpServerOptions.cs" />
     <Compile Include="ISmtpSessionContext.cs" />
-    <Compile Include="ITextStream.cs" />
     <Compile Include="Mail\IMailbox.cs" />
     <Compile Include="Mail\Mailbox.cs" />
     <Compile Include="Mime\ContentTransferEncoding.cs" />
@@ -74,7 +73,6 @@
     <Compile Include="Mime\MimeParseException.cs" />
     <Compile Include="Mime\MimeParser.cs" />
     <Compile Include="Mime\MimeVersion.cs" />
-    <Compile Include="NetworkTextStream.cs" />
     <Compile Include="OptionsBuilder.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Protocol\AuthCommand.cs" />

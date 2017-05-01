@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.Protocol;
 using System.Reflection;
+using SmtpServer.IO;
 
 namespace SmtpServer
 {
@@ -26,10 +27,7 @@ namespace SmtpServer
             _tcpClient = tcpClient;
             _processor = new SmtpCommandProcessor(options.MaxRetryCount);
             
-            Context = new SmtpSessionContext(new SmtpMessageTransaction(), stateMachine, tcpClient.Client.RemoteEndPoint)
-            {
-                Text = new NetworkTextStream(tcpClient.GetStream())
-            };
+            Context = new SmtpSessionContext(tcpClient, new SmtpMessageTransaction(), stateMachine);
         }
 
         /// <summary>
@@ -81,8 +79,8 @@ namespace SmtpServer
         {
             var version = typeof(SmtpSession).GetTypeInfo().Assembly.GetName().Version;
 
-            await Context.Text.WriteLineAsync($"220 {_options.ServerName} v{version} ESMTP ready", cancellationToken).ConfigureAwait(false);
-            await Context.Text.FlushAsync(cancellationToken).ConfigureAwait(false);
+            await Context.Text.WriteLineAsync($"220 {_options.ServerName} v{version} ESMTP ready", cancellationToken).ReturnOnAnyThread();
+            await Context.Text.FlushAsync(cancellationToken).ReturnOnAnyThread();
         }
 
         /// <summary>
