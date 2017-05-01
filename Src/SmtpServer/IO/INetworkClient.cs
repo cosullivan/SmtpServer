@@ -114,13 +114,6 @@ namespace SmtpServer.IO
                 throw new ArgumentNullException(nameof(client));
             }
 
-            //var buffers = await client.ReadUntilAsync(new byte[] { 13, 10 }, cancellationToken);
-            //var count = buffers.Sum(buffer => buffer.Count);
-
-            //return buffers.Count == 0
-            //    ? null
-            //    : encoding.GetString(buffers.SelectMany(buffer => buffer).Take(count - 2).ToArray());
-
             var buffers = Trim(await client.ReadUntilAsync(new byte[] { 13, 10 }, cancellationToken), 2);
 
             return buffers.Count == 0

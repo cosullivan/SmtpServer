@@ -108,18 +108,18 @@ Ym9keSBvZiB0aGUgbWVzc2FnZS48L3A+CiAgPC9ib2R5Pgo8L2h0bWw+Cg==
 
             //return;
 
-            using (var file = File.OpenRead(@"C:\Dev\Enron Corpus\maildir\allen-p\inbox\31_"))
-            {
-                var client = new NetworkClient(file);
+            //using (var file = File.OpenRead(@"C:\Dev\Enron Corpus\maildir\allen-p\inbox\31_"))
+            //{
+            //    var client = new NetworkClient(file);
 
-                string line;
-                while ((line = client.ReadLineAsync().Result) != null)
-                {
-                    Console.WriteLine(line);
-                }
-            }
+            //    string line;
+            //    while ((line = client.ReadLineAsync().Result) != null)
+            //    {
+            //        Console.WriteLine(line);
+            //    }
+            //}
 
-            return;
+            //return;
 
             var cancellationTokenSource = new CancellationTokenSource();
 
