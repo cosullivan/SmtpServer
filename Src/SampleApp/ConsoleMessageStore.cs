@@ -28,7 +28,8 @@ namespace SampleApp
                 var message = MimeKit.MimeMessage.Load(textMessage.Content);
 
                 Console.WriteLine();
-                Console.WriteLine(message.Subject);
+                Console.WriteLine("Subject: {0}", message.Subject);
+                Console.WriteLine("Message:");
                 Console.WriteLine(message.TextBody);
                 Console.WriteLine();
             }

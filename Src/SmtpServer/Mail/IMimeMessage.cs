@@ -5,8 +5,8 @@ namespace SmtpServer.Mail
     public interface IMimeMessage : IMessage
     {
         /// <summary>
-        /// The MIME message version.
+        /// The MIME message document.
         /// </summary>
-        MimeVersion Version { get; }
+        MimeDocument Document { get; }
     }
 }

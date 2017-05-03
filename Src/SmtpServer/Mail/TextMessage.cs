@@ -14,11 +14,6 @@ namespace SmtpServer.Mail
         }
 
         /// <summary>
-        /// The message type.
-        /// </summary>
-        public MessageType Type => MessageType.Text;
-
-        /// <summary>
         /// The message content.
         /// </summary>
         public Stream Content { get; }

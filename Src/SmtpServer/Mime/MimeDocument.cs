@@ -1,24 +1,17 @@
-using SmtpServer.Mail;
-
-namespace SmtpServer.Mime
+﻿namespace SmtpServer.Mime
 {
-    public sealed class MimeMessage : IMimeMessage
+    public sealed class MimeDocument
     {
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="version">The MIME version.</param>
         /// <param name="body">The body of the message.</param>
-        public MimeMessage(MimeVersion version, MimeEntity body)
+        public MimeDocument(MimeVersion version, MimeEntity body)
         {
             Version = version;
             Body = body;
         }
-
-        /// <summary>
-        /// The message type.
-        /// </summary>
-        MessageType IMessage.Type => MessageType.Mime;
 
         /// <summary>
         /// The MIME version.

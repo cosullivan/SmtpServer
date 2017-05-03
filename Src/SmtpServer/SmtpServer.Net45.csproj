@@ -47,7 +47,6 @@
     <Compile Include="Mail\IMimeMessage.cs" />
     <Compile Include="Mail\ITextMessage.cs" />
     <Compile Include="Mail\MessageSerializerFactory.cs" />
-    <Compile Include="Mail\MessageType.cs" />
     <Compile Include="Mail\MimeMessageSerializer.cs" />
     <Compile Include="Mail\TextMessage.cs" />
     <Compile Include="Mail\TextMessageSerializer.cs" />
@@ -67,9 +66,10 @@
     <Compile Include="Mime\ContentTransferEncoding.cs" />
     <Compile Include="Mime\ContentType.cs" />
     <Compile Include="Mime\IMimeHeader.cs" />
+    <Compile Include="Mime\MimeDocument.cs" />
     <Compile Include="Mime\MimeEntity.cs" />
     <Compile Include="Mime\MimeHeader.cs" />
-    <Compile Include="Mime\MimeMessage.cs" />
+    <Compile Include="Mail\MimeMessage.cs" />
     <Compile Include="Mime\MimeParseException.cs" />
     <Compile Include="Mime\MimeParser.cs" />
     <Compile Include="Mime\MimeVersion.cs" />
