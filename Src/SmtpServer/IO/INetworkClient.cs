@@ -114,11 +114,11 @@ namespace SmtpServer.IO
                 throw new ArgumentNullException(nameof(client));
             }
 
-            var buffers = Trim(await client.ReadUntilAsync(new byte[] { 13, 10 }, cancellationToken), 2);
+            var blocks = Trim(await client.ReadUntilAsync(new byte[] { 13, 10 }, cancellationToken), new byte[] { 13, 10 });
 
-            return buffers.Count == 0
+            return blocks.Count == 0
                 ? null
-                : encoding.GetString(buffers.SelectMany(buffer => buffer).ToArray());
+                : encoding.GetString(blocks.SelectMany(block => block).ToArray());
         }
 
         /// <summary>
@@ -186,7 +186,9 @@ namespace SmtpServer.IO
                 throw new ArgumentNullException(nameof(client));
             }
 
-            return Trim(await client.ReadUntilAsync(new byte[] { 13, 10, 46, 13, 10 }, cancellationToken).ReturnOnAnyThread(), 4);
+            var blocks = await client.ReadUntilAsync(new byte[] { 13, 10, 13, 10 }, cancellationToken).ReturnOnAnyThread();
+
+            return Unstuff(Trim(blocks, new byte[] { 13, 10 })).ToList();
         }
 
         /// <summary>
@@ -202,25 +204,34 @@ namespace SmtpServer.IO
                 throw new ArgumentNullException(nameof(client));
             }
 
-            return Trim(await client.ReadUntilAsync(new byte[] { 13, 10, 46, 13, 10 }, cancellationToken).ReturnOnAnyThread(), 5);
+            var blocks = await client.ReadUntilAsync(new byte[] {13, 10, 46, 13, 10}, cancellationToken).ReturnOnAnyThread();
+
+            return Unstuff(Trim(blocks, new byte[] { 46, 13, 10 })).ToList();
         }
 
         /// <summary>
-        /// Trim a given number of bytes from the last segment.
+        /// Trim a given number of bytes from the end.
         /// </summary>
-        /// <param name="segments">The list of segments to truncate.</param>
-        /// <param name="count">The number of bytes to trim.</param>
-        /// <returns>The list of segments that have been trimmed by the given amount.</returns>
+        /// <param name="segments">The list of segments to trim the sequence from.</param>
+        /// <param name="count">The number of bytes to remove from the end.</param>
+        /// <returns>The list of segments that have been trimmed by the given number of bytes.</returns>
         static IReadOnlyList<ArraySegment<byte>> Trim(IReadOnlyList<ArraySegment<byte>> segments, int count)
         {
             var list = new List<ArraySegment<byte>>(segments);
 
             var remaining = count;
-            for (var i = list.Count - 1; i >= 0; i--)
+            for (var i = list.Count - 1; i >= 0 && remaining > 0; i--)
             {
                 count = Math.Min(remaining, list[i].Count);
 
-                list[i] = Trim(list[i], count);
+                if (count == list[i].Count)
+                {
+                    list.RemoveAt(i);
+                }
+                else
+                {
+                    list[i] = Trim(list[i], count);
+                }
 
                 remaining -= count;
             }
@@ -237,6 +248,83 @@ namespace SmtpServer.IO
         static ArraySegment<byte> Trim(ArraySegment<byte> segment, int count)
         {
             return new ArraySegment<byte>(segment.Array, segment.Offset, segment.Count - count);
+        }
+
+        /// <summary>
+        /// Trim a given sequence from the end of the segment list.
+        /// </summary>
+        /// <param name="segments">The list of segments to trim the sequence from.</param>
+        /// <param name="sequence">The sequence to trim from the end of the block.</param>
+        /// <returns>The list of segments that have been trimmed and have the sequence removed.</returns>
+        static IReadOnlyList<ArraySegment<byte>> Trim(IReadOnlyList<ArraySegment<byte>> segments, byte[] sequence)
+        {
+            if (EndsWith(segments, sequence))
+            {
+                return Trim(segments, sequence.Length);
+            }
+
+            return segments;
+        }
+
+        /// <summary>
+        /// Returns a value indicating whether or not the list of segments end with the given sequence of bytes.
+        /// </summary>
+        /// <param name="segments">The segments to test the byte sequence against.</param>
+        /// <param name="sequence">The sequence of bytes to test at the end of the segments.</param>
+        /// <returns>true if the segments end with the given sequence, false if not.</returns>
+        static bool EndsWith(IReadOnlyList<ArraySegment<byte>> segments, byte[] sequence)
+        {
+            var state = sequence.Length - 1;
+
+            for (var i = segments.Count - 1; i >= 0 && state >= 0; i--)
+            {
+                for (var j = segments[i].Count - 1; j >= 0 && state >= 0; j--)
+                {
+                    if (segments[i].Array[segments[i].Offset + j] != sequence[state--])
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return state < 0;
+        }
+
+        /// <summary>
+        /// Unstuff the Dot Stuffing that can appear within a stream.
+        /// </summary>
+        /// <param name="segments">The list of segments to remove the dot-stuffing from.</param>
+        /// <returns>The list of segments that have the dot-stuffing removed.</returns>
+        static IEnumerable<ArraySegment<byte>> Unstuff(IReadOnlyList<ArraySegment<byte>> segments)
+        {
+            var sequence = new byte[] { 13, 10, 46, 46 };
+            var state = 0;
+
+            foreach (var segment in segments)
+            {
+                var start = 0;
+                for (var i = 0; i < segment.Count; i++)
+                {
+                    if (segment.Array[segment.Offset + i] != sequence[state++])
+                    {
+                        state = segment.Array[segment.Offset + i] == sequence[0] ? 1 : 0;
+                        continue;
+                    }
+
+                    if (state >= sequence.Length)
+                    {
+                        yield return new ArraySegment<byte>(segment.Array, segment.Offset + start, i - start);
+
+                        state = segment.Array[segment.Offset + i] == sequence[0] ? 1 : 0;
+                        start = i + 1;
+                    }
+                }
+
+                if (start < segment.Count)
+                {
+                    yield return new ArraySegment<byte>(segment.Array, segment.Offset + start, segment.Count - start);
+                }
+            }
         }
 
         /// <summary>

@@ -119,6 +119,20 @@ Ym9keSBvZiB0aGUgbWVzc2FnZS48L3A+CiAgPC9ib2R5Pgo8L2h0bWw+Cg==
             //    }
             //}
 
+            //using (var stream = new System.IO.MemoryStream(Encoding.ASCII.GetBytes("abcd\r\n1234\r\nefgh\r\n..abcd")))
+            //{
+            //    var client = new NetworkClient(stream, 10);
+
+            //    //string line;
+            //    //while ((line = client.ReadLineAsync().Result) != null)
+            //    //{
+            //    //    Console.WriteLine(line);
+            //    //}
+            //    var blocks = client.ReadDotBlockAsync().Result;
+            //    Console.WriteLine(blocks.Sum(b => b.Count));
+                
+            //}
+
             //return;
 
             var cancellationTokenSource = new CancellationTokenSource();

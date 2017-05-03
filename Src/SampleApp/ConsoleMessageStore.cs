@@ -21,11 +21,24 @@ namespace SampleApp
         /// <returns>A unique identifier that represents this message in the underlying message store.</returns>
         public override Task<SmtpResponse> SaveAsync(ISessionContext context, IMessageTransaction transaction, CancellationToken cancellationToken)
         {
-            Console.WriteLine("From: {0} ({1})", transaction.From, context.RemoteEndPoint);
-            Console.WriteLine("To: {0}", String.Join(",", transaction.To.Select(m => m.AsAddress())));
+            var textMessage = (ITextMessage)transaction.Message;
 
-            Console.WriteLine(new StreamReader(((ITextMessage)transaction.Message).Content).ReadToEnd());
+            try
+            {
+                var message = MimeKit.MimeMessage.Load(textMessage.Content);
 
+                Console.WriteLine();
+                Console.WriteLine(message.Subject);
+                Console.WriteLine(message.TextBody);
+                Console.WriteLine();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+
+                return Task.FromResult(SmtpResponse.TransactionFailed);
+            }
+            
             return Task.FromResult(SmtpResponse.Ok);
         }
     }
