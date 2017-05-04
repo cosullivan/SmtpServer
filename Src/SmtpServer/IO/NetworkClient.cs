@@ -134,12 +134,12 @@ namespace SmtpServer.IO
             {
                 _index = 0;
                 _buffer = new byte[_bufferLength];
-                _bytesRead = await _stream.ReadAsync(_buffer, 0, _buffer.Length, cancellationToken).ReturnOnAnyThread();
+                _bytesRead = await _stream.ReadAsync(_buffer, 0, _buffer.Length, cancellationToken).WithCancellation(cancellationToken).ReturnOnAnyThread();
             }
 
             return _bytesRead > 0;
         }
-        
+
         /// <summary>
         /// Consumes the bytes from the buffer until the continuation function indicates that it should complete.
         /// </summary>

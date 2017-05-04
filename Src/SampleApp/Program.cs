@@ -47,36 +47,6 @@ Ym9keSBvZiB0aGUgbWVzc2FnZS48L3A+CiAgPC9ib2R5Pgo8L2h0bWw+Cg==
         
         static void Main(string[] args)
         {
-
-
-            //Console.WriteLine(Char.IsPunctuation((char)34));
-            //return;
-            //var text = "MIME-Version: 1.0";
-            //var parser = new SmtpServer.Mime.MimeParser(new TokenEnumerator(new StringTokenReader(text)));
-
-            //parser.TryMakeMimeVersion(out MimeVersion version);
-            //Console.WriteLine(version);
-
-            //var text = "Content-Type: text/plain";
-            //var parser = new SmtpServer.Mime.MimeParser(new TokenEnumerator(new StringTokenReader(text)));
-
-            //parser.TryMakeContentType(out ContentType contentType);
-            //Console.WriteLine(contentType);
-
-            ////var mimeMessageReader = new MimeMessageReader(File.OpenRead(@"C:\Dev\temp\msg.txt"));
-            //var mimeMessageReader = new MimeMessageReader(File.OpenRead(@"C:\Dev\Enron Corpus\maildir\allen-p\inbox\31_"));
-            ////var mimeMessageReader = new MimeMessageReader(new MemoryStream(Encoding.ASCII.GetBytes(MIME)));
-            //try
-            //{
-            //    var mimeMessage = mimeMessageReader.ReadAsync().Result;
-            //    Console.WriteLine(mimeMessage);
-            //}
-            //catch (Exception e)
-            //{
-            //    Console.WriteLine(e);
-            //    throw;
-            //}
-
             ////var mimeMessageReader = new MimeMessageReader(File.OpenRead(@"C:\Dev\temp\msg.txt"));
             //var mimeMessageSerializer = new MimeMessageSerializer();
             ////var mimeMessageReader = new MimeMessageReader(new MemoryStream(Encoding.ASCII.GetBytes(MIME)));
@@ -91,49 +61,6 @@ Ym9keSBvZiB0aGUgbWVzc2FnZS48L3A+CiAgPC9ib2R5Pgo8L2h0bWw+Cg==
             //    Console.WriteLine(e);
             //    throw;
             //}
-
-            //var webClient = new WebClient();
-            ////using (var stream = webClient.OpenRead("http://memberzonedev.org"))
-            //using (var stream = new System.IO.MemoryStream(Encoding.ASCII.GetBytes("abcd\r\n1234")))
-            //{
-            //    var reader = new StreamTokenReader(stream, 5);
-
-            //    var enumerator = new TokenEnumerator2(reader, ignoreWhiteSpace: false);
-
-            //    while (enumerator.PeekAsync().Result != Token.None)
-            //    {
-            //        Console.WriteLine(enumerator.TakeAsync().Result);
-            //    }
-            //}
-
-            //return;
-
-            //using (var file = File.OpenRead(@"C:\Dev\Enron Corpus\maildir\allen-p\inbox\31_"))
-            //{
-            //    var client = new NetworkClient(file);
-
-            //    string line;
-            //    while ((line = client.ReadLineAsync().Result) != null)
-            //    {
-            //        Console.WriteLine(line);
-            //    }
-            //}
-
-            //using (var stream = new System.IO.MemoryStream(Encoding.ASCII.GetBytes("abcd\r\n1234\r\nefgh\r\n..abcd")))
-            //{
-            //    var client = new NetworkClient(stream, 10);
-
-            //    //string line;
-            //    //while ((line = client.ReadLineAsync().Result) != null)
-            //    //{
-            //    //    Console.WriteLine(line);
-            //    //}
-            //    var blocks = client.ReadDotBlockAsync().Result;
-            //    Console.WriteLine(blocks.Sum(b => b.Count));
-                
-            //}
-
-            //return;
 
             var cancellationTokenSource = new CancellationTokenSource();
 
@@ -226,7 +153,7 @@ Ym9keSBvZiB0aGUgbWVzc2FnZS48L3A+CiAgPC9ib2R5Pgo8L2h0bWw+Cg==
         static async Task RunClientAsync(string name, int limit = Int32.MaxValue, CancellationToken cancellationToken = default(CancellationToken))
         {
             var counter = 1;
-            while (limit-- >= 0 && cancellationToken.IsCancellationRequested == false)
+            while (limit-- > 0 && cancellationToken.IsCancellationRequested == false)
             {
                 using (var smtpClient = new SmtpClient())
                 {
@@ -242,6 +169,7 @@ Ym9keSBvZiB0aGUgbWVzc2FnZS48L3A+CiAgPC9ib2R5Pgo8L2h0bWw+Cg==
 
                         message.Body = new TextPart(TextFormat.Plain)
                         {
+                            //Text = ".Ad",
                             Text = ".Assunto teste acento çãõáéíóú",
                             //Text = "Assunto teste acento",
                         };

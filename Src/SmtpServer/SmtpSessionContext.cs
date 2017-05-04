@@ -70,6 +70,11 @@ namespace SmtpServer
         public EndPoint RemoteEndPoint { get; }
 
         /// <summary>
+        /// Returns a value indicating whether or not the current session is secure.
+        /// </summary>
+        public bool IsSecure => Text.IsSecure;
+
+        /// <summary>
         /// Gets a value indicating whether a quit has been requested.
         /// </summary>
         public bool IsQuitRequested { get; private set; }

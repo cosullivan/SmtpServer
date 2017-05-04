@@ -50,7 +50,7 @@ namespace SmtpServer.IO
         {
             throw new NotImplementedException();
         }
-
+        
         /// <summary>
         /// When overridden in a derived class, reads a sequence of bytes from the current stream and advances the position within the stream by the number of bytes read.
         /// </summary>
@@ -69,14 +69,13 @@ namespace SmtpServer.IO
                 if (_index >= segment.Count)
                 {
                     _index = 0;
+                    _segmentIndex++;
 
-                    if (++_segmentIndex > _segments.Count)
-                    {
-                        break;
-                    }
+                    continue;
                 }
 
                 var length = Math.Min(segment.Count - _index, remaining);
+
                 Buffer.BlockCopy(segment.Array, segment.Offset + _index, buffer, offset + count - remaining, length);
 
                 _index += length;

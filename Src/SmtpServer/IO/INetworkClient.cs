@@ -204,9 +204,9 @@ namespace SmtpServer.IO
                 throw new ArgumentNullException(nameof(client));
             }
 
-            var blocks = await client.ReadUntilAsync(new byte[] {13, 10, 46, 13, 10}, cancellationToken).ReturnOnAnyThread();
+            var blocks = await client.ReadUntilAsync(new byte[] { 13, 10, 46, 13, 10 }, cancellationToken).ReturnOnAnyThread();
 
-            return Unstuff(Trim(blocks, new byte[] { 46, 13, 10 })).ToList();
+            return Unstuff(Trim(blocks, new byte[] { 13, 10, 46, 13, 10 })).ToList();
         }
 
         /// <summary>
