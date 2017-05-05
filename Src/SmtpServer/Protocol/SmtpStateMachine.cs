@@ -113,6 +113,13 @@ namespace SmtpServer.Protocol
             return _stateTable.TryAccept(tokenEnumerator, out command, out errorResponse);
         }
 
+        /// <summary>
+        /// Try to make a DBUG command.
+        /// </summary>
+        /// <param name="tokenEnumerator">The token enumerator to use when matching the command.</param>
+        /// <param name="command">The command that was found.</param>
+        /// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
+        /// <returns>true if a DEBG command was found, false if not.</returns>
         bool TryMakeDbug(TokenEnumerator2 tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
             return new SmtpCommandFactory(_options).TryMakeDbug(tokenEnumerator, out command, out errorResponse);

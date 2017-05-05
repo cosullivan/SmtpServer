@@ -11,7 +11,7 @@ namespace SmtpServer.Protocol
     /// This class is responsible for parsing the SMTP command arguments according to the ANBF described in
     /// the RFC http://tools.ietf.org/html/rfc5321#section-4.1.2
     /// </remarks>
-    public sealed class SmtpParser2 : TokenParser
+    public class SmtpParser2 : TokenParser
     {
         /// <summary>
         /// Constructor.
