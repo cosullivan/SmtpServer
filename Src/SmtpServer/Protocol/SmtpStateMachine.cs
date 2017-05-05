@@ -7,6 +7,7 @@ namespace SmtpServer.Protocol
 {
     public class SmtpStateMachine : ISmtpStateMachine
     {
+        readonly ISmtpServerOptions _options;
         readonly StateTable _stateTable;
 
         /// <summary>
@@ -16,6 +17,7 @@ namespace SmtpServer.Protocol
         /// <param name="commandFactory">The SMTP command factory.</param>
         public SmtpStateMachine(ISmtpServerOptions options, SmtpCommandFactory commandFactory)
         {
+            _options = options;
             _stateTable = new StateTable
             {
                 new State(SmtpState.Initialized)
@@ -106,9 +108,14 @@ namespace SmtpServer.Protocol
         /// <param name="command">The command that was found.</param>
         /// <param name="errorResponse">The error response that indicates why a command could not be accepted.</param>
         /// <returns>true if a valid command was found, false if not.</returns>
-        public bool TryAccept(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        public bool TryAccept(TokenEnumerator2 tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
             return _stateTable.TryAccept(tokenEnumerator, out command, out errorResponse);
+        }
+
+        bool TryMakeDbug(TokenEnumerator2 tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            return new SmtpCommandFactory(_options).TryMakeDbug(tokenEnumerator, out command, out errorResponse);
         }
 
         class StateTable : IEnumerable
@@ -130,10 +137,7 @@ namespace SmtpServer.Protocol
             /// </summary>
             /// <param name="stateId">The state ID to return.</param>
             /// <returns>The state with the given id.</returns>
-            public State this[SmtpState stateId]
-            {
-                get { return _states[stateId]; }
-            }
+            public State this[SmtpState stateId] => _states[stateId];
 
             /// <summary>
             /// Add the given state.
@@ -151,7 +155,7 @@ namespace SmtpServer.Protocol
             /// <param name="command">The command that is defined within the token enumerator.</param>
             /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
             /// <returns>true if a valid command was found, false if not.</returns>
-            public bool TryAccept(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+            public bool TryAccept(TokenEnumerator2 tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
             {
                 // lookup the correct action
                 Tuple<State.TryMakeDelegate, SmtpState> action;
@@ -188,7 +192,7 @@ namespace SmtpServer.Protocol
 
         class State : IEnumerable
         {
-            public delegate bool TryMakeDelegate(TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse errorResponse);
+            public delegate bool TryMakeDelegate(TokenEnumerator2 enumerator, out SmtpCommand command, out SmtpResponse errorResponse);
 
             /// <summary>
             /// Constructor.

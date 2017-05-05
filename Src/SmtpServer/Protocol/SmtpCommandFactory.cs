@@ -10,17 +10,14 @@ namespace SmtpServer.Protocol
     {
         readonly TraceSwitch _logger = new TraceSwitch("SmtpCommandFactory", "SMTP Server Command Factory");
         readonly ISmtpServerOptions _options;
-        readonly SmtpParser _parser;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="options">The SMTP server options.</param>
-        /// <param name="parser">The ABNF SMTP argument parser.</param>
-        public SmtpCommandFactory(ISmtpServerOptions options, SmtpParser parser)
+        public SmtpCommandFactory(ISmtpServerOptions options)
         {
             _options = options;
-            _parser = parser;
         }
 
         /// <summary>
@@ -30,7 +27,7 @@ namespace SmtpServer.Protocol
         /// <param name="command">The QUIT command that is defined within the token enumerator.</param>
         /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
         /// <returns>Returns true if a command could be made, false if not.</returns>
-        public bool TryMakeQuit(TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        public bool TryMakeQuit(TokenEnumerator2 enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
             Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "QUIT"));
 
@@ -38,11 +35,10 @@ namespace SmtpServer.Protocol
             errorResponse = null;
 
             enumerator.Take();
-            enumerator.TakeWhile(TokenKind.Space);
 
-            if (enumerator.Count > 1)
+            if (TryMakeEnd(enumerator) == false)
             {
-                _logger.LogVerbose("QUIT command can not have parameters (found {0} parameters).", enumerator.Count);
+                _logger.LogVerbose("QUIT command can not have parameters.");
 
                 errorResponse = SmtpResponse.SyntaxError;
                 return false;
@@ -59,7 +55,7 @@ namespace SmtpServer.Protocol
         /// <param name="command">The NOOP command that is defined within the token enumerator.</param>
         /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
         /// <returns>Returns true if a command could be made, false if not.</returns>
-        public bool TryMakeNoop(TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        public bool TryMakeNoop(TokenEnumerator2 enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
             Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "NOOP"));
 
@@ -67,11 +63,10 @@ namespace SmtpServer.Protocol
             errorResponse = null;
 
             enumerator.Take();
-            enumerator.TakeWhile(TokenKind.Space);
 
-            if (enumerator.Count > 1)
+            if (TryMakeEnd(enumerator) == false)
             {
-                _logger.LogVerbose("NOOP command can not have parameters (found {0} parameters).", enumerator.Count);
+                _logger.LogVerbose("NOOP command can not have parameters.");
 
                 errorResponse = SmtpResponse.SyntaxError;
                 return false;
@@ -88,7 +83,7 @@ namespace SmtpServer.Protocol
         /// <param name="command">The RSET command that is defined within the token enumerator.</param>
         /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
         /// <returns>Returns true if a command could be made, false if not.</returns>
-        public bool TryMakeRset(TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        public bool TryMakeRset(TokenEnumerator2 enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
             Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "RSET"));
 
@@ -96,11 +91,10 @@ namespace SmtpServer.Protocol
             errorResponse = null;
 
             enumerator.Take();
-            enumerator.TakeWhile(TokenKind.Space);
 
-            if (enumerator.Count > 1)
+            if (TryMakeEnd(enumerator) == false)
             {
-                _logger.LogVerbose("RSET command can not have parameters (found {0} parameters).", enumerator.Count);
+                _logger.LogVerbose("RSET command can not have parameters.");
 
                 errorResponse = SmtpResponse.SyntaxError;
                 return false;
@@ -117,7 +111,7 @@ namespace SmtpServer.Protocol
         /// <param name="command">The HELO command that is defined within the token enumerator.</param>
         /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
         /// <returns>Returns true if a command could be made, false if not.</returns>
-        public bool TryMakeHelo(TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        public bool TryMakeHelo(TokenEnumerator2 enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
             Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "HELO"));
 
@@ -125,10 +119,10 @@ namespace SmtpServer.Protocol
             errorResponse = null;
 
             enumerator.Take();
-            enumerator.TakeWhile(TokenKind.Space);
+            enumerator.Skip(TokenKind.Space);
 
             string domain;
-            if (_parser.TryMakeDomain(enumerator, out domain) == false)
+            if (new SmtpParser2(enumerator).TryMakeDomain(out domain) == false)
             {
                 _logger.LogVerbose("Could not match the domain name (Text={0}).", enumerator.AsText());
 
@@ -147,7 +141,7 @@ namespace SmtpServer.Protocol
         /// <param name="command">The EHLO command that is defined within the token enumerator.</param>
         /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
         /// <returns>Returns true if a command could be made, false if not.</returns>
-        public bool TryMakeEhlo(TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        public bool TryMakeEhlo(TokenEnumerator2 enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
             Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "EHLO"));
 
@@ -155,17 +149,17 @@ namespace SmtpServer.Protocol
             errorResponse = null;
 
             enumerator.Take();
-            enumerator.TakeWhile(TokenKind.Space);
+            enumerator.Skip(TokenKind.Space);
 
             string domain;
-            if (_parser.TryMakeDomain(enumerator, out domain))
+            if (new SmtpParser2(enumerator).TryMakeDomain(out domain))
             {
                 command = new EhloCommand(_options, domain);
                 return true;
             }
 
             string address;
-            if (_parser.TryMakeAddressLiteral(enumerator, out address))
+            if (new SmtpParser2(enumerator).TryMakeAddressLiteral(out address))
             {
                 command = new EhloCommand(_options, address);
                 return true;
@@ -182,7 +176,7 @@ namespace SmtpServer.Protocol
         /// <param name="command">The MAIL command that is defined within the token enumerator.</param>
         /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
         /// <returns>Returns true if a command could be made, false if not.</returns>
-        public bool TryMakeMail(TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        public bool TryMakeMail(TokenEnumerator2 enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
             Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "MAIL"));
 
@@ -190,7 +184,7 @@ namespace SmtpServer.Protocol
             errorResponse = null;
 
             enumerator.Take();
-            enumerator.TakeWhile(TokenKind.Space);
+            enumerator.Skip(TokenKind.Space);
 
             if (enumerator.Take() != new Token(TokenKind.Text, "FROM") || enumerator.Take() != new Token(TokenKind.Punctuation, ":"))
             {
@@ -199,10 +193,10 @@ namespace SmtpServer.Protocol
             }
 
             // according to the spec, whitespace isnt allowed here but most servers send it
-            enumerator.TakeWhile(TokenKind.Space);
+            enumerator.Skip(TokenKind.Space);
 
             IMailbox mailbox;
-            if (_parser.TryMakeReversePath(enumerator, out mailbox) == false)
+            if (new SmtpParser2(enumerator).TryMakeReversePath(out mailbox) == false)
             {
                 _logger.LogVerbose("Syntax Error (Text={0})", enumerator.AsText());
 
@@ -210,11 +204,11 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            enumerator.TakeWhile(TokenKind.Space);
+            enumerator.Skip(TokenKind.Space);
 
             // match the optional (ESMTP) parameters
             IReadOnlyDictionary<string, string> parameters;
-            if (_parser.TryMakeMailParameters(enumerator, out parameters) == false)
+            if (new SmtpParser2(enumerator).TryMakeMailParameters(out parameters) == false)
             {
                 parameters = new Dictionary<string, string>();
             }
@@ -230,7 +224,7 @@ namespace SmtpServer.Protocol
         /// <param name="command">The RCTP command that is defined within the token enumerator.</param>
         /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
         /// <returns>Returns true if a command could be made, false if not.</returns>
-        public bool TryMakeRcpt(TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        public bool TryMakeRcpt(TokenEnumerator2 enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
             Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "RCPT"));
 
@@ -238,19 +232,19 @@ namespace SmtpServer.Protocol
             errorResponse = null;
 
             enumerator.Take();
-            enumerator.TakeWhile(TokenKind.Space);
+            enumerator.Skip(TokenKind.Space);
 
-            if (enumerator.Take() != new Token(TokenKind.Text, "TO") || enumerator.Take() != new Token(TokenKind.Punctuation, ":"))
+            if (enumerator.Take() != new Token(TokenKind.Text, "TO") || enumerator.Take() != new Token(TokenKind.Other, ":"))
             {
                 errorResponse = new SmtpResponse(SmtpReplyCode.SyntaxError, "missing the TO:");
                 return false;
             }
 
             // according to the spec, whitespace isnt allowed here anyway
-            enumerator.TakeWhile(TokenKind.Space);
+            enumerator.Skip(TokenKind.Space);
 
             IMailbox mailbox;
-            if (_parser.TryMakePath(enumerator, out mailbox) == false)
+            if (new SmtpParser2(enumerator).TryMakePath(out mailbox) == false)
             {
                 _logger.LogVerbose("Syntax Error (Text={0})", enumerator.AsText());
 
@@ -271,7 +265,7 @@ namespace SmtpServer.Protocol
         /// <param name="command">The DATA command that is defined within the token enumerator.</param>
         /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
         /// <returns>Returns true if a command could be made, false if not.</returns>
-        public bool TryMakeData(TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        public bool TryMakeData(TokenEnumerator2 enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
             Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "DATA"));
 
@@ -279,11 +273,11 @@ namespace SmtpServer.Protocol
             errorResponse = null;
 
             enumerator.Take();
-            enumerator.TakeWhile(TokenKind.Space);
+            enumerator.Skip(TokenKind.Space);
 
-            if (enumerator.Count > 1)
+            if (TryMakeEnd(enumerator) == false)
             {
-                _logger.LogVerbose("DATA command can not have parameters (Tokens={0})", enumerator.Count);
+                _logger.LogVerbose("DATA command can not have parameters.");
 
                 errorResponse = SmtpResponse.SyntaxError;
                 return false;
@@ -300,7 +294,7 @@ namespace SmtpServer.Protocol
         /// <param name="command">The DBUG command that is defined within the token enumerator.</param>
         /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
         /// <returns>Returns true if a command could be made, false if not.</returns>
-        public bool TryMakeDbug(TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        public bool TryMakeDbug(TokenEnumerator2 enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
             Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "DBUG"));
 
@@ -308,11 +302,11 @@ namespace SmtpServer.Protocol
             errorResponse = null;
 
             enumerator.Take();
-            enumerator.TakeWhile(TokenKind.Space);
+            enumerator.Skip(TokenKind.Space);
 
-            if (enumerator.Count > 1)
+            if (TryMakeEnd(enumerator) == false)
             {
-                _logger.LogVerbose("DBUG command can not have parameters (Tokens={0})", enumerator.Count);
+                _logger.LogVerbose("DBUG command can not have parameters.");
 
                 errorResponse = SmtpResponse.SyntaxError;
                 return false;
@@ -329,7 +323,7 @@ namespace SmtpServer.Protocol
         /// <param name="command">The STARTTLS command that is defined within the token enumerator.</param>
         /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
         /// <returns>Returns true if a command could be made, false if not.</returns>
-        public bool TryMakeStartTls(TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        public bool TryMakeStartTls(TokenEnumerator2 enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
             Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "STARTTLS"));
 
@@ -337,11 +331,11 @@ namespace SmtpServer.Protocol
             errorResponse = null;
 
             enumerator.Take();
-            enumerator.TakeWhile(TokenKind.Space);
+            enumerator.Skip(TokenKind.Space);
 
-            if (enumerator.Count > 1)
+            if (TryMakeEnd(enumerator) == false)
             {
-                _logger.LogVerbose("STARTTLS command can not have parameters (Tokens={0})", enumerator.Count);
+                _logger.LogVerbose("STARTTLS command can not have parameters.");
 
                 errorResponse = SmtpResponse.SyntaxError;
                 return false;
@@ -358,7 +352,7 @@ namespace SmtpServer.Protocol
         /// <param name="command">The AUTH command that is defined within the token enumerator.</param>
         /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
         /// <returns>Returns true if a command could be made, false if not.</returns>
-        public bool TryMakeAuth(TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        public bool TryMakeAuth(TokenEnumerator2 enumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
             Debug.Assert(enumerator.Peek() == new Token(TokenKind.Text, "AUTH"));
 
@@ -366,7 +360,7 @@ namespace SmtpServer.Protocol
             errorResponse = null;
 
             enumerator.Take();
-            enumerator.TakeWhile(TokenKind.Space);
+            enumerator.Skip(TokenKind.Space);
 
             AuthenticationMethod method;
             if (Enum.TryParse(enumerator.Peek().Text, true, out method) == false)
@@ -390,6 +384,18 @@ namespace SmtpServer.Protocol
 
             command = new AuthCommand(_options, method, parameter);
             return true;
+        }
+
+        /// <summary>
+        /// Attempt to make the end of the line.
+        /// </summary>
+        /// <param name="enumerator">The enumerator to make the line ending for.</param>
+        /// <returns>true if the end of the line could be made, false if not.</returns>
+        bool TryMakeEnd(TokenEnumerator2 enumerator)
+        {
+            enumerator.Skip(TokenKind.Space);
+
+            return enumerator.Take() == Token.None;
         }
     }
 }

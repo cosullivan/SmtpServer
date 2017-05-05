@@ -94,6 +94,7 @@
     <Compile Include="Protocol\SmtpCommandFactory.cs" />
     <Compile Include="Protocol\SmtpCommandVisitor.cs" />
     <Compile Include="Protocol\SmtpParser.cs" />
+    <Compile Include="Protocol\SmtpParser2.cs" />
     <Compile Include="Protocol\SmtpReplyCode.cs" />
     <Compile Include="Protocol\SmtpResponse.cs" />
     <Compile Include="Protocol\SmtpState.cs" />
@@ -120,7 +121,6 @@
     <Compile Include="Storage\MailboxFilterResult.cs" />
     <Compile Include="Storage\MessageStore.cs" />
     <Compile Include="IO\ByteArrayStream.cs" />
-    <Compile Include="Text\ByteArrayStreamReader.cs" />
     <Compile Include="Text\ByteArrayTokenReader.cs" />
     <Compile Include="Text\ITokenEnumerator.cs" />
     <Compile Include="Text\ITokenEnumeratorCheckpoint.cs" />

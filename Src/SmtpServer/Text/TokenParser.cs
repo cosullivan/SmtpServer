@@ -1,6 +1,4 @@
-﻿using System.Linq;
-
-namespace SmtpServer.Text
+﻿namespace SmtpServer.Text
 {
     public abstract class TokenParser
     {

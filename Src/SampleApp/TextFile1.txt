@@ -127,3 +127,12 @@
 125,},Punctuation
 126,~,Symbol
 127,⌂,Other
+
+
+
+
+
+
+
+
+
