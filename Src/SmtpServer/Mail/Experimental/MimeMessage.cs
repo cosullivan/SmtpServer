@@ -14,6 +14,11 @@ namespace SmtpServer.Mail
         }
 
         /// <summary>
+        /// Returns the message type.
+        /// </summary>
+        public MessageType MessageType => MessageType.Mime;
+
+        /// <summary>
         /// The MIME message document.
         /// </summary>
         public MimeDocument Document { get; }

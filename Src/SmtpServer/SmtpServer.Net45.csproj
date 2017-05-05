@@ -42,12 +42,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Authentication\IUserAuthenticator.cs" />
+    <Compile Include="Mail\Experimental\IBinaryMessage.cs" />
     <Compile Include="Mail\IMessage.cs" />
     <Compile Include="Mail\IMessageSerializer.cs" />
-    <Compile Include="Mail\IMimeMessage.cs" />
+    <Compile Include="Mail\Experimental\IMimeMessage.cs" />
     <Compile Include="Mail\ITextMessage.cs" />
     <Compile Include="Mail\MessageSerializerFactory.cs" />
-    <Compile Include="Mail\MimeMessageSerializer.cs" />
+    <Compile Include="Mail\MessageType.cs" />
+    <Compile Include="Mail\Experimental\MimeMessageSerializer.cs" />
     <Compile Include="Mail\TextMessage.cs" />
     <Compile Include="Mail\TextMessageSerializer.cs" />
     <Compile Include="Extensions\StreamReaderExtensions.cs" />
@@ -69,7 +71,7 @@
     <Compile Include="Mime\MimeDocument.cs" />
     <Compile Include="Mime\MimeEntity.cs" />
     <Compile Include="Mime\MimeHeader.cs" />
-    <Compile Include="Mail\MimeMessage.cs" />
+    <Compile Include="Mail\Experimental\MimeMessage.cs" />
     <Compile Include="Mime\MimeParseException.cs" />
     <Compile Include="Mime\MimeParser.cs" />
     <Compile Include="Mime\MimeVersion.cs" />
