@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace SmtpServer.Text
 {
@@ -21,6 +22,11 @@ namespace SmtpServer.Text
         /// </summary>
         /// <returns>A disposable instance that is used to release the checkpoint.</returns>
         ITokenEnumeratorCheckpoint Checkpoint();
+        
+        /// <summary>
+        /// The complete list of tokens.
+        /// </summary>
+        IReadOnlyList<Token> Tokens { get; }
     }
 
     public static class TokenEnumeratorExtensions

@@ -4,7 +4,6 @@ namespace SmtpServer.Text
 {
     public sealed class TokenEnumerator : ITokenEnumerator
     {
-        readonly IReadOnlyList<Token> _tokens;
         int _index = -1;
 
         /// <summary>
@@ -19,7 +18,7 @@ namespace SmtpServer.Text
         /// <param name="tokens">The list of tokens that the enumerator is working with.</param>
         public TokenEnumerator(IReadOnlyList<Token> tokens)
         {
-            _tokens = tokens;
+            Tokens = tokens;
         }
         
         /// <summary>
@@ -46,7 +45,7 @@ namespace SmtpServer.Text
         /// <returns>The last token that was consumed.</returns>
         Token At(int index)
         {
-            return index < _tokens.Count ? _tokens[index] : Token.None;
+            return index < Tokens.Count ? Tokens[index] : Token.None;
         }
 
         /// <summary>
@@ -57,6 +56,11 @@ namespace SmtpServer.Text
         {
             return new TokenEnumeratorCheckpoint(this);
         }
+
+        /// <summary>
+        /// The complete list of tokens.
+        /// </summary>
+        public IReadOnlyList<Token> Tokens { get; }
 
         #region TokenEnumeratorCheckpoint
 

@@ -1144,7 +1144,7 @@ namespace SmtpServer.Protocol
         /// <returns>The complete tokenized text.</returns>
         string CompleteTokenizedText()
         {
-            throw new NotImplementedException();
+            return String.Concat(Enumerator.Tokens.Select(token => token.Text));
         }
     }
 }

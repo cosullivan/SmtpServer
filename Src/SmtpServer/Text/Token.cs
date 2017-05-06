@@ -141,24 +141,6 @@ namespace SmtpServer.Text
             return value == 32 || IsBetween(value, 9, 13);
         }
 
-        ///// <summary>
-        ///// Returns a value indicating whether or not the given byte is considered punctuation.
-        ///// </summary>
-        ///// <param name="value">The value to test.</param>
-        ///// <returns>true if the value is considered a punctuation character, false if not.</returns>
-        //public static bool IsPunctuation(byte value)
-        //{
-        //    return IsBetween(value, 33, 35) 
-        //        || IsBetween(value, 37, 42) 
-        //        || IsBetween(value, 44, 47) 
-        //        || IsBetween(value, 58, 59) 
-        //        || IsBetween(value, 63, 64) 
-        //        || IsBetween(value, 91, 93)
-        //        || value == 95 
-        //        || value == 123
-        //        || value == 125;
-        //}
-
         /// <summary>
         /// Returns a value indicating whether or not the given value is inclusively between a given range.
         /// </summary>
