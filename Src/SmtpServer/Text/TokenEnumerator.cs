@@ -1,84 +1,34 @@
-﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace SmtpServer.Text
 {
-    public sealed class TokenEnumerator
+    public sealed class TokenEnumerator : ITokenEnumerator
     {
-        readonly Token[] _tokens;
+        readonly IReadOnlyList<Token> _tokens;
+        int _index = -1;
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="tokenizer">The tokenizer to retrieve the tokens from.</param>
-        public TokenEnumerator(IEnumerable<Token> tokenizer)
-        {
-            _tokens = tokenizer.ToArray();
-        }
+        /// <param name="tokenReader">The token reader to read the tokens from.</param>
+        public TokenEnumerator(TokenReader tokenReader) : this(tokenReader.ToList()) { }
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="tokenReader">The token reader to pull the tokens from.</param>
-        public TokenEnumerator(TokenReader tokenReader)
-        {
-            var tokens = new List<Token>();
-
-            var token = tokenReader.NextToken();
-            while (token != Token.None)
-            {
-                tokens.Add(token);
-
-                token = tokenReader.NextToken();
-            }
-
-            _tokens = tokens.ToArray();
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="tokens">The tokens to enumerate over.</param>
-        internal TokenEnumerator(params Token[] tokens)
+        /// <param name="tokens">The list of tokens that the enumerator is working with.</param>
+        public TokenEnumerator(IReadOnlyList<Token> tokens)
         {
             _tokens = tokens;
         }
-
+        
         /// <summary>
-        /// Peek at a token in the stream.
+        /// Peek at the next token.
         /// </summary>
-        /// <param name="count">The number of tokens to look ahead.</param>
         /// <returns>The token at the given number of tokens past the current index, or Token.None if no token exists.</returns>
-        public Token Peek(int count = 0)
+        public Token Peek()
         {
-            if (Index + count < _tokens.Length)
-            {
-                return _tokens[Index + count];
-            }
-
-            return Token.None;
-        }
-
-        /// <summary>
-        /// Take tokens in the stream while the given predicate is true.
-        /// </summary>
-        /// <param name="predicate">The predicate to use for evaluating whether or not to consume a token.</param>
-        public void TakeWhile(Func<Token, bool> predicate)
-        {
-            while (predicate(Peek()))
-            {
-                Take();
-            }
-        }
-
-        /// <summary>
-        /// Take tokens in the stream while the token kind is the same as the supplied kind.
-        /// </summary>
-        /// <param name="kind">The token kind to test against to determine whether the token should be consumed.</param>
-        public void TakeWhile(TokenKind kind)
-        {
-            TakeWhile(t => t.Kind == kind);
+            return At(_index + 1);
         }
 
         /// <summary>
@@ -87,32 +37,58 @@ namespace SmtpServer.Text
         /// <returns>The last token that was consumed.</returns>
         public Token Take()
         {
-            Index += 1;
-
-            // return the last token that was consumed
-            return Peek(-1);
+            return At(++_index);
         }
 
         /// <summary>
-        /// Returns a text string which is the combined tokens.
+        /// Take the given number of tokens.
         /// </summary>
-        /// <returns>The string</returns>
-        public string AsText()
+        /// <returns>The last token that was consumed.</returns>
+        Token At(int index)
         {
-            return String.Concat(_tokens.Select(t => t.Text));
+            return index < _tokens.Count ? _tokens[index] : Token.None;
         }
 
         /// <summary>
-        /// Gets the number of tokens left in the enumerator.
+        /// Create a checkpoint that will ensure the tokens are kept in the buffer from this point forward.
         /// </summary>
-        public int Count
+        /// <returns>A disposable instance that is used to release the checkpoint.</returns>
+        public ITokenEnumeratorCheckpoint Checkpoint()
         {
-            get { return Math.Max(0, _tokens.Length - Index); }
+            return new TokenEnumeratorCheckpoint(this);
         }
 
-        /// <summary>
-        /// The current index into the tokens.
-        /// </summary>
-        public int Index { get; internal set; }
+        #region TokenEnumeratorCheckpoint
+
+        class TokenEnumeratorCheckpoint : ITokenEnumeratorCheckpoint
+        {
+            readonly TokenEnumerator _enumerator;
+            readonly int _index;
+
+            /// <summary>
+            /// Constructor.
+            /// </summary>
+            /// <param name="enumerator">The enumerator that is being checkpointed.</param>
+            public TokenEnumeratorCheckpoint(TokenEnumerator enumerator)
+            {
+                _enumerator = enumerator;
+                _index = enumerator._index;
+            }
+
+            /// <summary>
+            /// Rollback to the checkpoint;
+            /// </summary>
+            public void Rollback()
+            {
+                _enumerator._index = _index;
+            }
+
+            /// <summary>
+            /// Release the checkpoint.
+            /// </summary>
+            public void Dispose() { }
+        }
+
+        #endregion
     }
 }

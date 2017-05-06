@@ -73,9 +73,7 @@ namespace SmtpServer.Protocol
         {
             await context.Text.ReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, " "), cancellationToken).ConfigureAwait(false);
 
-            var authentication = Encoding.UTF8.GetString(
-                Convert.FromBase64String(
-                    await context.Text.ReadLineAsync(cancellationToken).ConfigureAwait(false)));
+            var authentication = await ReadBase64EncodedLineAsync(context.Text, cancellationToken).ReturnOnAnyThread();
 
             var match = Regex.Match(authentication, "\x0000(?<user>.*)\x0000(?<password>.*)");
 
@@ -101,17 +99,26 @@ namespace SmtpServer.Protocol
         {
             await context.Text.ReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, "VXNlcm5hbWU6"), cancellationToken);
 
-            _user = Encoding.UTF8.GetString(
-                Convert.FromBase64String(
-                    await context.Text.ReadLineAsync(cancellationToken).ConfigureAwait(false)));
-
+            _user = await ReadBase64EncodedLineAsync(context.Text, cancellationToken).ReturnOnAnyThread();
+          
             await context.Text.ReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, "UGFzc3dvcmQ6"), cancellationToken);
 
-            _password = Encoding.UTF8.GetString(
-                Convert.FromBase64String(
-                    await context.Text.ReadLineAsync(cancellationToken).ConfigureAwait(false)));
+            _password = await ReadBase64EncodedLineAsync(context.Text, cancellationToken).ReturnOnAnyThread();
 
             return true;
+        }
+
+        /// <summary>
+        /// Read a Base64 encoded line.
+        /// </summary>
+        /// <param name="client">The client to read from.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The decoded Base64 string.</returns>
+        async Task<string> ReadBase64EncodedLineAsync(INetworkClient client, CancellationToken cancellationToken)
+        {
+            var text = await client.ReadLineAsync(Encoding.ASCII, cancellationToken).ReturnOnAnyThread();
+
+            return Encoding.UTF8.GetString(Convert.FromBase64String(text));
         }
 
         /// <summary>

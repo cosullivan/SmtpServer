@@ -107,7 +107,7 @@ namespace SmtpServer.Protocol
         /// <param name="command">The command that was found.</param>
         /// <param name="errorResponse">The error response that indicates why a command could not be accepted.</param>
         /// <returns>true if a valid command was found, false if not.</returns>
-        public bool TryAccept(TokenEnumerator2 tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        public bool TryAccept(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
             return _stateTable.TryAccept(tokenEnumerator, out command, out errorResponse);
         }
@@ -119,9 +119,9 @@ namespace SmtpServer.Protocol
         /// <param name="command">The command that was found.</param>
         /// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
         /// <returns>true if a DEBG command was found, false if not.</returns>
-        bool TryMakeDbug(TokenEnumerator2 tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        bool TryMakeDbug(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return new SmtpCommandFactory(_options, tokenEnumerator).TryMakeDbug(out command, out errorResponse);
+            return new SmtpParser(_options, tokenEnumerator).TryMakeDbug(out command, out errorResponse);
         }
 
         /// <summary>
@@ -131,9 +131,9 @@ namespace SmtpServer.Protocol
         /// <param name="command">The command that was found.</param>
         /// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
         /// <returns>true if a HELO command was found, false if not.</returns>
-        bool TryMakeHelo(TokenEnumerator2 tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        bool TryMakeHelo(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return new SmtpCommandFactory(_options, tokenEnumerator).TryMakeHelo(out command, out errorResponse);
+            return new SmtpParser(_options, tokenEnumerator).TryMakeHelo(out command, out errorResponse);
         }
 
         /// <summary>
@@ -143,9 +143,9 @@ namespace SmtpServer.Protocol
         /// <param name="command">The command that was found.</param>
         /// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
         /// <returns>true if a EHLO command was found, false if not.</returns>
-        bool TryMakeEhlo(TokenEnumerator2 tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        bool TryMakeEhlo(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return new SmtpCommandFactory(_options, tokenEnumerator).TryMakeEhlo(out command, out errorResponse);
+            return new SmtpParser(_options, tokenEnumerator).TryMakeEhlo(out command, out errorResponse);
         }
 
         /// <summary>
@@ -155,9 +155,9 @@ namespace SmtpServer.Protocol
         /// <param name="command">The command that was found.</param>
         /// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
         /// <returns>true if a NOOP command was found, false if not.</returns>
-        bool TryMakeNoop(TokenEnumerator2 tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        bool TryMakeNoop(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return new SmtpCommandFactory(_options, tokenEnumerator).TryMakeNoop(out command, out errorResponse);
+            return new SmtpParser(_options, tokenEnumerator).TryMakeNoop(out command, out errorResponse);
         }
 
         /// <summary>
@@ -167,9 +167,9 @@ namespace SmtpServer.Protocol
         /// <param name="command">The command that was found.</param>
         /// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
         /// <returns>true if a QUIT command was found, false if not.</returns>
-        bool TryMakeQuit(TokenEnumerator2 tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        bool TryMakeQuit(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return new SmtpCommandFactory(_options, tokenEnumerator).TryMakeQuit(out command, out errorResponse);
+            return new SmtpParser(_options, tokenEnumerator).TryMakeQuit(out command, out errorResponse);
         }
 
         /// <summary>
@@ -179,9 +179,9 @@ namespace SmtpServer.Protocol
         /// <param name="command">The command that was found.</param>
         /// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
         /// <returns>true if a RSET command was found, false if not.</returns>
-        bool TryMakeRset(TokenEnumerator2 tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        bool TryMakeRset(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return new SmtpCommandFactory(_options, tokenEnumerator).TryMakeRset(out command, out errorResponse);
+            return new SmtpParser(_options, tokenEnumerator).TryMakeRset(out command, out errorResponse);
         }
 
         /// <summary>
@@ -191,9 +191,9 @@ namespace SmtpServer.Protocol
         /// <param name="command">The command that was found.</param>
         /// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
         /// <returns>true if a AUTH command was found, false if not.</returns>
-        bool TryMakeAuth(TokenEnumerator2 tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        bool TryMakeAuth(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return new SmtpCommandFactory(_options, tokenEnumerator).TryMakeAuth(out command, out errorResponse);
+            return new SmtpParser(_options, tokenEnumerator).TryMakeAuth(out command, out errorResponse);
         }
 
         /// <summary>
@@ -203,9 +203,9 @@ namespace SmtpServer.Protocol
         /// <param name="command">The command that was found.</param>
         /// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
         /// <returns>true if a STARTTLS command was found, false if not.</returns>
-        bool TryMakeStartTls(TokenEnumerator2 tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        bool TryMakeStartTls(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return new SmtpCommandFactory(_options, tokenEnumerator).TryMakeStartTls(out command, out errorResponse);
+            return new SmtpParser(_options, tokenEnumerator).TryMakeStartTls(out command, out errorResponse);
         }
 
         /// <summary>
@@ -215,9 +215,9 @@ namespace SmtpServer.Protocol
         /// <param name="command">The command that was found.</param>
         /// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
         /// <returns>true if a MAIL command was found, false if not.</returns>
-        bool TryMakeMail(TokenEnumerator2 tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        bool TryMakeMail(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return new SmtpCommandFactory(_options, tokenEnumerator).TryMakeMail(out command, out errorResponse);
+            return new SmtpParser(_options, tokenEnumerator).TryMakeMail(out command, out errorResponse);
         }
 
         /// <summary>
@@ -227,9 +227,9 @@ namespace SmtpServer.Protocol
         /// <param name="command">The command that was found.</param>
         /// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
         /// <returns>true if a RCPT command was found, false if not.</returns>
-        bool TryMakeRcpt(TokenEnumerator2 tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        bool TryMakeRcpt(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return new SmtpCommandFactory(_options, tokenEnumerator).TryMakeRcpt(out command, out errorResponse);
+            return new SmtpParser(_options, tokenEnumerator).TryMakeRcpt(out command, out errorResponse);
         }
 
         /// <summary>
@@ -239,9 +239,9 @@ namespace SmtpServer.Protocol
         /// <param name="command">The command that was found.</param>
         /// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
         /// <returns>true if a DATA command was found, false if not.</returns>
-        bool TryMakeData(TokenEnumerator2 tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        bool TryMakeData(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return new SmtpCommandFactory(_options, tokenEnumerator).TryMakeData(out command, out errorResponse);
+            return new SmtpParser(_options, tokenEnumerator).TryMakeData(out command, out errorResponse);
         }
 
         #region StateTable
@@ -283,7 +283,7 @@ namespace SmtpServer.Protocol
             /// <param name="command">The command that is defined within the token enumerator.</param>
             /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
             /// <returns>true if a valid command was found, false if not.</returns>
-            public bool TryAccept(TokenEnumerator2 tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+            public bool TryAccept(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
             {
                 // lookup the correct action
                 Tuple<State.TryMakeDelegate, SmtpState> action;
@@ -324,7 +324,7 @@ namespace SmtpServer.Protocol
 
         class State : IEnumerable
         {
-            public delegate bool TryMakeDelegate(TokenEnumerator2 enumerator, out SmtpCommand command, out SmtpResponse errorResponse);
+            public delegate bool TryMakeDelegate(TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse errorResponse);
 
             /// <summary>
             /// Constructor.

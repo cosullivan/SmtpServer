@@ -11,13 +11,168 @@ namespace SmtpServer.Tests
 {
     public class SmtpParserTests
     {
-        static SmtpParser2 CreateParser(string text)
+        static SmtpParser CreateParser(string text)
         {
             var segment = new ArraySegment<byte>(Encoding.ASCII.GetBytes(text));
 
-            return new SmtpParser2(new TokenEnumerator2(new ByteArrayTokenReader(new [] { segment })));
+            return new SmtpParser(new SmtpServerOptions(), new TokenEnumerator(new ByteArrayTokenReader(new [] { segment })));
         }
 
+        [Fact]
+        public void CanMakeQuit()
+        {
+            // arrange
+            var parser = CreateParser("QUIT");
+
+            // act
+            var result = parser.TryMakeQuit(out SmtpCommand command, out SmtpResponse errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is QuitCommand);
+        }
+
+        [Fact]
+        public void CanMakeNoop()
+        {
+            // arrange
+            var parser = CreateParser("NOOP");
+
+            // act
+            var result = parser.TryMakeNoop(out SmtpCommand command, out SmtpResponse errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is NoopCommand);
+        }
+
+        [Fact]
+        public void CanMakeHelo()
+        {
+            // arrange
+            var parser = CreateParser("HELO abc-1-def.mail.com");
+
+            // act
+            var result = parser.TryMakeHelo(out SmtpCommand command, out SmtpResponse errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is HeloCommand);
+            Assert.Equal("abc-1-def.mail.com", ((HeloCommand)command).Domain);
+        }
+
+        [Theory]
+        [InlineData("HELO abc.")]
+        [InlineData("HELO -abc.com")]
+        [InlineData("HELO ////")]
+        public void CanNotMakeHelo(string input)
+        {
+            // arrange
+            var parser = CreateParser(input);
+
+            // act
+            var result = parser.TryMakeHelo(out SmtpCommand command, out SmtpResponse errorResponse);
+
+            // assert
+            Assert.False(result);
+            Assert.Null(command);
+            Assert.NotNull(errorResponse);
+        }
+
+        [Theory]
+        [InlineData("EHLO abc-1-def.mail.com")]
+        [InlineData("EHLO 192.168.1.200")]
+        public void CanMakeEhlo(string input)
+        {
+            // arrange
+            var parser = CreateParser(input);
+
+            // act
+            var result = parser.TryMakeEhlo(out SmtpCommand command, out SmtpResponse errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is EhloCommand);
+            Assert.Equal(input.Substring(5), ((EhloCommand)command).DomainOrAddress);
+        }
+
+        [Fact]
+        public void CanMakeMail()
+        {
+            // arrange
+            var parser = CreateParser("MAIL FROM:<cain.osullivan@gmail.com>");
+
+            // act
+            var result = parser.TryMakeMail(out SmtpCommand command, out SmtpResponse errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is MailCommand);
+            Assert.Equal("cain.osullivan", ((MailCommand)command).Address.User);
+            Assert.Equal("gmail.com", ((MailCommand)command).Address.Host);
+        }
+
+        [Fact]
+        public void CanMakeMailWithNoAddress()
+        {
+            // arrange
+            var parser = CreateParser("MAIL FROM:<>");
+
+            // act
+            var result = parser.TryMakeMail(out SmtpCommand command, out SmtpResponse errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is MailCommand);
+            Assert.Null(((MailCommand)command).Address);
+        }
+
+        [Fact]
+        public void CanMakeMailWithBlankAddress()
+        {
+            // arrange
+            var parser = CreateParser("MAIL FROM:<   >");
+
+            // act
+            var result = parser.TryMakeMail(out SmtpCommand command, out SmtpResponse errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is MailCommand);
+            Assert.Null(((MailCommand)command).Address);
+        }
+
+        [Theory]
+        [InlineData("MAIL FROM:cain")]
+        public void CanNotMakeMail(string input)
+        {
+            // arrange
+            var parser = CreateParser(input);
+
+            // act
+            var result = parser.TryMakeMail(out SmtpCommand command, out SmtpResponse errorResponse);
+
+            // assert
+            Assert.False(result);
+            Assert.NotNull(errorResponse);
+        }
+
+        [Fact]
+        public void CanMakeRcpt()
+        {
+            // arrange
+            var parser = CreateParser("RCPT TO:<cain.osullivan@gmail.com>");
+
+            // act
+            var result = parser.TryMakeRcpt(out SmtpCommand command, out SmtpResponse errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is RcptCommand);
+            Assert.Equal("cain.osullivan", ((RcptCommand)command).Address.User);
+            Assert.Equal("gmail.com", ((RcptCommand)command).Address.Host);
+        }
+        
         [Fact]
         public void CanMakeAtom()
         {

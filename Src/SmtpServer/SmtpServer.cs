@@ -129,16 +129,7 @@ namespace SmtpServer
         /// <returns>The SMTP session.</returns>
         SmtpSession CreateSession(TcpClient tcpClient)
         {
-            return new SmtpSession(_options, tcpClient, new SmtpStateMachine(_options, CreateCommandFactory()));
-        }
-
-        /// <summary>
-        /// Create an instance of the SMTP Command Factory.
-        /// </summary>
-        /// <returns>An instance of the SMTP server command factory.</returns>
-        SmtpCommandFactory CreateCommandFactory()
-        {
-            return new SmtpCommandFactory(_options, new SmtpParser());
+            return new SmtpSession(_options, tcpClient, new SmtpStateMachine(_options));
         }
     }
 }

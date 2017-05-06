@@ -84,64 +84,6 @@ namespace SmtpServer.IO
             cancellationToken: cancellationToken);
         }
 
-        ///// <summary>
-        ///// Read a line from the byte stream.
-        ///// </summary>
-        ///// <param name="client">The stream to read a line from.</param>
-        ///// <param name="cancellationToken">The cancellation token.</param>
-        ///// <returns>The string that was read from the stream.</returns>
-        //public static Task<string> ReadLineAsync(this INetworkClient client, CancellationToken cancellationToken = default(CancellationToken))
-        //{
-        //    if (client == null)
-        //    {
-        //        throw new ArgumentNullException(nameof(client));
-        //    }
-
-        //    return ReadLineAsync(client, Encoding.ASCII, cancellationToken);
-        //}
-
-        ///// <summary>
-        ///// Read a line from the byte stream.
-        ///// </summary>
-        ///// <param name="client">The stream to read a line from.</param>
-        ///// <param name="encoding">The encoding to use when converting the bytes to a text representation.</param>
-        ///// <param name="cancellationToken">The cancellation token.</param>
-        ///// <returns>The string that was read from the stream.</returns>
-        //public static async Task<string> ReadLineAsync(this INetworkClient client, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
-        //{
-        //    if (client == null)
-        //    {
-        //        throw new ArgumentNullException(nameof(client));
-        //    }
-
-        //    var blocks = Trim(await client.ReadUntilAsync(new byte[] { 13, 10 }, cancellationToken), new byte[] { 13, 10 });
-
-        //    return blocks.Count == 0
-        //        ? null
-        //        : encoding.GetString(blocks.SelectMany(block => block).ToArray());
-        //}
-
-        ///// <summary>
-        ///// Read a line from the byte stream.
-        ///// </summary>
-        ///// <param name="client">The stream to read a line from.</param>
-        ///// <param name="encoding">The encoding to use when converting the bytes to a text representation.</param>
-        ///// <param name="cancellationToken">The cancellation token.</param>
-        ///// <returns>The string that was read from the stream.</returns>
-        //public static async Task<string> ReadLineAsync(this INetworkClient client, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
-        //{
-        //    if (client == null)
-        //    {
-        //        throw new ArgumentNullException(nameof(client));
-        //    }
-
-        //    var blocks = Trim(await client.ReadUntilAsync(new byte[] { 13, 10 }, cancellationToken), new byte[] { 13, 10 });
-
-        //    return blocks.Count == 0
-        //        ? null
-        //        : encoding.GetString(blocks.SelectMany(block => block).ToArray());
-        //}
-
         /// <summary>
         /// Read a line from the byte stream.
         /// </summary>
@@ -156,6 +98,27 @@ namespace SmtpServer.IO
             }
 
             return Trim(await client.ReadUntilAsync(new byte[] { 13, 10 }, cancellationToken).ReturnOnAnyThread(), new byte[] { 13, 10 });
+        }
+
+        /// <summary>
+        /// Read a line from the byte stream.
+        /// </summary>
+        /// <param name="client">The stream to read a line from.</param>
+        /// <param name="encoding">The encoding to use when converting to a string representation.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The string that was read from the stream.</returns>
+        public static async Task<string> ReadLineAsync(this INetworkClient client, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (client == null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
+            var blocks = await client.ReadLineAsync(cancellationToken);
+
+            return blocks.Count == 0
+                ? null
+                : encoding.GetString(blocks.SelectMany(block => block).ToArray());
         }
 
         /// <summary>

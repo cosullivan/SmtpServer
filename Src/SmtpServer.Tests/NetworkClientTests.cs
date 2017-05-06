@@ -14,13 +14,6 @@ namespace SmtpServer.Tests
             return new NetworkClient(stream, bufferLength);
         }
 
-        static INetworkClient CreateNetworkClient(int bufferLength, params byte[] buffer)
-        {
-            var stream = new System.IO.MemoryStream(buffer);
-
-            return new NetworkClient(stream, bufferLength);
-        }
-
         [Fact]
         // ReSharper disable once InconsistentNaming
         public async void CanReadLineAndRemoveTrailingCRLF()
@@ -29,7 +22,7 @@ namespace SmtpServer.Tests
             var client = CreateNetworkClient("abcde\r\n");
 
             // act
-            var line = await client.ReadLineAsync();
+            var line = await client.ReadLineAsync(Encoding.ASCII);
 
             // assert
             Assert.Equal(5, line.Length);
@@ -43,7 +36,7 @@ namespace SmtpServer.Tests
             var client = CreateNetworkClient("abcde");
 
             // act
-            var line = await client.ReadLineAsync();
+            var line = await client.ReadLineAsync(Encoding.ASCII);
 
             // assert
             Assert.Equal(5, line.Length);
@@ -58,7 +51,7 @@ namespace SmtpServer.Tests
             var client = CreateNetworkClient("ab\rcd\ne\r\n");
 
             // act
-            var line = await client.ReadLineAsync();
+            var line = await client.ReadLineAsync(Encoding.ASCII);
 
             // assert
             Assert.Equal(7, line.Length);
@@ -73,9 +66,9 @@ namespace SmtpServer.Tests
             var client = CreateNetworkClient("abcde\r\nfghij\r\nklmno\r\n");
 
             // act
-            var line1 = await client.ReadLineAsync();
-            var line2 = await client.ReadLineAsync();
-            var line3 = await client.ReadLineAsync();
+            var line1 = await client.ReadLineAsync(Encoding.ASCII);
+            var line2 = await client.ReadLineAsync(Encoding.ASCII);
+            var line3 = await client.ReadLineAsync(Encoding.ASCII);
 
             // assert
             Assert.Equal("abcde", line1);
@@ -87,7 +80,6 @@ namespace SmtpServer.Tests
         public async void CanReadBlockWithDotStuffingRemoved()
         {
             // arrange
-            //var client = CreateNetworkClient("abcd\r\n1234\r\nefgh\r\n..abcd\r\n.\r\n", 10);
             var client = CreateNetworkClient("abcd\r\n..1234\r\n\r\n", 3);
 
             // act

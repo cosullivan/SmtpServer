@@ -18,28 +18,18 @@
         Number = 3,
 
         /// <summary>
-        /// A symbol.
-        /// </summary>
-        Symbol = 4,
-
-        /// <summary>
-        /// A punctuation.
-        /// </summary>
-        Punctuation = 5,
-
-        /// <summary>
         /// A single space character.
         /// </summary>
-        Space = 6,
+        Space = 4,
 
         /// <summary>
         /// A new line token, defined as CRLF.
         /// </summary>
-        NewLine = 7,
+        NewLine = 5,
 
         /// <summary>
         /// Unknown.
         /// </summary>
-        Other = 8,
+        Other = 6,
     }
 }

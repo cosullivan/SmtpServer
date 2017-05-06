@@ -148,7 +148,7 @@ namespace SmtpServer.Mail
             {
                 var tokens = await ReadMimeHeaderTokensAsync().ReturnOnAnyThread();
 
-                var mimeParser = new MimeParser(new TokenEnumerator2(tokens));
+                var mimeParser = new MimeParser(new TokenEnumerator(tokens));
 
                 if (mimeParser.TryMakeFieldList(out List<IMimeHeader> headers) == false)
                 {

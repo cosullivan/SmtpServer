@@ -66,10 +66,9 @@
     <Compile Include="Mocks\MockMessageStore.cs" />
     <Compile Include="NetworkClientTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SmtpCommandFactoryTests.cs" />
     <Compile Include="SmtpParserTests.cs" />
     <Compile Include="SmtpServerTests.cs" />
-    <Compile Include="StringTokenReaderTests.cs" />
+    <Compile Include="ByteArrayTokenReaderTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config">

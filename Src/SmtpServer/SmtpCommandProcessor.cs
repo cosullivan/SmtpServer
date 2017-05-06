@@ -68,7 +68,7 @@ namespace SmtpServer
         /// <returns>true if a valid command was found, false if not.</returns>
         bool TryAccept(SmtpSessionContext context, IReadOnlyList<ArraySegment<byte>> segments, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return context.StateMachine.TryAccept(new TokenEnumerator2(new ByteArrayTokenReader(segments)), out command, out errorResponse);
+            return context.StateMachine.TryAccept(new TokenEnumerator(new ByteArrayTokenReader(segments)), out command, out errorResponse);
         }
 
         /// <summary>
