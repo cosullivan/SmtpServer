@@ -101,8 +101,7 @@ namespace SmtpServer
                     session.Task
                         .ContinueWith(t =>
                         {
-                            SmtpSession s;
-                            if (sessions.TryRemove(session, out s))
+                            if (sessions.TryRemove(session, out SmtpSession s))
                             {
                                 s.Dispose();
                             }
@@ -129,7 +128,7 @@ namespace SmtpServer
         /// <returns>The SMTP session.</returns>
         SmtpSession CreateSession(TcpClient tcpClient)
         {
-            return new SmtpSession(_options, tcpClient, new SmtpStateMachine(_options));
+            return new SmtpSession(_options, tcpClient);
         }
     }
 }

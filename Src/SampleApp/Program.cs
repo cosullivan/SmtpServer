@@ -77,18 +77,18 @@ Ym9keSBvZiB0aGUgbWVzc2FnZS48L3A+CiAgPC9ib2R5Pgo8L2h0bWw+Cg==
                 .MailboxFilter(new ConsoleMailboxFilter())
                 .Build();
 
-            var s = RunServerAsync(options, cancellationTokenSource.Token);
-            var c = RunClientAsync("A", 1, cancellationTokenSource.Token);
+            //var s = RunServerAsync(options, cancellationTokenSource.Token);
+            //var c = RunClientAsync("A", 1, cancellationTokenSource.Token);
 
-            Console.WriteLine("Press any key to continue");
-            Console.ReadKey();
+            //Console.WriteLine("Press any key to continue");
+            //Console.ReadKey();
 
-            cancellationTokenSource.Cancel();
+            //cancellationTokenSource.Cancel();
 
-            s.WaitWithoutException();
-            c.WaitWithoutException();
+            //s.WaitWithoutException();
+            //c.WaitWithoutException();
 
-            return;
+            //return;
 
             if (args == null || args.Length == 0)
             {

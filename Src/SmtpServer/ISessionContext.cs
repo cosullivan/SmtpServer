@@ -11,6 +11,11 @@ namespace SmtpServer
         event EventHandler<SmtpCommandExecutingEventArgs> CommandExecuting;
 
         /// <summary>
+        /// Fired when the session has been authenticated.
+        /// </summary>
+        event EventHandler<EventArgs> SessionAuthenticated;
+
+        /// <summary>
         /// Gets the remote endpoint of the client.
         /// </summary>
         EndPoint RemoteEndPoint { get; }

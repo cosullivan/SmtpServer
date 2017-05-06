@@ -4,7 +4,7 @@ using SmtpServer.Mail;
 
 namespace SmtpServer
 {
-    internal sealed class SmtpMessageTransaction : ISmtpMessageTransaction
+    internal sealed class SmtpMessageTransaction : IMessageTransaction
     {
         /// <summary>
         /// Constructor.

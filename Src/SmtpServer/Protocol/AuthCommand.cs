@@ -30,37 +30,36 @@ namespace SmtpServer.Protocol
         /// <param name="context">The execution context to operate on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which asynchronously performs the execution.</returns>
-        internal override async Task ExecuteAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
+        internal override async Task ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
             switch (Method)
             {
                 case AuthenticationMethod.Plain:
-                    if (await TryPlainAsync(context, cancellationToken) == false)
+                    if (await TryPlainAsync(context, cancellationToken).ReturnOnAnyThread() == false)
                     {
-                        await context.Text.ReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ConfigureAwait(false);
+                        await context.Text.ReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ReturnOnAnyThread();
                         return;
                     }
                     break;
 
                 case AuthenticationMethod.Login:
-                    if (await TryLoginAsync(context, cancellationToken) == false)
+                    if (await TryLoginAsync(context, cancellationToken).ReturnOnAnyThread() == false)
                     {
-                        await context.Text.ReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ConfigureAwait(false);
+                        await context.Text.ReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ReturnOnAnyThread();
                         return;
                     }
                     break;
             }
 
-            if (await Options.UserAuthenticator.AuthenticateAsync(_user, _password).ConfigureAwait(false) == false)
+            if (await Options.UserAuthenticator.AuthenticateAsync(_user, _password).ReturnOnAnyThread() == false)
             {
-                await context.Text.ReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ConfigureAwait(false);
+                await context.Text.ReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ReturnOnAnyThread();
                 return;
             }
 
-            await context.Text.ReplyAsync(SmtpResponse.AuthenticationSuccessful, cancellationToken).ConfigureAwait(false);
+            await context.Text.ReplyAsync(SmtpResponse.AuthenticationSuccessful, cancellationToken).ReturnOnAnyThread();
 
-            context.StateMachine.RemoveCommand(SmtpState.WaitingForMail, "AUTH");
-            context.StateMachine.RemoveCommand(SmtpState.WaitingForMailSecure, "AUTH");
+            context.RaiseSessionAuthenticated();
         }
 
         /// <summary>
@@ -69,7 +68,7 @@ namespace SmtpServer.Protocol
         /// <param name="context">The execution context to operate on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>true if the PLAIN login sequence worked, false if not.</returns>
-        async Task<bool> TryPlainAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
+        async Task<bool> TryPlainAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
             await context.Text.ReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, " "), cancellationToken).ConfigureAwait(false);
 
@@ -95,7 +94,7 @@ namespace SmtpServer.Protocol
         /// <param name="context">The execution context to operate on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>true if the LOGIN login sequence worked, false if not.</returns>
-        async Task<bool> TryLoginAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
+        async Task<bool> TryLoginAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
             await context.Text.ReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, "VXNlcm5hbWU6"), cancellationToken);
 

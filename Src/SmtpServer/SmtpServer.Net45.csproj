@@ -60,9 +60,7 @@
     <Compile Include="IO\INetworkClient.cs" />
     <Compile Include="IO\NetworkClient.cs" />
     <Compile Include="ISessionContext.cs" />
-    <Compile Include="ISmtpMessageTransaction.cs" />
     <Compile Include="ISmtpServerOptions.cs" />
-    <Compile Include="ISmtpSessionContext.cs" />
     <Compile Include="Mail\IMailbox.cs" />
     <Compile Include="Mail\Mailbox.cs" />
     <Compile Include="Mime\ContentTransferEncoding.cs" />
@@ -84,7 +82,6 @@
     <Compile Include="Protocol\DbugCommand.cs" />
     <Compile Include="Protocol\EhloCommand.cs" />
     <Compile Include="Protocol\HeloCommand.cs" />
-    <Compile Include="Protocol\ISmtpStateMachine.cs" />
     <Compile Include="Protocol\MailCommand.cs" />
     <Compile Include="Protocol\NoopCommand.cs" />
     <Compile Include="Protocol\QuitCommand.cs" />
@@ -101,7 +98,6 @@
     <Compile Include="SessionEventArgs.cs" />
     <Compile Include="SmtpCommandEventArgs.cs" />
     <Compile Include="SmtpCommandExecutingEventArgs.cs" />
-    <Compile Include="SmtpCommandProcessor.cs" />
     <Compile Include="SmtpMessageTransaction.cs" />
     <Compile Include="SmtpServer.cs" />
     <Compile Include="SmtpServerOptions.cs" />

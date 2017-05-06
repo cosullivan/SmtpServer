@@ -26,7 +26,7 @@ namespace SmtpServer.Protocol
         /// <param name="context">The execution context to operate on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which asynchronously performs the execution.</returns>
-        internal abstract Task ExecuteAsync(ISmtpSessionContext context, CancellationToken cancellationToken);
+        internal abstract Task ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken);
 
         /// <summary>
         /// The options that the command can utilise.

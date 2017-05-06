@@ -24,7 +24,7 @@ namespace SmtpServer.Protocol
         /// <param name="context">The execution context to operate on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which asynchronously performs the execution.</returns>
-        internal override async Task ExecuteAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
+        internal override async Task ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
             var greeting = $"{Options.ServerName} Hello {DomainOrAddress}, haven't we met before?";
             var output = new[] { greeting }.Union(GetExtensions(context)).ToArray();
@@ -43,7 +43,7 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="session">The session the is currently operating.</param>
         /// <returns>The list of extensions that are allowed for the session.</returns>
-        IEnumerable<string> GetExtensions(ISmtpSessionContext session)
+        IEnumerable<string> GetExtensions(SmtpSessionContext session)
         {
             yield return "PIPELINING";
             yield return "8BITMIME";
@@ -69,7 +69,7 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="session">The current session.</param>
         /// <returns>true if plain login is allowed for the session, false if not.</returns>
-        bool IsPlainLoginAllowed(ISmtpSessionContext session)
+        bool IsPlainLoginAllowed(SmtpSessionContext session)
         {
             if (Options.UserAuthenticator == null)
             {

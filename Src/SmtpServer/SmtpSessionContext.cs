@@ -6,7 +6,7 @@ using SmtpServer.Protocol;
 
 namespace SmtpServer
 {
-    internal class SmtpSessionContext : ISmtpSessionContext
+    internal sealed class SmtpSessionContext : ISessionContext
     {
         /// <summary>
         /// Fired when a command is about to execute.
@@ -14,15 +14,17 @@ namespace SmtpServer
         public event EventHandler<SmtpCommandExecutingEventArgs> CommandExecuting;
 
         /// <summary>
+        /// Fired when the session has been authenticated.
+        /// </summary>
+        public event EventHandler<EventArgs> SessionAuthenticated;
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="tcpClient">The TCP client that the session is connected with.</param>
-        /// <param name="transaction">The SMTP transaction.</param>
-        /// <param name="stateMachine">The current state machine for the session.</param>
-        internal SmtpSessionContext(TcpClient tcpClient, ISmtpMessageTransaction transaction, ISmtpStateMachine stateMachine)
+        internal SmtpSessionContext(TcpClient tcpClient)
         {
-            Transaction = transaction;
-            StateMachine = stateMachine;
+            Transaction = new SmtpMessageTransaction();
             RemoteEndPoint = tcpClient.Client.RemoteEndPoint;
             Text = new NetworkClient(tcpClient.GetStream());
         }
@@ -36,12 +38,20 @@ namespace SmtpServer
         }
 
         /// <summary>
-        /// Raise the SMTP command as executing.
+        /// Raise the command executing event.
         /// </summary>
         /// <param name="command">The command that is executing.</param>
-        internal void RaiseSmtpCommandExecuting(SmtpCommand command)
+        public void RaiseCommandExecuting(SmtpCommand command)
         {
             CommandExecuting?.Invoke(this, new SmtpCommandExecutingEventArgs(command));
+        }
+
+        /// <summary>
+        /// Raise the session authenticated event.
+        /// </summary>
+        public void RaiseSessionAuthenticated()
+        {
+            SessionAuthenticated?.Invoke(this, EventArgs.Empty);
         }
 
         /// <summary>
@@ -57,12 +67,7 @@ namespace SmtpServer
         /// <summary>
         /// Gets the current transaction.
         /// </summary>
-        public ISmtpMessageTransaction Transaction { get; }
-
-        /// <summary>
-        /// Gets the current state machine.
-        /// </summary>
-        public ISmtpStateMachine StateMachine { get; }
+        public SmtpMessageTransaction Transaction { get; }
 
         /// <summary>
         /// Gets the remote endpoint of the client.

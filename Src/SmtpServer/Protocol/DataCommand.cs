@@ -21,7 +21,7 @@ namespace SmtpServer.Protocol
         /// <param name="context">The execution context to operate on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which asynchronously performs the execution.</returns>
-        internal override async Task ExecuteAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
+        internal override async Task ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
             if (context.Transaction.To.Count == 0)
             {
@@ -55,7 +55,7 @@ namespace SmtpServer.Protocol
         /// <param name="context">The SMTP session context to receive the message within.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which asynchronously performs the operation.</returns>
-        Task<IMessage> ReadMessageAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
+        Task<IMessage> ReadMessageAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
             var serializer = new MessageSerializerFactory().CreateInstance();
 

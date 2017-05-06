@@ -5,18 +5,22 @@ using SmtpServer.Text;
 
 namespace SmtpServer.Protocol
 {
-    public class SmtpStateMachine : ISmtpStateMachine
+    internal class SmtpStateMachine
     {
         readonly ISmtpServerOptions _options;
+        readonly SmtpSessionContext _context;
         readonly StateTable _stateTable;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="options">The options to assist when configuring the state machine.</param>
-        public SmtpStateMachine(ISmtpServerOptions options)
+        /// <param name="context">The SMTP server session context.</param>
+        internal SmtpStateMachine(ISmtpServerOptions options, SmtpSessionContext context)
         {
             _options = options;
+            _context = context;
+            _context.SessionAuthenticated += OnSessionAuthenticated;
             _stateTable = new StateTable
             {
                 new State(SmtpState.Initialized)
@@ -88,11 +92,24 @@ namespace SmtpServer.Protocol
         }
 
         /// <summary>
+        /// Called when the session has been authenticated.
+        /// </summary>
+        /// <param name="sender">The object that raised the event.</param>
+        /// <param name="eventArgs">The event data.</param>
+        void OnSessionAuthenticated(object sender, EventArgs eventArgs)
+        {
+            _context.SessionAuthenticated -= OnSessionAuthenticated;
+
+            RemoveCommand(SmtpState.WaitingForMail, "AUTH");
+            RemoveCommand(SmtpState.WaitingForMailSecure, "AUTH");
+        }
+
+        /// <summary>
         /// Remove the specified command from the state.
         /// </summary>
         /// <param name="state">The SMTP state to remove the command from.</param>
         /// <param name="command">The command to remove from the state.</param>
-        void ISmtpStateMachine.RemoveCommand(SmtpState state, string command)
+        void RemoveCommand(SmtpState state, string command)
         {
             if (_stateTable[state].Actions.ContainsKey(command))
             {
