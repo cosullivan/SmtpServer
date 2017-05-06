@@ -34,17 +34,17 @@ namespace SmtpServer.Protocol
             command = null;
             errorResponse = null;
 
-            //Enumerator.Take();
+            Enumerator.Take();
 
-            //if (TryMakeEnd() == false)
-            //{
-            //    _logger.LogVerbose("QUIT command can not have parameters.");
+            if (TryMakeEnd() == false)
+            {
+                _logger.LogVerbose("QUIT command can not have parameters.");
 
-            //    errorResponse = SmtpResponse.SyntaxError;
-            //    return false;
-            //}
+                errorResponse = SmtpResponse.SyntaxError;
+                return false;
+            }
 
-            //command = new QuitCommand(_options);
+            command = new QuitCommand(_options);
             return true;
         }
 
@@ -61,17 +61,17 @@ namespace SmtpServer.Protocol
             command = null;
             errorResponse = null;
 
-            //enumerator.Take();
+            Enumerator.Take();
 
-            //if (TryMakeEnd(enumerator) == false)
-            //{
-            //    _logger.LogVerbose("NOOP command can not have parameters.");
+            if (TryMakeEnd() == false)
+            {
+                _logger.LogVerbose("NOOP command can not have parameters.");
 
-            //    errorResponse = SmtpResponse.SyntaxError;
-            //    return false;
-            //}
+                errorResponse = SmtpResponse.SyntaxError;
+                return false;
+            }
 
-            //command = new NoopCommand(_options);
+            command = new NoopCommand(_options);
             return true;
         }
 
@@ -115,19 +115,19 @@ namespace SmtpServer.Protocol
             command = null;
             errorResponse = null;
 
-            //enumerator.Take();
-            //enumerator.Skip(TokenKind.Space);
+            Enumerator.Take();
+            Enumerator.Skip(TokenKind.Space);
 
-            //string domain;
-            //if (new SmtpParser2(enumerator).TryMakeDomain(out domain) == false)
-            //{
-            //    _logger.LogVerbose("Could not match the domain name (Text={0}).", enumerator.AsText());
+            string domain;
+            if (TryMakeDomain(out domain) == false)
+            {
+                _logger.LogVerbose("Could not match the domain name (Text={0}).", CompleteTokenizedText());
 
-            //    errorResponse = SmtpResponse.SyntaxError;
-            //    return false;
-            //}
+                errorResponse = SmtpResponse.SyntaxError;
+                return false;
+            }
 
-            //command = new HeloCommand(_options, domain);
+            command = new HeloCommand(_options, domain);
             return true;
         }
 
@@ -144,24 +144,24 @@ namespace SmtpServer.Protocol
             command = null;
             errorResponse = null;
 
-            //enumerator.Take();
-            //enumerator.Skip(TokenKind.Space);
+            Enumerator.Take();
+            Enumerator.Skip(TokenKind.Space);
 
-            //string domain;
-            //if (new SmtpParser2(enumerator).TryMakeDomain(out domain))
-            //{
-            //    command = new EhloCommand(_options, domain);
-            //    return true;
-            //}
+            string domain;
+            if (TryMakeDomain(out domain))
+            {
+                command = new EhloCommand(_options, domain);
+                return true;
+            }
 
-            //string address;
-            //if (new SmtpParser2(enumerator).TryMakeAddressLiteral(out address))
-            //{
-            //    command = new EhloCommand(_options, address);
-            //    return true;
-            //}
+            string address;
+            if (TryMakeAddressLiteral(out address))
+            {
+                command = new EhloCommand(_options, address);
+                return true;
+            }
 
-            //errorResponse = SmtpResponse.SyntaxError;
+            errorResponse = SmtpResponse.SyntaxError;
             return false;
         }
 
@@ -178,37 +178,37 @@ namespace SmtpServer.Protocol
             command = null;
             errorResponse = null;
 
-            //enumerator.Take();
-            //enumerator.Skip(TokenKind.Space);
+            Enumerator.Take();
+            Enumerator.Skip(TokenKind.Space);
 
-            //if (enumerator.Take() != new Token(TokenKind.Text, "FROM") || enumerator.Take() != new Token(TokenKind.Punctuation, ":"))
-            //{
-            //    errorResponse = new SmtpResponse(SmtpReplyCode.SyntaxError, "missing the FROM:");
-            //    return false;
-            //}
+            if (Enumerator.Take() != new Token(TokenKind.Text, "FROM") || Enumerator.Take() != new Token(TokenKind.Other, ":"))
+            {
+                errorResponse = new SmtpResponse(SmtpReplyCode.SyntaxError, "missing the FROM:");
+                return false;
+            }
 
-            //// according to the spec, whitespace isnt allowed here but most servers send it
-            //enumerator.Skip(TokenKind.Space);
+            // according to the spec, whitespace isnt allowed here but most servers send it
+            Enumerator.Skip(TokenKind.Space);
 
-            //IMailbox mailbox;
-            //if (new SmtpParser2(enumerator).TryMakeReversePath(out mailbox) == false)
-            //{
-            //    _logger.LogVerbose("Syntax Error (Text={0})", enumerator.AsText());
+            IMailbox mailbox;
+            if (TryMakeReversePath(out mailbox) == false)
+            {
+                _logger.LogVerbose("Syntax Error (Text={0})", CompleteTokenizedText());
 
-            //    errorResponse = new SmtpResponse(SmtpReplyCode.SyntaxError);
-            //    return false;
-            //}
+                errorResponse = new SmtpResponse(SmtpReplyCode.SyntaxError);
+                return false;
+            }
 
-            //enumerator.Skip(TokenKind.Space);
+            Enumerator.Skip(TokenKind.Space);
 
-            //// match the optional (ESMTP) parameters
-            //IReadOnlyDictionary<string, string> parameters;
-            //if (new SmtpParser2(enumerator).TryMakeMailParameters(out parameters) == false)
-            //{
-            //    parameters = new Dictionary<string, string>();
-            //}
+            // match the optional (ESMTP) parameters
+            IReadOnlyDictionary<string, string> parameters;
+            if (TryMakeMailParameters(out parameters) == false)
+            {
+                parameters = new Dictionary<string, string>();
+            }
 
-            //command = new MailCommand(_options, mailbox, parameters);
+            command = new MailCommand(_options, mailbox, parameters);
             return true;
         }
 
@@ -225,30 +225,30 @@ namespace SmtpServer.Protocol
             command = null;
             errorResponse = null;
 
-            //enumerator.Take();
-            //enumerator.Skip(TokenKind.Space);
+            Enumerator.Take();
+            Enumerator.Skip(TokenKind.Space);
 
-            //if (enumerator.Take() != new Token(TokenKind.Text, "TO") || enumerator.Take() != new Token(TokenKind.Other, ":"))
-            //{
-            //    errorResponse = new SmtpResponse(SmtpReplyCode.SyntaxError, "missing the TO:");
-            //    return false;
-            //}
+            if (Enumerator.Take() != new Token(TokenKind.Text, "TO") || Enumerator.Take() != new Token(TokenKind.Other, ":"))
+            {
+                errorResponse = new SmtpResponse(SmtpReplyCode.SyntaxError, "missing the TO:");
+                return false;
+            }
 
-            //// according to the spec, whitespace isnt allowed here anyway
-            //enumerator.Skip(TokenKind.Space);
+            // according to the spec, whitespace isnt allowed here anyway
+            Enumerator.Skip(TokenKind.Space);
 
-            //IMailbox mailbox;
-            //if (new SmtpParser2(enumerator).TryMakePath(out mailbox) == false)
-            //{
-            //    _logger.LogVerbose("Syntax Error (Text={0})", enumerator.AsText());
+            IMailbox mailbox;
+            if (TryMakePath(out mailbox) == false)
+            {
+                _logger.LogVerbose("Syntax Error (Text={0})", CompleteTokenizedText());
 
-            //    errorResponse = SmtpResponse.SyntaxError;
-            //    return false;
-            //}
+                errorResponse = SmtpResponse.SyntaxError;
+                return false;
+            }
 
-            //// TODO: support optional service extension parameters here
+            // TODO: support optional service extension parameters here
 
-            //command = new RcptCommand(_options, mailbox);
+            command = new RcptCommand(_options, mailbox);
             return true;
         }
 
@@ -265,18 +265,18 @@ namespace SmtpServer.Protocol
             command = null;
             errorResponse = null;
 
-            //enumerator.Take();
-            //enumerator.Skip(TokenKind.Space);
+            Enumerator.Take();
+            Enumerator.Skip(TokenKind.Space);
 
-            //if (TryMakeEnd(enumerator) == false)
-            //{
-            //    _logger.LogVerbose("DATA command can not have parameters.");
+            if (TryMakeEnd() == false)
+            {
+                _logger.LogVerbose("DATA command can not have parameters.");
 
-            //    errorResponse = SmtpResponse.SyntaxError;
-            //    return false;
-            //}
+                errorResponse = SmtpResponse.SyntaxError;
+                return false;
+            }
 
-            //command = new DataCommand(_options);
+            command = new DataCommand(_options);
             return true;
         }
 
@@ -293,18 +293,18 @@ namespace SmtpServer.Protocol
             command = null;
             errorResponse = null;
 
-            //enumerator.Take();
-            //enumerator.Skip(TokenKind.Space);
+            Enumerator.Take();
+            Enumerator.Skip(TokenKind.Space);
 
-            //if (TryMakeEnd(enumerator) == false)
-            //{
-            //    _logger.LogVerbose("DBUG command can not have parameters.");
+            if (TryMakeEnd() == false)
+            {
+                _logger.LogVerbose("DBUG command can not have parameters.");
 
-            //    errorResponse = SmtpResponse.SyntaxError;
-            //    return false;
-            //}
+                errorResponse = SmtpResponse.SyntaxError;
+                return false;
+            }
 
-            //command = new DbugCommand(_options);
+            command = new DbugCommand(_options);
             return true;
         }
 
@@ -321,18 +321,18 @@ namespace SmtpServer.Protocol
             command = null;
             errorResponse = null;
 
-            //enumerator.Take();
-            //enumerator.Skip(TokenKind.Space);
+            Enumerator.Take();
+            Enumerator.Skip(TokenKind.Space);
 
-            //if (TryMakeEnd(enumerator) == false)
-            //{
-            //    _logger.LogVerbose("STARTTLS command can not have parameters.");
+            if (TryMakeEnd() == false)
+            {
+                _logger.LogVerbose("STARTTLS command can not have parameters.");
 
-            //    errorResponse = SmtpResponse.SyntaxError;
-            //    return false;
-            //}
+                errorResponse = SmtpResponse.SyntaxError;
+                return false;
+            }
 
-            //command = new StartTlsCommand(_options);
+            command = new StartTlsCommand(_options);
             return true;
         }
 
@@ -349,30 +349,30 @@ namespace SmtpServer.Protocol
             command = null;
             errorResponse = null;
 
-            //enumerator.Take();
-            //enumerator.Skip(TokenKind.Space);
+            Enumerator.Take();
+            Enumerator.Skip(TokenKind.Space);
 
-            //AuthenticationMethod method;
-            //if (Enum.TryParse(enumerator.Peek().Text, true, out method) == false)
-            //{
-            //    _logger.LogVerbose("AUTH command requires a valid method (PLAIN or LOGIN)");
+            AuthenticationMethod method;
+            if (Enum.TryParse(Enumerator.Peek().Text, true, out method) == false)
+            {
+                _logger.LogVerbose("AUTH command requires a valid method (PLAIN or LOGIN)");
 
-            //    errorResponse = SmtpResponse.SyntaxError;
-            //    return false;
-            //}
+                errorResponse = SmtpResponse.SyntaxError;
+                return false;
+            }
 
-            //enumerator.Take();
+            Enumerator.Take();
 
-            //string parameter = null;
-            //if (enumerator.Count > 0 && _parser.TryMakeBase64(enumerator, out parameter) == false)
-            //{
-            //    _logger.LogVerbose("AUTH parameter must be a Base64 encoded string");
+            string parameter = null;
+            if (TryMake(TryMakeEnd) == false && TryMakeBase64(out parameter) == false)
+            {
+                _logger.LogVerbose("AUTH parameter must be a Base64 encoded string");
 
-            //    errorResponse = SmtpResponse.SyntaxError;
-            //    return false;
-            //}
+                errorResponse = SmtpResponse.SyntaxError;
+                return false;
+            }
 
-            //command = new AuthCommand(_options, method, parameter);
+            command = new AuthCommand(_options, method, parameter);
             return true;
         }
 
@@ -385,6 +385,15 @@ namespace SmtpServer.Protocol
             Enumerator.Skip(TokenKind.Space);
 
             return Enumerator.Take() == Token.None;
+        }
+
+        /// <summary>
+        /// Returns the complete tokenized text.
+        /// </summary>
+        /// <returns>The complete tokenized text.</returns>
+        string CompleteTokenizedText()
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -14,8 +14,7 @@ namespace SmtpServer.Protocol
         /// Constructor.
         /// </summary>
         /// <param name="options">The options to assist when configuring the state machine.</param>
-        /// <param name="commandFactory">The SMTP command factory.</param>
-        public SmtpStateMachine(ISmtpServerOptions options, SmtpCommandFactory commandFactory)
+        public SmtpStateMachine(ISmtpServerOptions options)
         {
             _options = options;
             _stateTable = new StateTable
@@ -23,66 +22,66 @@ namespace SmtpServer.Protocol
                 new State(SmtpState.Initialized)
                 {
 #if DEBUG
-                    { "DBUG", commandFactory.TryMakeDbug },
+                    { "DBUG", TryMakeDbug },
 #endif
-                    { "NOOP", commandFactory.TryMakeNoop },
-                    { "RSET", commandFactory.TryMakeRset },
-                    { "QUIT", commandFactory.TryMakeQuit },
-                    { "HELO", commandFactory.TryMakeHelo, SmtpState.WaitingForMail },
-                    { "EHLO", commandFactory.TryMakeEhlo, SmtpState.WaitingForMail },
+                    { "NOOP", TryMakeNoop },
+                    { "RSET", TryMakeRset },
+                    { "QUIT", TryMakeQuit },
+                    { "HELO", TryMakeHelo, SmtpState.WaitingForMail },
+                    { "EHLO", TryMakeEhlo, SmtpState.WaitingForMail },
                 },
                 new State(SmtpState.WaitingForMail)
                 {
 #if DEBUG
-                    { "DBUG", commandFactory.TryMakeDbug },
+                    { "DBUG", TryMakeDbug },
 #endif
-                    { "NOOP", commandFactory.TryMakeNoop },
-                    { "RSET", commandFactory.TryMakeRset },
-                    { "QUIT", commandFactory.TryMakeQuit },
-                    { "HELO", commandFactory.TryMakeHelo, SmtpState.WaitingForMail },
-                    { "EHLO", commandFactory.TryMakeEhlo, SmtpState.WaitingForMail },
-                    { "MAIL", commandFactory.TryMakeMail, SmtpState.WithinTransaction },
-                    { "STARTTLS", commandFactory.TryMakeStartTls, SmtpState.WaitingForMailSecure },
+                    { "NOOP", TryMakeNoop },
+                    { "RSET", TryMakeRset },
+                    { "QUIT", TryMakeQuit },
+                    { "HELO", TryMakeHelo, SmtpState.WaitingForMail },
+                    { "EHLO", TryMakeEhlo, SmtpState.WaitingForMail },
+                    { "MAIL", TryMakeMail, SmtpState.WithinTransaction },
+                    { "STARTTLS", TryMakeStartTls, SmtpState.WaitingForMailSecure },
                 },
                 new State(SmtpState.WaitingForMailSecure)
                 {
 #if DEBUG
-                    { "DBUG", commandFactory.TryMakeDbug },
+                    { "DBUG", TryMakeDbug },
 #endif
-                    { "NOOP", commandFactory.TryMakeNoop },
-                    { "RSET", commandFactory.TryMakeRset },
-                    { "QUIT", commandFactory.TryMakeQuit },
-                    { "AUTH", commandFactory.TryMakeAuth },
-                    { "HELO", commandFactory.TryMakeHelo, SmtpState.WaitingForMailSecure },
-                    { "EHLO", commandFactory.TryMakeEhlo, SmtpState.WaitingForMailSecure },
-                    { "MAIL", commandFactory.TryMakeMail, SmtpState.WithinTransaction }
+                    { "NOOP", TryMakeNoop },
+                    { "RSET", TryMakeRset },
+                    { "QUIT", TryMakeQuit },
+                    { "AUTH", TryMakeAuth },
+                    { "HELO", TryMakeHelo, SmtpState.WaitingForMailSecure },
+                    { "EHLO", TryMakeEhlo, SmtpState.WaitingForMailSecure },
+                    { "MAIL", TryMakeMail, SmtpState.WithinTransaction }
                 },
                 new State(SmtpState.WithinTransaction)
                 {
 #if DEBUG
-                    { "DBUG", commandFactory.TryMakeDbug },
+                    { "DBUG", TryMakeDbug },
 #endif
-                    { "NOOP", commandFactory.TryMakeNoop },
-                    { "RSET", commandFactory.TryMakeRset },
-                    { "QUIT", commandFactory.TryMakeQuit },
-                    { "RCPT", commandFactory.TryMakeRcpt, SmtpState.CanAcceptData },
+                    { "NOOP", TryMakeNoop },
+                    { "RSET", TryMakeRset },
+                    { "QUIT", TryMakeQuit },
+                    { "RCPT", TryMakeRcpt, SmtpState.CanAcceptData },
                 },
                 new State(SmtpState.CanAcceptData)
                 {
 #if DEBUG
-                    { "DBUG", commandFactory.TryMakeDbug },
+                    { "DBUG", TryMakeDbug },
 #endif
-                    { "NOOP", commandFactory.TryMakeNoop },
-                    { "RSET", commandFactory.TryMakeRset },
-                    { "QUIT", commandFactory.TryMakeQuit },
-                    { "RCPT", commandFactory.TryMakeRcpt },
-                    { "DATA", commandFactory.TryMakeData, SmtpState.WaitingForMail },
+                    { "NOOP", TryMakeNoop },
+                    { "RSET", TryMakeRset },
+                    { "QUIT", TryMakeQuit },
+                    { "RCPT", TryMakeRcpt },
+                    { "DATA", TryMakeData, SmtpState.WaitingForMail },
                 }
             };
 
             if (options.AllowUnsecureAuthentication)
             {
-                _stateTable[SmtpState.WaitingForMail].Add("AUTH", commandFactory.TryMakeAuth);
+                _stateTable[SmtpState.WaitingForMail].Add("AUTH", TryMakeAuth);
             }
 
             _stateTable.Initialize(SmtpState.Initialized);
@@ -122,8 +121,130 @@ namespace SmtpServer.Protocol
         /// <returns>true if a DEBG command was found, false if not.</returns>
         bool TryMakeDbug(TokenEnumerator2 tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return new SmtpCommandFactory(_options).TryMakeDbug(tokenEnumerator, out command, out errorResponse);
+            return new SmtpCommandFactory(_options, tokenEnumerator).TryMakeDbug(out command, out errorResponse);
         }
+
+        /// <summary>
+        /// Try to make a HELO command.
+        /// </summary>
+        /// <param name="tokenEnumerator">The token enumerator to use when matching the command.</param>
+        /// <param name="command">The command that was found.</param>
+        /// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
+        /// <returns>true if a HELO command was found, false if not.</returns>
+        bool TryMakeHelo(TokenEnumerator2 tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            return new SmtpCommandFactory(_options, tokenEnumerator).TryMakeHelo(out command, out errorResponse);
+        }
+
+        /// <summary>
+        /// Try to make a EHLO command.
+        /// </summary>
+        /// <param name="tokenEnumerator">The token enumerator to use when matching the command.</param>
+        /// <param name="command">The command that was found.</param>
+        /// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
+        /// <returns>true if a EHLO command was found, false if not.</returns>
+        bool TryMakeEhlo(TokenEnumerator2 tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            return new SmtpCommandFactory(_options, tokenEnumerator).TryMakeEhlo(out command, out errorResponse);
+        }
+
+        /// <summary>
+        /// Try to make a NOOP command.
+        /// </summary>
+        /// <param name="tokenEnumerator">The token enumerator to use when matching the command.</param>
+        /// <param name="command">The command that was found.</param>
+        /// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
+        /// <returns>true if a NOOP command was found, false if not.</returns>
+        bool TryMakeNoop(TokenEnumerator2 tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            return new SmtpCommandFactory(_options, tokenEnumerator).TryMakeNoop(out command, out errorResponse);
+        }
+
+        /// <summary>
+        /// Try to make a QUIT command.
+        /// </summary>
+        /// <param name="tokenEnumerator">The token enumerator to use when matching the command.</param>
+        /// <param name="command">The command that was found.</param>
+        /// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
+        /// <returns>true if a QUIT command was found, false if not.</returns>
+        bool TryMakeQuit(TokenEnumerator2 tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            return new SmtpCommandFactory(_options, tokenEnumerator).TryMakeQuit(out command, out errorResponse);
+        }
+
+        /// <summary>
+        /// Try to make a RSET command.
+        /// </summary>
+        /// <param name="tokenEnumerator">The token enumerator to use when matching the command.</param>
+        /// <param name="command">The command that was found.</param>
+        /// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
+        /// <returns>true if a RSET command was found, false if not.</returns>
+        bool TryMakeRset(TokenEnumerator2 tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            return new SmtpCommandFactory(_options, tokenEnumerator).TryMakeRset(out command, out errorResponse);
+        }
+
+        /// <summary>
+        /// Try to make a AUTH command.
+        /// </summary>
+        /// <param name="tokenEnumerator">The token enumerator to use when matching the command.</param>
+        /// <param name="command">The command that was found.</param>
+        /// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
+        /// <returns>true if a AUTH command was found, false if not.</returns>
+        bool TryMakeAuth(TokenEnumerator2 tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            return new SmtpCommandFactory(_options, tokenEnumerator).TryMakeAuth(out command, out errorResponse);
+        }
+
+        /// <summary>
+        /// Try to make a STARTTLS command.
+        /// </summary>
+        /// <param name="tokenEnumerator">The token enumerator to use when matching the command.</param>
+        /// <param name="command">The command that was found.</param>
+        /// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
+        /// <returns>true if a STARTTLS command was found, false if not.</returns>
+        bool TryMakeStartTls(TokenEnumerator2 tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            return new SmtpCommandFactory(_options, tokenEnumerator).TryMakeStartTls(out command, out errorResponse);
+        }
+
+        /// <summary>
+        /// Try to make a MAIL command.
+        /// </summary>
+        /// <param name="tokenEnumerator">The token enumerator to use when matching the command.</param>
+        /// <param name="command">The command that was found.</param>
+        /// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
+        /// <returns>true if a MAIL command was found, false if not.</returns>
+        bool TryMakeMail(TokenEnumerator2 tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            return new SmtpCommandFactory(_options, tokenEnumerator).TryMakeMail(out command, out errorResponse);
+        }
+
+        /// <summary>
+        /// Try to make a RCPT command.
+        /// </summary>
+        /// <param name="tokenEnumerator">The token enumerator to use when matching the command.</param>
+        /// <param name="command">The command that was found.</param>
+        /// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
+        /// <returns>true if a RCPT command was found, false if not.</returns>
+        bool TryMakeRcpt(TokenEnumerator2 tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            return new SmtpCommandFactory(_options, tokenEnumerator).TryMakeRcpt(out command, out errorResponse);
+        }
+
+        /// <summary>
+        /// Try to make a DATA command.
+        /// </summary>
+        /// <param name="tokenEnumerator">The token enumerator to use when matching the command.</param>
+        /// <param name="command">The command that was found.</param>
+        /// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
+        /// <returns>true if a DATA command was found, false if not.</returns>
+        bool TryMakeData(TokenEnumerator2 tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            return new SmtpCommandFactory(_options, tokenEnumerator).TryMakeData(out command, out errorResponse);
+        }
+
+        #region StateTable
 
         class StateTable : IEnumerable
         {
@@ -197,6 +318,10 @@ namespace SmtpServer.Protocol
             }
         }
 
+        #endregion
+
+        #region State
+
         class State : IEnumerable
         {
             public delegate bool TryMakeDelegate(TokenEnumerator2 enumerator, out SmtpCommand command, out SmtpResponse errorResponse);
@@ -242,5 +367,7 @@ namespace SmtpServer.Protocol
             /// </summary>
             public Dictionary<string, Tuple<TryMakeDelegate, SmtpState>> Actions { get; }
         }
+
+        #endregion
     }
 }

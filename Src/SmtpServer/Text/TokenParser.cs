@@ -3,6 +3,12 @@
     public abstract class TokenParser
     {
         /// <summary>
+        /// Delegate for the TryMake function.
+        /// </summary>
+        /// <returns>true if the make operation was a success, false if not.</returns>
+        protected delegate bool TryMakeDelegate();
+
+        /// <summary>
         /// Delegate for the TryMake function to allow for "out" parameters.
         /// </summary>
         /// <typeparam name="TOut">The type of the out parameter.</typeparam>
@@ -45,6 +51,25 @@
                     checkpoint.Rollback();
                     return false;
                 }
+            }
+
+            checkpoint.Dispose();
+            return true;
+        }
+
+        /// <summary>
+        /// Try to make a callback in a transactional way.
+        /// </summary>
+        /// <param name="delegate">The callback to perform the match.</param>
+        /// <returns>true if the match could be made, false if not.</returns>
+        protected bool TryMake(TryMakeDelegate @delegate)
+        {
+            var checkpoint = Enumerator.Checkpoint();
+
+            if (@delegate() == false)
+            {
+                checkpoint.Rollback();
+                return false;
             }
 
             checkpoint.Dispose();

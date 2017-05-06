@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.IO;
@@ -60,13 +62,13 @@ namespace SmtpServer
         /// Advances the enumerator to the next command in the stream.
         /// </summary>
         /// <param name="context">The session context to execute the command handler against.</param>
-        /// <param name="text">The text to return the commands from.</param>
+        /// <param name="segments">The list of array segments to read the command from.</param>
         /// <param name="command">The command that was found.</param>
         /// <param name="errorResponse">The error response that indicates why a command could not be accepted.</param>
         /// <returns>true if a valid command was found, false if not.</returns>
-        bool TryAccept(SmtpSessionContext context, string text, out SmtpCommand command, out SmtpResponse errorResponse)
+        bool TryAccept(SmtpSessionContext context, IReadOnlyList<ArraySegment<byte>> segments, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return context.StateMachine.TryAccept(new TokenEnumerator(new StringTokenReader(text)), out command, out errorResponse);
+            return context.StateMachine.TryAccept(new TokenEnumerator2(new ByteArrayTokenReader(segments)), out command, out errorResponse);
         }
 
         /// <summary>
