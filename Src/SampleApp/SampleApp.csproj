@@ -60,10 +60,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ConsoleMailboxFilter.cs" />
-    <Compile Include="ConsoleMessageStore.cs" />
+    <Compile Include="SampleMailboxFilter.cs" />
+    <Compile Include="SampleMessageStore.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SampleUserAuthenticator.cs" />
     <Compile Include="TaskExtensions.cs" />
   </ItemGroup>
   <ItemGroup>

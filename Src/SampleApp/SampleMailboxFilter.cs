@@ -6,7 +6,7 @@ using SmtpServer.Storage;
 
 namespace SampleApp
 {
-    public class ConsoleMailboxFilter : MailboxFilter
+    public class SampleMailboxFilter : MailboxFilter
     {
         /// <summary>
         /// Returns a value indicating whether the given mailbox can be accepted as a sender.

@@ -8,7 +8,7 @@ using SmtpServer.Storage;
 
 namespace SampleApp
 {
-    public class ConsoleMessageStore : MessageStore
+    public class SampleMessageStore : MessageStore
     {
         /// <summary>
         /// Save the given message to the underlying storage system.

@@ -60,11 +60,6 @@ namespace SmtpServer
         public INetworkClient Text { get; }
 
         /// <summary>
-        /// The transfer encoding that is required for the message.
-        /// </summary>
-        public ContentTransferEncoding TransferEncoding { get; set; }
-
-        /// <summary>
         /// Gets the current transaction.
         /// </summary>
         public SmtpMessageTransaction Transaction { get; }

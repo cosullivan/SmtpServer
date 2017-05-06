@@ -64,31 +64,32 @@ Ym9keSBvZiB0aGUgbWVzc2FnZS48L3A+CiAgPC9ib2R5Pgo8L2h0bWw+Cg==
 
             var cancellationTokenSource = new CancellationTokenSource();
 
-            //var certificate = CreateCertificate();
+            var certificate = CreateCertificate();
 
-            //ServicePointManager.ServerCertificateValidationCallback = IgnoreCertificateValidationFailureForTestingOnly;
+            ServicePointManager.ServerCertificateValidationCallback = IgnoreCertificateValidationFailureForTestingOnly;
 
             var options = new OptionsBuilder()
                 .ServerName("SmtpServer SampleApp")
                 .Port(9025)
-                //.Certificate(certificate)
+                .Certificate(certificate)
                 .SupportedSslProtocols(SslProtocols.Default)
-                .MessageStore(new ConsoleMessageStore())
-                .MailboxFilter(new ConsoleMailboxFilter())
+                .MessageStore(new SampleMessageStore())
+                .MailboxFilter(new SampleMailboxFilter())
+                .UserAuthenticator(new SampleUserAuthenticator())
                 .Build();
 
-            //var s = RunServerAsync(options, cancellationTokenSource.Token);
-            //var c = RunClientAsync("A", 1, cancellationTokenSource.Token);
+            var s = RunServerAsync(options, cancellationTokenSource.Token);
+            var c = RunClientAsync("A", 1, cancellationTokenSource.Token);
 
-            //Console.WriteLine("Press any key to continue");
-            //Console.ReadKey();
+            Console.WriteLine("Press any key to continue");
+            Console.ReadKey();
 
-            //cancellationTokenSource.Cancel();
+            cancellationTokenSource.Cancel();
 
-            //s.WaitWithoutException();
-            //c.WaitWithoutException();
+            s.WaitWithoutException();
+            c.WaitWithoutException();
 
-            //return;
+            return;
 
             if (args == null || args.Length == 0)
             {
@@ -157,11 +158,11 @@ Ym9keSBvZiB0aGUgbWVzc2FnZS48L3A+CiAgPC9ib2R5Pgo8L2h0bWw+Cg==
             {
                 using (var smtpClient = new SmtpClient())
                 {
-                    await smtpClient.ConnectAsync("localhost", 9025, false, cancellationToken);
-                    //smtpClient.EnableSsl = true;
-
                     try
                     {
+                        await smtpClient.ConnectAsync("localhost", 9025, false, cancellationToken);
+                        await smtpClient.AuthenticateAsync("user", "password", cancellationToken);
+
                         var message = new MimeKit.MimeMessage();
                         message.From.Add(new MimeKit.MailboxAddress($"{name}{counter}@test.com"));
                         message.To.Add(new MimeKit.MailboxAddress("sample@test.com"));

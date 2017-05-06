@@ -38,7 +38,7 @@ namespace SmtpServer.Protocol
             // check against the server supplied maximum
             if (Options.MaxMessageSize > 0 && size > Options.MaxMessageSize)
             {
-                await context.Text.ReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken);
+                await context.Text.ReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ReturnOnAnyThread();
                 return;
             }
 
@@ -48,20 +48,19 @@ namespace SmtpServer.Protocol
                 {
                     case MailboxFilterResult.Yes:
                         context.Transaction.From = Address;
-                        context.TransferEncoding = GetTransferEncoding() ?? context.TransferEncoding;
-                        await context.Text.ReplyAsync(SmtpResponse.Ok, cancellationToken);
+                        await context.Text.ReplyAsync(SmtpResponse.Ok, cancellationToken).ReturnOnAnyThread();
                         return;
 
                     case MailboxFilterResult.NoTemporarily:
-                        await context.Text.ReplyAsync(SmtpResponse.MailboxUnavailable, cancellationToken);
+                        await context.Text.ReplyAsync(SmtpResponse.MailboxUnavailable, cancellationToken).ReturnOnAnyThread();
                         return;
 
                     case MailboxFilterResult.NoPermanently:
-                        await context.Text.ReplyAsync(SmtpResponse.MailboxNameNotAllowed, cancellationToken);
+                        await context.Text.ReplyAsync(SmtpResponse.MailboxNameNotAllowed, cancellationToken).ReturnOnAnyThread();
                         return;
 
                     case MailboxFilterResult.SizeLimitExceeded:
-                        await context.Text.ReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken);
+                        await context.Text.ReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ReturnOnAnyThread();
                         return;
                 }
             }
@@ -70,39 +69,17 @@ namespace SmtpServer.Protocol
         }
 
         /// <summary>
-        /// Returns the content transfer encoding if it has been specified through the extended mail parameters.
-        /// </summary>
-        /// <returns>The required content transfer encoding to use.</returns>
-        ContentTransferEncoding? GetTransferEncoding()
-        {
-            string value;
-            if (Parameters.TryGetValue("BODY", out value) == false)
-            {
-                return ContentTransferEncoding.SevenBit;
-            }
-
-            if (String.Equals(value, "8BITMIME", StringComparison.OrdinalIgnoreCase))
-            {
-                return ContentTransferEncoding.EightBit;
-            }
-
-            return ContentTransferEncoding.SevenBit;
-        }
-
-        /// <summary>
         /// Gets the estimated message size supplied from the ESMTP command extension.
         /// </summary>
         /// <returns>The estimated message size that was supplied by the client.</returns>
         int GetMessageSize()
         {
-            string value;
-            if (Parameters.TryGetValue("SIZE", out value) == false)
+            if (Parameters.TryGetValue("SIZE", out string value) == false)
             {
                 return 0;
             }
 
-            int size;
-            if (Int32.TryParse(value, out size) == false)
+            if (Int32.TryParse(value, out int size) == false)
             {
                 return 0;
             }
