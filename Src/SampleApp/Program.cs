@@ -63,8 +63,6 @@ Ym9keSBvZiB0aGUgbWVzc2FnZS48L3A+CiAgPC9ib2R5Pgo8L2h0bWw+Cg==
             //}
 
 
-            https://docs.microsoft.com/en-us/dotnet/articles/core/tools/csproj#nuget-metadata-properties
-
             var cancellationTokenSource = new CancellationTokenSource();
 
             var certificate = CreateCertificate();
