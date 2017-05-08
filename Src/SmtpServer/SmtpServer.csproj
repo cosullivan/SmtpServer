@@ -1,36 +1,25 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>.NET SmtpServer</Description>
-    <Copyright>Copyright 2017</Copyright>
-    <VersionPrefix>2.2.0</VersionPrefix>
-    <Authors>Cain O'Sullivan</Authors>
-    <TargetFrameworks>net45;netstandard1.6</TargetFrameworks>
+    <TargetFrameworks>net45;netstandard1.3</TargetFrameworks>
     <AssemblyName>SmtpServer</AssemblyName>
-    <PackageId>SmtpServer</PackageId>
-    <PackageTags>Smtp;SmtpServer</PackageTags>
-    <PackageProjectUrl>https://github.com/cosullivan/SmtpServer</PackageProjectUrl>
-    <NetStandardImplicitPackageVersion Condition=" '$(TargetFramework)' == 'netstandard1.6' ">1.6.1</NetStandardImplicitPackageVersion>
-    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
-    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
-    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
-    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
-    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
-    <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
-    <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
-    <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
-    <GenerateAssemblyInformationalVersionAttribute>false</GenerateAssemblyInformationalVersionAttribute>
-    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
+    <RootNamespace>SmtpServer</RootNamespace>
+    <Version>3.0.0-rc1</Version>
+    <Description>.NET SmtpServer</Description>
+    <Authors>Cain O'Sullivan</Authors>
+    <Company />
+    <Copyright>2017</Copyright>
+    <RepositoryUrl>https://github.com/cosullivan/SmtpServer</RepositoryUrl>
+    <PackageProjectUrl>http://cainosullivan.com/smtpserver</PackageProjectUrl>
+    <PackageTags>Smtp SmtpServer</PackageTags>
+    <PackageLicenseUrl>https://raw.githubusercontent.com/cosullivan/SmtpServer/master/LICENSE</PackageLicenseUrl>
+    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
-    <Reference Include="System" />
-    <Reference Include="Microsoft.CSharp" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.6' ">
-    <PackageReference Include="System.Diagnostics.TraceSource" Version="4.0.0" />
-    <PackageReference Include="System.Net.Security" Version="4.0.0" />
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
+    <PackageReference Include="System.Net.Security">
+      <Version>4.0.0</Version>
+    </PackageReference>
   </ItemGroup>
 
 </Project>

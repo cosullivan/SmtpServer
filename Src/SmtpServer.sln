@@ -1,17 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26228.9
+VisualStudioVersion = 15.0.26403.7
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{A965DCEA-280B-447A-B5C5-4089C444C2B7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmtpServer.Benchmark", "SmtpServer.Benchmark\SmtpServer.Benchmark.csproj", "{40D4AF5E-03B1-4133-9381-FE45060F22F5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleApp", "SampleApp\SampleApp.csproj", "{A91D503C-22B8-4915-AC43-0804DE04958A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SmtpServer", "SmtpServer\SmtpServer.csproj", "{9C02E11A-62E1-494F-9B4A-37B68863EB89}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmtpServer.Net45", "SmtpServer\SmtpServer.Net45.csproj", "{C73C78EA-96ED-48B0-8EF2-834AF0A94516}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleApp", "SampleApp\SampleApp.csproj", "{A9BF3F28-D0E7-4834-B7F0-1A2DC452E692}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SmtpServer", "SmtpServer\SmtpServer.csproj", "{0A7CFC3D-305C-4018-9052-3A7A8B5DD104}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmtpServer.Tests", "SmtpServer.Tests\SmtpServer.Tests.csproj", "{46EF0811-D3FD-41BD-BBF2-917F27C1E3F5}"
 EndProject
@@ -21,21 +17,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{40D4AF5E-03B1-4133-9381-FE45060F22F5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{40D4AF5E-03B1-4133-9381-FE45060F22F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{40D4AF5E-03B1-4133-9381-FE45060F22F5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9C02E11A-62E1-494F-9B4A-37B68863EB89}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9C02E11A-62E1-494F-9B4A-37B68863EB89}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9C02E11A-62E1-494F-9B4A-37B68863EB89}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9C02E11A-62E1-494F-9B4A-37B68863EB89}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C73C78EA-96ED-48B0-8EF2-834AF0A94516}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C73C78EA-96ED-48B0-8EF2-834AF0A94516}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C73C78EA-96ED-48B0-8EF2-834AF0A94516}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C73C78EA-96ED-48B0-8EF2-834AF0A94516}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A9BF3F28-D0E7-4834-B7F0-1A2DC452E692}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A9BF3F28-D0E7-4834-B7F0-1A2DC452E692}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A9BF3F28-D0E7-4834-B7F0-1A2DC452E692}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A9BF3F28-D0E7-4834-B7F0-1A2DC452E692}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A91D503C-22B8-4915-AC43-0804DE04958A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A91D503C-22B8-4915-AC43-0804DE04958A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A91D503C-22B8-4915-AC43-0804DE04958A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A91D503C-22B8-4915-AC43-0804DE04958A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0A7CFC3D-305C-4018-9052-3A7A8B5DD104}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0A7CFC3D-305C-4018-9052-3A7A8B5DD104}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0A7CFC3D-305C-4018-9052-3A7A8B5DD104}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0A7CFC3D-305C-4018-9052-3A7A8B5DD104}.Release|Any CPU.Build.0 = Release|Any CPU
 		{46EF0811-D3FD-41BD-BBF2-917F27C1E3F5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{46EF0811-D3FD-41BD-BBF2-917F27C1E3F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{46EF0811-D3FD-41BD-BBF2-917F27C1E3F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -45,6 +34,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{A9BF3F28-D0E7-4834-B7F0-1A2DC452E692} = {A965DCEA-280B-447A-B5C5-4089C444C2B7}
+		{A91D503C-22B8-4915-AC43-0804DE04958A} = {A965DCEA-280B-447A-B5C5-4089C444C2B7}
 	EndGlobalSection
 EndGlobal

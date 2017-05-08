@@ -188,7 +188,7 @@ namespace SmtpServer.IO
 
             var blocks = await client.ReadUntilAsync(new byte[] { 13, 10, 13, 10 }, cancellationToken).ReturnOnAnyThread();
 
-            return Unstuff(Trim(blocks, new byte[] { 13, 10 })).ToList();
+            return Unstuff(Trim(blocks, new byte[] { 13, 10, 13, 10 })).ToList();
         }
 
         /// <summary>

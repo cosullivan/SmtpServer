@@ -14,7 +14,6 @@ namespace SmtpServer.Protocol
     /// </remarks>
     public class SmtpParser : TokenParser
     {
-        readonly TraceSwitch _logger = new TraceSwitch("SmtpParser", "SMTP Server Parser");
         readonly ISmtpServerOptions _options;
 
         /// <summary>
@@ -44,7 +43,7 @@ namespace SmtpServer.Protocol
 
             if (TryMakeEnd() == false)
             {
-                _logger.LogVerbose("QUIT command can not have parameters.");
+                //_logger.LogVerbose("QUIT command can not have parameters.");
 
                 errorResponse = SmtpResponse.SyntaxError;
                 return false;
@@ -71,7 +70,7 @@ namespace SmtpServer.Protocol
 
             if (TryMakeEnd() == false)
             {
-                _logger.LogVerbose("NOOP command can not have parameters.");
+                //_logger.LogVerbose("NOOP command can not have parameters.");
 
                 errorResponse = SmtpResponse.SyntaxError;
                 return false;
@@ -98,7 +97,7 @@ namespace SmtpServer.Protocol
 
             if (TryMakeEnd() == false)
             {
-                _logger.LogVerbose("RSET command can not have parameters.");
+                //_logger.LogVerbose("RSET command can not have parameters.");
 
                 errorResponse = SmtpResponse.SyntaxError;
                 return false;
@@ -127,7 +126,7 @@ namespace SmtpServer.Protocol
             string domain;
             if (TryMakeDomain(out domain) == false)
             {
-                _logger.LogVerbose("Could not match the domain name (Text={0}).", CompleteTokenizedText());
+                //_logger.LogVerbose("Could not match the domain name (Text={0}).", CompleteTokenizedText());
 
                 errorResponse = SmtpResponse.SyntaxError;
                 return false;
@@ -199,7 +198,7 @@ namespace SmtpServer.Protocol
             IMailbox mailbox;
             if (TryMakeReversePath(out mailbox) == false)
             {
-                _logger.LogVerbose("Syntax Error (Text={0})", CompleteTokenizedText());
+                //_logger.LogVerbose("Syntax Error (Text={0})", CompleteTokenizedText());
 
                 errorResponse = new SmtpResponse(SmtpReplyCode.SyntaxError);
                 return false;
@@ -246,7 +245,7 @@ namespace SmtpServer.Protocol
             IMailbox mailbox;
             if (TryMakePath(out mailbox) == false)
             {
-                _logger.LogVerbose("Syntax Error (Text={0})", CompleteTokenizedText());
+                //_logger.LogVerbose("Syntax Error (Text={0})", CompleteTokenizedText());
 
                 errorResponse = SmtpResponse.SyntaxError;
                 return false;
@@ -276,7 +275,7 @@ namespace SmtpServer.Protocol
 
             if (TryMakeEnd() == false)
             {
-                _logger.LogVerbose("DATA command can not have parameters.");
+                //_logger.LogVerbose("DATA command can not have parameters.");
 
                 errorResponse = SmtpResponse.SyntaxError;
                 return false;
@@ -304,7 +303,7 @@ namespace SmtpServer.Protocol
 
             if (TryMakeEnd() == false)
             {
-                _logger.LogVerbose("DBUG command can not have parameters.");
+                //_logger.LogVerbose("DBUG command can not have parameters.");
 
                 errorResponse = SmtpResponse.SyntaxError;
                 return false;
@@ -332,7 +331,7 @@ namespace SmtpServer.Protocol
 
             if (TryMakeEnd() == false)
             {
-                _logger.LogVerbose("STARTTLS command can not have parameters.");
+                //_logger.LogVerbose("STARTTLS command can not have parameters.");
 
                 errorResponse = SmtpResponse.SyntaxError;
                 return false;
@@ -361,7 +360,7 @@ namespace SmtpServer.Protocol
             AuthenticationMethod method;
             if (Enum.TryParse(Enumerator.Peek().Text, true, out method) == false)
             {
-                _logger.LogVerbose("AUTH command requires a valid method (PLAIN or LOGIN)");
+                //_logger.LogVerbose("AUTH command requires a valid method (PLAIN or LOGIN)");
 
                 errorResponse = SmtpResponse.SyntaxError;
                 return false;
@@ -372,7 +371,7 @@ namespace SmtpServer.Protocol
             string parameter = null;
             if (TryMake(TryMakeEnd) == false && TryMakeBase64(out parameter) == false)
             {
-                _logger.LogVerbose("AUTH parameter must be a Base64 encoded string");
+                //_logger.LogVerbose("AUTH parameter must be a Base64 encoded string");
 
                 errorResponse = SmtpResponse.SyntaxError;
                 return false;

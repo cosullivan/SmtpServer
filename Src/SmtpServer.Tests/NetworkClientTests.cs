@@ -80,14 +80,14 @@ namespace SmtpServer.Tests
         public async void CanReadBlockWithDotStuffingRemoved()
         {
             // arrange
-            var client = CreateNetworkClient("abcd\r\n..1234\r\n\r\n", 3);
+            var client = CreateNetworkClient("abcd\r\n..1234\r\n.\r\n", 3);
 
             // act
             var blocks = await client.ReadDotBlockAsync();
 
             // assert
-            Assert.Equal(13, blocks.Sum(b => b.Count));
-            Assert.Equal("abcd\r\n.1234\r\n", Encoding.ASCII.GetString(blocks.SelectMany(block => block).ToArray()));
+            Assert.Equal(11, blocks.Sum(b => b.Count));
+            Assert.Equal("abcd\r\n.1234", Encoding.ASCII.GetString(blocks.SelectMany(block => block).ToArray()));
         }
     }
 }
