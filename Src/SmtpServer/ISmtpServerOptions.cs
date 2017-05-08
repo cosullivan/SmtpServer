@@ -59,10 +59,5 @@ namespace SmtpServer
         /// The supported SSL protocols.
         /// </summary>
         SslProtocols SupportedSslProtocols { get; }
-
-        /// <summary>
-        /// The default content encoding for a message.
-        /// </summary>
-        ContentEncoding DefaultContentEncoding { get; }
     }
 }

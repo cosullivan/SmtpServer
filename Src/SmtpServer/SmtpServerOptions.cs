@@ -5,7 +5,6 @@ using System.Net;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using SmtpServer.Authentication;
-using SmtpServer.Protocol;
 using SmtpServer.Storage;
 
 namespace SmtpServer
@@ -38,26 +37,17 @@ namespace SmtpServer
         /// <summary>
         /// Gets or sets the endpoint to listen on.
         /// </summary>
-        internal Collection<IPEndPoint> Endpoints
-        {
-            get { return _endpoints; }
-        }
+        internal Collection<IPEndPoint> Endpoints => _endpoints;
 
         /// <summary>
         /// Gets or sets the endpoint to listen on.
         /// </summary>
-        IReadOnlyCollection<IPEndPoint> ISmtpServerOptions.Endpoints
-        {
-            get { return new ReadOnlyCollection<IPEndPoint>(_endpoints); }
-        }
+        IReadOnlyCollection<IPEndPoint> ISmtpServerOptions.Endpoints => new ReadOnlyCollection<IPEndPoint>(_endpoints);
 
         /// <summary>
         /// Gets or sets the mailbox filter factories to use.
         /// </summary>
-        internal Collection<IMailboxFilterFactory> MailboxFilterFactories
-        {
-            get { return _mailboxFilterFactories; }
-        }
+        internal Collection<IMailboxFilterFactory> MailboxFilterFactories => _mailboxFilterFactories;
 
         /// <summary>
         /// Gets the message store factory to use.
@@ -94,10 +84,5 @@ namespace SmtpServer
         /// The supported SSL protocols.
         /// </summary>
         public SslProtocols SupportedSslProtocols { get; internal set; }
-
-        /// <summary>
-        /// The default content encoding for a message.
-        /// </summary>
-        public ContentEncoding DefaultContentEncoding { get; internal set; }
     }
 }
