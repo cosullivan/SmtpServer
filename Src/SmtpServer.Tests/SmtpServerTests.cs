@@ -71,7 +71,7 @@ namespace SmtpServer.Tests
             {
                 Text = "Assunto teste acento çãõáéíóú"
             };
-
+            
             // act
             smtpClient.Connect("localhost", 25, false);
             smtpClient.Send(message);

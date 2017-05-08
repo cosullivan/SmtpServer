@@ -2,23 +2,20 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using SmtpServer.IO;
 
 namespace SmtpServer.Protocol
 {
     public sealed class EhloCommand : SmtpCommand
     {
-        readonly string _domainOrAddress;
-        readonly ISmtpServerOptions _options;
-
         /// <summary>
         /// Constructor.
         /// </summary>
+        /// <param name="options">The server options.</param>
         /// <param name="domainOrAddress">The domain name or address literal.</param>
-        /// <param name="options">The list of server options.</param>
-        public EhloCommand(string domainOrAddress, ISmtpServerOptions options)
+        internal EhloCommand(ISmtpServerOptions options, string domainOrAddress) : base(options)
         {
-            _domainOrAddress = domainOrAddress;
-            _options = options;
+            DomainOrAddress = domainOrAddress;
         }
 
         /// <summary>
@@ -27,9 +24,9 @@ namespace SmtpServer.Protocol
         /// <param name="context">The execution context to operate on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which asynchronously performs the execution.</returns>
-        public override async Task ExecuteAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
+        internal override async Task ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            var greeting = $"{_options.ServerName} Hello {DomainOrAddress}, haven't we met before?";
+            var greeting = $"{Options.ServerName} Hello {DomainOrAddress}, haven't we met before?";
             var output = new[] { greeting }.Union(GetExtensions(context)).ToArray();
 
             for (var i = 0; i < output.Length - 1; i++)
@@ -46,19 +43,19 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="session">The session the is currently operating.</param>
         /// <returns>The list of extensions that are allowed for the session.</returns>
-        IEnumerable<string> GetExtensions(ISmtpSessionContext session)
+        IEnumerable<string> GetExtensions(SmtpSessionContext session)
         {
             yield return "PIPELINING";
             yield return "8BITMIME";
 
-            if (session.Text.IsSecure == false && _options.ServerCertificate != null)
+            if (session.Text.IsSecure == false && Options.ServerCertificate != null)
             {
                 yield return "STARTTLS";
             }
 
-            if (_options.MaxMessageSize > 0)
+            if (Options.MaxMessageSize > 0)
             {
-                yield return $"SIZE {_options.MaxMessageSize}";
+                yield return $"SIZE {Options.MaxMessageSize}";
             }
 
             if (IsPlainLoginAllowed(session))
@@ -72,22 +69,19 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="session">The current session.</param>
         /// <returns>true if plain login is allowed for the session, false if not.</returns>
-        bool IsPlainLoginAllowed(ISmtpSessionContext session)
+        bool IsPlainLoginAllowed(SmtpSessionContext session)
         {
-            if (_options.UserAuthenticator == null)
+            if (Options.UserAuthenticator == null)
             {
                 return false;
             }
 
-            return session.Text.IsSecure || _options.AllowUnsecureAuthentication;
+            return session.Text.IsSecure || Options.AllowUnsecureAuthentication;
         }
 
         /// <summary>
         /// Gets the domain name or address literal.
         /// </summary>
-        public string DomainOrAddress
-        {
-            get { return _domainOrAddress; }
-        }
+        public string DomainOrAddress { get; }
     }
 }

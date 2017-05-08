@@ -1,29 +1,32 @@
 using System;
 using System.Net;
+using System.Net.Sockets;
+using SmtpServer.IO;
 using SmtpServer.Protocol;
 
 namespace SmtpServer
 {
-    internal class SmtpSessionContext : ISmtpSessionContext
+    internal sealed class SmtpSessionContext : ISessionContext
     {
         /// <summary>
         /// Fired when a command is about to execute.
         /// </summary>
         public event EventHandler<SmtpCommandExecutingEventArgs> CommandExecuting;
 
-        bool _isQuitRequested;
+        /// <summary>
+        /// Fired when the session has been authenticated.
+        /// </summary>
+        public event EventHandler<EventArgs> SessionAuthenticated;
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="transaction">The SMTP transaction.</param>
-        /// <param name="stateMachine">The current state machine for the session.</param>
-        /// <param name="remoteEndPoint">The remote endpoint of the client making the connection.</param>
-        internal SmtpSessionContext(ISmtpTransaction transaction, ISmtpStateMachine stateMachine, EndPoint remoteEndPoint)
+        /// <param name="tcpClient">The TCP client that the session is connected with.</param>
+        internal SmtpSessionContext(TcpClient tcpClient)
         {
-            Transaction = transaction;
-            StateMachine = stateMachine;
-            RemoteEndPoint = remoteEndPoint;
+            Transaction = new SmtpMessageTransaction();
+            RemoteEndPoint = tcpClient.Client.RemoteEndPoint;
+            Text = new NetworkClient(tcpClient.GetStream());
         }
 
         /// <summary>
@@ -31,37 +34,35 @@ namespace SmtpServer
         /// </summary>
         public void Quit()
         {
-            _isQuitRequested = true;
+            IsQuitRequested = true;
         }
 
         /// <summary>
-        /// Raise the SMTP command as executing.
+        /// Raise the command executing event.
         /// </summary>
         /// <param name="command">The command that is executing.</param>
-        internal void RaiseSmtpCommandExecuting(SmtpCommand command)
+        public void RaiseCommandExecuting(SmtpCommand command)
         {
             CommandExecuting?.Invoke(this, new SmtpCommandExecutingEventArgs(command));
         }
 
         /// <summary>
-        /// Gets or sets the text stream to read from and write to.
+        /// Raise the session authenticated event.
         /// </summary>
-        public ITextStream Text { get; set; }
+        public void RaiseSessionAuthenticated()
+        {
+            SessionAuthenticated?.Invoke(this, EventArgs.Empty);
+        }
 
         /// <summary>
-        /// The transfer encoding that is required for the message.
+        /// Gets the text stream to read from and write to.
         /// </summary>
-        public ContentEncoding TransferEncoding { get; set; }
+        public INetworkClient Text { get; }
 
         /// <summary>
         /// Gets the current transaction.
         /// </summary>
-        public ISmtpTransaction Transaction { get; }
-
-        /// <summary>
-        /// Gets the current state machine.
-        /// </summary>
-        public ISmtpStateMachine StateMachine { get; }
+        public SmtpMessageTransaction Transaction { get; }
 
         /// <summary>
         /// Gets the remote endpoint of the client.
@@ -69,11 +70,13 @@ namespace SmtpServer
         public EndPoint RemoteEndPoint { get; }
 
         /// <summary>
+        /// Returns a value indicating whether or not the current session is secure.
+        /// </summary>
+        public bool IsSecure => Text.IsSecure;
+
+        /// <summary>
         /// Gets a value indicating whether a quit has been requested.
         /// </summary>
-        public bool IsQuitRequested
-        {
-            get { return _isQuitRequested; }
-        }
+        public bool IsQuitRequested { get; private set; }
     }
 }

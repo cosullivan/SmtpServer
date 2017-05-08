@@ -1,11 +1,16 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
+using SmtpServer.IO;
 
 namespace SmtpServer.Protocol
 {
     public sealed class NoopCommand : SmtpCommand
     {
-        public static readonly SmtpCommand Instance = new NoopCommand();
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="options">The server options.</param>
+        internal NoopCommand(ISmtpServerOptions options) : base(options) { }
 
         /// <summary>
         /// Execute the command.
@@ -13,7 +18,7 @@ namespace SmtpServer.Protocol
         /// <param name="context">The execution context to operate on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which asynchronously performs the execution.</returns>
-        public override Task ExecuteAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
+        internal override Task ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
             return context.Text.ReplyAsync(SmtpResponse.Ok, cancellationToken);
         }

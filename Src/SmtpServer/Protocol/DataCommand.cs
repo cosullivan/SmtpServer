@@ -1,23 +1,19 @@
 ﻿using System;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using SmtpServer.IO;
+using SmtpServer.Mail;
 using SmtpServer.Storage;
 
 namespace SmtpServer.Protocol
 {
     public sealed class DataCommand : SmtpCommand
     {
-        readonly ISmtpServerOptions _options;
-
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="options">The options that the server is running within.</param>
-        public DataCommand(ISmtpServerOptions options)
-        {
-            _options = options;
-        }
+        /// <param name="options">The server options.</param>
+        internal DataCommand(ISmtpServerOptions options) : base(options) { }
 
         /// <summary>
         /// Execute the command.
@@ -25,7 +21,7 @@ namespace SmtpServer.Protocol
         /// <param name="context">The execution context to operate on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which asynchronously performs the execution.</returns>
-        public override async Task ExecuteAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
+        internal override async Task ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
             if (context.Transaction.To.Count == 0)
             {
@@ -35,12 +31,12 @@ namespace SmtpServer.Protocol
 
             await context.Text.ReplyAsync(new SmtpResponse(SmtpReplyCode.StartMailInput, "end with <CRLF>.<CRLF>"), cancellationToken).ConfigureAwait(false);
 
-            await ReceiveContentAsync(context, cancellationToken);
+            context.Transaction.Message = await ReadMessageAsync(context, cancellationToken).ConfigureAwait(false);
 
             try
             {
                 // store the transaction
-                using (var container = new DisposableContainer<IMessageStore>(_options.MessageStoreFactory.CreateInstance(context)))
+                using (var container = new DisposableContainer<IMessageStore>(Options.MessageStoreFactory.CreateInstance(context)))
                 {
                     var response = await container.Instance.SaveAsync(context, context.Transaction, cancellationToken).ConfigureAwait(false);
 
@@ -59,46 +55,11 @@ namespace SmtpServer.Protocol
         /// <param name="context">The SMTP session context to receive the message within.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which asynchronously performs the operation.</returns>
-        async Task ReceiveContentAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
+        Task<IMessage> ReadMessageAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            if (context.TransferEncoding == ContentEncoding.EightBit || _options.DefaultContentEncoding == ContentEncoding.EightBit)
-            {
-                context.Text = new NetworkTextStream(context.Text.GetInnerStream(), Encoding.UTF8);
-            }
+            var serializer = new MessageSerializerFactory().CreateInstance();
 
-            await ReceiveShortLineContentAsync(context, cancellationToken);
-
-            if (context.TransferEncoding == ContentEncoding.EightBit || _options.DefaultContentEncoding == ContentEncoding.EightBit)
-            {
-                context.Text = new NetworkTextStream(context.Text.GetInnerStream(), Encoding.ASCII);
-            }
-        }
-
-        /// <summary>
-        /// Receive the message content in short line format.
-        /// </summary>
-        /// <param name="context">The SMTP session context to receive the message within.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task which asynchronously performs the operation.</returns>
-        async Task ReceiveShortLineContentAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
-        {
-            try
-            {
-                string text;
-                while ((text = await context.Text.ReadLineAsync(TimeSpan.FromSeconds(60), cancellationToken).ConfigureAwait(false)) != ".")
-                {
-                    // need to trim the '.' at the start of the line if it 
-                    // exists as this would have been added for transparency
-                    // http://tools.ietf.org/html/rfc5321#section-4.5.2
-                    var line = (!string.IsNullOrWhiteSpace(text) && text.Length > 1 && text.Substring(0, 1) == ".") ? text.Substring(1) : text;
-                    context.Transaction.Mime.AppendLine(line);
-                }
-            }
-            catch (TimeoutException)
-            {
-                // TODO: not sure what the best thing to do here is
-                throw;
-            }
+            return serializer.DeserializeAsync(context.Text, cancellationToken);
         }
     }
 }

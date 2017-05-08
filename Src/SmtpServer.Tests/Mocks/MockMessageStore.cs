@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using SmtpServer.Mail;
 using SmtpServer.Protocol;
 using SmtpServer.Storage;
 
@@ -9,18 +8,18 @@ namespace SmtpServer.Tests.Mocks
 {
     public class MockMessageStore : MessageStore
     {
-        readonly List<IMimeMessage> _messages = new List<IMimeMessage>();
-
-        public override Task<SmtpResponse> SaveAsync(ISessionContext context, IMimeMessage message, CancellationToken cancellationToken)
+        public MockMessageStore()
         {
-            _messages.Add(message);
+            Messages = new List<IMessageTransaction>();
+        }
+
+        public override Task<SmtpResponse> SaveAsync(ISessionContext context, IMessageTransaction transaction, CancellationToken cancellationToken)
+        {
+            Messages.Add(transaction);
 
             return Task.FromResult(SmtpResponse.Ok);
         }
 
-        public List<IMimeMessage> Messages
-        {
-            get { return _messages; }
-        }
+        public List<IMessageTransaction> Messages { get; }
     }
 }

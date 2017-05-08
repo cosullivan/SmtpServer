@@ -4,10 +4,6 @@ namespace SmtpServer.Mail
 {
     public class Mailbox : IMailbox
     {
-        readonly string _user;
-        readonly string _host;
-        readonly string _displayName;
-
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -16,9 +12,9 @@ namespace SmtpServer.Mail
         /// <param name="displayName">The display name.</param>
         public Mailbox(string user, string host, string displayName = null)
         {
-            _user = user;
-            _host = host;
-            _displayName = displayName;
+            User = user;
+            Host = host;
+            DisplayName = displayName;
         }
 
         /// <summary>
@@ -31,32 +27,23 @@ namespace SmtpServer.Mail
 
             var index = address.IndexOf('@');
 
-            _user = address.Substring(0, index);
-            _host = address.Substring(index + 1);
+            User = address.Substring(0, index);
+            Host = address.Substring(index + 1);
         }
 
         /// <summary>
         /// Gets the user/account name.
         /// </summary>
-        public string User
-        {
-            get { return _user; }
-        }
+        public string User { get; }
 
         /// <summary>
         /// Gets the host server.
         /// </summary>
-        public string Host
-        {
-            get { return _host; }
-        }
+        public string Host { get; }
 
         /// <summary>
         /// Gets the display name.
         /// </summary>
-        public string DisplayName
-        {
-            get { return _displayName; }
-        }
+        public string DisplayName { get; }
     }
 }

@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
 using SmtpServer.Mail;
 using SmtpServer.Protocol;
-using SmtpServer.Protocol.Text;
+using SmtpServer.Text;
 using Xunit;
 using Xunit.Extensions;
 
@@ -9,15 +11,177 @@ namespace SmtpServer.Tests
 {
     public class SmtpParserTests
     {
+        static SmtpParser CreateParser(string text)
+        {
+            var segment = new ArraySegment<byte>(Encoding.ASCII.GetBytes(text));
+
+            return new SmtpParser(new SmtpServerOptions(), new TokenEnumerator(new ByteArrayTokenReader(new [] { segment })));
+        }
+
+        [Fact]
+        public void CanMakeQuit()
+        {
+            // arrange
+            var parser = CreateParser("QUIT");
+
+            // act
+            var result = parser.TryMakeQuit(out SmtpCommand command, out SmtpResponse errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is QuitCommand);
+        }
+
+        [Fact]
+        public void CanMakeNoop()
+        {
+            // arrange
+            var parser = CreateParser("NOOP");
+
+            // act
+            var result = parser.TryMakeNoop(out SmtpCommand command, out SmtpResponse errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is NoopCommand);
+        }
+
+        [Fact]
+        public void CanMakeHelo()
+        {
+            // arrange
+            var parser = CreateParser("HELO abc-1-def.mail.com");
+
+            // act
+            var result = parser.TryMakeHelo(out SmtpCommand command, out SmtpResponse errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is HeloCommand);
+            Assert.Equal("abc-1-def.mail.com", ((HeloCommand)command).Domain);
+        }
+
+        [Theory]
+        [InlineData("HELO abc.")]
+        [InlineData("HELO -abc.com")]
+        [InlineData("HELO ////")]
+        public void CanNotMakeHelo(string input)
+        {
+            // arrange
+            var parser = CreateParser(input);
+
+            // act
+            var result = parser.TryMakeHelo(out SmtpCommand command, out SmtpResponse errorResponse);
+
+            // assert
+            Assert.False(result);
+            Assert.Null(command);
+            Assert.NotNull(errorResponse);
+        }
+
+        [Theory]
+        [InlineData("EHLO abc-1-def.mail.com")]
+        [InlineData("EHLO 192.168.1.200")]
+        public void CanMakeEhlo(string input)
+        {
+            // arrange
+            var parser = CreateParser(input);
+
+            // act
+            var result = parser.TryMakeEhlo(out SmtpCommand command, out SmtpResponse errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is EhloCommand);
+            Assert.Equal(input.Substring(5), ((EhloCommand)command).DomainOrAddress);
+        }
+
+        [Fact]
+        public void CanMakeMail()
+        {
+            // arrange
+            var parser = CreateParser("MAIL FROM:<cain.osullivan@gmail.com>");
+
+            // act
+            var result = parser.TryMakeMail(out SmtpCommand command, out SmtpResponse errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is MailCommand);
+            Assert.Equal("cain.osullivan", ((MailCommand)command).Address.User);
+            Assert.Equal("gmail.com", ((MailCommand)command).Address.Host);
+        }
+
+        [Fact]
+        public void CanMakeMailWithNoAddress()
+        {
+            // arrange
+            var parser = CreateParser("MAIL FROM:<>");
+
+            // act
+            var result = parser.TryMakeMail(out SmtpCommand command, out SmtpResponse errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is MailCommand);
+            Assert.Null(((MailCommand)command).Address);
+        }
+
+        [Fact]
+        public void CanMakeMailWithBlankAddress()
+        {
+            // arrange
+            var parser = CreateParser("MAIL FROM:<   >");
+
+            // act
+            var result = parser.TryMakeMail(out SmtpCommand command, out SmtpResponse errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is MailCommand);
+            Assert.Null(((MailCommand)command).Address);
+        }
+
+        [Theory]
+        [InlineData("MAIL FROM:cain")]
+        public void CanNotMakeMail(string input)
+        {
+            // arrange
+            var parser = CreateParser(input);
+
+            // act
+            var result = parser.TryMakeMail(out SmtpCommand command, out SmtpResponse errorResponse);
+
+            // assert
+            Assert.False(result);
+            Assert.NotNull(errorResponse);
+        }
+
+        [Fact]
+        public void CanMakeRcpt()
+        {
+            // arrange
+            var parser = CreateParser("RCPT TO:<cain.osullivan@gmail.com>");
+
+            // act
+            var result = parser.TryMakeRcpt(out SmtpCommand command, out SmtpResponse errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is RcptCommand);
+            Assert.Equal("cain.osullivan", ((RcptCommand)command).Address.User);
+            Assert.Equal("gmail.com", ((RcptCommand)command).Address.Host);
+        }
+        
         [Fact]
         public void CanMakeAtom()
         {
             // arrange
-            var parser = new SmtpParser();
+            var parser = CreateParser("hello");
             string atom;
 
             // act
-            var made = parser.TryMakeAtom(new TokenEnumerator(new StringTokenReader("hello")), out atom);
+            var made = parser.TryMakeAtom(out atom);
 
             // assert
             Assert.True(made);
@@ -28,11 +192,11 @@ namespace SmtpServer.Tests
         public void CanMakeDotString()
         {
             // arrange
-            var parser = new SmtpParser();
+            var parser = CreateParser("abc.def.hij");
             string dotString;
 
             // act
-            var made = parser.TryMakeDotString(new TokenEnumerator(new StringTokenReader("abc.def.hij")), out dotString);
+            var made = parser.TryMakeDotString(out dotString);
 
             // assert
             Assert.True(made);
@@ -43,11 +207,11 @@ namespace SmtpServer.Tests
         public void CanMakeLocalPart()
         {
             // arrange
-            var parser = new SmtpParser();
+            var parser = CreateParser("abc");
             string localPart;
 
             // act
-            var made = parser.TryMakeLocalPart(new TokenEnumerator(new StringTokenReader("abc")), out localPart);
+            var made = parser.TryMakeLocalPart(out localPart);
 
             // assert
             Assert.True(made);
@@ -58,13 +222,12 @@ namespace SmtpServer.Tests
         public void CanMakeTextOrNumber()
         {
             // arrange
-            var parser = new SmtpParser();
             string textOrNumber1;
             string textOrNumber2;
 
             // act
-            var made1 = parser.TryMakeTextOrNumber(new TokenEnumerator(new StringTokenReader("abc")), out textOrNumber1);
-            var made2 = parser.TryMakeTextOrNumber(new TokenEnumerator(new StringTokenReader("123")), out textOrNumber2);
+            var made1 = CreateParser("abc").TryMakeTextOrNumber(out textOrNumber1);
+            var made2 = CreateParser("123").TryMakeTextOrNumber(out textOrNumber2);
 
             // assert
             Assert.True(made1);
@@ -77,11 +240,11 @@ namespace SmtpServer.Tests
         public void CanMakeTextOrNumberOrHyphenString()
         {
             // arrange
-            var parser = new SmtpParser();
+            var parser = CreateParser("a1-b2");
             string textOrNumberOrHyphen1;
 
             // act
-            var made1 = parser.TryMakeTextOrNumberOrHyphenString(new TokenEnumerator(new StringTokenReader("a1-b2")), out textOrNumberOrHyphen1);
+            var made1 = parser.TryMakeTextOrNumberOrHyphenString(out textOrNumberOrHyphen1);
 
             // assert
             Assert.True(made1);
@@ -92,11 +255,11 @@ namespace SmtpServer.Tests
         public void CanMakeSubdomain()
         {
             // arrange
-            var parser = new SmtpParser();
+            var parser = CreateParser("a-1-b-2");
             string subdomain;
 
             // act
-            var made = parser.TryMakeSubdomain(new TokenEnumerator(new StringTokenReader("a-1-b-2")), out subdomain);
+            var made = parser.TryMakeSubdomain(out subdomain);
 
             // assert
             Assert.True(made);
@@ -107,11 +270,11 @@ namespace SmtpServer.Tests
         public void CanMakeDomain()
         {
             // arrange
-            var parser = new SmtpParser();
+            var parser = CreateParser("123.abc.com");
             string domain;
 
             // act
-            var made = parser.TryMakeDomain(new TokenEnumerator(new StringTokenReader("123.abc.com")), out domain);
+            var made = parser.TryMakeDomain(out domain);
 
             // assert
             Assert.True(made);
@@ -131,11 +294,11 @@ namespace SmtpServer.Tests
         public void CanMakeMailbox(string email, string user, string host)
         {
             // arrange
-            var parser = new SmtpParser();
+            var parser = CreateParser(email);
             IMailbox mailbox;
 
             // act
-            var made = parser.TryMakeMailbox(new TokenEnumerator(new StringTokenReader(email)), out mailbox);
+            var made = parser.TryMakeMailbox(out mailbox);
 
             // assert
             Assert.True(made);
@@ -147,11 +310,11 @@ namespace SmtpServer.Tests
         public void CanMakePlusAddressMailBox()
         {
             // arrange
-            var parser = new SmtpParser();
+            var parser = CreateParser("cain.osullivan+plus@gmail.com");
             IMailbox mailbox;
 
             // act
-            var made = parser.TryMakeMailbox(new TokenEnumerator(new StringTokenReader("cain.osullivan+plus@gmail.com")), out mailbox);
+            var made = parser.TryMakeMailbox(out mailbox);
 
             // assert
             Assert.True(made);
@@ -163,11 +326,11 @@ namespace SmtpServer.Tests
         public void CanMakeAtDomain()
         {
             // arrange
-            var parser = new SmtpParser();
+            var parser = CreateParser("@gmail.com");
             string atDomain;
 
             // act
-            var made = parser.TryMakeAtDomain(new TokenEnumerator(new StringTokenReader("@gmail.com")), out atDomain);
+            var made = parser.TryMakeAtDomain(out atDomain);
 
             // assert
             Assert.True(made);
@@ -178,11 +341,11 @@ namespace SmtpServer.Tests
         public void CanMakeAtDomainList()
         {
             // arrange
-            var parser = new SmtpParser();
+            var parser = CreateParser("@gmail.com,@hotmail.com");
             string atDomainList;
 
             // act
-            var made = parser.TryMakeAtDomainList(new TokenEnumerator(new StringTokenReader("@gmail.com,@hotmail.com")), out atDomainList);
+            var made = parser.TryMakeAtDomainList(out atDomainList);
 
             // assert
             Assert.True(made);
@@ -193,11 +356,11 @@ namespace SmtpServer.Tests
         public void CanMakePath()
         {
             // path
-            var parser = new SmtpParser();
+            var parser = CreateParser("<@gmail.com,@hotmail.com:cain.osullivan@gmail.com>");
             IMailbox mailbox;
 
             // act
-            var made = parser.TryMakePath(new TokenEnumerator(new StringTokenReader("<@gmail.com,@hotmail.com:cain.osullivan@gmail.com>")), out mailbox);
+            var made = parser.TryMakePath(out mailbox);
 
             // assert
             Assert.True(made);
@@ -209,11 +372,11 @@ namespace SmtpServer.Tests
         public void CanMakeReversePath()
         {
             // path
-            var parser = new SmtpParser();
+            var parser = CreateParser("<@gmail.com,@hotmail.com:cain.osullivan@gmail.com>");
             IMailbox mailbox;
 
             // act
-            var made = parser.TryMakePath(new TokenEnumerator(new StringTokenReader("<@gmail.com,@hotmail.com:cain.osullivan@gmail.com>")), out mailbox);
+            var made = parser.TryMakePath(out mailbox);
 
             // assert
             Assert.True(made);
@@ -225,11 +388,11 @@ namespace SmtpServer.Tests
         public void CanMakeAddressLiteral()
         {
             // arrange
-            var parser = new SmtpParser();
+            var parser = CreateParser("[ 127.0.0.1 ]");
             string address;
 
             // act
-            var made = parser.TryMakeAddressLiteral(new TokenEnumerator(new StringTokenReader("[ 127.0.0.1 ]")), out address);
+            var made = parser.TryMakeAddressLiteral(out address);
 
             // assert
             Assert.True(made);
@@ -240,11 +403,11 @@ namespace SmtpServer.Tests
         public void CanMakeMailParameters()
         {
             // arrange
-            var parser = new SmtpParser();
+            var parser = CreateParser("SIZE=123 ABC=DEF ABCDE ZZZ=123");
             IReadOnlyDictionary<string, string> parameters;
 
             // act
-            var made = parser.TryMakeMailParameters(new TokenEnumerator(new StringTokenReader("SIZE=123 ABC=DEF ABCDE ZZZ=123")), out parameters);
+            var made = parser.TryMakeMailParameters(out parameters);
 
             // assert
             Assert.True(made);

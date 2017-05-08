@@ -1,19 +1,19 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
+using SmtpServer.IO;
 
 namespace SmtpServer.Protocol
 {
     public sealed class HeloCommand : SmtpCommand
     {
-        readonly string _domain;
-
         /// <summary>
         /// Constructor.
         /// </summary>
+        /// <param name="options">The server options.</param>
         /// <param name="domain">The domain name.</param>
-        public HeloCommand(string domain)
+        internal HeloCommand(ISmtpServerOptions options, string domain) : base(options)
         {
-            _domain = domain;
+            Domain = domain;
         }
 
         /// <summary>
@@ -22,7 +22,7 @@ namespace SmtpServer.Protocol
         /// <param name="context">The execution context to operate on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which asynchronously performs the execution.</returns>
-        public override Task ExecuteAsync(ISmtpSessionContext context, CancellationToken cancellationToken)
+        internal override Task ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
             var response = new SmtpResponse(SmtpReplyCode.Ok, $"Hello {Domain}, haven't we met before?");
 
@@ -32,9 +32,6 @@ namespace SmtpServer.Protocol
         /// <summary>
         /// Gets the domain name.
         /// </summary>
-        public string Domain
-        {
-            get { return _domain; }
-        }
+        public string Domain { get; }
     }
 }

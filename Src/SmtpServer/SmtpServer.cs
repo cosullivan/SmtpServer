@@ -3,10 +3,8 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using SmtpServer.Protocol;
 
 namespace SmtpServer
 {
@@ -23,7 +21,6 @@ namespace SmtpServer
         public event EventHandler<SessionEventArgs> SessionCompleted;
 
         readonly ISmtpServerOptions _options;
-        readonly TraceSwitch _logger = new TraceSwitch("SmtpServer", "The SMTP server.");
 
         /// <summary>
         /// Constructor.
@@ -59,9 +56,7 @@ namespace SmtpServer
         /// <returns>A task which performs the operation.</returns>
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            _logger.LogInfo("Starting the SMTP Server");
-
-            await Task.WhenAll(_options.Endpoints.Select(e => ListenAsync(e, cancellationToken))).ConfigureAwait(false);
+            await Task.WhenAll(_options.Endpoints.Select(e => ListenAsync(e, cancellationToken))).ReturnOnAnyThread();
         }
 
         /// <summary>
@@ -72,7 +67,7 @@ namespace SmtpServer
         /// <returns>A task which performs the operation.</returns>
         async Task ListenAsync(IPEndPoint endpoint, CancellationToken cancellationToken)
         {
-            _logger.LogVerbose("Listening on port {0}", endpoint.Port);
+            //_logger.LogVerbose("Listening on port {0}", endpoint.Port);
 
             var tcpListener = new TcpListener(endpoint);
             tcpListener.Start();
@@ -87,7 +82,7 @@ namespace SmtpServer
                     // wait for a client connection
                     var tcpClient = await tcpListener.AcceptTcpClientAsync().WithCancellation(cancellationToken).ConfigureAwait(false);
                     
-                    _logger.LogVerbose("SMTP client accepted [{0}]", tcpClient.Client.RemoteEndPoint);
+                    //_logger.LogVerbose("SMTP client accepted [{0}]", tcpClient.Client.RemoteEndPoint);
 
                     // create a new session to handle the connection
                     var session = CreateSession(tcpClient);
@@ -101,8 +96,7 @@ namespace SmtpServer
                     session.Task
                         .ContinueWith(t =>
                         {
-                            SmtpSession s;
-                            if (sessions.TryRemove(session, out s))
+                            if (sessions.TryRemove(session, out SmtpSession s))
                             {
                                 s.Dispose();
                             }
@@ -129,16 +123,7 @@ namespace SmtpServer
         /// <returns>The SMTP session.</returns>
         SmtpSession CreateSession(TcpClient tcpClient)
         {
-            return new SmtpSession(_options, tcpClient, new SmtpStateMachine(_options, CreateCommandFactory()));
-        }
-
-        /// <summary>
-        /// Create an instance of the SMTP Command Factory.
-        /// </summary>
-        /// <returns>An instance of the SMTP server command factory.</returns>
-        SmtpCommandFactory CreateCommandFactory()
-        {
-            return new SmtpCommandFactory(_options, new SmtpParser());
+            return new SmtpSession(_options, tcpClient);
         }
     }
 }
