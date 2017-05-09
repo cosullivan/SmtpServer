@@ -8,6 +8,8 @@ SmtpServer currently supports the following ESMTP extensions:
 * STARTTLS
 * SIZE
 * PIPELINING
+* 8BITMIME
+* AUTH PLAIN LOGIN
 
 # How can it be used?
 
@@ -39,16 +41,14 @@ await smtpServer.StartAsync(CancellationToken.None);
 ```
 
 ```cs
-public class ConsoleMessageStore : IMessageStore, IMessageStoreFactory
+public class ConsoleMessageStore : MessageStore
 {
-    public IMessageStore CreateInstance(ISessionContext context)
+    public Task<SmtpResponse> SaveAsync(ISessionContext context, IMessageTransaction transaction, CancellationToken cancellationToken)
     {
-        return this;
-    }
-
-    public Task<SmtpResponse> SaveAsync(ISessionContext context, IMimeMessage message, CancellationToken cancellationToken)
-    {
-        Console.WriteLine(message.Mime);
+        var textMessage = (ITextMessage)transaction.Message;
+        
+        var message = MimeKit.MimeMessage.Load(textMessage.Content);
+        Console.WriteLine(message.TextBody);
     
         return Task.FromResult(SmtpResponse.Ok);
     }
@@ -58,7 +58,7 @@ public class ConsoleMessageStore : IMessageStore, IMessageStoreFactory
 ```cs
 public class MailboxFilter : IMailboxFilter
 {
-    public Task<MailboxFilterResult> CanAcceptFromAsync(IMailbox @from, int size = 0)
+    public Task<MailboxFilterResult> CanAcceptFromAsync(ISessionContext context, IMailbox @from, int size = 0)
     {
         if (String.Equals(@from.Host, "test.com"))
         {
@@ -68,7 +68,7 @@ public class MailboxFilter : IMailboxFilter
         return Task.FromResult(MailboxFilterResult.NoPermanently);
     }
 
-    public Task<MailboxFilterResult> CanDeliverToAsync(IMailbox to, IMailbox @from)
+    public Task<MailboxFilterResult> CanDeliverToAsync(ISessionContext context, IMailbox to, IMailbox @from)
     {
         return Task.FromResult(MailboxFilterResult.Yes);
     }
