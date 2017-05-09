@@ -84,5 +84,10 @@ namespace SmtpServer
         /// The supported SSL protocols.
         /// </summary>
         public SslProtocols SupportedSslProtocols { get; internal set; }
+
+        /// <summary>
+        /// The logger instance to use.
+        /// </summary>
+        public ILogger Logger { get; internal set; }
     }
 }

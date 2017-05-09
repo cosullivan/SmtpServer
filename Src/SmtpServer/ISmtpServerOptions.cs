@@ -3,7 +3,6 @@ using System.Net;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using SmtpServer.Authentication;
-using SmtpServer.Protocol;
 using SmtpServer.Storage;
 
 namespace SmtpServer
@@ -59,5 +58,10 @@ namespace SmtpServer
         /// The supported SSL protocols.
         /// </summary>
         SslProtocols SupportedSslProtocols { get; }
+
+        /// <summary>
+        /// The logger instance to use.
+        /// </summary>
+        ILogger Logger { get; }
     }
 }

@@ -31,13 +31,11 @@ namespace SmtpServer.Mail
         /// <param name="networkClient">The network client to deserialize the message from.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The message that was deserialized.</returns>
-        public Task<IMessage> DeserializeAsync(INetworkClient networkClient, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task<IMessage> DeserializeAsync(INetworkClient networkClient, CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            var entity = await new Deserializer(networkClient, cancellationToken).DeserializeMimeDocumentAsync();
 
-            //var entity = await new Deserializer(stream, cancellationToken).DeserializeMimeEntityAsync();
-
-            //return null;
+            return null;
         }
         
         #region Deserializer
@@ -56,6 +54,17 @@ namespace SmtpServer.Mail
             {
                 _networkClient = networkClient;
                 _cancellationToken = cancellationToken;
+            }
+
+            /// <summary>
+            /// Read a MIME entity from the current position in the stream.
+            /// </summary>
+            /// <returns>The MIME entity that was read from the stream.</returns>
+            public async Task<MimeDocument> DeserializeMimeDocumentAsync()
+            {
+                var entity = await DeserializeMimeEntityAsync();
+
+                throw new NotSupportedException();
             }
 
             /// <summary>
