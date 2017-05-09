@@ -22,6 +22,8 @@ namespace SmtpServer.Protocol
         {
             await context.Text.ReplyAsync(SmtpResponse.ServiceReady, cancellationToken);
             await context.Text.UpgradeAsync(Options.ServerCertificate, Options.SupportedSslProtocols, cancellationToken);
+
+            context.IsSecure = true;
         }
     }
 }

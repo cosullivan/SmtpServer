@@ -48,7 +48,7 @@ namespace SmtpServer.Protocol
             yield return "PIPELINING";
             yield return "8BITMIME";
 
-            if (session.Text.IsSecure == false && Options.ServerCertificate != null)
+            if (session.IsSecure == false && Options.ServerCertificate != null)
             {
                 yield return "STARTTLS";
             }
@@ -76,7 +76,7 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            return session.Text.IsSecure || Options.AllowUnsecureAuthentication;
+            return session.IsSecure || Options.AllowUnsecureAuthentication;
         }
 
         /// <summary>

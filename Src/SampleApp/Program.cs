@@ -45,8 +45,6 @@ namespace SampleApp
             s.WaitWithoutException();
             c.WaitWithoutException();
 
-            HERE: should i add BDAT first?
-
             return;
 
             if (args == null || args.Length == 0)

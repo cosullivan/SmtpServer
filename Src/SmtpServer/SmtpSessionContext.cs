@@ -72,7 +72,7 @@ namespace SmtpServer
         /// <summary>
         /// Returns a value indicating whether or not the current session is secure.
         /// </summary>
-        public bool IsSecure => Text.IsSecure;
+        public bool IsSecure { get; internal set; }
 
         /// <summary>
         /// Gets a value indicating whether a quit has been requested.
