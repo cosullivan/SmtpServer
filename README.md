@@ -31,9 +31,9 @@ There are three hooks that can be implemented; IMessageStore, IMailboxFilter, an
 var options = new OptionsBuilder()
     .ServerName("localhost")
     .Port(25, 587)
-    .MessageStore(new ConsoleMessageStore())
-    .MailboxFilter(new MailboxFilter())
-    .UserAuthenticator(new UserAuthenticator())
+    .MessageStore(new SampleMessageStore())
+    .MailboxFilter(new SampleMailboxFilter())
+    .UserAuthenticator(new SampleUserAuthenticator())
     .Build();
 
 var smtpServer = new SmtpServer.SmtpServer(options);
@@ -41,7 +41,7 @@ await smtpServer.StartAsync(CancellationToken.None);
 ```
 
 ```cs
-public class ConsoleMessageStore : MessageStore
+public class SampleMessageStore : MessageStore
 {
     public Task<SmtpResponse> SaveAsync(ISessionContext context, IMessageTransaction transaction, CancellationToken cancellationToken)
     {
@@ -56,7 +56,7 @@ public class ConsoleMessageStore : MessageStore
 ```
 
 ```cs
-public class MailboxFilter : IMailboxFilter
+public class SampleMailboxFilter : IMailboxFilter
 {
     public Task<MailboxFilterResult> CanAcceptFromAsync(ISessionContext context, IMailbox @from, int size = 0)
     {
@@ -76,7 +76,7 @@ public class MailboxFilter : IMailboxFilter
 ```
 
 ```cs  
-public class UserAuthenticator : IUserAuthenticator
+public class SampleUserAuthenticator : IUserAuthenticator
 {
     public Task<bool> AuthenticateAsync(string user, string password)
     {
