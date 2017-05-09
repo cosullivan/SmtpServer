@@ -26,7 +26,7 @@ namespace SmtpServer
         {
             Transaction = new SmtpMessageTransaction();
             RemoteEndPoint = tcpClient.Client.RemoteEndPoint;
-            Text = new NetworkClient(tcpClient.GetStream());
+            Client = new NetworkClient(tcpClient.GetStream());
         }
 
         /// <summary>
@@ -57,7 +57,7 @@ namespace SmtpServer
         /// <summary>
         /// Gets the text stream to read from and write to.
         /// </summary>
-        public INetworkClient Text { get; }
+        public INetworkClient Client { get; }
 
         /// <summary>
         /// Gets the current transaction.

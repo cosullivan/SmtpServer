@@ -22,7 +22,7 @@ namespace SmtpServer.Protocol
         {
             context.Transaction.Reset();
 
-            return context.Text.ReplyAsync(SmtpResponse.Ok, cancellationToken);
+            return context.Client.ReplyAsync(SmtpResponse.Ok, cancellationToken);
         }
     }
 }

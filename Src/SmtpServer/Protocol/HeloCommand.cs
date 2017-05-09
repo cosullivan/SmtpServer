@@ -26,7 +26,7 @@ namespace SmtpServer.Protocol
         {
             var response = new SmtpResponse(SmtpReplyCode.Ok, $"Hello {Domain}, haven't we met before?");
 
-            return context.Text.ReplyAsync(response, cancellationToken);
+            return context.Client.ReplyAsync(response, cancellationToken);
         }
 
         /// <summary>

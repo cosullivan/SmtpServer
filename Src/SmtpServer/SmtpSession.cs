@@ -83,13 +83,13 @@ namespace SmtpServer
 
             while (retryCount-- > 0 && context.IsQuitRequested == false && cancellationToken.IsCancellationRequested == false)
             {
-                var text = await context.Text.ReadLineAsync(cancellationToken).ReturnOnAnyThread();
+                var text = await context.Client.ReadLineAsync(cancellationToken).ReturnOnAnyThread();
 
                 if (TryAccept(text, out SmtpCommand command, out SmtpResponse errorResponse) == false)
                 {
                     var response = new SmtpResponse(errorResponse.ReplyCode, $"{errorResponse.Message}, {retryCount} retry(ies) remaining.");
 
-                    await context.Text.ReplyAsync(response, cancellationToken);
+                    await context.Client.ReplyAsync(response, cancellationToken);
 
                     continue;
                 }
@@ -136,8 +136,8 @@ namespace SmtpServer
         {
             var version = typeof(SmtpSession).GetTypeInfo().Assembly.GetName().Version;
 
-            await Context.Text.WriteLineAsync($"220 {_options.ServerName} v{version} ESMTP ready", cancellationToken).ReturnOnAnyThread();
-            await Context.Text.FlushAsync(cancellationToken).ReturnOnAnyThread();
+            await Context.Client.WriteLineAsync($"220 {_options.ServerName} v{version} ESMTP ready", cancellationToken).ReturnOnAnyThread();
+            await Context.Client.FlushAsync(cancellationToken).ReturnOnAnyThread();
         }
 
         /// <summary>
@@ -145,7 +145,7 @@ namespace SmtpServer
         /// </summary>
         public void Dispose()
         {
-            Context.Text.Dispose();
+            Context.Client.Dispose();
 
             ((IDisposable)_tcpClient).Dispose();
 //#if !NETSTANDARD1_6
