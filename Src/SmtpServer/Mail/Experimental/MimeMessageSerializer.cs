@@ -14,18 +14,6 @@ namespace SmtpServer.Mail
     public sealed class MimeMessageSerializer : IMessageSerializer
     {
         /// <summary>
-        /// Serialize the message to a stream.
-        /// </summary>
-        /// <param name="message">The message to serialize.</param>
-        /// <param name="stream">The stream to serialize the message to.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The stream that the message was serialized to.</returns>
-        public Task SerializeAsync(IMessage message, Stream stream, CancellationToken cancellationToken = default(CancellationToken))
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
         /// Deserialize a message from the stream.
         /// </summary>
         /// <param name="networkClient">The network client to deserialize the message from.</param>
@@ -33,9 +21,9 @@ namespace SmtpServer.Mail
         /// <returns>The message that was deserialized.</returns>
         public async Task<IMessage> DeserializeAsync(INetworkClient networkClient, CancellationToken cancellationToken = default(CancellationToken))
         {
-            var entity = await new Deserializer(networkClient, cancellationToken).DeserializeMimeDocumentAsync();
+            var document = await new Deserializer(networkClient, cancellationToken).DeserializeMimeDocumentAsync();
 
-            return null;
+            return new MimeMessage(document);
         }
         
         #region Deserializer
@@ -64,7 +52,7 @@ namespace SmtpServer.Mail
             {
                 var entity = await DeserializeMimeEntityAsync();
 
-                throw new NotSupportedException();
+                return new MimeDocument(entity.HeaderOrDefault<MimeVersion>(), entity);
             }
 
             /// <summary>
@@ -126,12 +114,12 @@ namespace SmtpServer.Mail
             {
                 if (transferEncoding == ContentTransferEncoding.SevenBit)
                 {
-                    return await ReadPlainTextAsync(Encoding.ASCII).ReturnOnAnyThread();
+                    return await ReadPlainTextAsync().ReturnOnAnyThread();
                 }
 
                 if (transferEncoding == ContentTransferEncoding.EightBit)
                 {
-                    return await ReadPlainTextAsync(Encoding.UTF8).ReturnOnAnyThread();
+                    return await ReadPlainTextAsync().ReturnOnAnyThread();
                 }
 
                 throw new NotImplementedException();
@@ -140,12 +128,9 @@ namespace SmtpServer.Mail
             /// <summary>
             /// Read an unencoded/plain text message from the current position in the stream.
             /// </summary>
-            /// <param name="textEncoding">The text encoding to apply to the text mesage.</param>
             /// <returns>The stream that represents the message contents that was read.</returns>
-            async Task<Stream> ReadPlainTextAsync(Encoding textEncoding)
+            async Task<Stream> ReadPlainTextAsync()
             {
-                // TODO: need to handle dot-stuffing here
-
                 return new ByteArrayStream(await _networkClient.ReadUntilAsync(new byte[] { 13, 10, 46, 13, 10 }, _cancellationToken));
             }
 
@@ -155,30 +140,15 @@ namespace SmtpServer.Mail
             /// <returns>The list of MIME headers that were read.</returns>
             async Task<IReadOnlyList<IMimeHeader>> DeserializeMimeHeadersAsync()
             {
-                var tokens = await ReadMimeHeaderTokensAsync().ReturnOnAnyThread();
+                var blocks = await _networkClient.ReadBlockAsync(_cancellationToken).ReturnOnAnyThread();
 
-                var mimeParser = new MimeParser(new TokenEnumerator(tokens));
-
+                var mimeParser = new MimeParser(new TokenEnumerator(new ByteArrayTokenReader(blocks)));
                 if (mimeParser.TryMakeFieldList(out List<IMimeHeader> headers) == false)
                 {
                     throw new MimeParseException("Could not match the MIME headers.");
                 }
 
                 return headers;
-            }
-
-            /// <summary>
-            /// Read the MIME headers.
-            /// </summary>
-            /// <returns>The list of MIME headers that were read.</returns>
-            async Task<IReadOnlyList<Token>> ReadMimeHeaderTokensAsync()
-            {
-                var tokenReader = new ByteArrayTokenReader(await _networkClient.ReadBlockAsync(_cancellationToken).ReturnOnAnyThread());
-
-                //https://tools.ietf.org/html/rfc6531
-                //https://tools.ietf.org/html/rfc6532
-
-                return tokenReader.ToList();
             }
         }
 

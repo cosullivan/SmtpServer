@@ -52,5 +52,19 @@ namespace SmtpServer.Tests
             Assert.Equal(1, ((ContentType)header).Parameters.Count);
             Assert.Equal("us-ascii", ((ContentType)header).Parameters["charset"]);
         }
+
+        [Fact]
+        public void CanMakeMimeHeaderList()
+        {
+            // arrange
+            var parser = CreateParser("MIME-Version: 1.0\r\nContent-Type: text/plain; charset=us-ascii\r\n");
+
+            // act
+            var made = parser.TryMakeFieldList(out List<IMimeHeader> headers);
+
+            // assert
+            Assert.True(made);
+            Assert.Equal(2, headers.Count);
+        }
     }
 }

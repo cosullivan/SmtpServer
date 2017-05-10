@@ -128,17 +128,9 @@ namespace SmtpServer.Mime
         /// <returns>true if the end of line could be made, false if not.</returns>
         internal bool TryMakeEnd()
         {
-            while (Enumerator.Peek() != Token.None)
-            {
-                Enumerator.Skip(TokenKind.Space);
+            Enumerator.Skip(TokenKind.Space);
 
-                if (Enumerator.Take() != Token.NewLine)
-                {
-                    return false;
-                }
-            }
-            
-            return true;
+            return Enumerator.Take() == Token.None;
         }
 
         /// <summary>
@@ -853,7 +845,9 @@ namespace SmtpServer.Mime
         {
             Enumerator.Skip(TokenKind.Space);
 
-            return Enumerator.Take() == Token.NewLine;
+            var token = Enumerator.Take();
+
+            return token == Token.NewLine || token == Token.None;
         }
 
         /// <summary>

@@ -1,5 +1,5 @@
+using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 
 namespace SmtpServer.Mime
@@ -26,25 +26,22 @@ namespace SmtpServer.Mime
         public IReadOnlyList<IMimeHeader> Headers { get; }
     }
 
-    public sealed class MimePart : MimeEntity
+    public static class MimeEntityExtensions
     {
         /// <summary>
-        /// Constructor.
+        /// Return the header of the specified type.
         /// </summary>
-        /// <param name="headers">The list of headers for the entity.</param>
-        /// <param name="content">The contents of the MIME part.</param>
-        public MimePart(IReadOnlyList<IMimeHeader> headers, Stream content) : base(headers)
+        /// <typeparam name="THeader">The type of the header to return.</typeparam>
+        /// <param name="entity">The entity that contains the headers.</param>
+        /// <returns>The header of the specified type.</returns>
+        public static THeader HeaderOrDefault<THeader>(this MimeEntity entity) where THeader : IMimeHeader
         {
-            Content = content;
+            if (entity == null)
+            {
+                throw new ArgumentNullException(nameof(entity));
+            }
+
+            return entity.Headers.OfType<THeader>().SingleOrDefault();
         }
-
-        /// <summary>
-        /// The contents of the MIME part.
-        /// </summary>
-        public Stream Content { get; }
     }
-
-    public sealed class MimeMultipart { }
-
-    public sealed class MimeMessagePart { }
 }
