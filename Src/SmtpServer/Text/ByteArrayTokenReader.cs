@@ -5,7 +5,7 @@ using System.Text;
 
 namespace SmtpServer.Text
 {
-    internal sealed class ByteArrayTokenReader : TokenReader
+    public sealed class ByteArrayTokenReader : TokenReader
     {
         readonly IReadOnlyList<ArraySegment<byte>> _segments;
         readonly int _length;
@@ -15,7 +15,7 @@ namespace SmtpServer.Text
         /// Constructor.
         /// </summary>
         /// <param name="segments">The list of array segments to read from.</param>
-        internal ByteArrayTokenReader(IReadOnlyList<ArraySegment<byte>> segments)
+        public ByteArrayTokenReader(IReadOnlyList<ArraySegment<byte>> segments)
         {
             _segments = segments;
             _length = segments.Sum(segment => segment.Count);

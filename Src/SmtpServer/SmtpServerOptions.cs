@@ -9,7 +9,7 @@ using SmtpServer.Storage;
 
 namespace SmtpServer
 {
-    internal sealed class SmtpServerOptions : ISmtpServerOptions
+    public sealed class SmtpServerOptions : ISmtpServerOptions
     {
         readonly Collection<IPEndPoint> _endpoints = new Collection<IPEndPoint>();
         readonly Collection<IMailboxFilterFactory> _mailboxFilterFactories = new Collection<IMailboxFilterFactory>();
