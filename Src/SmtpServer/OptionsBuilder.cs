@@ -11,7 +11,8 @@ namespace SmtpServer
         readonly SmtpServerOptions _options = new SmtpServerOptions
         {
             MaxRetryCount = 5,
-            SupportedSslProtocols = SslProtocols.Tls
+            SupportedSslProtocols = SslProtocols.Tls,
+            Logger = new NullLogger()
         };
 
         /// <summary>
@@ -156,6 +157,18 @@ namespace SmtpServer
         public OptionsBuilder SupportedSslProtocols(SslProtocols sslProtocols)
         {
             _options.SupportedSslProtocols = sslProtocols;
+
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the logger instance.
+        /// </summary>
+        /// <param name="logger">The logger instance.</param>
+        /// <returns>A OptionsBuilder to continue building on.</returns>
+        public OptionsBuilder Logger(ILogger logger)
+        {
+            _options.Logger = logger;
 
             return this;
         }

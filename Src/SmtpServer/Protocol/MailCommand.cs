@@ -38,7 +38,7 @@ namespace SmtpServer.Protocol
             // check against the server supplied maximum
             if (Options.MaxMessageSize > 0 && size > Options.MaxMessageSize)
             {
-                await context.Text.ReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ReturnOnAnyThread();
+                await context.Client.ReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ReturnOnAnyThread();
                 return;
             }
 
@@ -48,19 +48,19 @@ namespace SmtpServer.Protocol
                 {
                     case MailboxFilterResult.Yes:
                         context.Transaction.From = Address;
-                        await context.Text.ReplyAsync(SmtpResponse.Ok, cancellationToken).ReturnOnAnyThread();
+                        await context.Client.ReplyAsync(SmtpResponse.Ok, cancellationToken).ReturnOnAnyThread();
                         return;
 
                     case MailboxFilterResult.NoTemporarily:
-                        await context.Text.ReplyAsync(SmtpResponse.MailboxUnavailable, cancellationToken).ReturnOnAnyThread();
+                        await context.Client.ReplyAsync(SmtpResponse.MailboxUnavailable, cancellationToken).ReturnOnAnyThread();
                         return;
 
                     case MailboxFilterResult.NoPermanently:
-                        await context.Text.ReplyAsync(SmtpResponse.MailboxNameNotAllowed, cancellationToken).ReturnOnAnyThread();
+                        await context.Client.ReplyAsync(SmtpResponse.MailboxNameNotAllowed, cancellationToken).ReturnOnAnyThread();
                         return;
 
                     case MailboxFilterResult.SizeLimitExceeded:
-                        await context.Text.ReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ReturnOnAnyThread();
+                        await context.Client.ReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ReturnOnAnyThread();
                         return;
                 }
             }

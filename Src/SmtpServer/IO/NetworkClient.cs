@@ -116,8 +116,7 @@ namespace SmtpServer.IO
             var stream = new SslStream(_stream, true);
 
             await stream.AuthenticateAsServerAsync(certificate, false, protocols, true);
-            IsSecure = true;
-
+            
             _stream = stream;
         }
 
@@ -166,10 +165,5 @@ namespace SmtpServer.IO
             buffer = new ArraySegment<byte>(_buffer, start, _index - start);
             return @continue(current);
         }
-
-        /// <summary>
-        /// Returns a value indicating whether or not the stream is secure.
-        /// </summary>
-        public bool IsSecure { get; private set; }
     }
 }

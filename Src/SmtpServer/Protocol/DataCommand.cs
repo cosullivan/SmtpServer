@@ -25,11 +25,11 @@ namespace SmtpServer.Protocol
         {
             if (context.Transaction.To.Count == 0)
             {
-                await context.Text.ReplyAsync(SmtpResponse.NoValidRecipientsGiven, cancellationToken).ConfigureAwait(false);
+                await context.Client.ReplyAsync(SmtpResponse.NoValidRecipientsGiven, cancellationToken).ConfigureAwait(false);
                 return;
             }
 
-            await context.Text.ReplyAsync(new SmtpResponse(SmtpReplyCode.StartMailInput, "end with <CRLF>.<CRLF>"), cancellationToken).ConfigureAwait(false);
+            await context.Client.ReplyAsync(new SmtpResponse(SmtpReplyCode.StartMailInput, "end with <CRLF>.<CRLF>"), cancellationToken).ConfigureAwait(false);
 
             context.Transaction.Message = await ReadMessageAsync(context, cancellationToken).ConfigureAwait(false);
 
@@ -40,12 +40,12 @@ namespace SmtpServer.Protocol
                 {
                     var response = await container.Instance.SaveAsync(context, context.Transaction, cancellationToken).ConfigureAwait(false);
 
-                    await context.Text.ReplyAsync(response, cancellationToken).ConfigureAwait(false);
+                    await context.Client.ReplyAsync(response, cancellationToken).ConfigureAwait(false);
                 }
             }
             catch (Exception)
             {
-                await context.Text.ReplyAsync(new SmtpResponse(SmtpReplyCode.TransactionFailed), cancellationToken).ConfigureAwait(false);
+                await context.Client.ReplyAsync(new SmtpResponse(SmtpReplyCode.TransactionFailed), cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -59,7 +59,7 @@ namespace SmtpServer.Protocol
         {
             var serializer = new MessageSerializerFactory().CreateInstance();
 
-            return serializer.DeserializeAsync(context.Text, cancellationToken);
+            return serializer.DeserializeAsync(context.Client, cancellationToken);
         }
     }
 }

@@ -37,7 +37,7 @@ namespace SmtpServer.Protocol
                 case AuthenticationMethod.Plain:
                     if (await TryPlainAsync(context, cancellationToken).ReturnOnAnyThread() == false)
                     {
-                        await context.Text.ReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ReturnOnAnyThread();
+                        await context.Client.ReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ReturnOnAnyThread();
                         return;
                     }
                     break;
@@ -45,7 +45,7 @@ namespace SmtpServer.Protocol
                 case AuthenticationMethod.Login:
                     if (await TryLoginAsync(context, cancellationToken).ReturnOnAnyThread() == false)
                     {
-                        await context.Text.ReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ReturnOnAnyThread();
+                        await context.Client.ReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ReturnOnAnyThread();
                         return;
                     }
                     break;
@@ -53,11 +53,11 @@ namespace SmtpServer.Protocol
 
             if (await Options.UserAuthenticator.AuthenticateAsync(_user, _password).ReturnOnAnyThread() == false)
             {
-                await context.Text.ReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ReturnOnAnyThread();
+                await context.Client.ReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ReturnOnAnyThread();
                 return;
             }
 
-            await context.Text.ReplyAsync(SmtpResponse.AuthenticationSuccessful, cancellationToken).ReturnOnAnyThread();
+            await context.Client.ReplyAsync(SmtpResponse.AuthenticationSuccessful, cancellationToken).ReturnOnAnyThread();
 
             context.RaiseSessionAuthenticated();
         }
@@ -70,15 +70,15 @@ namespace SmtpServer.Protocol
         /// <returns>true if the PLAIN login sequence worked, false if not.</returns>
         async Task<bool> TryPlainAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            await context.Text.ReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, " "), cancellationToken).ConfigureAwait(false);
+            await context.Client.ReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, " "), cancellationToken).ConfigureAwait(false);
 
-            var authentication = await ReadBase64EncodedLineAsync(context.Text, cancellationToken).ReturnOnAnyThread();
+            var authentication = await ReadBase64EncodedLineAsync(context.Client, cancellationToken).ReturnOnAnyThread();
 
             var match = Regex.Match(authentication, "\x0000(?<user>.*)\x0000(?<password>.*)");
 
             if (match.Success == false)
             {
-                await context.Text.ReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ConfigureAwait(false);
+                await context.Client.ReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ConfigureAwait(false);
                 return false;
             }
 
@@ -96,13 +96,13 @@ namespace SmtpServer.Protocol
         /// <returns>true if the LOGIN login sequence worked, false if not.</returns>
         async Task<bool> TryLoginAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            await context.Text.ReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, "VXNlcm5hbWU6"), cancellationToken);
+            await context.Client.ReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, "VXNlcm5hbWU6"), cancellationToken);
 
-            _user = await ReadBase64EncodedLineAsync(context.Text, cancellationToken).ReturnOnAnyThread();
+            _user = await ReadBase64EncodedLineAsync(context.Client, cancellationToken).ReturnOnAnyThread();
           
-            await context.Text.ReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, "UGFzc3dvcmQ6"), cancellationToken);
+            await context.Client.ReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, "UGFzc3dvcmQ6"), cancellationToken);
 
-            _password = await ReadBase64EncodedLineAsync(context.Text, cancellationToken).ReturnOnAnyThread();
+            _password = await ReadBase64EncodedLineAsync(context.Client, cancellationToken).ReturnOnAnyThread();
 
             return true;
         }

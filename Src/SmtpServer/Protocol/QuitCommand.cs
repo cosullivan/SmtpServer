@@ -22,7 +22,7 @@ namespace SmtpServer.Protocol
         {
             context.Quit();
 
-            return context.Text.ReplyAsync(SmtpResponse.ServiceClosingTransmissionChannel, cancellationToken);
+            return context.Client.ReplyAsync(SmtpResponse.ServiceClosingTransmissionChannel, cancellationToken);
         }
     }
 }
