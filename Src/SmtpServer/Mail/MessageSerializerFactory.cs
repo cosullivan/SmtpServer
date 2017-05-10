@@ -8,8 +8,7 @@ namespace SmtpServer.Mail
         /// <returns>An instance of a message serializer.</returns>
         public IMessageSerializer CreateInstance()
         {
-            //return new TextMessageSerializer();
-            return new MimeMessageSerializer();
+            return new TextMessageSerializer();
         }
     }
 }
