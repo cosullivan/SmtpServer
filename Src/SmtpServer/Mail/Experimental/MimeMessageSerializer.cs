@@ -74,9 +74,13 @@ namespace SmtpServer.Mail
             {
                 var headers = await DeserializeMimeHeadersAsync().ReturnOnAnyThread();
 
-                switch (GetMediaType(headers).ToLower())
+                // TODO: check to ensure that this is a MIME-Version: 1.0 ?
+                var contentType = headers.OfType<ContentType>().Last();
+
+                switch (contentType.MediaType.ToLower())
                 {
                     case "multipart":
+                        var x = await DeserializeMultiPartAsync(headers, contentType);
                         break;
 
                     case "message":
@@ -89,20 +93,20 @@ namespace SmtpServer.Mail
                 throw new NotSupportedException();
             }
 
-            /// <summary>
-            /// Returns the media type that has been specified in the headers.
-            /// </summary>
-            /// <param name="headers">The list of headers that could possible contain the media type.</param>
-            /// <returns>The media type that has been defined.</returns>
-            static string GetMediaType(IReadOnlyList<IMimeHeader> headers)
-            {
-                // TODO: check the MIME-Version to make sure the content type 
-                // should exist otherwise allow for a default version type
+            ///// <summary>
+            ///// Returns the media type that has been specified in the headers.
+            ///// </summary>
+            ///// <param name="headers">The list of headers that could possible contain the media type.</param>
+            ///// <returns>The media type that has been defined.</returns>
+            //static string GetMediaType(IReadOnlyList<IMimeHeader> headers)
+            //{
+            //    // TODO: check the MIME-Version to make sure the content type 
+            //    // should exist otherwise allow for a default version type
 
-                var type = headers.OfType<ContentType>().Last();
+            //    var type = headers.OfType<ContentType>().Last();
 
-                return type.MediaType;
-            }
+            //    return type.MediaType;
+            //}
 
             /// <summary>
             /// Deserialize a MIME part from the current position in the stream.
@@ -134,6 +138,17 @@ namespace SmtpServer.Mail
                 }
 
                 throw new NotImplementedException();
+            }
+
+            async Task<MimeMultipart> DeserializeMultiPartAsync(IReadOnlyList<IMimeHeader> headers, ContentType contentType)
+            {
+                var boundary = new byte[] { 13, 10, 45, 45 }.Union(Encoding.ASCII.GetBytes(contentType.Parameters["boundary"])).ToArray();
+
+                HERE
+
+                await _networkClient.ReadUntilAsync(boundary, _cancellationToken);
+
+                return null;
             }
 
             /// <summary>
