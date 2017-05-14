@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Security;
 using System.Security.Authentication;
@@ -35,7 +36,8 @@ namespace SampleApp
                 .Build();
 
             var s = RunServerAsync(options, cancellationTokenSource.Token);
-            var c = RunClientAsync("A", 1, cancellationTokenSource.Token);
+            //var c = RunClientAsync("A", 1, cancellationTokenSource.Token);
+            var c = RunFolderAsync(@"C:\Dev\Enron Corpus\maildir", CancellationToken.None);
 
             Console.WriteLine("Press any key to continue");
             Console.ReadKey();
@@ -82,6 +84,18 @@ namespace SampleApp
             }
 
             if (args[0] == "client")
+            {
+                var clientTask = RunClientAsync(args[1], cancellationToken: cancellationTokenSource.Token);
+
+                Console.WriteLine("Press any key to continue");
+                Console.ReadKey();
+
+                cancellationTokenSource.Cancel();
+
+                clientTask.WaitWithoutException();
+            }
+
+            if (args[0] == "folder")
             {
                 var clientTask = RunClientAsync(args[1], cancellationToken: cancellationTokenSource.Token);
 
@@ -142,6 +156,48 @@ namespace SampleApp
                 }
 
                 counter++;
+            }
+        }
+
+        static async Task RunFolderAsync(string folder, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            foreach (var directory in Directory.GetDirectories(folder, "*", SearchOption.AllDirectories))
+            {
+                Console.WriteLine(directory);
+                cancellationToken.ThrowIfCancellationRequested();
+
+                foreach (var file in Directory.GetFiles(directory).ToList())
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    Console.WriteLine(new FileInfo(file).Name);
+
+                    MimeKit.MimeMessage message;
+                    try
+                    {
+                        message = MimeKit.MimeMessage.Load(ParserOptions.Default, file);
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+
+                    using (var smtpClient = new SmtpClient())
+                    {
+                        try
+                        {
+                            await smtpClient.ConnectAsync("localhost", 9025, false, cancellationToken);
+                            await smtpClient.AuthenticateAsync("user", "password", cancellationToken);
+
+                            await smtpClient.SendAsync(message, cancellationToken).ConfigureAwait(false);
+                        }
+                        catch (Exception exception)
+                        {
+                            Console.WriteLine(exception);
+                        }
+
+                        await smtpClient.DisconnectAsync(true, cancellationToken);
+                    }
+                }
             }
         }
 

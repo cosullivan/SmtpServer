@@ -2,7 +2,7 @@
 
 namespace SmtpServer.Mail
 {
-    public class Mailbox : IMailbox
+    public sealed class Mailbox : IMailbox
     {
         /// <summary>
         /// Constructor.

@@ -1,6 +1,6 @@
 ﻿namespace SmtpServer.Protocol
 {
-    public enum SmtpState
+    internal enum SmtpState
     {
         Initialized = 0,
         WaitingForMail = 1,
