@@ -1,6 +1,9 @@
-﻿using System.Text;
+﻿using System;
+using System.IO;
+using System.Text;
 using SmtpServer.IO;
 using SmtpServer.Mail;
+using SmtpServer.Mime;
 using Xunit;
 
 namespace SmtpServer.Tests
@@ -21,11 +24,17 @@ namespace SmtpServer.Tests
             var serializer = new MimeMessageSerializer();
 
             // act
-            var document = await serializer.DeserializeDocumentAsync(CreateNetworkClient(Content.CanParseMessage));
+            var message = (IMimeMessage)await serializer.DeserializeAsync(CreateNetworkClient(Content.CanParseMessage));
 
             // assert
-            Assert.Equal(1, document.Version.Major);
-            Assert.Equal(0, document.Version.Minor);
+            Assert.Equal(1, message.Document.Version.Major);
+            Assert.Equal(0, message.Document.Version.Minor);
+
+            var part = (MimePart) message.Document.Body;
+            using (var reader = new StreamReader(part.Content))
+            {
+                Console.WriteLine(reader.ReadToEnd());
+            }
         }
 
         [Fact]
@@ -35,11 +44,11 @@ namespace SmtpServer.Tests
             var serializer = new MimeMessageSerializer();
 
             // act
-            var document = await serializer.DeserializeDocumentAsync(CreateNetworkClient(Content.CanParseMultiPartMessage));
+            var message = (IMimeMessage)await serializer.DeserializeAsync(CreateNetworkClient(Content.CanParseMultiPartMessage));
 
             // assert
-            Assert.Equal(1, document.Version.Major);
-            Assert.Equal(0, document.Version.Minor);
+            Assert.Equal(1, message.Document.Version.Major);
+            Assert.Equal(0, message.Document.Version.Minor);
         }
 
         #region Content

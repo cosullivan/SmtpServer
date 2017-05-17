@@ -62,6 +62,11 @@ namespace SmtpServer.Text
         /// </summary>
         public IReadOnlyList<Token> Tokens { get; }
 
+        /// <summary>
+        /// Returns the current position of the enumerator.
+        /// </summary>
+        public int Position => _index;
+
         #region TokenEnumeratorCheckpoint
 
         class TokenEnumeratorCheckpoint : ITokenEnumeratorCheckpoint

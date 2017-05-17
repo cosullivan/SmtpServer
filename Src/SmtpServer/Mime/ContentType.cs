@@ -4,6 +4,8 @@ namespace SmtpServer.Mime
 {
     public sealed class ContentType : IMimeHeader
     {
+        public static readonly ContentType TextPlain = new ContentType("text", "plain", new Dictionary<string, string>());
+
         /// <summary>
         /// Constructor.
         /// </summary>

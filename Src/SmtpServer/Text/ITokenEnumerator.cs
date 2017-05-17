@@ -27,6 +27,11 @@ namespace SmtpServer.Text
         /// The complete list of tokens.
         /// </summary>
         IReadOnlyList<Token> Tokens { get; }
+        
+        /// <summary>
+        /// Returns the current position of the enumerator.
+        /// </summary>
+        int Position { get; }
     }
 
     public static class TokenEnumeratorExtensions

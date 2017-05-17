@@ -65,14 +65,9 @@ namespace SmtpServer.IO
             var found = 0;
             return await client.ReadAsync(current =>
             {
-                if (current == sequence[found])
-                {
-                    found++;
-                }
-                else
-                {
-                    found = current == sequence[0] ? 1 : 0;
-                }
+                found = current == sequence[found]
+                    ? found + 1
+                    : current == sequence[0] ? 1 : 0;
 
                 return found < sequence.Length;
             },

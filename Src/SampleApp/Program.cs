@@ -11,6 +11,7 @@ using SmtpServer;
 using SmtpServer.Tracing;
 using MimeKit;
 using MimeKit.Text;
+using SmtpServer.Tests;
 using SmtpClient = MailKit.Net.Smtp.SmtpClient;
 
 namespace SampleApp
@@ -19,6 +20,11 @@ namespace SampleApp
     {
         static void Main(string[] args)
         {
+            var tests = new MimeMessageSerializerTests();
+            tests.CanParseMessage();
+
+            return;
+
             var cancellationTokenSource = new CancellationTokenSource();
 
             var certificate = CreateCertificate();
@@ -36,8 +42,8 @@ namespace SampleApp
                 .Build();
 
             var s = RunServerAsync(options, cancellationTokenSource.Token);
-            //var c = RunClientAsync("A", 1, cancellationTokenSource.Token);
-            var c = RunFolderAsync(@"C:\Dev\Enron Corpus\maildir", CancellationToken.None);
+            var c = RunClientAsync("A", 1, cancellationTokenSource.Token);
+            //var c = RunFolderAsync(@"C:\Dev\Enron Corpus\maildir", CancellationToken.None);
 
             Console.WriteLine("Press any key to continue");
             Console.ReadKey();

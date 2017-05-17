@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using SmtpServer.Text;
 using System.Linq;
+using System.Xml.Schema;
+using SmtpServer.IO;
 
 namespace SmtpServer.Mime
 {
@@ -101,6 +104,162 @@ namespace SmtpServer.Mime
         public MimeParser(ITokenEnumerator enumerator) : base(enumerator) { }
 
         /// <summary>
+        /// Attempt to make a MIME document.
+        /// </summary>
+        /// <param name="document">The document that was made.</param>
+        /// <returns>true if the document could be made, false if not.</returns>
+        public bool TryMakeDocument(out MimeDocument document)
+        {
+            document = null;
+
+            if (TryMakeFieldList(out List<IMimeHeader> headers) == false)
+            {
+                return false;
+            }
+
+            var version = headers.OfType<MimeVersion>().SingleOrDefault();
+            if (version == null || (version.Major != 1 && version.Minor != 0))
+            {
+                return false;
+            }
+
+            if (TryMakeEntity(headers, out MimeEntity entity) == false)
+            {
+                return false;
+            }
+
+            document = new MimeDocument(version, entity);
+            return true;
+        }
+
+        /// <summary>
+        /// Attempt to make a MIME entity.
+        /// </summary>
+        /// <param name="entity">The entity that was made.</param>
+        /// <returns>true if the entity could be made, false if not.</returns>
+        public bool TryMakeEntity(out MimeEntity entity)
+        {
+            entity = null;
+
+            if (TryMakeFieldList(out List<IMimeHeader> headers) == false)
+            {
+                // TODO: are the headers optional?
+                return false;
+            }
+
+            return TryMakeEntity(headers, out entity);
+        }
+
+        /// <summary>
+        /// Attempt to make a MIME entity.
+        /// </summary>
+        /// <param name="headers">The list of header fields that were made.</param>
+        /// <param name="entity">The entity that was made.</param>
+        /// <returns>true if the entity could be made, false if not.</returns>
+        public bool TryMakeEntity(List<IMimeHeader> headers, out MimeEntity entity)
+        {
+            entity = null;
+
+            var type = headers.OfType<ContentType>().SingleOrDefault() ?? ContentType.TextPlain;
+
+            if (TryMakeContent(type, out Stream content) == false)
+            {
+                return false;
+            }
+
+            entity = new MimePart(headers, content);
+            return true;
+        }
+
+        /// <summary>
+        /// Attempt to make the MIME content.
+        /// </summary>
+        /// <param name="type">The content type to make.</param>
+        /// <param name="stream">The stream that represents the content.</param>
+        /// <returns>true if the content was made, false if not.</returns>
+        internal bool TryMakeContent(ContentType type, out Stream stream)
+        {
+            if (type.MediaType.ToLower() == "text")
+            {
+                return TryMakeTextContent(out stream);
+            }
+
+            stream = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Attempt to make the MIME content text.
+        /// </summary>
+        /// <param name="stream">The stream that represents the content.</param>
+        /// <returns>true if the content was made, false if not.</returns>
+        internal bool TryMakeTextContent(out Stream stream)
+        {
+            var offset = Enumerator.Position;
+
+            Enumerator.Skip(token => token != Token.None);
+
+            stream = new TokenArrayStream(Enumerator.Tokens, offset, Enumerator.Position - offset);
+            return true;
+        }
+
+        /// <summary>
+        /// Attempt to make tokens until a given sequence has been reached.
+        /// </summary>
+        /// <param name="sequence">The sequence to make.</param>
+        /// <param name="offset">The offset into the token list that the match started from.</param>
+        /// <param name="count">The number of tokens that were made.</param>
+        /// <returns>true if the sequence was found, false if not.</returns>
+        bool TryMakeUntil(Token[] sequence, out int offset, out int count)
+        {
+            offset = Enumerator.Position;
+
+            var found = 0;
+            while (Enumerator.Peek() != Token.None && found < sequence.Length)
+            {
+                var current = Enumerator.Take();
+
+                found = current == sequence[found]
+                    ? found + 1
+                    : current == sequence[0] ? 1 : 0;
+            }
+
+            count = Enumerator.Position - offset;
+            return found == sequence.Length;
+        }
+
+        ///// <summary>
+        ///// Returns a continuous segment of bytes until the given sequence is reached.
+        ///// </summary>
+        ///// <param name="client">The byte stream to perform the operation on.</param>
+        ///// <param name="sequence">The sequence to match to enable the read operation to complete.</param>
+        ///// <param name="cancellationToken">The cancellation token.</param>
+        ///// <returns>The array segment that defines a continuous segment of characters that have matched the predicate.</returns>
+        //public static async Task<IReadOnlyList<ArraySegment<byte>>> ReadUntilAsync(this INetworkClient client, byte[] sequence, CancellationToken cancellationToken)
+        //{
+        //    if (client == null)
+        //    {
+        //        throw new ArgumentNullException(nameof(client));
+        //    }
+
+        //    var found = 0;
+        //    return await client.ReadAsync(current =>
+        //        {
+        //            if (current == sequence[found])
+        //            {
+        //                found++;
+        //            }
+        //            else
+        //            {
+        //                found = current == sequence[0] ? 1 : 0;
+        //            }
+
+        //            return found < sequence.Length;
+        //        },
+        //        cancellationToken: cancellationToken);
+        //}
+
+        /// <summary>
         /// Attempt to make a mime header field list.
         /// </summary>
         /// <param name="mimeHeaders">The list of headers that was found.</param>
@@ -119,7 +278,7 @@ namespace SmtpServer.Mime
                 mimeHeaders.Add(mimeHeader);
             }
 
-            return TryMakeEnd();
+            return TryMakeFieldEnd();
         }
 
         /// <summary>
