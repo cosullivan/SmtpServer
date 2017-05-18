@@ -5,13 +5,16 @@ using System.Net;
 using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer;
 using SmtpServer.Tracing;
 using MimeKit;
 using MimeKit.Text;
+using SmtpServer.IO;
 using SmtpServer.Tests;
+using SmtpServer.Text;
 using SmtpClient = MailKit.Net.Smtp.SmtpClient;
 
 namespace SampleApp
@@ -20,8 +23,22 @@ namespace SampleApp
     {
         static void Main(string[] args)
         {
-            var tests = new MimeMessageSerializerTests();
-            tests.CanParseMessage();
+            //var tests = new MimeMessageSerializerTests();
+            //tests.CanParseMessage();
+
+            //65,65,65,45,46,46,46
+            //var stream = new System.IO.MemoryStream(Encoding.ASCII.GetBytes("AAAA-123"));
+            var stream = new System.IO.MemoryStream(new byte[] { 65, 65, 65, 45, 49, 49, 49 });
+            var networkClient = new NetworkClient(stream, 5);
+
+            //HERE: change from ReadLineASync to ReadBlock?
+
+            var reader = new ByteArrayTokenReader2(networkClient.ReadDotBlockAsync().Result);
+            Token token;
+            while ((token = reader.NextToken()) != Token.None)
+            {
+                Console.WriteLine(token);
+            }
 
             return;
 
