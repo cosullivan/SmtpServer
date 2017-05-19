@@ -385,7 +385,7 @@ namespace SmtpServer.Text
         /// <returns>The array segment that defines a continuous segment of characters that have matched the predicate.</returns>
         IEnumerable<ArraySegment<byte>> ConsumeWhile(Func<byte, bool> predicate, long limit)
         {
-            while (EnsureMoreDataIsAvailable())
+            while (_segmentIndex < _segments.Count)
             {
                 var segment = Consume(predicate, ref limit);
                 
@@ -395,6 +395,14 @@ namespace SmtpServer.Text
                 }
 
                 yield return segment;
+
+                if (_index < _segments[_segmentIndex].Count)
+                {
+                    yield break;
+                }
+
+                _index = 0;
+                _segmentIndex++;
             }
         }
 
