@@ -28,7 +28,7 @@ namespace SampleApp
 
             //65,65,65,45,46,46,46
             //var stream = new System.IO.MemoryStream(Encoding.ASCII.GetBytes("AAAA-123"));
-            var stream = new System.IO.MemoryStream(new byte[] { 65, 65, 65, 45, 49, 49, 49 });
+            var stream = new System.IO.MemoryStream(new byte[] { 65, 65, 65, 65, 65, 45, 49, 49, 49 });
             var networkClient = new NetworkClient(stream, 5);
 
             //HERE: change from ReadLineASync to ReadBlock?

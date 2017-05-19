@@ -208,15 +208,15 @@ namespace SmtpServer.Text
         //    throw new InvalidOperationException();
         //}
 
-        byte Peek()
-        {
-            if (_segmentIndex < _segments.Count && _index < _segments[_segmentIndex].Count - 1)
-            {
-                return _segments[_segmentIndex].Array[_segments[_segmentIndex].Offset + _index + 1];
-            }
+        //byte Peek()
+        //{
+        //    if (_segmentIndex < _segments.Count && _index < _segments[_segmentIndex].Count - 1)
+        //    {
+        //        return _segments[_segmentIndex].Array[_segments[_segmentIndex].Offset + _index + 1];
+        //    }
 
-            throw new NotImplementedException();
-        }
+        //    throw new NotImplementedException();
+        //}
 
         /// <summary>
         /// Returns the value at the current position.
@@ -299,6 +299,13 @@ namespace SmtpServer.Text
         /// <returns>The new line token that was found at the current position.</returns>
         Token NewLineToken()
         {
+            //var start = _index;
+
+            //if (_index < _segments[_segmentIndex].Count - 1)
+            //{
+            //    var segment = new 
+            //}
+
             const int WaitingForCR = 0;
             const int WaitingForLF = 1;
             const int Complete = 2;
@@ -321,12 +328,13 @@ namespace SmtpServer.Text
                         if (b == 10)
                         {
                             state = Complete;
+                            return true;
                         }
                         break;
                 }
-                return false;    
+                return false;
             }, 2).ToArray();
-            
+
 
             throw new NotImplementedException();
         }
@@ -368,53 +376,7 @@ namespace SmtpServer.Text
 
             return _segmentIndex < _segments.Count;
         }
-
-        ///// <summary>
-        ///// Returns a continuous segment of characters matching the predicate.
-        ///// </summary>
-        ///// <param name="predicate">The predicate to apply to the characters for the continuous segment.</param>
-        ///// <param name="limit">The limit to the number of characters to consume.</param>
-        ///// <returns>The array segment that defines a continuous segment of characters that have matched the predicate.</returns>
-        //IEnumerable<ArraySegment<byte>> ConsumeWhile(Func<byte, bool> predicate, long limit)
-        //{
-        //    while (EnsureMoreDataIsAvailable())
-        //    {
-        //        if (Consume(predicate, ref limit, out ArraySegment<byte> segment) == false)
-        //        {
-        //            if (segment.Count > 0)
-        //            {
-        //                yield return segment;
-        //            }
-
-        //            yield break;
-        //        }
-
-        //        yield return segment;
-        //    }
-        //}
-
-        ///// <summary>
-        ///// Consumes the bytes from the buffer until the continuation function indicates that it should complete.
-        ///// </summary>
-        ///// <param name="predicate">The continuation function to determine whether the consume operation should stop.</param>
-        ///// <param name="limit">The limit to the number of bytes to read.</param>
-        ///// <param name="segment">The buffer that contains the data that was consumed.</param>
-        ///// <returns>true if the operation should continue reading, false if not.</returns>
-        //bool Consume(Func<byte, bool> predicate, ref long limit, out ArraySegment<byte> segment)
-        //{
-        //    var current = _segments[_segmentIndex];
-        //    var start = _index;
-
-        //    var b = current.Array[current.Offset + _index];
-        //    while (predicate(b) && limit-- > 0 && ++_index < current.Count)
-        //    {
-        //        b = current.Array[current.Offset + _index];
-        //    }
-
-        //    segment = new ArraySegment<byte>(current.Array, current.Offset + start, _index - start);
-        //    return _index >= current.Count;
-        //}
-
+        
         /// <summary>
         /// Returns a continuous segment of characters matching the predicate.
         /// </summary>
