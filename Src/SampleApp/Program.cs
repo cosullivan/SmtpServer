@@ -17,6 +17,7 @@ using MimeKit.Text;
 using SmtpServer.IO;
 using SmtpServer.Tests;
 using SmtpServer.Text;
+using ISmtpServerOptions = SmtpServer.ISmtpServerOptions;
 using SmtpClient = MailKit.Net.Smtp.SmtpClient;
 
 namespace SampleApp
@@ -153,6 +154,8 @@ namespace SampleApp
             bool forceConnection = true,
             CancellationToken cancellationToken = default(CancellationToken))
         {
+            var message = MimeKit.MimeMessage.Load(ParserOptions.Default, @"C:\Dev\Enron Corpus\maildir\allen-p\inbox\31_");
+
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
@@ -173,7 +176,8 @@ namespace SampleApp
                             }
                         }
 
-                        await SendMessageAsync(smtpClient, name, counter, cancellationToken);
+                        //await SendMessageAsync(smtpClient, name, counter, cancellationToken);
+                        await smtpClient.SendAsync(message, cancellationToken).ConfigureAwait(false);
                     }
                     catch (Exception exception)
                     {
@@ -196,6 +200,7 @@ namespace SampleApp
 
         static async Task SendMessageAsync(SmtpClient smtpClient, string name, int counter, CancellationToken cancellationToken = default(CancellationToken))
         {
+            //C:\Dev\Enron Corpus\maildir\allen-p\inbox\31_
             var message = new MimeKit.MimeMessage();
             message.From.Add(new MimeKit.MailboxAddress($"{name}{counter}@test.com"));
             message.To.Add(new MimeKit.MailboxAddress("sample@test.com"));

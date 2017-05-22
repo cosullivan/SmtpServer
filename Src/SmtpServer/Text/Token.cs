@@ -17,7 +17,7 @@ namespace SmtpServer.Text
         /// </summary>
         /// <param name="kind">The token kind.</param>
         /// <param name="segments">The segments that the token was match to.</param>
-        public Token(TokenKind kind, params ArraySegment<byte>[] segments) : this()
+        public Token(TokenKind kind, params ArraySegment<byte>[] segments)
         {
             Kind = kind;
             Segments = segments;
@@ -172,12 +172,12 @@ namespace SmtpServer.Text
         /// <returns>true if <paramref name="other"/> and this instance are the same type and represent the same value; otherwise, false. </returns>
         public bool Equals(Token other)
         {
-            if (Kind == other.Kind && Length == other.Length)
+            if (Kind != other.Kind || Length != other.Length)
             {
-                return String.Equals(Text(), other.Text(), StringComparison.OrdinalIgnoreCase);
+                return false;
             }
 
-            return false;
+            return Length == 0 || String.Equals(Text(), other.Text(), StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
