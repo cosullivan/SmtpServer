@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -7,10 +8,9 @@ using System.Text;
 namespace SmtpServer.Text
 {
     [DebuggerDisplay("[{Kind}] {Text()}")]
-    public struct Token
+    public struct Token : IEnumerable<byte>
     {
         public static readonly Token None = new Token(TokenKind.None);
-        //public static readonly Token NewLine = new Token(TokenKind.NewLine);
 
         /// <summary>
         /// Constructor.
@@ -21,38 +21,8 @@ namespace SmtpServer.Text
         {
             Kind = kind;
             Segments = segments;
+            Length = segments.Sum(s => s.Count);
         }
-
-        ///// <summary>
-        ///// Constructor.
-        ///// </summary>
-        ///// <param name="kind">The token kind.</param>
-        //Token(TokenKind kind) : this(kind, String.Empty)
-        //{
-        //    Kind = kind;
-        //}
-
-        ///// <summary>
-        ///// Constructor.
-        ///// </summary>
-        ///// <param name="kind">The token kind.</param>
-        ///// <param name="text">The token text.</param>
-        //public Token(TokenKind kind, string text) : this()
-        //{
-        //    //TextValue = text;
-        //    Kind = kind;
-        //}
-
-        ///// <summary>
-        ///// Constructor.
-        ///// </summary>
-        ///// <param name="kind">The token kind.</param>
-        ///// <param name="ch">The character to create the token from.</param>
-        //public Token(TokenKind kind, char ch) : this()
-        //{
-        //    //TextValue = ch.ToString();
-        //    Kind = kind;
-        //}
 
         /// <summary>
         /// Create a token for the given text.
@@ -202,7 +172,30 @@ namespace SmtpServer.Text
         /// <returns>true if <paramref name="other"/> and this instance are the same type and represent the same value; otherwise, false. </returns>
         public bool Equals(Token other)
         {
-            return Kind == other.Kind && String.Equals(TextValue, other.TextValue, StringComparison.OrdinalIgnoreCase);
+            if (Kind == other.Kind && Length == other.Length)
+            {
+                return String.Equals(Text(), other.Text(), StringComparison.OrdinalIgnoreCase);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Returns an enumerator that iterates through the collection.
+        /// </summary>
+        /// <returns>An enumerator that can be used to iterate through the collection.</returns>
+        public IEnumerator<byte> GetEnumerator()
+        {
+            return Segments.SelectMany(s => s).GetEnumerator();
+        }
+
+        /// <summary>
+        /// Returns an enumerator that iterates through a collection.
+        /// </summary>
+        /// <returns>An <see cref="T:System.Collections.IEnumerator" /> object that can be used to iterate through the collection.</returns>
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
 
         /// <summary>
@@ -230,7 +223,7 @@ namespace SmtpServer.Text
         {
             unchecked
             {
-                return ((TextValue?.GetHashCode() ?? 0) * 397) ^ (int)Kind;
+                return ((Text()?.GetHashCode() ?? 0) * 397) ^ (int)Kind;
             }
         }
 
@@ -275,21 +268,18 @@ namespace SmtpServer.Text
         }
 
         /// <summary>
-        /// Returns the segment information.
-        /// </summary>
-        public IReadOnlyList<ArraySegment<byte>> Segments { get; }
-
-        /// <summary>
-        /// Gets the token text.
-        /// </summary>
-        public string TextValue
-        {
-            get { return Text(); }
-        }
-
-        /// <summary>
         /// Gets the token kind.
         /// </summary>
         public TokenKind Kind { get; }
+
+        /// <summary>
+        /// Returns the length of the token in bytes.
+        /// </summary>
+        public int Length { get; }
+
+        /// <summary>
+        /// Returns the segment information.
+        /// </summary>
+        public IReadOnlyList<ArraySegment<byte>> Segments { get; }
     }
 }

@@ -5,7 +5,6 @@ using SmtpServer.Mail;
 using SmtpServer.Protocol;
 using SmtpServer.Text;
 using Xunit;
-using Xunit.Extensions;
 
 namespace SmtpServer.Tests
 {
@@ -15,7 +14,7 @@ namespace SmtpServer.Tests
         {
             var segment = new ArraySegment<byte>(Encoding.ASCII.GetBytes(text));
 
-            return new SmtpParser(new SmtpServerOptions(), new TokenEnumerator(new ByteArrayTokenReader(new [] { segment })));
+            return new SmtpParser(new SmtpServerOptions { Logger = new NullLogger() }, new TokenEnumerator(new ByteArrayTokenReader(new [] { segment })));
         }
 
         [Fact]

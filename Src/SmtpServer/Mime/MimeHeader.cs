@@ -40,9 +40,6 @@ namespace SmtpServer.Mime
         /// <summary>
         /// The value for the header.
         /// </summary>
-        public string Value
-        {
-            get { return String.Concat(Enumerable.Select<Token, string>(Tokens, token => token.TextValue)); }
-        }
+        public string Value => String.Concat(Tokens.Select(token => token.Text()));
     }
 }

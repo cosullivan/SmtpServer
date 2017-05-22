@@ -18,7 +18,7 @@ namespace SmtpServer.Tests
             Assert.Equal(2, tokens.Count);
             Assert.Equal(TokenKind.Text, tokens[0].Kind);
             Assert.Equal(TokenKind.None, tokens[1].Kind);
-            Assert.Equal("ABC", tokens[0].TextValue);
+            Assert.Equal("ABC", tokens[0].Text());
         }
 
         [Fact]
@@ -31,7 +31,7 @@ namespace SmtpServer.Tests
             Assert.Equal(2, tokens.Count);
             Assert.Equal(TokenKind.Number, tokens[0].Kind);
             Assert.Equal(TokenKind.None, tokens[1].Kind);
-            Assert.Equal("123", tokens[0].TextValue);
+            Assert.Equal("123", tokens[0].Text());
         }
 
         [Fact]
@@ -45,8 +45,8 @@ namespace SmtpServer.Tests
             Assert.Equal(TokenKind.Number, tokens[0].Kind);
             Assert.Equal(TokenKind.Text, tokens[1].Kind);
             Assert.Equal(TokenKind.None, tokens[2].Kind);
-            Assert.Equal("123", tokens[0].TextValue);
-            Assert.Equal("abc", tokens[1].TextValue);
+            Assert.Equal("123", tokens[0].Text());
+            Assert.Equal("abc", tokens[1].Text());
         }
 
         [Fact]
@@ -59,7 +59,7 @@ namespace SmtpServer.Tests
             Assert.Equal(2, tokens.Count);
             Assert.Equal(TokenKind.Other, tokens[0].Kind);
             Assert.Equal(TokenKind.None, tokens[1].Kind);
-            Assert.Equal("+", tokens[0].TextValue);
+            Assert.Equal("+", tokens[0].Text());
         }
         
         [Fact]
@@ -90,10 +90,10 @@ namespace SmtpServer.Tests
             Assert.Equal(TokenKind.Space, tokens[5].Kind);
             Assert.Equal(TokenKind.Text, tokens[6].Kind);
             Assert.Equal(TokenKind.None, tokens[7].Kind);
-            Assert.Equal("The", tokens[0].TextValue);
-            Assert.Equal("time", tokens[2].TextValue);
-            Assert.Equal("has", tokens[4].TextValue);
-            Assert.Equal("come", tokens[6].TextValue);
+            Assert.Equal("The", tokens[0].Text());
+            Assert.Equal("time", tokens[2].Text());
+            Assert.Equal("has", tokens[4].Text());
+            Assert.Equal("come", tokens[6].Text());
         }
 
         static IReadOnlyList<Token> Tokenize(string input)

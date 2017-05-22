@@ -448,7 +448,7 @@ namespace SmtpServer.Mime
                 return false;
             }
 
-            version = new MimeVersion(Int32.Parse(major.TextValue), Int32.Parse(minor.TextValue));
+            version = new MimeVersion(Int32.Parse(major.Text()), Int32.Parse(minor.Text()));
             return true;
         }
 
@@ -587,7 +587,7 @@ namespace SmtpServer.Mime
         /// <remarks><![CDATA["binary"]]></remarks>
         internal bool TryMakeBinaryContentTransferEncodingMechanism(out string mechanism)
         {
-            mechanism = Enumerator.Take().TextValue;
+            mechanism = Enumerator.Take().Text();
 
             return mechanism.CaseInsensitiveEquals("binary");
         }
@@ -650,7 +650,7 @@ namespace SmtpServer.Mime
         { 
             if (Tokens.DescreteTypes.Contains(Enumerator.Peek()))
             {
-                type = Enumerator.Take().TextValue;
+                type = Enumerator.Take().Text();
                 return true;
             }
 
@@ -667,7 +667,7 @@ namespace SmtpServer.Mime
         {
             if (Tokens.CompositeTypes.Contains(Enumerator.Peek()))
             {
-                type = Enumerator.Take().TextValue;
+                type = Enumerator.Take().Text();
                 return true;
             }
 
@@ -706,7 +706,7 @@ namespace SmtpServer.Mime
         /// <remarks>The two characters "X-" or "x-" followed, with no intervening white space, by any token.</remarks>
         bool TryMakeXToken(out string xtoken)
         {
-            xtoken = Enumerator.Take().TextValue;
+            xtoken = Enumerator.Take().Text();
 
             if (xtoken == null || xtoken.CaseInsensitiveEquals("X") == false)
             {
@@ -757,7 +757,7 @@ namespace SmtpServer.Mime
                     return false;
                 }
 
-                name += token.TextValue;
+                name += token.Text();
                 token = Enumerator.Peek();
             }
 
@@ -781,8 +781,8 @@ namespace SmtpServer.Mime
                     return true;
 
                 case TokenKind.Other:
-                    var allowable = new char[] { '!', '#', '$', '&', '.', '+', '-', '^', '_' };
-                    return token.TextValue.Length == 1 && allowable.Contains(token.TextValue[0]);
+                    var allowable = new [] { '!', '#', '$', '&', '.', '+', '-', '^', '_' };
+                    return token.Length == 1 && allowable.Contains((char)token.First());
             }
 
             return false;
@@ -913,7 +913,7 @@ namespace SmtpServer.Mime
         bool TryMakePartialToken(out string token)
         {
             var t = Enumerator.Take();
-            token = t.TextValue;
+            token = t.Text();
 
             switch (t.Kind)
             {
@@ -973,7 +973,7 @@ namespace SmtpServer.Mime
         bool TryMakeQText(out string text)
         {
             var token = Enumerator.Take();
-            text = token.TextValue;
+            text = token.Text();
 
             return new[] { Tokens.Quote, Tokens.BackSlash, Tokens.CR }.Contains(token) == false;
         }
@@ -994,7 +994,7 @@ namespace SmtpServer.Mime
             }
 
             var token = Enumerator.Take();
-            text = token.TextValue;
+            text = token.Text();
 
             return text.Length == 1 && text[0] <= 127;
         }
@@ -1034,7 +1034,7 @@ namespace SmtpServer.Mime
 
                     case TokenKind.Space:
                     case TokenKind.Other:
-                        if (token.TextValue[0] <= 31)
+                        if (token.First() <= 31)
                         {
                             return false;
                         }
@@ -1044,7 +1044,7 @@ namespace SmtpServer.Mime
                         return false;
                 }
 
-                name += token.TextValue;
+                name += token.Text();
                 token = Enumerator.Peek();
             }
 

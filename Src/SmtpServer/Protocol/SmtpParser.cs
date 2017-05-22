@@ -19,23 +19,23 @@ namespace SmtpServer.Protocol
         static class Tokens
         {
             // ReSharper disable InconsistentNaming
-            internal static Token Hyphen = Token.Create('-');
-            internal static Token Colon = Token.Create(':');
-            internal static Token GreaterThan = Token.Create('>');
-            internal static Token LessThan = Token.Create('>');
-            internal static Token Comma = Token.Create(',');
-            internal static Token At = Token.Create('@');
-            internal static Token Period = Token.Create('.');
-            internal static Token LeftBracket = Token.Create('[');
-            internal static Token RightBracket = Token.Create(']');
-            internal static Token Quote = Token.Create('"');
-            internal static Token Equal = Token.Create('=');
-            internal static Token BackSlash = Token.Create('\\');
+            internal static readonly Token Hyphen = Token.Create('-');
+            internal static readonly Token Colon = Token.Create(':');
+            internal static readonly Token LessThan = Token.Create('<');
+            internal static readonly Token GreaterThan = Token.Create('>');
+            internal static readonly Token Comma = Token.Create(',');
+            internal static readonly Token At = Token.Create('@');
+            internal static readonly Token Period = Token.Create('.');
+            internal static readonly Token LeftBracket = Token.Create('[');
+            internal static readonly Token RightBracket = Token.Create(']');
+            internal static readonly Token Quote = Token.Create('"');
+            internal static readonly Token Equal = Token.Create('=');
+            internal static readonly Token BackSlash = Token.Create('\\');
 
             internal static class Text
             {
-                internal static Token From = Token.Create("FROM");
-                internal static Token To = Token.Create("TO");
+                internal static readonly Token From = Token.Create("FROM");
+                internal static readonly Token To = Token.Create("TO");
             }
             // ReSharper restore InconsistentNaming
         }
@@ -143,8 +143,7 @@ namespace SmtpServer.Protocol
             Enumerator.Take();
             Enumerator.Skip(TokenKind.Space);
 
-            string domain;
-            if (TryMakeDomain(out domain) == false)
+            if (TryMakeDomain(out string domain) == false)
             {
                 _options.Logger.LogVerbose("Could not match the domain name (Text={0}).", CompleteTokenizedText());
 
@@ -170,15 +169,13 @@ namespace SmtpServer.Protocol
             Enumerator.Take();
             Enumerator.Skip(TokenKind.Space);
 
-            string domain;
-            if (TryMakeDomain(out domain))
+            if (TryMakeDomain(out string domain))
             {
                 command = new EhloCommand(_options, domain);
                 return true;
             }
 
-            string address;
-            if (TryMakeAddressLiteral(out address))
+            if (TryMakeAddressLiteral(out string address))
             {
                 command = new EhloCommand(_options, address);
                 return true;
@@ -211,8 +208,7 @@ namespace SmtpServer.Protocol
             // according to the spec, whitespace isnt allowed here but most servers send it
             Enumerator.Skip(TokenKind.Space);
 
-            IMailbox mailbox;
-            if (TryMakeReversePath(out mailbox) == false)
+            if (TryMakeReversePath(out IMailbox mailbox) == false)
             {
                 _options.Logger.LogVerbose("Syntax Error (Text={0})", CompleteTokenizedText());
 
@@ -223,8 +219,7 @@ namespace SmtpServer.Protocol
             Enumerator.Skip(TokenKind.Space);
 
             // match the optional (ESMTP) parameters
-            IReadOnlyDictionary<string, string> parameters;
-            if (TryMakeMailParameters(out parameters) == false)
+            if (TryMakeMailParameters(out IReadOnlyDictionary<string, string> parameters) == false)
             {
                 parameters = new Dictionary<string, string>();
             }
@@ -256,8 +251,7 @@ namespace SmtpServer.Protocol
             // according to the spec, whitespace isnt allowed here anyway
             Enumerator.Skip(TokenKind.Space);
 
-            IMailbox mailbox;
-            if (TryMakePath(out mailbox) == false)
+            if (TryMakePath(out IMailbox mailbox) == false)
             {
                 _options.Logger.LogVerbose("Syntax Error (Text={0})", CompleteTokenizedText());
 
@@ -337,8 +331,7 @@ namespace SmtpServer.Protocol
             Enumerator.Take();
             Enumerator.Skip(TokenKind.Space);
 
-            AuthenticationMethod method;
-            if (Enum.TryParse(Enumerator.Peek().TextValue, true, out method) == false)
+            if (Enum.TryParse(Enumerator.Peek().Text(), true, out AuthenticationMethod method) == false)
             {
                 _options.Logger.LogVerbose("AUTH command requires a valid method (PLAIN or LOGIN)");
 
@@ -409,8 +402,7 @@ namespace SmtpServer.Protocol
 
             // Note, the at-domain-list must be matched, but also must be ignored
             // http://tools.ietf.org/html/rfc5321#appendix-C
-            string atDomainList;
-            if (TryMake(TryMakeAtDomainList, out atDomainList))
+            if (TryMake(TryMakeAtDomainList, out string atDomainList))
             {
                 // if the @domain list was matched then it needs to be followed by a colon
                 if (Enumerator.Take() != Tokens.Colon)
@@ -445,8 +437,7 @@ namespace SmtpServer.Protocol
             {
                 Enumerator.Take();
 
-                string atDomain;
-                if (TryMake(TryMakeAtDomain, out atDomain) == false)
+                if (TryMake(TryMakeAtDomain, out string atDomain) == false)
                 {
                     return false;
                 }
@@ -472,8 +463,7 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            string domain;
-            if (TryMake(TryMakeDomain, out domain) == false)
+            if (TryMake(TryMakeDomain, out string domain) == false)
             {
                 return false;
             }
@@ -493,8 +483,7 @@ namespace SmtpServer.Protocol
         {
             mailbox = null;
 
-            string localpart;
-            if (TryMake(TryMakeLocalPart, out localpart) == false)
+            if (TryMake(TryMakeLocalPart, out string localpart) == false)
             {
                 return false;
             }
@@ -504,19 +493,15 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            string domain;
-            if (TryMake(TryMakeDomain, out domain))
+            if (TryMake(TryMakeDomain, out string domain))
             {
                 mailbox = new Mailbox(localpart, domain);
-
                 return true;
             }
 
-            string address;
-            if (TryMake(TryMakeAddressLiteral, out address))
+            if (TryMake(TryMakeAddressLiteral, out string address))
             {
                 mailbox = new Mailbox(localpart, address);
-
                 return true;
             }
 
@@ -540,8 +525,7 @@ namespace SmtpServer.Protocol
             {
                 Enumerator.Take();
 
-                string subdomain;
-                if (TryMake(TryMakeSubdomain, out subdomain) == false)
+                if (TryMake(TryMakeSubdomain, out string subdomain) == false)
                 {
                     return false;
                 }
@@ -565,8 +549,7 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            string letterNumberHyphen;
-            if (TryMake(TryMakeTextOrNumberOrHyphenString, out letterNumberHyphen) == false)
+            if (TryMake(TryMakeTextOrNumberOrHyphenString, out string letterNumberHyphen) == false)
             {
                 return subdomain != null;
             }
@@ -620,8 +603,7 @@ namespace SmtpServer.Protocol
         {
             address = null;
 
-            int snum;
-            if (TryMake(TryMakeSnum, out snum) == false)
+            if (TryMake(TryMakeSnum, out int snum) == false)
             {
                 return false;
             }
@@ -651,9 +633,11 @@ namespace SmtpServer.Protocol
         /// <remarks><![CDATA[ 1*3DIGIT ]]></remarks>
         public bool TryMakeSnum(out int snum)
         {
+            snum = default(int);
+
             var token = Enumerator.Take();
 
-            if (Int32.TryParse(token.TextValue, out snum) && token.Kind == TokenKind.Number)
+            if (token.Kind == TokenKind.Number && Int32.TryParse(token.Text(), out snum))
             {
                 return snum >= 0 && snum <= 255;
             }
@@ -674,7 +658,7 @@ namespace SmtpServer.Protocol
             var token = Enumerator.Peek();
             while (token.Kind == TokenKind.Text || token.Kind == TokenKind.Number || token == Tokens.Hyphen)
             {
-                textOrNumberOrHyphenString += Enumerator.Take().TextValue;
+                textOrNumberOrHyphenString += Enumerator.Take().Text();
 
                 token = Enumerator.Peek();
             }
@@ -693,7 +677,7 @@ namespace SmtpServer.Protocol
         {
             var token = Enumerator.Take();
 
-            textOrNumber = token.TextValue;
+            textOrNumber = token.Text();
 
             return token.Kind == TokenKind.Text || token.Kind == TokenKind.Number;
         }
@@ -732,8 +716,7 @@ namespace SmtpServer.Protocol
                 // skip the punctuation
                 Enumerator.Take();
 
-                string atom;
-                if (TryMake(TryMakeAtom, out atom) == false)
+                if (TryMake(TryMakeAtom, out string atom) == false)
                 {
                     return true;
                 }
@@ -761,8 +744,7 @@ namespace SmtpServer.Protocol
 
             while (Enumerator.Peek() != Tokens.Quote)
             {
-                string text;
-                if (TryMakeQContentSmtp(out text) == false)
+                if (TryMakeQContentSmtp(out string text) == false)
                 {
                     return false;
                 }
@@ -804,12 +786,13 @@ namespace SmtpServer.Protocol
             {
                 case TokenKind.Text:
                 case TokenKind.Number:
-                    text += token.TextValue;
+                    text += token.Text();
                     return true;
 
                 case TokenKind.Space:
                 case TokenKind.Other:
-                    switch (token.TextValue[0])
+                    var ch = (char)token.First();
+                    switch (ch)
                     {
                         case ' ':
                         case '!':
@@ -842,7 +825,7 @@ namespace SmtpServer.Protocol
                         case '|':
                         case '}':
                         case '~':
-                            text += token.TextValue[0];
+                            text += ch;
                             return true;
                     }
                     return false;
@@ -866,7 +849,7 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            text += Enumerator.Take().TextValue;
+            text += Enumerator.Take().Text();
 
             return true;
         }
@@ -905,11 +888,12 @@ namespace SmtpServer.Protocol
             {
                 case TokenKind.Text:
                 case TokenKind.Number:
-                    atext = token.TextValue;
+                    atext = token.Text();
                     return true;
 
                 case TokenKind.Other:
-                    switch (token.TextValue[0])
+                    var ch = (char)token.First();
+                    switch (ch)
                     {
                         case '!':
                         case '#':
@@ -930,7 +914,7 @@ namespace SmtpServer.Protocol
                         case '`':
                         case '|':
                         case '~':
-                            atext = token.TextValue;
+                            atext += ch;
                             return true;
                     }
                     break;
@@ -1019,7 +1003,7 @@ namespace SmtpServer.Protocol
             var token = Enumerator.Peek();
             while (token.Kind == TokenKind.Text || token.Kind == TokenKind.Number || token == Tokens.Hyphen)
             {
-                keyword += Enumerator.Take().TextValue;
+                keyword += Enumerator.Take().Text();
 
                 token = Enumerator.Peek();
             }
@@ -1038,9 +1022,9 @@ namespace SmtpServer.Protocol
             value = null;
 
             var token = Enumerator.Peek();
-            while (token.TextValue.Length > 0 && token.TextValue.ToCharArray().All(ch => (ch >= 33 && ch <= 66) || (ch >= 62 && ch <= 127)))
+            while (token.Length > 0 && token.All(ch => (ch >= 33 && ch <= 66) || (ch >= 62 && ch <= 127)))
             {
-                value += Enumerator.Take().TextValue;
+                value += Enumerator.Take().Text();
 
                 token = Enumerator.Peek();
             }
@@ -1089,15 +1073,16 @@ namespace SmtpServer.Protocol
             {
                 case TokenKind.Text:
                 case TokenKind.Number:
-                    base64Chars = token.TextValue;
+                    base64Chars = token.Text();
                     return true;
 
                 case TokenKind.Other:
-                    switch (token.TextValue[0])
+                    var ch = (char)token.First();
+                    switch (ch)
                     {
                         case '/':
                         case '+':
-                            base64Chars = token.TextValue;
+                            base64Chars = token.Text();
                             return true;
                     }
                     break;
