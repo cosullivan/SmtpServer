@@ -130,6 +130,8 @@ namespace SampleApp
             bool forceConnection = true,
             CancellationToken cancellationToken = default(CancellationToken))
         {
+            var message = MimeKit.MimeMessage.Load(ParserOptions.Default, @"C:\Dev\Enron Corpus\maildir\allen-p\inbox\31_");
+
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
@@ -150,7 +152,8 @@ namespace SampleApp
                             }
                         }
 
-                        await SendMessageAsync(smtpClient, name, counter, cancellationToken);
+                        //await SendMessageAsync(smtpClient, name, counter, cancellationToken);
+                        await smtpClient.SendAsync(message, cancellationToken).ConfigureAwait(false);
                     }
                     catch (Exception exception)
                     {
