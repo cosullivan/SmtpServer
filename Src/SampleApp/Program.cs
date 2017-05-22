@@ -1,12 +1,15 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using MailKit.Net.Smtp;
 using SmtpServer;
 using SmtpServer.Tracing;
 using MimeKit;
@@ -30,14 +33,14 @@ namespace SampleApp
                 .Port(9025)
                 .Certificate(certificate)
                 .SupportedSslProtocols(SslProtocols.Default)
-                .MessageStore(new SampleMessageStore())
-                .MailboxFilter(new SampleMailboxFilter())
-                .UserAuthenticator(new SampleUserAuthenticator())
+                //.MessageStore(new SampleMessageStore())
+                //.MailboxFilter(new SampleMailboxFilter())
+                //.UserAuthenticator(new SampleUserAuthenticator())
                 .Build();
 
             var s = RunServerAsync(options, cancellationTokenSource.Token);
-            //var c = RunClientAsync("A", 1, cancellationTokenSource.Token);
-            var c = RunFolderAsync(@"C:\Dev\Enron Corpus\maildir", CancellationToken.None);
+            var c = RunClientAsync("A", 10000, false, cancellationTokenSource.Token);
+            //var c = RunFolderAsync(@"C:\Dev\Enron Corpus\maildir", CancellationToken.None);
 
             Console.WriteLine("Press any key to continue");
             Console.ReadKey();
@@ -112,51 +115,75 @@ namespace SampleApp
         {
             var smtpServer = new SmtpServer.SmtpServer(options);
 
-            smtpServer.SessionCreated += OnSmtpServerSessionCreated;
-            smtpServer.SessionCompleted += OnSmtpServerSessionCompleted;
+            //smtpServer.SessionCreated += OnSmtpServerSessionCreated;
+            //smtpServer.SessionCompleted += OnSmtpServerSessionCompleted;
 
             await smtpServer.StartAsync(cancellationToken);
 
-            smtpServer.SessionCreated -= OnSmtpServerSessionCreated;
-            smtpServer.SessionCompleted -= OnSmtpServerSessionCompleted;
+            //smtpServer.SessionCreated -= OnSmtpServerSessionCreated;
+            //smtpServer.SessionCompleted -= OnSmtpServerSessionCompleted;
         }
 
-        static async Task RunClientAsync(string name, int limit = Int32.MaxValue, CancellationToken cancellationToken = default(CancellationToken))
+        static async Task RunClientAsync(
+            string name,
+            int limit = Int32.MaxValue,
+            bool forceConnection = true,
+            CancellationToken cancellationToken = default(CancellationToken))
         {
-            var counter = 1;
-            while (limit-- > 0 && cancellationToken.IsCancellationRequested == false)
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            using (var smtpClient = new SmtpClient())
             {
-                using (var smtpClient = new SmtpClient())
+                var counter = 1;
+                while (limit-- > 0 && cancellationToken.IsCancellationRequested == false)
                 {
                     try
                     {
-                        await smtpClient.ConnectAsync("localhost", 9025, false, cancellationToken);
-                        await smtpClient.AuthenticateAsync("user", "password", cancellationToken);
-
-                        var message = new MimeKit.MimeMessage();
-                        message.From.Add(new MimeKit.MailboxAddress($"{name}{counter}@test.com"));
-                        message.To.Add(new MimeKit.MailboxAddress("sample@test.com"));
-                        message.Subject = $"{name} {counter}";
-
-                        message.Body = new TextPart(TextFormat.Plain)
+                        if (smtpClient.IsConnected == false)
                         {
-                            //Text = ".Ad",
-                            Text = ".Assunto teste acento çãõáéíóú",
-                            //Text = "Assunto teste acento",
-                        };
+                            await smtpClient.ConnectAsync("localhost", 9025, false, cancellationToken);
 
-                        await smtpClient.SendAsync(message, cancellationToken).ConfigureAwait(false);
+                            if (smtpClient.Capabilities.HasFlag(SmtpCapabilities.Authentication))
+                            {
+                                await smtpClient.AuthenticateAsync("user", "password", cancellationToken);
+                            }
+                        }
+
+                        await SendMessageAsync(smtpClient, name, counter, cancellationToken);
                     }
                     catch (Exception exception)
                     {
                         Console.WriteLine(exception);
                     }
 
-                    await smtpClient.DisconnectAsync(true, cancellationToken);
-                }
+                    if (forceConnection)
+                    {
+                        await smtpClient.DisconnectAsync(true, cancellationToken);
+                    }
 
-                counter++;
+                    counter++;
+                }
             }
+
+            stopwatch.Stop();
+
+            Console.WriteLine("Finished. Time Taken {0}ms", stopwatch.ElapsedMilliseconds);
+        }
+
+        static async Task SendMessageAsync(SmtpClient smtpClient, string name, int counter, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            var message = new MimeKit.MimeMessage();
+            message.From.Add(new MimeKit.MailboxAddress($"{name}{counter}@test.com"));
+            message.To.Add(new MimeKit.MailboxAddress("sample@test.com"));
+            message.Subject = $"{name} {counter}";
+
+            message.Body = new TextPart(TextFormat.Plain)
+            {
+                Text = ".Assunto teste acento çãõáéíóú"
+            };
+
+            await smtpClient.SendAsync(message, cancellationToken).ConfigureAwait(false);
         }
 
         static async Task RunFolderAsync(string folder, CancellationToken cancellationToken = default(CancellationToken))
@@ -224,7 +251,7 @@ namespace SampleApp
         {
             return true;
         }
-        
+
         static X509Certificate2 CreateCertificate()
         {
             // to create an X509Certificate for testing you need to run MAKECERT.EXE and then PVK2PFX.EXE
