@@ -264,53 +264,17 @@ namespace SmtpServer.Text
                 switch (state)
                 {
                     case 0:
-                        if (b == 13)
-                        {
-                            state = 1;
-                            return true;
-                        }
-                        break;
-
+                        state = b == 13 ? 1 : 0;
+                        return state == 1;
+                        
                     case 1:
-                        if (b == 10)
-                        {
-                            state = 2;
-                            return true;
-                        }
-                        break;
+                        state = b == 10 ? 2 : 0;
+                        return state == 2;
                 }
                 return false;
-            },
-            Int32.MaxValue).ToArray();
+            }).ToArray();
 
-
-            //var sequence = new[] { 13, 10 };
-            //var found = 0;
-
-            //var segments = ConsumeWhile(current =>
-            //{
-            //    if (found < sequence.Length && current == sequence[found])
-            //    {
-            //        found++;
-            //        return true;
-            //    }
-
-            //    return false;
-
-            //    //found = current == sequence[found]
-            //    //    ? found + 1
-            //    //    : current == sequence[0] ? 1 : 0;
-
-            //    //return found == 1;
-            //},
-            //Int32.MaxValue).ToArray();
-
-            if (state == 1)
-            {
-                return Token.CR;
-            }
-
-            return Token.NewLine;
+            return state == 2 ? Token.NewLine : Token.CR;
         }
 
         /// <summary>
@@ -318,11 +282,10 @@ namespace SmtpServer.Text
         /// </summary>
         /// <param name="kind">The token kind.</param>
         /// <param name="predicate">The predicate to apply to the characters for the continuous segment.</param>
-        /// <param name="limit">The limit to the number of characters to consume.</param>
         /// <returns>The token that was created from the given list of array segments.</returns>
-        Token CreateToken(TokenKind kind, Func<byte, bool> predicate, int limit = Int32.MaxValue)
+        Token CreateToken(TokenKind kind, Func<byte, bool> predicate)
         {
-            var segments = ConsumeWhile(predicate, limit).ToArray();
+            var segments = ConsumeWhile(predicate).ToArray();
 
             //return new Token(kind, Encoding.ASCII.GetString(bytes));
 
@@ -331,60 +294,17 @@ namespace SmtpServer.Text
             return new Token(kind, Encoding.ASCII.GetString(bytes));
         }
 
-        ///// <summary>
-        ///// Returns a continuous segment of characters matching the predicate.
-        ///// </summary>
-        ///// <param name="predicate">The predicate to apply to the characters for the continuous segment.</param>
-        ///// <param name="limit">The limit to the number of characters to consume.</param>
-        ///// <returns>The array segment that defines a continuous segment of characters that have matched the predicate.</returns>
-        //IEnumerable<ArraySegment<byte>> ConsumeWhile(Func<byte, bool> predicate, long limit)
-        //{
-        //    var @continue = true;
-        //    while (EnsureDataIsAvailable() && @continue)
-        //    {
-        //        if (TryConsume(predicate, limit, out ArraySegment<byte> segment, out @continue))
-        //        {
-        //            yield return segment;
-        //        }
-        //    }
-        //}
-
-        ///// <summary>
-        ///// Try to consume from the current segment.
-        ///// </summary>
-        ///// <param name="predicate">The predicate to apply to the characters in the segment</param>
-        ///// <param name="limit">The limit to the number of bytes to consume.</param>
-        ///// <param name="segment">The segment that was matched.</param>
-        ///// <param name="continue">A value indicating whether or not the consumption should be continued.</param>
-        ///// <returns>true if a segment was consumed, false if not.</returns>
-        //bool TryConsume(Func<byte, bool> predicate, long limit, out ArraySegment<byte> segment, out bool @continue)
-        //{
-        //    var current = _segments[_index];
-        //    var start = _position;
-
-        //    while (IsEof == false && _position < current.Count && predicate(Current) && limit-- > 0)
-        //    {
-        //        _position++;
-        //    }
-
-        //    segment = new ArraySegment<byte>(current.Array, current.Offset + start, _position - start);
-        //    @continue = _position >= current.Count;
-
-        //    return segment.Count > 0;
-        //}
-
         /// <summary>
         /// Returns a continuous segment of characters matching the predicate.
         /// </summary>
         /// <param name="predicate">The predicate to apply to the characters for the continuous segment.</param>
-        /// <param name="limit">The limit to the number of characters to consume.</param>
         /// <returns>The array segment that defines a continuous segment of characters that have matched the predicate.</returns>
-        IEnumerable<ArraySegment<byte>> ConsumeWhile(Func<byte, bool> predicate, long limit)
+        IEnumerable<ArraySegment<byte>> ConsumeWhile(Func<byte, bool> predicate)
         {
             var @continue = true;
             while (EnsureDataIsAvailable() && @continue)
             {
-                if (TryConsume(predicate, limit, out ArraySegment<byte> segment) == false)
+                if (TryConsume(predicate, out ArraySegment<byte> segment) == false)
                 {
                     yield break;
                 }
@@ -399,15 +319,14 @@ namespace SmtpServer.Text
         /// Try to consume from the current segment.
         /// </summary>
         /// <param name="predicate">The predicate to apply to the characters in the segment</param>
-        /// <param name="limit">The limit to the number of bytes to consume.</param>
         /// <param name="segment">The segment that was matched.</param>
         /// <returns>true if a segment was consumed, false if not.</returns>
-        bool TryConsume(Func<byte, bool> predicate, long limit, out ArraySegment<byte> segment)
+        bool TryConsume(Func<byte, bool> predicate, out ArraySegment<byte> segment)
         {
             var current = _segments[_index];
             var start = _position;
 
-            while (_index < _segments.Count && _position < current.Count && predicate(Current) && limit-- > 0)
+            while (_index < _segments.Count && _position < current.Count && predicate(Current))
             {
                 _position++;
             }
@@ -436,10 +355,5 @@ namespace SmtpServer.Text
         /// Returns the current value for the reader.
         /// </summary>
         public byte Current => _segments[_index].Array[_segments[_index].Offset + _position];
-
-        ///// <summary>
-        ///// Returns a value indicating whether the reader is at the end.
-        ///// </summary>
-        //public bool IsEof => _index >= _segments.Count;
     }
 }
