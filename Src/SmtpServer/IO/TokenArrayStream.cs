@@ -36,7 +36,7 @@ namespace SmtpServer.IO
             {
                 case TokenKind.Text:
                 case TokenKind.Number:
-                    return token.Text.Length;
+                    return token.TextValue.Length;
 
                 case TokenKind.Other:
                 case TokenKind.Space:

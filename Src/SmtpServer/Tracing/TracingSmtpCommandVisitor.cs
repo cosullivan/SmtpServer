@@ -41,12 +41,6 @@ namespace SmtpServer.Tracing
         {
             _output.WriteLine("DATA");
         }
-
-        /// <summary>
-        /// Visit an DBUG command.
-        /// </summary>
-        /// <param name="command">The command that is being visited.</param>
-        protected override void Visit(DbugCommand command) { }
         
         /// <summary>
         /// Visit a HELO command.

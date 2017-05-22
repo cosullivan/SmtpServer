@@ -42,7 +42,7 @@ namespace SmtpServer.Mime
         /// </summary>
         public string Value
         {
-            get { return String.Concat(Enumerable.Select<Token, string>(Tokens, token => token.Text)); }
+            get { return String.Concat(Enumerable.Select<Token, string>(Tokens, token => token.TextValue)); }
         }
     }
 }

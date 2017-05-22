@@ -1,47 +1,89 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Text;
 
 namespace SmtpServer.Text
 {
-    [DebuggerDisplay("[{Kind}] {Text}")]
+    [DebuggerDisplay("[{Kind}] {Text()}")]
     public struct Token
     {
-        // ReSharper disable InconsistentNaming
         public static readonly Token None = new Token(TokenKind.None);
-        public static readonly Token NewLine = new Token(TokenKind.NewLine);
-        public static readonly Token CR = new Token(TokenKind.Space, (char)13);
-        public static readonly Token LF = new Token(TokenKind.Space, (char)10);
-        // ReSharper restore InconsistentNaming
+        //public static readonly Token NewLine = new Token(TokenKind.NewLine);
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="kind">The token kind.</param>
-        Token(TokenKind kind) : this(kind, String.Empty)
+        /// <param name="segments">The segments that the token was match to.</param>
+        public Token(TokenKind kind, params ArraySegment<byte>[] segments) : this()
         {
             Kind = kind;
+            Segments = segments;
+        }
+
+        ///// <summary>
+        ///// Constructor.
+        ///// </summary>
+        ///// <param name="kind">The token kind.</param>
+        //Token(TokenKind kind) : this(kind, String.Empty)
+        //{
+        //    Kind = kind;
+        //}
+
+        ///// <summary>
+        ///// Constructor.
+        ///// </summary>
+        ///// <param name="kind">The token kind.</param>
+        ///// <param name="text">The token text.</param>
+        //public Token(TokenKind kind, string text) : this()
+        //{
+        //    //TextValue = text;
+        //    Kind = kind;
+        //}
+
+        ///// <summary>
+        ///// Constructor.
+        ///// </summary>
+        ///// <param name="kind">The token kind.</param>
+        ///// <param name="ch">The character to create the token from.</param>
+        //public Token(TokenKind kind, char ch) : this()
+        //{
+        //    //TextValue = ch.ToString();
+        //    Kind = kind;
+        //}
+
+        /// <summary>
+        /// Create a token for the given text.
+        /// </summary>
+        /// <param name="text">The text string to create the token for.</param>
+        /// <returns>The token that was created.</returns>
+        public static Token Create(string text)
+        {
+            return Create(TokenKind.Text, text);
         }
 
         /// <summary>
-        /// Constructor.
+        /// Create a token for the given text.
         /// </summary>
         /// <param name="kind">The token kind.</param>
-        /// <param name="text">The token text.</param>
-        public Token(TokenKind kind, string text) : this()
+        /// <param name="text">The text string to create the token for.</param>
+        /// <returns>The token that was created.</returns>
+        public static Token Create(TokenKind kind, string text)
         {
-            Text = text;
-            Kind = kind;
+            return Token.Create(kind, Encoding.ASCII.GetBytes(text));
         }
 
         /// <summary>
-        /// Constructor.
+        /// Create a token for the given byte array.
         /// </summary>
         /// <param name="kind">The token kind.</param>
-        /// <param name="ch">The character to create the token from.</param>
-        public Token(TokenKind kind, char ch) : this()
+        /// <param name="array">The byte array to create the token for.</param>
+        /// <returns>The token that was created.</returns>
+        public static Token Create(TokenKind kind, byte[] array)
         {
-            Text = ch.ToString();
-            Kind = kind;
+            return new Token(kind, new ArraySegment<byte>(array));
         }
 
         /// <summary>
@@ -51,7 +93,7 @@ namespace SmtpServer.Text
         /// <returns>The token that was created.</returns>
         public static Token Create(char ch)
         {
-            return Create((byte) ch);
+            return Create((byte)ch);
         }
 
         /// <summary>
@@ -61,7 +103,7 @@ namespace SmtpServer.Text
         /// <returns>The token that was created.</returns>
         public static Token Create(byte b)
         {
-            return new Token(KindOf(b), (char)b);
+            return new Token(KindOf(b), new ArraySegment<byte>(new [] { b }));
         }
 
         /// <summary>
@@ -160,7 +202,7 @@ namespace SmtpServer.Text
         /// <returns>true if <paramref name="other"/> and this instance are the same type and represent the same value; otherwise, false. </returns>
         public bool Equals(Token other)
         {
-            return Kind == other.Kind && String.Equals(Text, other.Text, StringComparison.OrdinalIgnoreCase);
+            return Kind == other.Kind && String.Equals(TextValue, other.TextValue, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -188,7 +230,7 @@ namespace SmtpServer.Text
         {
             unchecked
             {
-                return ((Text?.GetHashCode() ?? 0) * 397) ^ (int)Kind;
+                return ((TextValue?.GetHashCode() ?? 0) * 397) ^ (int)Kind;
             }
         }
 
@@ -220,13 +262,30 @@ namespace SmtpServer.Text
         /// <returns>The string representation of the token.</returns>
         public override string ToString()
         {
-            return String.Format("[{0}] {1}", Kind, Text);
+            return String.Format("[{0}] {1}", Kind, Text());
         }
+
+        /// <summary>
+        /// Returns the text representation of the token.
+        /// </summary>
+        /// <returns>The text representation of the token.</returns>
+        public string Text()
+        {
+            return String.Concat(Segments.Select(segment => Encoding.ASCII.GetString(segment.Array, segment.Offset, segment.Count)));
+        }
+
+        /// <summary>
+        /// Returns the segment information.
+        /// </summary>
+        public IReadOnlyList<ArraySegment<byte>> Segments { get; }
 
         /// <summary>
         /// Gets the token text.
         /// </summary>
-        public string Text { get; }
+        public string TextValue
+        {
+            get { return Text(); }
+        }
 
         /// <summary>
         /// Gets the token kind.

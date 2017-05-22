@@ -34,7 +34,7 @@ namespace SampleApp
 
             //HERE: change from ReadLineASync to ReadBlock?
 
-            var reader = new ByteArrayTokenReader2(networkClient.ReadDotBlockAsync().Result);
+            var reader = new ByteArrayTokenReader(networkClient.ReadDotBlockAsync().Result);
             Token token;
             while ((token = reader.NextToken()) != Token.None)
             {
@@ -164,9 +164,9 @@ namespace SampleApp
 
                         message.Body = new TextPart(TextFormat.Plain)
                         {
-                            //Text = ".Ad",
+                            //TextValue = ".Ad",
                             Text = ".Assunto teste acento çãõáéíóú",
-                            //Text = "Assunto teste acento",
+                            //TextValue = "Assunto teste acento",
                         };
 
                         await smtpClient.SendAsync(message, cancellationToken).ConfigureAwait(false);

@@ -15,16 +15,19 @@ namespace SmtpServer.Mime
         static class Tokens
         {
             // ReSharper disable InconsistentNaming
-            internal static readonly Token Space = new Token(TokenKind.Space, ' ');
-            internal static readonly Token HTAB = new Token(TokenKind.Space, (char)9);
-            internal static readonly Token Quote = new Token(TokenKind.Other, (char)34);
-            internal static readonly Token Colon = new Token(TokenKind.Other, ':');
-            internal static readonly Token DecimalPoint = new Token(TokenKind.Other, '.');
-            internal static readonly Token Equal = new Token(TokenKind.Other, '=');
-            internal static readonly Token Dash = new Token(TokenKind.Other, '-');
-            internal static readonly Token SemiColon = new Token(TokenKind.Other, ';');
-            internal static readonly Token ForwardSlash = new Token(TokenKind.Other, '/');
-            internal static readonly Token BackSlash = new Token(TokenKind.Other, '\\');
+            internal static readonly Token CR = Token.Create(13);
+            internal static readonly Token LF = Token.Create(10);
+            internal static readonly Token Space = Token.Create(' ');
+            internal static readonly Token HTAB = Token.Create(9);
+            internal static readonly Token Quote = Token.Create(34);
+            internal static readonly Token Colon = Token.Create(':');
+            internal static readonly Token DecimalPoint = Token.Create('.');
+            internal static readonly Token Equal = Token.Create('=');
+            internal static readonly Token Dash = Token.Create('-');
+            internal static readonly Token SemiColon = Token.Create(';');
+            internal static readonly Token ForwardSlash = Token.Create('/');
+            internal static readonly Token BackSlash = Token.Create('\\');
+            internal static readonly Token NewLine = Token.Create(TokenKind.NewLine, new byte[] { 13, 10 });
             internal static readonly Token[] TSpecials = 
             {
                 Token.Create('('),
@@ -81,16 +84,16 @@ namespace SmtpServer.Mime
             };
             internal static readonly Token[] DescreteTypes =
             {
-                new Token(TokenKind.Text, "text"),
-                new Token(TokenKind.Text, "image"),
-                new Token(TokenKind.Text, "audio"),
-                new Token(TokenKind.Text, "video"),
-                new Token(TokenKind.Text, "application")
+                Token.Create("text"),
+                Token.Create("image"),
+                Token.Create("audio"),
+                Token.Create("video"),
+                Token.Create("application")
             };
             internal static readonly Token[] CompositeTypes =
             {
-                new Token(TokenKind.Text, "message"),
-                new Token(TokenKind.Text, "multipart"),
+                Token.Create("message"),
+                Token.Create("multipart"),
             };
             // ReSharper restore InconsistentNaming
         }
@@ -381,7 +384,7 @@ namespace SmtpServer.Mime
         {
             token1 = Enumerator.Take();
 
-            return TryMakeLwsp(out token2) && token1 == Token.NewLine;
+            return TryMakeLwsp(out token2) && token1.Kind == TokenKind.NewLine;
         }
         
         /// <summary>
@@ -405,7 +408,7 @@ namespace SmtpServer.Mime
         {
             bodyContents = new List<Token>();
 
-            while (Enumerator.Peek() != Token.NewLine && Enumerator.Peek() != Token.None)
+            while (Enumerator.Peek().Kind != TokenKind.NewLine && Enumerator.Peek() != Token.None)
             {
                 bodyContents.Add(Enumerator.Take());
             }
@@ -445,7 +448,7 @@ namespace SmtpServer.Mime
                 return false;
             }
 
-            version = new MimeVersion(Int32.Parse(major.Text), Int32.Parse(minor.Text));
+            version = new MimeVersion(Int32.Parse(major.TextValue), Int32.Parse(minor.TextValue));
             return true;
         }
 
@@ -560,7 +563,7 @@ namespace SmtpServer.Mime
         {
             mechanism = "7bit";
 
-            return TryTakeTokens(new Token(TokenKind.Number, "7"), new Token(TokenKind.Text, "bit"));
+            return TryTakeTokens(Token.Create(TokenKind.Number, "7"), Token.Create(TokenKind.Text, "bit"));
         }
 
         /// <summary>
@@ -573,7 +576,7 @@ namespace SmtpServer.Mime
         {
             mechanism = "8bit";
 
-            return TryTakeTokens(new Token(TokenKind.Number, "8"), new Token(TokenKind.Text, "bit"));
+            return TryTakeTokens(Token.Create(TokenKind.Number, "8"), Token.Create(TokenKind.Text, "bit"));
         }
 
         /// <summary>
@@ -584,7 +587,7 @@ namespace SmtpServer.Mime
         /// <remarks><![CDATA["binary"]]></remarks>
         internal bool TryMakeBinaryContentTransferEncodingMechanism(out string mechanism)
         {
-            mechanism = Enumerator.Take().Text;
+            mechanism = Enumerator.Take().TextValue;
 
             return mechanism.CaseInsensitiveEquals("binary");
         }
@@ -599,7 +602,7 @@ namespace SmtpServer.Mime
         {
             mechanism = "base64";
 
-            return TryTakeTokens(new Token(TokenKind.Text, "base"), new Token(TokenKind.Number, "64"));
+            return TryTakeTokens(Token.Create(TokenKind.Text, "base"), Token.Create(TokenKind.Number, "64"));
         }
 
         /// <summary>
@@ -612,7 +615,7 @@ namespace SmtpServer.Mime
         {
             mechanism = "quoted-printable";
 
-            return TryTakeTokens(new Token(TokenKind.Text, "quoted"), Tokens.Dash, new Token(TokenKind.Text, "printable"));
+            return TryTakeTokens(Token.Create(TokenKind.Text, "quoted"), Tokens.Dash, Token.Create(TokenKind.Text, "printable"));
         }
 
         /// <summary>
@@ -647,7 +650,7 @@ namespace SmtpServer.Mime
         { 
             if (Tokens.DescreteTypes.Contains(Enumerator.Peek()))
             {
-                type = Enumerator.Take().Text;
+                type = Enumerator.Take().TextValue;
                 return true;
             }
 
@@ -664,7 +667,7 @@ namespace SmtpServer.Mime
         {
             if (Tokens.CompositeTypes.Contains(Enumerator.Peek()))
             {
-                type = Enumerator.Take().Text;
+                type = Enumerator.Take().TextValue;
                 return true;
             }
 
@@ -703,7 +706,7 @@ namespace SmtpServer.Mime
         /// <remarks>The two characters "X-" or "x-" followed, with no intervening white space, by any token.</remarks>
         bool TryMakeXToken(out string xtoken)
         {
-            xtoken = Enumerator.Take().Text;
+            xtoken = Enumerator.Take().TextValue;
 
             if (xtoken == null || xtoken.CaseInsensitiveEquals("X") == false)
             {
@@ -747,14 +750,14 @@ namespace SmtpServer.Mime
             name = null;
 
             var token = Enumerator.Peek();
-            while (new[] { Token.None, Token.NewLine, Tokens.Space, Tokens.SemiColon }.Contains(token) == false)
+            while (new[] { Token.None, Tokens.NewLine, Tokens.Space, Tokens.SemiColon }.Contains(token) == false)
             {
                 if (TryMakeRegNameChars(out token) == false)
                 {
                     return false;
                 }
 
-                name += token.Text;
+                name += token.TextValue;
                 token = Enumerator.Peek();
             }
 
@@ -779,7 +782,7 @@ namespace SmtpServer.Mime
 
                 case TokenKind.Other:
                     var allowable = new char[] { '!', '#', '$', '&', '.', '+', '-', '^', '_' };
-                    return token.Text.Length == 1 && allowable.Contains(token.Text[0]);
+                    return token.TextValue.Length == 1 && allowable.Contains(token.TextValue[0]);
             }
 
             return false;
@@ -910,7 +913,7 @@ namespace SmtpServer.Mime
         bool TryMakePartialToken(out string token)
         {
             var t = Enumerator.Take();
-            token = t.Text;
+            token = t.TextValue;
 
             switch (t.Kind)
             {
@@ -970,9 +973,9 @@ namespace SmtpServer.Mime
         bool TryMakeQText(out string text)
         {
             var token = Enumerator.Take();
-            text = token.Text;
+            text = token.TextValue;
 
-            return new[] { Tokens.Quote, Tokens.BackSlash, Token.CR }.Contains(token) == false;
+            return new[] { Tokens.Quote, Tokens.BackSlash, Tokens.CR }.Contains(token) == false;
         }
 
         /// <summary>
@@ -991,7 +994,7 @@ namespace SmtpServer.Mime
             }
 
             var token = Enumerator.Take();
-            text = token.Text;
+            text = token.TextValue;
 
             return text.Length == 1 && text[0] <= 127;
         }
@@ -1006,7 +1009,7 @@ namespace SmtpServer.Mime
 
             var token = Enumerator.Take();
 
-            return token == Token.NewLine || token == Token.None;
+            return token.Kind == TokenKind.NewLine || token == Token.None;
         }
 
         /// <summary>
@@ -1031,7 +1034,7 @@ namespace SmtpServer.Mime
 
                     case TokenKind.Space:
                     case TokenKind.Other:
-                        if (token.Text[0] <= 31)
+                        if (token.TextValue[0] <= 31)
                         {
                             return false;
                         }
@@ -1041,7 +1044,7 @@ namespace SmtpServer.Mime
                         return false;
                 }
 
-                name += token.Text;
+                name += token.TextValue;
                 token = Enumerator.Peek();
             }
 

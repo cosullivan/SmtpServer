@@ -25,9 +25,6 @@ namespace SmtpServer.Protocol
             {
                 new State(SmtpState.Initialized)
                 {
-#if DEBUG
-                    { "DBUG", TryMakeDbug },
-#endif
                     { "NOOP", TryMakeNoop },
                     { "RSET", TryMakeRset },
                     { "QUIT", TryMakeQuit },
@@ -36,9 +33,6 @@ namespace SmtpServer.Protocol
                 },
                 new State(SmtpState.WaitingForMail)
                 {
-#if DEBUG
-                    { "DBUG", TryMakeDbug },
-#endif
                     { "NOOP", TryMakeNoop },
                     { "RSET", TryMakeRset },
                     { "QUIT", TryMakeQuit },
@@ -49,9 +43,6 @@ namespace SmtpServer.Protocol
                 },
                 new State(SmtpState.WaitingForMailSecure)
                 {
-#if DEBUG
-                    { "DBUG", TryMakeDbug },
-#endif
                     { "NOOP", TryMakeNoop },
                     { "RSET", TryMakeRset },
                     { "QUIT", TryMakeQuit },
@@ -62,9 +53,6 @@ namespace SmtpServer.Protocol
                 },
                 new State(SmtpState.WithinTransaction)
                 {
-#if DEBUG
-                    { "DBUG", TryMakeDbug },
-#endif
                     { "NOOP", TryMakeNoop },
                     { "RSET", TryMakeRset },
                     { "QUIT", TryMakeQuit },
@@ -72,9 +60,6 @@ namespace SmtpServer.Protocol
                 },
                 new State(SmtpState.CanAcceptData)
                 {
-#if DEBUG
-                    { "DBUG", TryMakeDbug },
-#endif
                     { "NOOP", TryMakeNoop },
                     { "RSET", TryMakeRset },
                     { "QUIT", TryMakeQuit },
@@ -128,19 +113,7 @@ namespace SmtpServer.Protocol
         {
             return _stateTable.TryAccept(tokenEnumerator, out command, out errorResponse);
         }
-
-        /// <summary>
-        /// Try to make a DBUG command.
-        /// </summary>
-        /// <param name="tokenEnumerator">The token enumerator to use when matching the command.</param>
-        /// <param name="command">The command that was found.</param>
-        /// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
-        /// <returns>true if a DEBG command was found, false if not.</returns>
-        bool TryMakeDbug(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
-        {
-            return new SmtpParser(_options, tokenEnumerator).TryMakeDbug(out command, out errorResponse);
-        }
-
+        
         /// <summary>
         /// Try to make a HELO command.
         /// </summary>
@@ -304,7 +277,7 @@ namespace SmtpServer.Protocol
             {
                 // lookup the correct action
                 Tuple<State.TryMakeDelegate, SmtpState> action;
-                if (_state.Actions.TryGetValue(tokenEnumerator.Peek().Text, out action) == false)
+                if (_state.Actions.TryGetValue(tokenEnumerator.Peek().Text(), out action) == false)
                 {
                     var response = $"expected {String.Join("/", _state.Actions.Keys)}";
 
