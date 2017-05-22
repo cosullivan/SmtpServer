@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
 namespace SmtpServer.Text
@@ -169,14 +170,12 @@ namespace SmtpServer.Text
             return index >= _length;
         }
     }
-
-
+    
     internal sealed class ByteArrayTokenReader2 : TokenReader
     {
         readonly IReadOnlyList<ArraySegment<byte>> _segments;
-        readonly int _length;
-        int _segmentIndex = 0;
         int _index = 0;
+        int _position = 0;
 
         /// <summary>
         /// Constructor.
@@ -185,46 +184,6 @@ namespace SmtpServer.Text
         internal ByteArrayTokenReader2(IReadOnlyList<ArraySegment<byte>> segments)
         {
             _segments = segments;
-            _length = segments.Sum(segment => segment.Count);
-        }
-
-        ///// <summary>
-        ///// Returns the byte at the given index.
-        ///// </summary>
-        ///// <param name="index">The index to return the byte.</param>
-        ///// <returns>The byte that exists at the given index.</returns>
-        //byte PeekAt(int index)
-        //{
-        //    for (var i = 0; i < _segments.Count; i++)
-        //    {
-        //        if (index < _segments[i].Count)
-        //        {
-        //            return _segments[i].Array[_segments[i].Offset + index];
-        //        }
-
-        //        index -= _segments[i].Count;
-        //    }
-
-        //    throw new InvalidOperationException();
-        //}
-
-        //byte Peek()
-        //{
-        //    if (_segmentIndex < _segments.Count && _index < _segments[_segmentIndex].Count - 1)
-        //    {
-        //        return _segments[_segmentIndex].Array[_segments[_segmentIndex].Offset + _index + 1];
-        //    }
-
-        //    throw new NotImplementedException();
-        //}
-
-        /// <summary>
-        /// Returns the value at the current position.
-        /// </summary>
-        /// <returns>The value at the current position.</returns>
-        byte Current()
-        {
-            return _segments[_segmentIndex].Array[_segments[_segmentIndex].Offset + _index];
         }
 
         /// <summary>
@@ -233,29 +192,27 @@ namespace SmtpServer.Text
         /// <returns>The next token that was read.</returns>
         public override Token NextToken()
         {
-            if (EnsureMoreDataIsAvailable() == false)
+            if (EnsureDataIsAvailable() == false)
             {
                 return Token.None;
             }
 
-            var value = Current();
-
-            if (Token.IsText(value))
+            if (Token.IsText(Current))
             {
                 return TextToken();
             }
 
-            if (Token.IsNumber(value))
+            if (Token.IsNumber(Current))
             {
                 return NumberToken();
             }
 
-            if (Token.IsCR(value))
+            if (Token.IsCR(Current))
             {
                 return NewLineToken();
             }
 
-            return OtherToken(value);
+            return OtherToken(Current);
         }
 
         /// <summary>
@@ -265,7 +222,9 @@ namespace SmtpServer.Text
         /// <returns>The token that represents the given character.</returns>
         Token OtherToken(byte value)
         {
-            var segment = new ArraySegment<byte>(_segments[_segmentIndex].Array, _segments[_segmentIndex].Offset + _index++, 1);
+            //var segment = new ArraySegment<byte>(_segments[_segmentIndex].Array, _segments[_segmentIndex].Offset + _index++, 1);
+
+            _position++;
 
             if (Token.IsWhiteSpace(value))
             {
@@ -299,44 +258,59 @@ namespace SmtpServer.Text
         /// <returns>The new line token that was found at the current position.</returns>
         Token NewLineToken()
         {
-            //var start = _index;
-
-            //if (_index < _segments[_segmentIndex].Count - 1)
-            //{
-            //    var segment = new 
-            //}
-
-            const int WaitingForCR = 0;
-            const int WaitingForLF = 1;
-            const int Complete = 2;
-
-            var state = WaitingForCR;
-
+            var state = 0;
             var segments = ConsumeWhile(b =>
             {
                 switch (state)
                 {
-                    case WaitingForCR:
+                    case 0:
                         if (b == 13)
                         {
-                            state = WaitingForLF;
+                            state = 1;
                             return true;
                         }
                         break;
 
-                    case WaitingForLF:
+                    case 1:
                         if (b == 10)
                         {
-                            state = Complete;
+                            state = 2;
                             return true;
                         }
                         break;
                 }
                 return false;
-            }, 2).ToArray();
+            },
+            Int32.MaxValue).ToArray();
 
 
-            throw new NotImplementedException();
+            //var sequence = new[] { 13, 10 };
+            //var found = 0;
+
+            //var segments = ConsumeWhile(current =>
+            //{
+            //    if (found < sequence.Length && current == sequence[found])
+            //    {
+            //        found++;
+            //        return true;
+            //    }
+
+            //    return false;
+
+            //    //found = current == sequence[found]
+            //    //    ? found + 1
+            //    //    : current == sequence[0] ? 1 : 0;
+
+            //    //return found == 1;
+            //},
+            //Int32.MaxValue).ToArray();
+
+            if (state == 1)
+            {
+                return Token.CR;
+            }
+
+            return Token.NewLine;
         }
 
         /// <summary>
@@ -357,26 +331,48 @@ namespace SmtpServer.Text
             return new Token(kind, Encoding.ASCII.GetString(bytes));
         }
 
-        /// <summary>
-        /// Read the next segment if it is required.
-        /// </summary>
-        /// <returns>true if there is more data available, false if not.</returns>
-        bool EnsureMoreDataIsAvailable()
-        {
-            if (_segmentIndex >= _segments.Count)
-            {
-                return false;
-            }
+        ///// <summary>
+        ///// Returns a continuous segment of characters matching the predicate.
+        ///// </summary>
+        ///// <param name="predicate">The predicate to apply to the characters for the continuous segment.</param>
+        ///// <param name="limit">The limit to the number of characters to consume.</param>
+        ///// <returns>The array segment that defines a continuous segment of characters that have matched the predicate.</returns>
+        //IEnumerable<ArraySegment<byte>> ConsumeWhile(Func<byte, bool> predicate, long limit)
+        //{
+        //    var @continue = true;
+        //    while (EnsureDataIsAvailable() && @continue)
+        //    {
+        //        if (TryConsume(predicate, limit, out ArraySegment<byte> segment, out @continue))
+        //        {
+        //            yield return segment;
+        //        }
+        //    }
+        //}
 
-            if (_index >= _segments[_segmentIndex].Count)
-            {
-                _index = 0;
-                _segmentIndex++;
-            }
+        ///// <summary>
+        ///// Try to consume from the current segment.
+        ///// </summary>
+        ///// <param name="predicate">The predicate to apply to the characters in the segment</param>
+        ///// <param name="limit">The limit to the number of bytes to consume.</param>
+        ///// <param name="segment">The segment that was matched.</param>
+        ///// <param name="continue">A value indicating whether or not the consumption should be continued.</param>
+        ///// <returns>true if a segment was consumed, false if not.</returns>
+        //bool TryConsume(Func<byte, bool> predicate, long limit, out ArraySegment<byte> segment, out bool @continue)
+        //{
+        //    var current = _segments[_index];
+        //    var start = _position;
 
-            return _segmentIndex < _segments.Count;
-        }
-        
+        //    while (IsEof == false && _position < current.Count && predicate(Current) && limit-- > 0)
+        //    {
+        //        _position++;
+        //    }
+
+        //    segment = new ArraySegment<byte>(current.Array, current.Offset + start, _position - start);
+        //    @continue = _position >= current.Count;
+
+        //    return segment.Count > 0;
+        //}
+
         /// <summary>
         /// Returns a continuous segment of characters matching the predicate.
         /// </summary>
@@ -385,45 +381,65 @@ namespace SmtpServer.Text
         /// <returns>The array segment that defines a continuous segment of characters that have matched the predicate.</returns>
         IEnumerable<ArraySegment<byte>> ConsumeWhile(Func<byte, bool> predicate, long limit)
         {
-            while (_segmentIndex < _segments.Count)
+            var @continue = true;
+            while (EnsureDataIsAvailable() && @continue)
             {
-                var segment = Consume(predicate, ref limit);
-                
-                if (segment.Count == 0)
+                if (TryConsume(predicate, limit, out ArraySegment<byte> segment) == false)
                 {
                     yield break;
                 }
 
                 yield return segment;
 
-                if (_index < _segments[_segmentIndex].Count)
-                {
-                    yield break;
-                }
-
-                _index = 0;
-                _segmentIndex++;
+                @continue = _position >= _segments[_index].Count;
             }
         }
 
         /// <summary>
-        /// Consumes the bytes from the buffer until the continuation function indicates that it should complete.
+        /// Try to consume from the current segment.
         /// </summary>
-        /// <param name="predicate">The continuation function to determine whether the consume operation should stop.</param>
-        /// <param name="limit">The limit to the number of bytes to read.</param>
-        /// <returns>The array segment that was matched.</returns>
-        ArraySegment<byte> Consume(Func<byte, bool> predicate, ref long limit)
+        /// <param name="predicate">The predicate to apply to the characters in the segment</param>
+        /// <param name="limit">The limit to the number of bytes to consume.</param>
+        /// <param name="segment">The segment that was matched.</param>
+        /// <returns>true if a segment was consumed, false if not.</returns>
+        bool TryConsume(Func<byte, bool> predicate, long limit, out ArraySegment<byte> segment)
         {
-            var segment = _segments[_segmentIndex];
-            var start = _index;
-            
-            var b = segment.Array[segment.Offset + _index];
-            while (predicate(b) && limit-- > 0 && ++_index < segment.Count)
+            var current = _segments[_index];
+            var start = _position;
+
+            while (_index < _segments.Count && _position < current.Count && predicate(Current) && limit-- > 0)
             {
-                b = segment.Array[segment.Offset + _index];
+                _position++;
             }
 
-            return new ArraySegment<byte>(segment.Array, segment.Offset + start, _index - start);
+            segment = new ArraySegment<byte>(current.Array, current.Offset + start, _position - start);
+
+            return segment.Count > 0;
         }
+
+        /// <summary>
+        /// Ensure that data is available for the operation.
+        /// </summary>
+        /// <returns>true if there is data available, false if not.</returns>
+        bool EnsureDataIsAvailable()
+        {
+            if (_index < _segments.Count && _position >= _segments[_index].Count)
+            {
+                _index++;
+                _position = 0;
+            }
+
+            return _index < _segments.Count;
+        }
+
+        /// <summary>
+        /// Returns the current value for the reader.
+        /// </summary>
+        public byte Current => _segments[_index].Array[_segments[_index].Offset + _position];
+
+        ///// <summary>
+        ///// Returns a value indicating whether the reader is at the end.
+        ///// </summary>
+        //public bool IsEof => _index >= _segments.Count;
     }
 }
