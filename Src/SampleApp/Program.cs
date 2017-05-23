@@ -26,6 +26,7 @@ namespace SampleApp
     {
         static void Main(string[] args)
         {
+            //@"C:\Dev\Enron Corpus\maildir\allen-p\inbox\31_"
             ////var tests = new MimeMessageSerializerTests();
             ////tests.CanParseMessage();
 
@@ -44,7 +45,32 @@ namespace SampleApp
             //    Console.WriteLine(token);
             //}
 
-            //return;
+            using (var stream = File.OpenRead(@"C:\Dev\temp\msg.txt"))
+            {
+                var stopwatch = new Stopwatch();
+                stopwatch.Start();
+
+                for (var i = 0; i < 1000; i++)
+                {
+                    stream.Position = 0;
+
+                    var networkClient = new NetworkClient(stream, 128);
+
+                    var reader = new ByteArrayTokenReader(networkClient.ReadDotBlockAsync().Result);
+                    var tokens = reader.ToList();
+                    //Console.WriteLine(tokens.Count);
+                    //Token token;
+                    //while ((token = reader.NextToken()) != Token.None)
+                    //{
+                    //    Console.WriteLine(token);
+                    //}
+                }
+
+                stopwatch.Stop();
+                Console.WriteLine("Time Taken {0}ms", stopwatch.ElapsedMilliseconds);
+            }
+
+            return;
 
             var cancellationTokenSource = new CancellationTokenSource();
 
