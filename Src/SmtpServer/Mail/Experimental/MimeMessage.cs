@@ -1,3 +1,5 @@
+#if MIME_EXPERIMENTAL
+
 using SmtpServer.Mime;
 
 namespace SmtpServer.Mail
@@ -24,3 +26,5 @@ namespace SmtpServer.Mail
         public MimeDocument Document { get; }
     }
 }
+
+#endif
