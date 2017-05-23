@@ -95,6 +95,10 @@ namespace SmtpServer.Mime
                 Token.Create("message"),
                 Token.Create("multipart"),
             };
+            internal static readonly Token SevenBit = Token.Create("7bit");
+            internal static readonly Token EightBit = Token.Create("8bit");
+            internal static readonly Token Binary = Token.Create("binary");
+            internal static readonly Token Base64 = Token.Create("base64");
             // ReSharper restore InconsistentNaming
         }
 
@@ -202,7 +206,7 @@ namespace SmtpServer.Mime
 
             Enumerator.Skip(token => token != Token.None);
 
-            stream = new TokenArrayStream(Enumerator.Tokens, offset, Enumerator.Position - offset);
+            stream = CreateTokenStream(offset, Enumerator.Position - offset);
             return true;
         }
 
@@ -230,37 +234,6 @@ namespace SmtpServer.Mime
             count = Enumerator.Position - offset;
             return found == sequence.Length;
         }
-
-        ///// <summary>
-        ///// Returns a continuous segment of bytes until the given sequence is reached.
-        ///// </summary>
-        ///// <param name="client">The byte stream to perform the operation on.</param>
-        ///// <param name="sequence">The sequence to match to enable the read operation to complete.</param>
-        ///// <param name="cancellationToken">The cancellation token.</param>
-        ///// <returns>The array segment that defines a continuous segment of characters that have matched the predicate.</returns>
-        //public static async Task<IReadOnlyList<ArraySegment<byte>>> ReadUntilAsync(this INetworkClient client, byte[] sequence, CancellationToken cancellationToken)
-        //{
-        //    if (client == null)
-        //    {
-        //        throw new ArgumentNullException(nameof(client));
-        //    }
-
-        //    var found = 0;
-        //    return await client.ReadAsync(current =>
-        //        {
-        //            if (current == sequence[found])
-        //            {
-        //                found++;
-        //            }
-        //            else
-        //            {
-        //                found = current == sequence[0] ? 1 : 0;
-        //            }
-
-        //            return found < sequence.Length;
-        //        },
-        //        cancellationToken: cancellationToken);
-        //}
 
         /// <summary>
         /// Attempt to make a mime header field list.
@@ -563,7 +536,7 @@ namespace SmtpServer.Mime
         {
             mechanism = "7bit";
 
-            return TryTakeTokens(Token.Create(TokenKind.Number, "7"), Token.Create(TokenKind.Text, "bit"));
+            return Enumerator.Take() == Tokens.SevenBit;
         }
 
         /// <summary>
@@ -576,7 +549,7 @@ namespace SmtpServer.Mime
         {
             mechanism = "8bit";
 
-            return TryTakeTokens(Token.Create(TokenKind.Number, "8"), Token.Create(TokenKind.Text, "bit"));
+            return Enumerator.Take() == Tokens.EightBit;
         }
 
         /// <summary>
@@ -587,9 +560,9 @@ namespace SmtpServer.Mime
         /// <remarks><![CDATA["binary"]]></remarks>
         internal bool TryMakeBinaryContentTransferEncodingMechanism(out string mechanism)
         {
-            mechanism = Enumerator.Take().Text();
+            mechanism = "binary";
 
-            return mechanism.CaseInsensitiveEquals("binary");
+            return Enumerator.Take() == Tokens.Binary;
         }
 
         /// <summary>
@@ -602,7 +575,7 @@ namespace SmtpServer.Mime
         {
             mechanism = "base64";
 
-            return TryTakeTokens(Token.Create(TokenKind.Text, "base"), Token.Create(TokenKind.Number, "64"));
+            return Enumerator.Take() == Tokens.Base64;
         }
 
         /// <summary>
@@ -951,7 +924,7 @@ namespace SmtpServer.Mime
             while (Enumerator.Peek() != Tokens.Quote)
             {
                 string t;
-                if (TryMake(TryMakeQText, out t) == false && TryMake(TryMakeQuotedString, out t) == false)
+                if (TryMake(TryMakeQText, out t) == false && TryMake(TryMakeQuotedPair, out t) == false)
                 {
                     return false;
                 }
@@ -1049,6 +1022,19 @@ namespace SmtpServer.Mime
             }
 
             return name != null && Enumerator.Take() == Tokens.Colon;
+        }
+
+        /// <summary>
+        /// Create a stream that returns the underlying list of tokens.
+        /// </summary>
+        /// <param name="offset">The offset into the list of tokens.</param>
+        /// <param name="count">The number of tokens to limit the response to.</param>
+        /// <returns>The stream that represents the underlying tokens.</returns>
+        Stream CreateTokenStream(int offset, int count)
+        {
+            var tokens = Enumerator.Tokens.Skip(offset).Take(count);
+
+            return new ByteArrayStream(tokens.SelectMany(t => t.Segments).ToList());
         }
     }
 }

@@ -71,7 +71,7 @@ namespace SmtpServer.Text
         /// <returns>The text token that was found at the current position.</returns>
         Token TextToken()
         {
-            return CreateToken(TokenKind.Text, Token.IsText);
+            return new Token(TokenKind.Text, Consume(Token.IsTextOrNumber));
         }
 
         /// <summary>
@@ -80,7 +80,20 @@ namespace SmtpServer.Text
         /// <returns>The number token that was found at the current position.</returns>
         Token NumberToken()
         {
-            return CreateToken(TokenKind.Number, Token.IsNumber);
+            var kind = TokenKind.Number;
+
+            var segments = Consume(b =>
+            {
+                if (Token.IsText(b))
+                {
+                    kind = TokenKind.Text;
+                    return true;
+                }
+
+                return Token.IsNumber(b);
+            });
+
+            return new Token(kind, segments);
         }
 
         /// <summary>
@@ -106,17 +119,6 @@ namespace SmtpServer.Text
             });
 
             return new Token(state == 2 ? TokenKind.NewLine : TokenKind.Space, segments);
-        }
-
-        /// <summary>
-        /// Create a token from the given array segments.
-        /// </summary>
-        /// <param name="kind">The token kind.</param>
-        /// <param name="predicate">The predicate to apply to the characters for the continuous segment.</param>
-        /// <returns>The token that was created from the given list of array segments.</returns>
-        Token CreateToken(TokenKind kind, Func<byte, bool> predicate)
-        {
-            return new Token(kind, Consume(predicate));
         }
 
         /// <summary>

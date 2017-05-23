@@ -9,7 +9,6 @@ namespace SmtpServer.Mail
         public IMessageSerializer CreateInstance()
         {
             return new TextMessageSerializer();
-            //return new MimeMessageSerializer();
         }
     }
 }

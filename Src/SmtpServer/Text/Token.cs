@@ -124,6 +124,16 @@ namespace SmtpServer.Text
         }
 
         /// <summary>
+        /// Returns a value indicating whether or not the given byte is considered a text or number character.
+        /// </summary>
+        /// <param name="value">The value to test.</param>
+        /// <returns>true if the value is considered a text or number character, false if not.</returns>
+        public static bool IsTextOrNumber(byte value)
+        {
+            return IsText(value) || IsNumber(value);
+        }
+
+        /// <summary>
         /// Returns a value indicating whether or not the given byte is considered a text character.
         /// </summary>
         /// <param name="value">The value to test.</param>
