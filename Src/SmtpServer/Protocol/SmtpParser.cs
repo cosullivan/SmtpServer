@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using SmtpServer.Mail;
@@ -331,7 +330,7 @@ namespace SmtpServer.Protocol
             Enumerator.Take();
             Enumerator.Skip(TokenKind.Space);
 
-            if (Enum.TryParse(Enumerator.Peek().Text(), true, out AuthenticationMethod method) == false)
+            if (Enum.TryParse(Enumerator.Peek().Text, true, out AuthenticationMethod method) == false)
             {
                 _options.Logger.LogVerbose("AUTH command requires a valid method (PLAIN or LOGIN)");
 
@@ -637,7 +636,7 @@ namespace SmtpServer.Protocol
 
             var token = Enumerator.Take();
 
-            if (token.Kind == TokenKind.Number && Int32.TryParse(token.Text(), out snum))
+            if (token.Kind == TokenKind.Number && Int32.TryParse(token.Text, out snum))
             {
                 return snum >= 0 && snum <= 255;
             }
@@ -658,7 +657,7 @@ namespace SmtpServer.Protocol
             var token = Enumerator.Peek();
             while (token.Kind == TokenKind.Text || token.Kind == TokenKind.Number || token == Tokens.Hyphen)
             {
-                textOrNumberOrHyphenString += Enumerator.Take().Text();
+                textOrNumberOrHyphenString += Enumerator.Take().Text;
 
                 token = Enumerator.Peek();
             }
@@ -677,7 +676,7 @@ namespace SmtpServer.Protocol
         {
             var token = Enumerator.Take();
 
-            textOrNumber = token.Text();
+            textOrNumber = token.Text;
 
             return token.Kind == TokenKind.Text || token.Kind == TokenKind.Number;
         }
@@ -786,13 +785,12 @@ namespace SmtpServer.Protocol
             {
                 case TokenKind.Text:
                 case TokenKind.Number:
-                    text += token.Text();
+                    text += token.Text;
                     return true;
 
                 case TokenKind.Space:
                 case TokenKind.Other:
-                    var ch = (char)token.First();
-                    switch (ch)
+                    switch (token.Text[0])
                     {
                         case ' ':
                         case '!':
@@ -825,7 +823,7 @@ namespace SmtpServer.Protocol
                         case '|':
                         case '}':
                         case '~':
-                            text += ch;
+                            text += token.Text[0];
                             return true;
                     }
                     return false;
@@ -849,7 +847,7 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            text += Enumerator.Take().Text();
+            text += Enumerator.Take().Text;
 
             return true;
         }
@@ -888,12 +886,11 @@ namespace SmtpServer.Protocol
             {
                 case TokenKind.Text:
                 case TokenKind.Number:
-                    atext = token.Text();
+                    atext = token.Text;
                     return true;
 
                 case TokenKind.Other:
-                    var ch = (char)token.First();
-                    switch (ch)
+                    switch (token.Text[0])
                     {
                         case '!':
                         case '#':
@@ -914,7 +911,7 @@ namespace SmtpServer.Protocol
                         case '`':
                         case '|':
                         case '~':
-                            atext += ch;
+                            atext += token.Text[0];
                             return true;
                     }
                     break;
@@ -1003,7 +1000,7 @@ namespace SmtpServer.Protocol
             var token = Enumerator.Peek();
             while (token.Kind == TokenKind.Text || token.Kind == TokenKind.Number || token == Tokens.Hyphen)
             {
-                keyword += Enumerator.Take().Text();
+                keyword += Enumerator.Take().Text;
 
                 token = Enumerator.Peek();
             }
@@ -1022,9 +1019,9 @@ namespace SmtpServer.Protocol
             value = null;
 
             var token = Enumerator.Peek();
-            while (token.Length > 0 && token.All(ch => (ch >= 33 && ch <= 66) || (ch >= 62 && ch <= 127)))
+            while (token.Text.Length > 0 && token.Text.ToCharArray().All(ch => (ch >= 33 && ch <= 66) || (ch >= 62 && ch <= 127)))
             {
-                value += Enumerator.Take().Text();
+                value += Enumerator.Take().Text;
 
                 token = Enumerator.Peek();
             }
@@ -1073,16 +1070,15 @@ namespace SmtpServer.Protocol
             {
                 case TokenKind.Text:
                 case TokenKind.Number:
-                    base64Chars = token.Text();
+                    base64Chars = token.Text;
                     return true;
 
                 case TokenKind.Other:
-                    var ch = (char)token.First();
-                    switch (ch)
+                    switch (token.Text[0])
                     {
                         case '/':
                         case '+':
-                            base64Chars = token.Text();
+                            base64Chars = token.Text;
                             return true;
                     }
                     break;
@@ -1108,7 +1104,7 @@ namespace SmtpServer.Protocol
         /// <returns>The complete tokenized text.</returns>
         string CompleteTokenizedText()
         {
-            return String.Concat(Enumerator.Tokens.Select(token => token.Text()));
+            return String.Concat(Enumerator.Tokens.Select(token => token.Text));
         }
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace SmtpServer.Text
 {
@@ -55,14 +56,14 @@ namespace SmtpServer.Text
         /// <returns>The token that represents the given character.</returns>
         Token OtherToken(byte value)
         {
-            var segment = new ArraySegment<byte>(_segments[_index].Array, _segments[_index].Offset + _position++, 1);
+            _position++;
 
             if (Token.IsWhiteSpace(value))
             {
-                return new Token(TokenKind.Space, segment);
+                return Token.Create(TokenKind.Space, value);
             }
 
-            return new Token(TokenKind.Other, segment);
+            return Token.Create(TokenKind.Other, value);
         }
 
         /// <summary>
@@ -71,7 +72,7 @@ namespace SmtpServer.Text
         /// <returns>The text token that was found at the current position.</returns>
         Token TextToken()
         {
-            return new Token(TokenKind.Text, Consume(Token.IsTextOrNumber));
+            return Token.Create(Consume(Token.IsTextOrNumber));
         }
 
         /// <summary>
@@ -82,7 +83,7 @@ namespace SmtpServer.Text
         {
             var kind = TokenKind.Number;
 
-            var segments = Consume(b =>
+            var text = Consume(b =>
             {
                 if (Token.IsText(b))
                 {
@@ -93,7 +94,7 @@ namespace SmtpServer.Text
                 return Token.IsNumber(b);
             });
 
-            return new Token(kind, segments);
+            return Token.Create(kind, text);
         }
 
         /// <summary>
@@ -103,7 +104,7 @@ namespace SmtpServer.Text
         Token NewLineToken()
         {
             var state = 0;
-            var segments = Consume(b =>
+            var text = Consume(b =>
             {
                 switch (state)
                 {
@@ -118,17 +119,17 @@ namespace SmtpServer.Text
                 return false;
             });
 
-            return new Token(state == 2 ? TokenKind.NewLine : TokenKind.Space, segments);
+            return Token.Create(state == 2 ? TokenKind.NewLine : TokenKind.Space, text);
         }
 
         /// <summary>
         /// Returns a continuous segment of characters matching the predicate.
         /// </summary>
         /// <param name="predicate">The predicate to apply to the characters for the continuous segment.</param>
-        /// <returns>The array segment that defines a continuous segment of characters that have matched the predicate.</returns>
-        ArraySegment<byte>[] Consume(Func<byte, bool> predicate)
+        /// <returns>The text that defines a continuous segment of characters that have matched the predicate.</returns>
+        string Consume(Func<byte, bool> predicate)
         {
-            return ConsumeIterator(predicate).ToArray();
+            return String.Concat(ConsumeIterator(predicate).Select(segment => Encoding.UTF8.GetString(segment.Array, segment.Offset, segment.Count)));
         }
 
         /// <summary>

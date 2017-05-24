@@ -277,7 +277,7 @@ namespace SmtpServer.Protocol
             {
                 // lookup the correct action
                 Tuple<State.TryMakeDelegate, SmtpState> action;
-                if (_state.Actions.TryGetValue(tokenEnumerator.Peek().Text(), out action) == false)
+                if (_state.Actions.TryGetValue(tokenEnumerator.Peek().Text, out action) == false)
                 {
                     var response = $"expected {String.Join("/", _state.Actions.Keys)}";
 
