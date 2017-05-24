@@ -15,6 +15,7 @@ using SmtpServer.Tracing;
 using MimeKit;
 using MimeKit.Text;
 using SmtpServer.IO;
+using SmtpServer.IO;
 using SmtpServer.Text;
 using SmtpClient = MailKit.Net.Smtp.SmtpClient;
 
@@ -24,10 +25,8 @@ namespace SampleApp
     {
         static void Main(string[] args)
         {
-            using (var stream = File.OpenRead(@"C:\Dev\temp\msg.txt"))
+            using (var stream = File.OpenRead(@"C:\Dev\Enron Corpus\maildir\allen-p\inbox\31_"))
             {
-                stream.Position = 0;
-
                 var networkClient = new NetworkClient(stream, 128);
                 var blocks = networkClient.ReadDotBlockAsync().Result;
 

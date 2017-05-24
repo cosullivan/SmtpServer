@@ -9,8 +9,8 @@ namespace SmtpServer.IO
     {
         readonly IReadOnlyList<ArraySegment<byte>> _segments;
         readonly int _length;
-        int _segmentIndex = 0;
         int _index = 0;
+        int _position = 0;
 
         /// <summary>
         /// Constructor.
@@ -50,7 +50,7 @@ namespace SmtpServer.IO
         {
             throw new NotImplementedException();
         }
-        
+
         /// <summary>
         /// When overridden in a derived class, reads a sequence of bytes from the current stream and advances the position within the stream by the number of bytes read.
         /// </summary>
@@ -62,23 +62,13 @@ namespace SmtpServer.IO
         {
             var remaining = count;
 
-            while (remaining > 0 && _segmentIndex < _segments.Count)
+            while (remaining > 0 && EnsureDataIsAvailable())
             {
-                var segment = _segments[_segmentIndex];
+                var length = Math.Min(_segments[_index].Count - _position, remaining);
 
-                if (_index >= segment.Count)
-                {
-                    _index = 0;
-                    _segmentIndex++;
+                Buffer.BlockCopy(_segments[_index].Array, _segments[_index].Offset + _position, buffer, offset + count - remaining, length);
 
-                    continue;
-                }
-
-                var length = Math.Min(segment.Count - _index, remaining);
-
-                Buffer.BlockCopy(segment.Array, segment.Offset + _index, buffer, offset + count - remaining, length);
-
-                _index += length;
+                _position += length;
                 remaining -= length;
             }
 
@@ -94,6 +84,21 @@ namespace SmtpServer.IO
         public override void Write(byte[] buffer, int offset, int count)
         {
             throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Ensure that data is available for the operation.
+        /// </summary>
+        /// <returns>true if there is data available, false if not.</returns>
+        bool EnsureDataIsAvailable()
+        {
+            if (_index < _segments.Count && _position >= _segments[_index].Count)
+            {
+                _index++;
+                _position = 0;
+            }
+
+            return _index < _segments.Count;
         }
 
         /// <summary>
@@ -130,28 +135,28 @@ namespace SmtpServer.IO
             {
                 var position = 0;
 
-                for (var i = 0; i < _segmentIndex; i++)
+                for (var i = 0; i < _index; i++)
                 {
                     position += _segments[i].Count;
                 }
 
-                return position + _index;
+                return position + _position;
             }
             set
             {
                 var position = (int)value;
 
-                for (_segmentIndex = 0; _segmentIndex < _segments.Count; _segmentIndex++)
+                for (_index = 0; _index < _segments.Count; _index++)
                 {
-                    if (position < _segments[_segmentIndex].Count)
+                    if (position < _segments[_index].Count)
                     {
                         break;
                     }
 
-                    position -= _segments[_segmentIndex].Count;
+                    position -= _segments[_index].Count;
                 }
 
-                _index = position;
+                _position = position;
             }
         }
     }
