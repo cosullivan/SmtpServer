@@ -3,7 +3,7 @@
     public enum MessageType
     {
         /// <summary>
-        /// A plain text ASCII message (adhering to the 822 RFC).
+        /// A plain text message that is ended with a dot-block annotation.
         /// </summary>
         Text
     }

@@ -72,7 +72,7 @@ namespace SmtpServer.Text
         /// <returns>The text token that was found at the current position.</returns>
         Token TextToken()
         {
-            return Token.Create(Consume(Token.IsTextOrNumber));
+            return Token.Create(Consume(Token.IsText));
         }
 
         /// <summary>
@@ -81,20 +81,7 @@ namespace SmtpServer.Text
         /// <returns>The number token that was found at the current position.</returns>
         Token NumberToken()
         {
-            var kind = TokenKind.Number;
-
-            var text = Consume(b =>
-            {
-                if (Token.IsText(b))
-                {
-                    kind = TokenKind.Text;
-                    return true;
-                }
-
-                return Token.IsNumber(b);
-            });
-
-            return Token.Create(kind, text);
+            return Token.Create(TokenKind.Number, Consume(Token.IsNumber));
         }
 
         /// <summary>

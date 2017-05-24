@@ -41,10 +41,12 @@ namespace SmtpServer.Tests
             var tokens = Tokenize("abc123");
 
             // assert
-            Assert.Equal(2, tokens.Count);
+            Assert.Equal(3, tokens.Count);
             Assert.Equal(TokenKind.Text, tokens[0].Kind);
-            Assert.Equal(TokenKind.None, tokens[1].Kind);
-            Assert.Equal("abc123", tokens[0].Text);
+            Assert.Equal(TokenKind.Number, tokens[1].Kind);
+            Assert.Equal(TokenKind.None, tokens[2].Kind);
+            Assert.Equal("abc", tokens[0].Text);
+            Assert.Equal("123", tokens[1].Text);
         }
 
         [Fact]
@@ -54,10 +56,12 @@ namespace SmtpServer.Tests
             var tokens = Tokenize("123abc");
 
             // assert
-            Assert.Equal(2, tokens.Count);
-            Assert.Equal(TokenKind.Text, tokens[0].Kind);
-            Assert.Equal(TokenKind.None, tokens[1].Kind);
-            Assert.Equal("123abc", tokens[0].Text);
+            Assert.Equal(3, tokens.Count);
+            Assert.Equal(TokenKind.Number, tokens[0].Kind);
+            Assert.Equal(TokenKind.Text, tokens[1].Kind);
+            Assert.Equal(TokenKind.None, tokens[2].Kind);
+            Assert.Equal("123", tokens[0].Text);
+            Assert.Equal("abc", tokens[1].Text);
         }
 
         [Fact]

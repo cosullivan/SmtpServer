@@ -25,30 +25,30 @@ namespace SampleApp
     {
         static void Main(string[] args)
         {
-            using (var stream = File.OpenRead(@"C:\Dev\Enron Corpus\maildir\allen-p\inbox\31_"))
-            {
-                var networkClient = new NetworkClient(stream, 128);
-                var blocks = networkClient.ReadDotBlockAsync().Result;
+            //using (var stream = File.OpenRead(@"C:\Dev\Enron Corpus\maildir\allen-p\inbox\31_"))
+            //{
+            //    var networkClient = new NetworkClient(stream, 128);
+            //    var blocks = networkClient.ReadDotBlockAsync().Result;
 
-                var stopwatch = new Stopwatch();
-                stopwatch.Start();
+            //    var stopwatch = new Stopwatch();
+            //    stopwatch.Start();
 
-                for (var i = 0; i < 100; i++)
-                {
-                    var reader = new ByteArrayTokenReader(blocks);
-                    var tokens = reader.ToList();
-                    //Token token;
-                    //while ((token = reader.NextToken()) != Token.None)
-                    //{
-                    //    Console.WriteLine(token);
-                    //}
-                }
+            //    for (var i = 0; i < 100; i++)
+            //    {
+            //        var reader = new ByteArrayTokenReader(blocks);
+            //        var tokens = reader.ToList();
+            //        //Token token;
+            //        //while ((token = reader.NextToken()) != Token.None)
+            //        //{
+            //        //    Console.WriteLine(token);
+            //        //}
+            //    }
 
-                stopwatch.Stop();
-                Console.WriteLine("Time Taken {0}ms", stopwatch.ElapsedMilliseconds);
-            }
+            //    stopwatch.Stop();
+            //    Console.WriteLine("Time Taken {0}ms", stopwatch.ElapsedMilliseconds);
+            //}
 
-            return;
+            //return;
 
             var cancellationTokenSource = new CancellationTokenSource();
 
