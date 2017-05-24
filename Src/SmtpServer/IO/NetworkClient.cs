@@ -22,7 +22,7 @@ namespace SmtpServer.IO
         /// </summary>
         /// <param name="stream">The stream to return the tokens from.</param>
         /// <param name="bufferLength">The buffer length to read.</param>
-        internal NetworkClient(Stream stream, int bufferLength = 64)
+        internal NetworkClient(Stream stream, int bufferLength = 128)
         {
             _stream = stream;
             _bufferLength = bufferLength;
