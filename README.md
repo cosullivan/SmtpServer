@@ -31,6 +31,7 @@ There are three hooks that can be implemented; IMessageStore, IMailboxFilter, an
 var options = new OptionsBuilder()
     .ServerName("localhost")
     .Port(25, 587)
+    .Certificate(CreateX509Certificate2())
     .MessageStore(new SampleMessageStore())
     .MailboxFilter(new SampleMailboxFilter())
     .UserAuthenticator(new SampleUserAuthenticator())
