@@ -11,6 +11,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SmtpServer", "SmtpServer\Sm
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmtpServer.Tests", "SmtpServer.Tests\SmtpServer.Tests.csproj", "{46EF0811-D3FD-41BD-BBF2-917F27C1E3F5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmtpServer.Mime", "SmtpServer.Mime\SmtpServer.Mime.csproj", "{1FF49D03-3188-41AA-B705-AD279F13DC42}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmtpServer.Mime.Tests", "SmtpServer.Mime.Tests\SmtpServer.Mime.Tests.csproj", "{449DD970-4DE2-48B3-BFB0-E13B7CC4BA6F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,6 +33,14 @@ Global
 		{46EF0811-D3FD-41BD-BBF2-917F27C1E3F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{46EF0811-D3FD-41BD-BBF2-917F27C1E3F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{46EF0811-D3FD-41BD-BBF2-917F27C1E3F5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1FF49D03-3188-41AA-B705-AD279F13DC42}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1FF49D03-3188-41AA-B705-AD279F13DC42}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1FF49D03-3188-41AA-B705-AD279F13DC42}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1FF49D03-3188-41AA-B705-AD279F13DC42}.Release|Any CPU.Build.0 = Release|Any CPU
+		{449DD970-4DE2-48B3-BFB0-E13B7CC4BA6F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{449DD970-4DE2-48B3-BFB0-E13B7CC4BA6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{449DD970-4DE2-48B3-BFB0-E13B7CC4BA6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{449DD970-4DE2-48B3-BFB0-E13B7CC4BA6F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

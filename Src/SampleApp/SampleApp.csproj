@@ -70,6 +70,10 @@
     <Content Include="TextFile1.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\SmtpServer.Mime\SmtpServer.Mime.csproj">
+      <Project>{1ff49d03-3188-41aa-b705-ad279f13dc42}</Project>
+      <Name>SmtpServer.Mime</Name>
+    </ProjectReference>
     <ProjectReference Include="..\SmtpServer.Tests\SmtpServer.Tests.csproj">
       <Project>{46EF0811-D3FD-41BD-BBF2-917F27C1E3F5}</Project>
       <Name>SmtpServer.Tests</Name>

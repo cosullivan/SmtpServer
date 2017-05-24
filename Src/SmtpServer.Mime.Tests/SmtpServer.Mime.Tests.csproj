@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard1.3</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit" Version="2.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SmtpServer.Mime\SmtpServer.Mime.csproj" />
+    <ProjectReference Include="..\SmtpServer\SmtpServer.csproj" />
+  </ItemGroup>
+
+</Project>

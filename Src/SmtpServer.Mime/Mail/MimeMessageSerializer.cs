@@ -1,5 +1,3 @@
-#if MIME_EXPERIMENTAL
-
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.IO;
@@ -39,5 +37,3 @@ namespace SmtpServer.Mail
         }
     }
 }
-
-#endif

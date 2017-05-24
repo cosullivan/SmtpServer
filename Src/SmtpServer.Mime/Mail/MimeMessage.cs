@@ -1,5 +1,3 @@
-#if MIME_EXPERIMENTAL
-
 using SmtpServer.Mime;
 
 namespace SmtpServer.Mail
@@ -18,7 +16,7 @@ namespace SmtpServer.Mail
         /// <summary>
         /// Returns the message type.
         /// </summary>
-        public MessageType MessageType => MessageType.Mime;
+        public MessageType MessageType => MessageType.Text;
 
         /// <summary>
         /// The MIME message document.
@@ -26,5 +24,3 @@ namespace SmtpServer.Mail
         public MimeDocument Document { get; }
     }
 }
-
-#endif

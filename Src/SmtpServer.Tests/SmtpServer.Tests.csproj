@@ -63,8 +63,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="MimeParserTests.cs" />
-    <Compile Include="MimeMessageSerializerTests.cs" />
     <Compile Include="Mocks\MockMessageStore.cs" />
     <Compile Include="NetworkClientTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

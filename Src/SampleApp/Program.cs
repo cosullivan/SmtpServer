@@ -15,11 +15,9 @@ using SmtpServer.Tracing;
 using MimeKit;
 using MimeKit.Text;
 using SmtpServer.IO;
-using SmtpServer.Mime;
 using SmtpServer.Tests;
 using SmtpServer.Text;
 using ISmtpServerOptions = SmtpServer.ISmtpServerOptions;
-using MimePart = SmtpServer.Mime.MimePart;
 using SmtpClient = MailKit.Net.Smtp.SmtpClient;
 
 namespace SampleApp
@@ -47,64 +45,31 @@ namespace SampleApp
             //    Console.WriteLine(token);
             //}
 
-            ////using (var stream = File.OpenRead(@"C:\Dev\temp\msg.txt"))
-            //using (var stream = File.OpenRead(@"C:\Dev\Enron Corpus\maildir\allen-p\inbox\31_"))
-            //{
-            //    var networkClient = new NetworkClient(stream, 128);
-            //    var blocks = networkClient.ReadDotBlockAsync().Result;
+            //using (var stream = File.OpenRead(@"C:\Dev\temp\msg.txt"))
+            using (var stream = File.OpenRead(@"C:\Dev\Enron Corpus\maildir\allen-p\inbox\31_"))
+            {
+                var networkClient = new NetworkClient(stream, 128);
+                var blocks = networkClient.ReadDotBlockAsync().Result;
 
-            //    var stopwatch = new Stopwatch();
-            //    stopwatch.Start();
+                var stopwatch = new Stopwatch();
+                stopwatch.Start();
 
-            //    for (var i = 0; i < 1; i++)
-            //    {
-            //        var reader = new ByteArrayTokenReader(blocks);
-            //        //var tokens = reader.ToList();
-            //        //Token token;
-            //        //while ((token = reader.NextToken()) != Token.None)
-            //        //{
-            //        //    Console.WriteLine(token);
-            //        //}
+                for (var i = 0; i < 100; i++)
+                {
+                    var reader = new ByteArrayTokenReader(blocks);
+                    var tokens = reader.ToList();
+                    //Token token;
+                    //while ((token = reader.NextToken()) != Token.None)
+                    //{
+                    //    Console.WriteLine(token);
+                    //}
+                }
 
-            //        var mimeParser = new SmtpServer.Mime.MimeParser(new TokenEnumerator(reader));
-            //        Console.WriteLine(mimeParser.TryMakeDocument(out MimeDocument document));
+                stopwatch.Stop();
+                Console.WriteLine("Time Taken {0}ms", stopwatch.ElapsedMilliseconds);
+            }
 
-            //        Console.WriteLine(document.Version);
-            //        Console.WriteLine(document.Body);
-
-            //        Console.WriteLine(new StreamReader(((MimePart)document.Body).Content).ReadToEnd());
-            //    }
-
-            //    stopwatch.Stop();
-            //    Console.WriteLine("Time Taken {0}ms", stopwatch.ElapsedMilliseconds);
-            //}
-
-            //var file = @"C:\Dev\Enron Corpus\maildir\allen-p\inbox\31_";
-
-            //var stopwatch = new Stopwatch();
-            //stopwatch.Start();
-
-            //for (var i = 0; i < 100; i++)
-            //{
-            //    //using (var stream = File.OpenRead(file))
-            //    //{
-            //    //    var message = MimeKit.MimeMessage.Load(stream);
-            //    //}
-
-            //    using (var stream = File.OpenRead(file))
-            //    {
-            //        var networkClient = new NetworkClient(stream, 128);
-            //        var blocks = networkClient.ReadDotBlockAsync().Result;
-
-            //        var mimeParser = new SmtpServer.Mime.MimeParser(new TokenEnumerator(new ByteArrayTokenReader(blocks)));
-            //        mimeParser.TryMakeDocument(out MimeDocument document);
-            //    }
-            //}
-
-            //stopwatch.Stop();
-            //Console.WriteLine("Time Taken {0}ms", stopwatch.ElapsedMilliseconds);
-            
-            //return;
+            return;
 
             var cancellationTokenSource = new CancellationTokenSource();
 
