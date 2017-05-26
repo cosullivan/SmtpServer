@@ -39,7 +39,6 @@ namespace SmtpServer.Protocol
                     { "HELO", TryMakeHelo, SmtpState.WaitingForMail },
                     { "EHLO", TryMakeEhlo, SmtpState.WaitingForMail },
                     { "MAIL", TryMakeMail, SmtpState.WithinTransaction },
-                    { "STARTTLS", TryMakeStartTls, SmtpState.WaitingForMailSecure },
                 },
                 new State(SmtpState.WaitingForMailSecure)
                 {
@@ -71,6 +70,11 @@ namespace SmtpServer.Protocol
             if (options.AllowUnsecureAuthentication)
             {
                 _stateTable[SmtpState.WaitingForMail].Add("AUTH", TryMakeAuth);
+            }
+
+            if (options.ServerCertificate != null)
+            {
+                _stateTable[SmtpState.WaitingForMail].Add("STARTTLS", TryMakeStartTls, SmtpState.WaitingForMailSecure);
             }
 
             _stateTable.Initialize(SmtpState.Initialized);

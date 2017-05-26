@@ -3,7 +3,7 @@ using System.Diagnostics;
 
 namespace SmtpServer.Text
 {
-    [DebuggerDisplay("[{Kind}] {Text()}")]
+    [DebuggerDisplay("[{Kind}] {Text}")]
     public struct Token
     {
         public static readonly Token None = new Token(TokenKind.None, String.Empty);

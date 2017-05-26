@@ -67,7 +67,7 @@ namespace SampleApp
                 .Build();
 
             var s = RunServerAsync(options, cancellationTokenSource.Token);
-            var c = RunClientAsync("A", 10000, false, cancellationTokenSource.Token);
+            var c = RunClientAsync("A", 1, false, cancellationTokenSource.Token);
             //var c = RunFolderAsync(@"C:\Dev\Enron Corpus\maildir", CancellationToken.None);
 
             Console.WriteLine("Press any key to continue");
@@ -143,13 +143,13 @@ namespace SampleApp
         {
             var smtpServer = new SmtpServer.SmtpServer(options);
 
-            //smtpServer.SessionCreated += OnSmtpServerSessionCreated;
-            //smtpServer.SessionCompleted += OnSmtpServerSessionCompleted;
+            smtpServer.SessionCreated += OnSmtpServerSessionCreated;
+            smtpServer.SessionCompleted += OnSmtpServerSessionCompleted;
 
             await smtpServer.StartAsync(cancellationToken);
 
-            //smtpServer.SessionCreated -= OnSmtpServerSessionCreated;
-            //smtpServer.SessionCompleted -= OnSmtpServerSessionCompleted;
+            smtpServer.SessionCreated -= OnSmtpServerSessionCreated;
+            smtpServer.SessionCompleted -= OnSmtpServerSessionCompleted;
         }
 
         static async Task RunClientAsync(

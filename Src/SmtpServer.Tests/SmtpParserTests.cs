@@ -111,6 +111,22 @@ namespace SmtpServer.Tests
             Assert.Equal("gmail.com", ((MailCommand)command).Address.Host);
         }
 
+        //[Fact]
+        //public void CanMakeUtf8Mail()
+        //{
+        //    // arrange
+        //    var parser = CreateParser("MAIL FROM:<pelé@example.com> SMTPUTF8");
+
+        //    // act
+        //    var result = parser.TryMakeMail(out SmtpCommand command, out SmtpResponse errorResponse);
+
+        //    // assert
+        //    Assert.True(result);
+        //    Assert.True(command is MailCommand);
+        //    Assert.Equal("pelé", ((MailCommand)command).Address.User);
+        //    Assert.Equal("example.com", ((MailCommand)command).Address.Host);
+        //}
+
         [Fact]
         public void CanMakeMailWithNoAddress()
         {
