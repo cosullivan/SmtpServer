@@ -4,7 +4,7 @@
     <TargetFrameworks>net45;netstandard1.3</TargetFrameworks>
     <AssemblyName>SmtpServer</AssemblyName>
     <RootNamespace>SmtpServer</RootNamespace>
-    <Version>3.1.0-rc2</Version>
+    <Version>3.1.0-rc3</Version>
     <Description>.NET SmtpServer</Description>
     <Authors>Cain O'Sullivan</Authors>
     <Company />
@@ -14,8 +14,8 @@
     <PackageTags>Smtp SmtpServer</PackageTags>
     <PackageLicenseUrl>https://raw.githubusercontent.com/cosullivan/SmtpServer/master/LICENSE</PackageLicenseUrl>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-    <AssemblyVersion>3.1.0.1</AssemblyVersion>
-    <FileVersion>3.1.0.1</FileVersion>
+    <AssemblyVersion>3.1.0.2</AssemblyVersion>
+    <FileVersion>3.1.0.2</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net45|AnyCPU'">

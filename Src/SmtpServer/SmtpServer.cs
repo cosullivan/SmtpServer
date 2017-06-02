@@ -67,8 +67,6 @@ namespace SmtpServer
         /// <returns>A task which performs the operation.</returns>
         async Task ListenAsync(IPEndPoint endpoint, CancellationToken cancellationToken)
         {
-            //_logger.LogVerbose("Listening on port {0}", endpoint.Port);
-
             var tcpListener = new TcpListener(endpoint);
             tcpListener.Start();
 
@@ -82,10 +80,8 @@ namespace SmtpServer
                     // wait for a client connection
                     var tcpClient = await tcpListener.AcceptTcpClientAsync().WithCancellation(cancellationToken).ConfigureAwait(false);
                     
-                    //_logger.LogVerbose("SMTP client accepted [{0}]", tcpClient.Client.RemoteEndPoint);
-
                     // create a new session to handle the connection
-                    var session = CreateSession(tcpClient);
+                    var session = new SmtpSession(_options, tcpClient);
                     sessions.TryAdd(session, session);
 
                     OnSessionCreated(new SessionEventArgs(session.Context));
@@ -114,16 +110,6 @@ namespace SmtpServer
             {
                 tcpListener.Stop();
             }
-        }
-
-        /// <summary>
-        /// Creates a new SMTP session.
-        /// </summary>
-        /// <param name="tcpClient">The TCP client that the session is reading & writing to.</param>
-        /// <returns>The SMTP session.</returns>
-        SmtpSession CreateSession(TcpClient tcpClient)
-        {
-            return new SmtpSession(_options, tcpClient);
         }
     }
 }

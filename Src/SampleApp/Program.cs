@@ -25,31 +25,6 @@ namespace SampleApp
     {
         static void Main(string[] args)
         {
-            //using (var stream = File.OpenRead(@"C:\Dev\Enron Corpus\maildir\allen-p\inbox\31_"))
-            //{
-            //    var networkClient = new NetworkClient(stream, 128);
-            //    var blocks = networkClient.ReadDotBlockAsync().Result;
-
-            //    var stopwatch = new Stopwatch();
-            //    stopwatch.Start();
-
-            //    for (var i = 0; i < 100; i++)
-            //    {
-            //        var reader = new ByteArrayTokenReader(blocks);
-            //        var tokens = reader.ToList();
-            //        //Token token;
-            //        //while ((token = reader.NextToken()) != Token.None)
-            //        //{
-            //        //    Console.WriteLine(token);
-            //        //}
-            //    }
-
-            //    stopwatch.Stop();
-            //    Console.WriteLine("Time Taken {0}ms", stopwatch.ElapsedMilliseconds);
-            //}
-
-            //return;
-
             var cancellationTokenSource = new CancellationTokenSource();
 
             var certificate = CreateCertificate();
@@ -61,14 +36,15 @@ namespace SampleApp
                 .Port(9025)
                 .Certificate(certificate)
                 .SupportedSslProtocols(SslProtocols.Default)
-                //.MessageStore(new SampleMessageStore())
+                .MessageStore(new SampleMessageStore())
                 //.MailboxFilter(new SampleMailboxFilter())
-                //.UserAuthenticator(new SampleUserAuthenticator())
+                .UserAuthenticator(new SampleUserAuthenticator())
                 .Build();
 
             var s = RunServerAsync(options, cancellationTokenSource.Token);
-            var c = RunClientAsync("A", 1, false, cancellationTokenSource.Token);
-            //var c = RunFolderAsync(@"C:\Dev\Enron Corpus\maildir", CancellationToken.None);
+            //var c = RunClientAsync("A", 1, false, cancellationTokenSource.Token);
+            //var c = RunFolderAsync(@"C:\Dev\temp\", "msg.txt", CancellationToken.None);
+            var c = RunFileAsync(@"c:\dev\temp\msg.txt", CancellationToken.None);
 
             Console.WriteLine("Press any key to continue");
             Console.ReadKey();
@@ -159,7 +135,7 @@ namespace SampleApp
             CancellationToken cancellationToken = default(CancellationToken))
         {
             var message = MimeKit.MimeMessage.Load(ParserOptions.Default, @"C:\Dev\Enron Corpus\maildir\allen-p\inbox\31_");
-
+            
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
@@ -217,14 +193,14 @@ namespace SampleApp
             await smtpClient.SendAsync(message, cancellationToken).ConfigureAwait(false);
         }
 
-        static async Task RunFolderAsync(string folder, CancellationToken cancellationToken = default(CancellationToken))
+        static async Task RunFolderAsync(string folder, string pattern = "*", CancellationToken cancellationToken = default(CancellationToken))
         {
             foreach (var directory in Directory.GetDirectories(folder, "*", SearchOption.AllDirectories))
             {
                 Console.WriteLine(directory);
                 cancellationToken.ThrowIfCancellationRequested();
 
-                foreach (var file in Directory.GetFiles(directory).ToList())
+                foreach (var file in Directory.GetFiles(directory, pattern).ToList())
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     Console.WriteLine(new FileInfo(file).Name);
@@ -258,6 +234,29 @@ namespace SampleApp
                 }
             }
         }
+
+        static async Task RunFileAsync(string file, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            var message = MimeKit.MimeMessage.Load(ParserOptions.Default, file);
+
+            using (var smtpClient = new SmtpClient())
+            {
+                try
+                {
+                    await smtpClient.ConnectAsync("localhost", 9025, false, cancellationToken);
+                    await smtpClient.AuthenticateAsync("user", "password", cancellationToken);
+
+                    await smtpClient.SendAsync(message, cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception exception)
+                {
+                    Console.WriteLine(exception);
+                }
+
+                await smtpClient.DisconnectAsync(true, cancellationToken);
+            }
+        }
+
 
         static void OnSmtpServerSessionCreated(object sender, SessionEventArgs e)
         {

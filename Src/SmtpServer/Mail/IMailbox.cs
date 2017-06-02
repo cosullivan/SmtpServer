@@ -14,11 +14,6 @@ namespace SmtpServer.Mail
         /// Gets the host server.
         /// </summary>
         string Host { get; }
-
-        /// <summary>
-        /// Gets the display name.
-        /// </summary>
-        string DisplayName { get; }
     }
 
     public static class MailboxExtensionMethods
