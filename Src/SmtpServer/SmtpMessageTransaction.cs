@@ -21,6 +21,7 @@ namespace SmtpServer
         {
             From = null;
             To = new Collection<IMailbox>();
+            Parameters = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>());
         }
 
         /// <summary>
@@ -37,5 +38,10 @@ namespace SmtpServer
         /// The message that was read for this transaction.
         /// </summary>
         public IMessage Message { get; set; }
+
+        /// <summary>
+        /// The list of parameters that were supplied by the client.
+        /// </summary>
+        public IReadOnlyDictionary<string, string> Parameters { get; set; }
     }
 }

@@ -10,6 +10,8 @@ namespace SmtpServer.Protocol
 {
     public sealed class MailCommand : SmtpCommand
     {
+        public const string Command = "MAIL";
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -31,6 +33,7 @@ namespace SmtpServer.Protocol
         internal override async Task ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
             context.Transaction.Reset();
+            context.Transaction.Parameters = Parameters;
 
             // check if a size has been defined
             var size = GetMessageSize();

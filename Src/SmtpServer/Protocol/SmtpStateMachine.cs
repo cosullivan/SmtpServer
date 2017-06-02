@@ -5,7 +5,7 @@ using SmtpServer.Text;
 
 namespace SmtpServer.Protocol
 {
-    internal class SmtpStateMachine
+    internal class SmtpStateMachine : SmtpCommandVisitor
     {
         readonly ISmtpServerOptions _options;
         readonly SmtpSessionContext _context;
@@ -20,64 +20,75 @@ namespace SmtpServer.Protocol
         {
             _options = options;
             _context = context;
+            _context.CommandExecuting += OnSessionCommandExecuting;
             _context.SessionAuthenticated += OnSessionAuthenticated;
             _stateTable = new StateTable
             {
                 new State(SmtpState.Initialized)
                 {
-                    { "NOOP", TryMakeNoop },
-                    { "RSET", TryMakeRset },
-                    { "QUIT", TryMakeQuit },
-                    { "HELO", TryMakeHelo, SmtpState.WaitingForMail },
-                    { "EHLO", TryMakeEhlo, SmtpState.WaitingForMail },
+                    { NoopCommand.Command, TryMakeNoop },
+                    { RsetCommand.Command, TryMakeRset },
+                    { QuitCommand.Command, TryMakeQuit },
+                    { HeloCommand.Command, TryMakeHelo, SmtpState.WaitingForMail },
+                    { EhloCommand.Command, TryMakeEhlo, SmtpState.WaitingForMail },
                 },
                 new State(SmtpState.WaitingForMail)
                 {
-                    { "NOOP", TryMakeNoop },
-                    { "RSET", TryMakeRset },
-                    { "QUIT", TryMakeQuit },
-                    { "HELO", TryMakeHelo, SmtpState.WaitingForMail },
-                    { "EHLO", TryMakeEhlo, SmtpState.WaitingForMail },
-                    { "MAIL", TryMakeMail, SmtpState.WithinTransaction },
+                    { NoopCommand.Command, TryMakeNoop },
+                    { RsetCommand.Command, TryMakeRset },
+                    { QuitCommand.Command, TryMakeQuit },
+                    { HeloCommand.Command, TryMakeHelo, SmtpState.WaitingForMail },
+                    { EhloCommand.Command, TryMakeEhlo, SmtpState.WaitingForMail },
+                    { MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction },
                 },
                 new State(SmtpState.WaitingForMailSecure)
                 {
-                    { "NOOP", TryMakeNoop },
-                    { "RSET", TryMakeRset },
-                    { "QUIT", TryMakeQuit },
-                    { "AUTH", TryMakeAuth },
-                    { "HELO", TryMakeHelo, SmtpState.WaitingForMailSecure },
-                    { "EHLO", TryMakeEhlo, SmtpState.WaitingForMailSecure },
-                    { "MAIL", TryMakeMail, SmtpState.WithinTransaction }
+                    { NoopCommand.Command, TryMakeNoop },
+                    { RsetCommand.Command, TryMakeRset },
+                    { QuitCommand.Command, TryMakeQuit },
+                    { AuthCommand.Command, TryMakeAuth },
+                    { HeloCommand.Command, TryMakeHelo, SmtpState.WaitingForMailSecure },
+                    { EhloCommand.Command, TryMakeEhlo, SmtpState.WaitingForMailSecure },
+                    { MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction }
                 },
                 new State(SmtpState.WithinTransaction)
                 {
-                    { "NOOP", TryMakeNoop },
-                    { "RSET", TryMakeRset },
-                    { "QUIT", TryMakeQuit },
-                    { "RCPT", TryMakeRcpt, SmtpState.CanAcceptData },
+                    { NoopCommand.Command, TryMakeNoop },
+                    { RsetCommand.Command, TryMakeRset },
+                    { QuitCommand.Command, TryMakeQuit },
+                    { RcptCommand.Command, TryMakeRcpt, SmtpState.CanAcceptData },
                 },
                 new State(SmtpState.CanAcceptData)
                 {
-                    { "NOOP", TryMakeNoop },
-                    { "RSET", TryMakeRset },
-                    { "QUIT", TryMakeQuit },
-                    { "RCPT", TryMakeRcpt },
-                    { "DATA", TryMakeData, SmtpState.WaitingForMail },
+                    { NoopCommand.Command, TryMakeNoop },
+                    { RsetCommand.Command, TryMakeRset },
+                    { QuitCommand.Command, TryMakeQuit },
+                    { RcptCommand.Command, TryMakeRcpt },
+                    { DataCommand.Command, TryMakeData, SmtpState.WaitingForMail },
                 }
             };
 
             if (options.AllowUnsecureAuthentication)
             {
-                _stateTable[SmtpState.WaitingForMail].Add("AUTH", TryMakeAuth);
+                WaitingForMail.Add(AuthCommand.Command, TryMakeAuth);
             }
 
             if (options.ServerCertificate != null)
             {
-                _stateTable[SmtpState.WaitingForMail].Add("STARTTLS", TryMakeStartTls, SmtpState.WaitingForMailSecure);
+                WaitingForMail.Add(StartTlsCommand.Command, TryMakeStartTls, SmtpState.WaitingForMailSecure);
             }
 
             _stateTable.Initialize(SmtpState.Initialized);
+        }
+
+        /// <summary>
+        /// Called when a command is executing.
+        /// </summary>
+        /// <param name="sender">The object that raised the event.</param>
+        /// <param name="e">The event data.</param>
+        void OnSessionCommandExecuting(object sender, SmtpCommandExecutingEventArgs e)
+        {
+            Visit(e.Command);
         }
 
         /// <summary>
@@ -89,21 +100,8 @@ namespace SmtpServer.Protocol
         {
             _context.SessionAuthenticated -= OnSessionAuthenticated;
 
-            RemoveCommand(SmtpState.WaitingForMail, "AUTH");
-            RemoveCommand(SmtpState.WaitingForMailSecure, "AUTH");
-        }
-
-        /// <summary>
-        /// Remove the specified command from the state.
-        /// </summary>
-        /// <param name="state">The SMTP state to remove the command from.</param>
-        /// <param name="command">The command to remove from the state.</param>
-        void RemoveCommand(SmtpState state, string command)
-        {
-            if (_stateTable[state].Actions.ContainsKey(command))
-            {
-                _stateTable[state].Actions.Remove(command);
-            }
+            _stateTable[SmtpState.WaitingForMail].Clear(AuthCommand.Command);
+            _stateTable[SmtpState.WaitingForMailSecure].Clear(AuthCommand.Command);
         }
 
         /// <summary>
@@ -237,6 +235,54 @@ namespace SmtpServer.Protocol
         {
             return new SmtpParser(_options, tokenEnumerator).TryMakeData(out command, out errorResponse);
         }
+        
+        /// <summary>
+        /// Make a 503/Bad Sequence response.
+        /// </summary>
+        /// <param name="tokenEnumerator">The token enumerator to use when matching the command.</param>
+        /// <param name="command">The command that was found.</param>
+        /// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
+        /// <returns>Always returns true as the error response is assured.</returns>
+        bool BadSequence(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            command = null;
+            errorResponse = SmtpResponse.BadSequence;
+            
+            return true;
+        }
+
+        /// <summary>
+        /// Visit an MAIL command.
+        /// </summary>
+        /// <param name="command">The command that is being visited.</param>
+        protected override void Visit(MailCommand command)
+        {
+            if (command.Parameters.ContainsKey("BINARYMIME"))
+            {
+                WaitingForMail.Replace(MailCommand.Command, BadSequence);
+                WaitingForMailSecure.Replace(MailCommand.Command, BadSequence);
+            }
+        }
+
+        /// <summary>
+        /// Visit an RSET command.
+        /// </summary>
+        /// <param name="command">The command that is being visited.</param>
+        protected override void Visit(RsetCommand command)
+        {
+            WaitingForMail.Replace(MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction);
+            WaitingForMailSecure.Replace(MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction);
+        }
+
+        /// <summary>
+        /// Returns the waiting for mail state.
+        /// </summary>
+        State WaitingForMail => _stateTable[SmtpState.WaitingForMail];
+
+        /// <summary>
+        /// Returns the waiting for mail in a secure transaction state.
+        /// </summary>
+        State WaitingForMailSecure => _stateTable[SmtpState.WaitingForMailSecure];
 
         #region StateTable
 
@@ -339,6 +385,27 @@ namespace SmtpServer.Protocol
             public void Add(string command, TryMakeDelegate tryMake, SmtpState? transitionTo = null)
             {
                 Actions.Add(command, Tuple.Create(tryMake, transitionTo ?? StateId));
+            }
+
+            /// <summary>
+            /// Add a state action.
+            /// </summary>
+            /// <param name="command">The name of the SMTP command.</param>
+            /// <param name="tryMake">The function callback to create the command.</param>
+            /// <param name="transitionTo">The state to transition to.</param>
+            public void Replace(string command, TryMakeDelegate tryMake, SmtpState? transitionTo = null)
+            {
+                Clear(command);
+                Add(command, tryMake, transitionTo);
+            }
+
+            /// <summary>
+            /// Clear the command from the current state.
+            /// </summary>
+            /// <param name="command">The command to clear.</param>
+            public void Clear(string command)
+            {
+                Actions.Remove(command);
             }
 
             /// <summary>

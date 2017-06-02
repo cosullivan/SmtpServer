@@ -6,6 +6,8 @@ namespace SmtpServer.Protocol
 {
     public sealed class RsetCommand : SmtpCommand
     {
+        public const string Command = "RSET";
+
         /// <summary>
         /// Constructor.
         /// </summary>

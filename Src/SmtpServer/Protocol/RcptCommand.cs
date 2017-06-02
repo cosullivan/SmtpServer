@@ -9,6 +9,8 @@ namespace SmtpServer.Protocol
 {
     public sealed class RcptCommand : SmtpCommand
     {
+        public const string Command = "RCPT";
+
         /// <summary>
         /// Constructor.
         /// </summary>

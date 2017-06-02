@@ -6,6 +6,8 @@ namespace SmtpServer.Protocol
 {
     public sealed class NoopCommand : SmtpCommand
     {
+        public const string Command = "NOOP";
+
         /// <summary>
         /// Constructor.
         /// </summary>

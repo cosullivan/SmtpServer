@@ -6,6 +6,8 @@ namespace SmtpServer.Protocol
 {
     public sealed class HeloCommand : SmtpCommand
     {
+        public const string Command = "HELO";
+
         /// <summary>
         /// Constructor.
         /// </summary>

@@ -22,6 +22,12 @@ namespace SmtpServer.Protocol
                 return;
             }
 
+            if (command is BdatCommand)
+            {
+                Visit((BdatCommand)command);
+                return;
+            }
+
             if (command is HeloCommand)
             {
                 Visit((HeloCommand)command);
@@ -84,7 +90,13 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="command">The command that is being visited.</param>
         protected virtual void Visit(DataCommand command) { }
-        
+
+        /// <summary>
+        /// Visit a BDAT command.
+        /// </summary>
+        /// <param name="command">The command that is being visited.</param>
+        protected virtual void Visit(BdatCommand command) { }
+
         /// <summary>
         /// Visit a HELO command.
         /// </summary>

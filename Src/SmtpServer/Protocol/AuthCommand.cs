@@ -9,6 +9,8 @@ namespace SmtpServer.Protocol
 {
     public class AuthCommand : SmtpCommand
     {
+        public const string Command = "AUTH";
+
         string _user;
         string _password;
 

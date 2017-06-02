@@ -8,6 +8,8 @@ namespace SmtpServer.Protocol
 {
     public sealed class EhloCommand : SmtpCommand
     {
+        public const string Command = "EHLO";
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -47,6 +49,7 @@ namespace SmtpServer.Protocol
         {
             yield return "PIPELINING";
             yield return "8BITMIME";
+            yield return "CHUNKING";
 
             if (session.IsSecure == false && Options.ServerCertificate != null)
             {
