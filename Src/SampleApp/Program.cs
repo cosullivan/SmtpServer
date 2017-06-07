@@ -6,7 +6,6 @@ using System.Net;
 using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using MailKit.Net.Smtp;
@@ -14,9 +13,6 @@ using SmtpServer;
 using SmtpServer.Tracing;
 using MimeKit;
 using MimeKit.Text;
-using SmtpServer.IO;
-using SmtpServer.IO;
-using SmtpServer.Text;
 using SmtpClient = MailKit.Net.Smtp.SmtpClient;
 
 namespace SampleApp
@@ -42,9 +38,9 @@ namespace SampleApp
                 .Build();
 
             var s = RunServerAsync(options, cancellationTokenSource.Token);
-            //var c = RunClientAsync("A", 1, false, cancellationTokenSource.Token);
+            var c = RunClientAsync("A", 1, false, cancellationTokenSource.Token);
             //var c = RunFolderAsync(@"C:\Dev\temp\", "msg.txt", CancellationToken.None);
-            var c = RunFileAsync(@"c:\dev\temp\msg.txt", CancellationToken.None);
+            //var c = RunFileAsync(@"c:\dev\temp\msg.txt", CancellationToken.None);
 
             Console.WriteLine("Press any key to continue");
             Console.ReadKey();

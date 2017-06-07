@@ -102,13 +102,13 @@ namespace SmtpServer
         }
 
         /// <summary>
-        /// Sets the User Authenticator.
+        /// Sets the user aAuthenticator factory.
         /// </summary>
-        /// <param name="userAuthenticator">The user authenticator.</param>
+        /// <param name="userAuthenticatorFactory">The user authenticator factory.</param>
         /// <returns>A OptionsBuilder to continue building on.</returns>
-        public OptionsBuilder UserAuthenticator(IUserAuthenticator userAuthenticator)
+        public OptionsBuilder UserAuthenticator(IUserAuthenticatorFactory userAuthenticatorFactory)
         {
-            _options.UserAuthenticator = userAuthenticator;
+            _options.UserAuthenticatorFactory = userAuthenticatorFactory;
 
             return this;
         }

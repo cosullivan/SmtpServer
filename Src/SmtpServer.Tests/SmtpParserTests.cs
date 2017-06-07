@@ -96,6 +96,38 @@ namespace SmtpServer.Tests
         }
 
         [Fact]
+        public void CanMakeAuthPlain()
+        {
+            // arrange
+            var parser = CreateParser("AUTH PLAIN Y2Fpbi5vc3VsbGl2YW5AZ21haWwuY29t");
+
+            // act
+            var result = parser.TryMakeAuth(out SmtpCommand command, out SmtpResponse errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is AuthCommand);
+            Assert.Equal(AuthenticationMethod.Plain, ((AuthCommand)command).Method);
+            Assert.Equal("Y2Fpbi5vc3VsbGl2YW5AZ21haWwuY29t", ((AuthCommand)command).Parameter);
+        }
+
+        [Fact]
+        public void CanMakeAuthLogin()
+        {
+            // arrange
+            var parser = CreateParser("AUTH LOGIN Y2Fpbi5vc3VsbGl2YW5AZ21haWwuY29t");
+
+            // act
+            var result = parser.TryMakeAuth(out SmtpCommand command, out SmtpResponse errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is AuthCommand);
+            Assert.Equal(AuthenticationMethod.Login, ((AuthCommand)command).Method);
+            Assert.Equal("Y2Fpbi5vc3VsbGl2YW5AZ21haWwuY29t", ((AuthCommand)command).Parameter);
+        }
+
+        [Fact]
         public void CanMakeMail()
         {
             // arrange
@@ -434,6 +466,23 @@ namespace SmtpServer.Tests
             Assert.True(parameters.ContainsKey("ZZZ"));
             Assert.Equal(parameters["ZZZ"], "123");
             Assert.True(parameters.ContainsKey("ABCDE"));
+        }
+
+        [Theory]
+        [InlineData("bWF0dGVvQHBoYXNjb2RlLm9yZw==")]
+        [InlineData("AHVzZXIAcGFzc3dvcmQ=")]
+        [InlineData("Y2Fpbi5vc3VsbGl2YW5AZ21haWwuY29t")]
+        public void CanMakeBase64(string input)
+        {
+            // arrange
+            var parser = CreateParser(input);
+
+            // act
+            var made = parser.TryMakeBase64(out string base64);
+
+            // assert
+            Assert.True(made);
+            Assert.Equal(input, base64);
         }
     }
 }

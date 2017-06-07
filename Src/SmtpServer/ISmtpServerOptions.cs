@@ -45,9 +45,9 @@ namespace SmtpServer
         IMailboxFilterFactory MailboxFilterFactory { get; }
 
         /// <summary>
-        /// Gets the user authenticator.
+        /// Gets the user authenticator factory to use.
         /// </summary>
-        IUserAuthenticator UserAuthenticator { get; }
+        IUserAuthenticatorFactory UserAuthenticatorFactory { get; }
 
         /// <summary>
         /// Gets a value indicating whether authentication should be allowed on an unsecure session.

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using SmtpServer.IO;
@@ -27,12 +28,13 @@ namespace SmtpServer
             Transaction = new SmtpMessageTransaction();
             RemoteEndPoint = tcpClient.Client.RemoteEndPoint;
             Client = new NetworkClient(tcpClient.GetStream());
+            Properties = new Dictionary<string, object>();
         }
 
         /// <summary>
         /// Indicates to the session that it should quit.
         /// </summary>
-        public void Quit()
+        internal void Quit()
         {
             IsQuitRequested = true;
         }
@@ -41,7 +43,7 @@ namespace SmtpServer
         /// Raise the command executing event.
         /// </summary>
         /// <param name="command">The command that is executing.</param>
-        public void RaiseCommandExecuting(SmtpCommand command)
+        internal void RaiseCommandExecuting(SmtpCommand command)
         {
             CommandExecuting?.Invoke(this, new SmtpCommandExecutingEventArgs(command));
         }
@@ -49,7 +51,7 @@ namespace SmtpServer
         /// <summary>
         /// Raise the session authenticated event.
         /// </summary>
-        public void RaiseSessionAuthenticated()
+        internal void RaiseSessionAuthenticated()
         {
             SessionAuthenticated?.Invoke(this, EventArgs.Empty);
         }
@@ -75,8 +77,18 @@ namespace SmtpServer
         public bool IsSecure { get; internal set; }
 
         /// <summary>
+        /// Returns a value indicating whether or nor the current session is authenticated.
+        /// </summary>
+        public bool IsAuthenticated { get; internal set; }
+
+        /// <summary>
         /// Gets a value indicating whether a quit has been requested.
         /// </summary>
         public bool IsQuitRequested { get; private set; }
+
+        /// <summary>
+        /// Returns a set of propeties for the current session.
+        /// </summary>
+        public IDictionary<string, object> Properties { get; }
     }
 }
