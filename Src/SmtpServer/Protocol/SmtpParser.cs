@@ -292,47 +292,6 @@ namespace SmtpServer.Protocol
         }
 
         /// <summary>
-        /// Make a BDAT command from the given enumerator.
-        /// </summary>
-        /// <param name="command">The BDAT command that is defined within the token enumerator.</param>
-        /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
-        /// <returns>Returns true if a command could be made, false if not.</returns>
-        public bool TryMakeBdat(out SmtpCommand command, out SmtpResponse errorResponse)
-        {
-            command = null;
-            errorResponse = null;
-
-            Enumerator.Take();
-            Enumerator.Skip(TokenKind.Space);
-
-            var size = Enumerator.Take();
-            if (size.Kind != TokenKind.Number)
-            {
-                _options.Logger.LogVerbose("Syntax Error (Text={0})", CompleteTokenizedText());
-
-                errorResponse = SmtpResponse.SyntaxError;
-                return false;
-            }
-
-            if (TryMake(TryMakeEnd))
-            {
-                command = new BdatCommand(_options, Int32.Parse(size.Text), false);
-                return TryMakeEnd();
-            }
-
-            if (Enumerator.Peek() != Tokens.Text.Last)
-            {
-                _options.Logger.LogVerbose("Syntax Error (Text={0})", CompleteTokenizedText());
-
-                errorResponse = SmtpResponse.SyntaxError;
-                return false;
-            }
-
-            command = new BdatCommand(_options, Int32.Parse(size.Text), true);
-            return TryMakeEnd();
-        }
-
-        /// <summary>
         /// Make an STARTTLS command from the given enumerator.
         /// </summary>
         /// <param name="command">The STARTTLS command that is defined within the token enumerator.</param>

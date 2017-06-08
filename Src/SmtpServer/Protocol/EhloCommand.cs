@@ -49,7 +49,6 @@ namespace SmtpServer.Protocol
         {
             yield return "PIPELINING";
             yield return "8BITMIME";
-            yield return "CHUNKING";
 
             if (session.IsSecure == false && Options.ServerCertificate != null)
             {

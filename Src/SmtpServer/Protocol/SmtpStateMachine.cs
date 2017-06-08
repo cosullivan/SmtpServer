@@ -5,7 +5,7 @@ using SmtpServer.Text;
 
 namespace SmtpServer.Protocol
 {
-    internal class SmtpStateMachine : SmtpCommandVisitor
+    internal class SmtpStateMachine 
     {
         readonly ISmtpServerOptions _options;
         readonly SmtpSessionContext _context;
@@ -20,7 +20,6 @@ namespace SmtpServer.Protocol
         {
             _options = options;
             _context = context;
-            _context.CommandExecuting += OnSessionCommandExecuting;
             _context.SessionAuthenticated += OnSessionAuthenticated;
             _stateTable = new StateTable
             {
@@ -82,16 +81,6 @@ namespace SmtpServer.Protocol
         }
 
         /// <summary>
-        /// Called when a command is executing.
-        /// </summary>
-        /// <param name="sender">The object that raised the event.</param>
-        /// <param name="e">The event data.</param>
-        void OnSessionCommandExecuting(object sender, SmtpCommandExecutingEventArgs e)
-        {
-            Visit(e.Command);
-        }
-
-        /// <summary>
         /// Called when the session has been authenticated.
         /// </summary>
         /// <param name="sender">The object that raised the event.</param>
@@ -100,8 +89,8 @@ namespace SmtpServer.Protocol
         {
             _context.SessionAuthenticated -= OnSessionAuthenticated;
 
-            _stateTable[SmtpState.WaitingForMail].Clear(AuthCommand.Command);
-            _stateTable[SmtpState.WaitingForMailSecure].Clear(AuthCommand.Command);
+            WaitingForMail.Clear(AuthCommand.Command);
+            WaitingForMailSecure.Clear(AuthCommand.Command);
         }
 
         /// <summary>
@@ -234,44 +223,6 @@ namespace SmtpServer.Protocol
         bool TryMakeData(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
             return new SmtpParser(_options, tokenEnumerator).TryMakeData(out command, out errorResponse);
-        }
-        
-        /// <summary>
-        /// Make a 503/Bad Sequence response.
-        /// </summary>
-        /// <param name="tokenEnumerator">The token enumerator to use when matching the command.</param>
-        /// <param name="command">The command that was found.</param>
-        /// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
-        /// <returns>Always returns true as the error response is assured.</returns>
-        bool BadSequence(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
-        {
-            command = null;
-            errorResponse = SmtpResponse.BadSequence;
-            
-            return true;
-        }
-
-        /// <summary>
-        /// Visit an MAIL command.
-        /// </summary>
-        /// <param name="command">The command that is being visited.</param>
-        protected override void Visit(MailCommand command)
-        {
-            if (command.Parameters.ContainsKey("BINARYMIME"))
-            {
-                WaitingForMail.Replace(MailCommand.Command, BadSequence);
-                WaitingForMailSecure.Replace(MailCommand.Command, BadSequence);
-            }
-        }
-
-        /// <summary>
-        /// Visit an RSET command.
-        /// </summary>
-        /// <param name="command">The command that is being visited.</param>
-        protected override void Visit(RsetCommand command)
-        {
-            WaitingForMail.Replace(MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction);
-            WaitingForMailSecure.Replace(MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction);
         }
 
         /// <summary>
