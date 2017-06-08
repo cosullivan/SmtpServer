@@ -74,7 +74,7 @@ namespace SmtpServer.Protocol
         /// <returns>true if plain login is allowed for the session, false if not.</returns>
         bool IsPlainLoginAllowed(SmtpSessionContext session)
         {
-            if (Options.UserAuthenticator == null)
+            if (Options.UserAuthenticatorFactory == null)
             {
                 return false;
             }

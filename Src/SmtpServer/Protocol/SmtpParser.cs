@@ -13,7 +13,7 @@ namespace SmtpServer.Protocol
     /// </remarks>
     public class SmtpParser : TokenParser
     {
-        #region
+        #region Tokens
 
         static class Tokens
         {
@@ -372,7 +372,7 @@ namespace SmtpServer.Protocol
             Enumerator.Take();
             Enumerator.Skip(TokenKind.Space);
 
-            if (Enum.TryParse(Enumerator.Peek().Text, true, out AuthenticationMethod method) == false)
+            if (Enum.TryParse(Enumerator.Take().Text, true, out AuthenticationMethod method) == false)
             {
                 _options.Logger.LogVerbose("AUTH command requires a valid method (PLAIN or LOGIN)");
 
@@ -1079,24 +1079,46 @@ namespace SmtpServer.Protocol
         /// <remarks><![CDATA[ALPHA / DIGIT / "+" / "/"]]></remarks>
         public bool TryMakeBase64(out string base64)
         {
-            base64 = null;
-
-            while (Enumerator.Peek().Kind != TokenKind.None)
+            if (TryMakeBase64Text(out base64) == false)
             {
-                string base64Chars;
-                if (TryMake(TryMakeBase64Chars, out base64Chars) == false)
-                {
-                    return false;
-                }
+                return false;
+            }
 
-                base64 += base64Chars;
+            if (Enumerator.Peek() == Tokens.Equal)
+            {
+                base64 += Enumerator.Take().Text;
+            }
+
+            if (Enumerator.Peek() == Tokens.Equal)
+            {
+                base64 += Enumerator.Take().Text;
             }
 
             // because the TryMakeBase64Chars method matches tokens, each TextValue token could make
             // up several Base64 encoded "bytes" so we ensure that we have a length divisible by 4
-            return base64 != null && base64.Length % 4 == 0;
-        }
+            return base64 != null 
+                && base64.Length % 4 == 0 
+                && new [] { TokenKind.None, TokenKind.Space, TokenKind.NewLine }.Contains(Enumerator.Peek().Kind);
+            }
 
+        /// <summary>
+        /// Try to make a base64 encoded string.
+        /// </summary>
+        /// <param name="base64">The base64 encoded string that were found.</param>
+        /// <returns>true if the base64 encoded string can be made, false if not.</returns>
+        /// <remarks><![CDATA[ALPHA / DIGIT / "+" / "/"]]></remarks>
+        bool TryMakeBase64Text(out string base64)
+        {
+            base64 = null;
+
+            while (TryMake(TryMakeBase64Chars, out string base64Chars))
+            {
+                base64 += base64Chars;
+            }
+
+            return true;
+        }
+        
         /// <summary>
         /// Try to make the allowable characters in a base64 encoded string.
         /// </summary>

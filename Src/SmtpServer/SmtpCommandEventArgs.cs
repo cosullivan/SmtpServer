@@ -1,15 +1,15 @@
-using System;
 using SmtpServer.Protocol;
 
 namespace SmtpServer
 {
-    public class SmtpCommandEventArgs : EventArgs
+    public class SmtpCommandEventArgs : SessionEventArgs
     {
         /// <summary>
         /// Constructor.
         /// </summary>
+        /// <param name="context">The session context.</param>
         /// <param name="command">The command for the event.</param>
-        public SmtpCommandEventArgs(SmtpCommand command)
+        public SmtpCommandEventArgs(ISessionContext context, SmtpCommand command) : base(context)
         {
             Command = command;
         }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 
 namespace SmtpServer
@@ -24,5 +25,15 @@ namespace SmtpServer
         /// Returns a value indicating whether or not the current session is secure.
         /// </summary>
         bool IsSecure { get; }
+
+        /// <summary>
+        /// Returns a value indicating whether or nor the current session is authenticated.
+        /// </summary>
+        bool IsAuthenticated { get; }
+
+        /// <summary>
+        /// Returns a set of propeties for the current session.
+        /// </summary>
+        IDictionary<string, object> Properties { get; }
     }
 }

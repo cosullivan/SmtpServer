@@ -2,7 +2,7 @@
 
 namespace SmtpServer
 {
-    public sealed class SessionEventArgs : EventArgs
+    public class SessionEventArgs : EventArgs
     {
         /// <summary>
         /// Constructor.

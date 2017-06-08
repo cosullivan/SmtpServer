@@ -7,7 +7,8 @@ namespace SmtpServer
         /// <summary>
         /// Constructor.
         /// </summary>
+        /// <param name="context">The session context.</param>
         /// <param name="command">The command for the event.</param>
-        public SmtpCommandExecutingEventArgs(SmtpCommand command) : base(command) { }
+        public SmtpCommandExecutingEventArgs(ISessionContext context, SmtpCommand command) : base(context, command) { }
     }
 }

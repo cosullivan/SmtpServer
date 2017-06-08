@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.Mail;
 
@@ -23,15 +24,20 @@ namespace SmtpServer.Storage
         /// <param name="context">The session context.</param>
         /// <param name="from">The mailbox to test.</param>
         /// <param name="size">The estimated message size to accept.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The acceptance state of the mailbox.</returns>
-        public async Task<MailboxFilterResult> CanAcceptFromAsync(ISessionContext context, IMailbox @from, int size = 0)
+        public async Task<MailboxFilterResult> CanAcceptFromAsync(
+            ISessionContext context, 
+            IMailbox @from, 
+            int size,
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             if (_filters == null || _filters.Any() == false)
             {
                 return MailboxFilterResult.Yes;
             }
 
-            var results = await Task.WhenAll(_filters.Select(f => f.CanAcceptFromAsync(context, @from, size)));
+            var results = await Task.WhenAll(_filters.Select(f => f.CanAcceptFromAsync(context, @from, size, cancellationToken)));
 
             return results.Max();
         }
@@ -42,15 +48,20 @@ namespace SmtpServer.Storage
         /// <param name="context">The session context.</param>
         /// <param name="to">The mailbox to test.</param>
         /// <param name="from">The sender's mailbox.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The acceptance state of the mailbox.</returns>
-        public async Task<MailboxFilterResult> CanDeliverToAsync(ISessionContext context, IMailbox to, IMailbox @from)
+        public async Task<MailboxFilterResult> CanDeliverToAsync(
+            ISessionContext context, 
+            IMailbox to, 
+            IMailbox @from,
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             if (_filters == null || _filters.Any() == false)
             {
                 return MailboxFilterResult.Yes;
             }
 
-            var results = await Task.WhenAll(_filters.Select(f => f.CanDeliverToAsync(context, to, @from)));
+            var results = await Task.WhenAll(_filters.Select(f => f.CanDeliverToAsync(context, to, @from, cancellationToken)));
 
             return results.Max();
         }

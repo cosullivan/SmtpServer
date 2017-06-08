@@ -3,7 +3,9 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using SmtpServer.Authentication;
 using SmtpServer.IO;
+using SmtpServer.Storage;
 
 namespace SmtpServer.Protocol
 {
@@ -34,6 +36,8 @@ namespace SmtpServer.Protocol
         /// <returns>A task which asynchronously performs the execution.</returns>
         internal override async Task ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
+            context.IsAuthenticated = false;
+
             switch (Method)
             {
                 case AuthenticationMethod.Plain:
@@ -53,14 +57,18 @@ namespace SmtpServer.Protocol
                     break;
             }
 
-            if (await Options.UserAuthenticator.AuthenticateAsync(_user, _password).ReturnOnAnyThread() == false)
+            using (var container = new DisposableContainer<IUserAuthenticator>(Options.UserAuthenticatorFactory.CreateInstance(context)))
             {
-                await context.Client.ReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ReturnOnAnyThread();
-                return;
+                if (await container.Instance.AuthenticateAsync(context, _user, _password, cancellationToken).ReturnOnAnyThread() == false)
+                {
+                    await context.Client.ReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ReturnOnAnyThread();
+                    return;
+                }
             }
 
             await context.Client.ReplyAsync(SmtpResponse.AuthenticationSuccessful, cancellationToken).ReturnOnAnyThread();
 
+            context.IsAuthenticated = true;
             context.RaiseSessionAuthenticated();
         }
 
@@ -72,15 +80,35 @@ namespace SmtpServer.Protocol
         /// <returns>true if the PLAIN login sequence worked, false if not.</returns>
         async Task<bool> TryPlainAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            await context.Client.ReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, " "), cancellationToken).ConfigureAwait(false);
+            var authentication = Parameter;
 
-            var authentication = await ReadBase64EncodedLineAsync(context.Client, cancellationToken).ReturnOnAnyThread();
+            if (String.IsNullOrWhiteSpace(authentication))
+            { 
+                await context.Client.ReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, " "), cancellationToken).ReturnOnAnyThread();
 
-            var match = Regex.Match(authentication, "\x0000(?<user>.*)\x0000(?<password>.*)");
+                authentication = await context.Client.ReadLineAsync(Encoding.ASCII, cancellationToken).ReturnOnAnyThread();
+            }
+
+            if (TryExtractFromBase64(authentication) == false)
+            {
+                await context.Client.ReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ConfigureAwait(false);
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Attempt to extract the user name and password combination from a single line base64 encoded string.
+        /// </summary>
+        /// <param name="base64">The base64 encoded string to extract the user name and password from.</param>
+        /// <returns>true if the user name and password were extracted from the base64 encoded string, false if not.</returns>
+        bool TryExtractFromBase64(string base64)
+        {
+            var match = Regex.Match(Encoding.UTF8.GetString(Convert.FromBase64String(base64)), "\x0000(?<user>.*)\x0000(?<password>.*)");
 
             if (match.Success == false)
             {
-                await context.Client.ReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ConfigureAwait(false);
                 return false;
             }
 
@@ -98,9 +126,16 @@ namespace SmtpServer.Protocol
         /// <returns>true if the LOGIN login sequence worked, false if not.</returns>
         async Task<bool> TryLoginAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            await context.Client.ReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, "VXNlcm5hbWU6"), cancellationToken);
+            if (String.IsNullOrWhiteSpace(Parameter) == false)
+            {
+                _user = Encoding.UTF8.GetString(Convert.FromBase64String(Parameter));
+            }
+            else
+            {
+                await context.Client.ReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, "VXNlcm5hbWU6"), cancellationToken);
 
-            _user = await ReadBase64EncodedLineAsync(context.Client, cancellationToken).ReturnOnAnyThread();
+                _user = await ReadBase64EncodedLineAsync(context.Client, cancellationToken).ReturnOnAnyThread();
+            }
           
             await context.Client.ReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, "UGFzc3dvcmQ6"), cancellationToken);
 

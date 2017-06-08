@@ -47,7 +47,7 @@ namespace SmtpServer.Protocol
 
             using (var container = new DisposableContainer<IMailboxFilter>(Options.MailboxFilterFactory.CreateInstance(context)))
             {
-                switch (await container.Instance.CanAcceptFromAsync(context, Address, size))
+                switch (await container.Instance.CanAcceptFromAsync(context, Address, size, cancellationToken))
                 {
                     case MailboxFilterResult.Yes:
                         context.Transaction.From = Address;

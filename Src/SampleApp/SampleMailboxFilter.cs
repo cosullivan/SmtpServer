@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer;
 using SmtpServer.Mail;
@@ -14,12 +15,16 @@ namespace SampleApp
         /// <param name="context">The session context.</param>
         /// <param name="from">The mailbox to test.</param>
         /// <param name="size">The estimated message size to accept.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The acceptance state of the mailbox.</returns>
-        public override Task<MailboxFilterResult> CanAcceptFromAsync(ISessionContext context, IMailbox @from, int size = 0)
+        public override Task<MailboxFilterResult> CanAcceptFromAsync(
+            ISessionContext context, 
+            IMailbox @from, 
+            int size,
+            CancellationToken cancellationToken)
         {
             var endpoint = (IPEndPoint) context.RemoteEndPoint;
             
-            // only accept connections from localhost
             if (endpoint.Address.Equals(IPAddress.Parse("127.0.0.1")))
             {
                 return Task.FromResult(MailboxFilterResult.Yes);
@@ -34,8 +39,13 @@ namespace SampleApp
         /// <param name="context">The session context.</param>
         /// <param name="to">The mailbox to test.</param>
         /// <param name="from">The sender's mailbox.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The acceptance state of the mailbox.</returns>
-        public override Task<MailboxFilterResult> CanDeliverToAsync(ISessionContext context, IMailbox to, IMailbox @from)
+        public override Task<MailboxFilterResult> CanDeliverToAsync(
+            ISessionContext context, 
+            IMailbox to, 
+            IMailbox @from,
+            CancellationToken cancellationToken)
         {
             return Task.FromResult(MailboxFilterResult.Yes);
         }

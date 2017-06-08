@@ -71,9 +71,9 @@ namespace SmtpServer
         }
 
         /// <summary>
-        /// Gets the user authenticator.
+        /// Gets the user authenticator factory to use.
         /// </summary>
-        public IUserAuthenticator UserAuthenticator { get; internal set; }
+        public IUserAuthenticatorFactory UserAuthenticatorFactory { get; internal set; }
 
         /// <summary>
         /// Gets a value indicating whether authentication should be allowed on an unsecure session.

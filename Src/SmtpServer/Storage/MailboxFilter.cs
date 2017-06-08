@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Threading;
+using System.Threading.Tasks;
 using SmtpServer.Mail;
 
 namespace SmtpServer.Storage
@@ -21,8 +22,13 @@ namespace SmtpServer.Storage
         /// <param name="context">The session context.</param>
         /// <param name="from">The mailbox to test.</param>
         /// <param name="size">The estimated message size to accept.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The acceptance state of the mailbox.</returns>
-        public virtual Task<MailboxFilterResult> CanAcceptFromAsync(ISessionContext context, IMailbox @from, int size = 0)
+        public virtual Task<MailboxFilterResult> CanAcceptFromAsync(
+            ISessionContext context, 
+            IMailbox @from, 
+            int size,
+            CancellationToken cancellationToken)
         {
             return Task.FromResult(MailboxFilterResult.Yes);
         }
@@ -33,8 +39,13 @@ namespace SmtpServer.Storage
         /// <param name="context">The session context.</param>
         /// <param name="to">The mailbox to test.</param>
         /// <param name="from">The sender's mailbox.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The acceptance state of the mailbox.</returns>
-        public virtual Task<MailboxFilterResult> CanDeliverToAsync(ISessionContext context, IMailbox to, IMailbox @from)
+        public virtual Task<MailboxFilterResult> CanDeliverToAsync(
+            ISessionContext context, 
+            IMailbox to, 
+            IMailbox @from,
+            CancellationToken cancellationToken)
         {
             return Task.FromResult(MailboxFilterResult.Yes);
         }

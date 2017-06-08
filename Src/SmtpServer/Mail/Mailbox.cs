@@ -9,12 +9,10 @@ namespace SmtpServer.Mail
         /// </summary>
         /// <param name="user">The user/account name.</param>
         /// <param name="host">The host server.</param>
-        /// <param name="displayName">The display name.</param>
-        public Mailbox(string user, string host, string displayName = null)
+        public Mailbox(string user, string host)
         {
             User = user;
             Host = host;
-            DisplayName = displayName;
         }
 
         /// <summary>
@@ -40,10 +38,5 @@ namespace SmtpServer.Mail
         /// Gets the host server.
         /// </summary>
         public string Host { get; }
-
-        /// <summary>
-        /// Gets the display name.
-        /// </summary>
-        public string DisplayName { get; }
     }
 }
