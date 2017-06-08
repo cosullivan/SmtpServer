@@ -63,6 +63,11 @@
         BadSequence = 503,
 
         /// <summary>
+        /// Authentication required
+        /// </summary>
+        AuthenticationRequired = 530,
+
+        /// <summary>
         /// Authentication failed.
         /// </summary>
         AuthenticationFailed = 535,

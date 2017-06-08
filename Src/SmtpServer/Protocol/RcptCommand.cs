@@ -45,6 +45,11 @@ namespace SmtpServer.Protocol
                     case MailboxFilterResult.NoPermanently:
                         await context.Client.ReplyAsync(SmtpResponse.MailboxNameNotAllowed, cancellationToken);
                         return;
+
+                    case MailboxFilterResult.AuthenticationRequired:
+                        await context.Client.ReplyAsync(SmtpResponse.AuthenticationRequired, cancellationToken);
+                        return;
+
                 }
             }
 
