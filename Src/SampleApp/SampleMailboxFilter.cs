@@ -21,7 +21,7 @@ namespace SampleApp
             ISessionContext context, 
             IMailbox @from, 
             int size,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken)
         {
             var endpoint = (IPEndPoint) context.RemoteEndPoint;
             
@@ -45,7 +45,7 @@ namespace SampleApp
             ISessionContext context, 
             IMailbox to, 
             IMailbox @from,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken)
         {
             return Task.FromResult(MailboxFilterResult.Yes);
         }

@@ -45,7 +45,7 @@ namespace SmtpServer
         /// <param name="command">The command that is executing.</param>
         internal void RaiseCommandExecuting(SmtpCommand command)
         {
-            CommandExecuting?.Invoke(this, new SmtpCommandExecutingEventArgs(command));
+            CommandExecuting?.Invoke(this, new SmtpCommandExecutingEventArgs(this, command));
         }
 
         /// <summary>

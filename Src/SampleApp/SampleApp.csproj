@@ -56,8 +56,12 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SampleMailboxFilter.cs" />
+    <Compile Include="SampleMailClient.cs" />
     <Compile Include="SampleMessageStore.cs" />
     <Compile Include="SampleUserAuthenticator.cs" />
+    <Compile Include="Examples\SessionContextExample.cs" />
+    <Compile Include="Examples\SessionTracingExample.cs" />
+    <Compile Include="Examples\SimpleExample.cs" />
     <Compile Include="TaskExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -65,9 +69,6 @@
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="TextFile1.txt" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SmtpServer.Mime\SmtpServer.Mime.csproj">
