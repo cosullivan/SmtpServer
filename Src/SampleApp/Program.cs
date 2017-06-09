@@ -6,9 +6,9 @@ namespace SampleApp
     {
         static void Main(string[] args)
         {
-            //SimpleExample.Run();
+            SimpleExample.Run();
             //SessionTracingExample.Run();
-            SessionContextExample.Run();
+            //SessionContextExample.Run();
         }
 
         //var cancellationTokenSource = new CancellationTokenSource();

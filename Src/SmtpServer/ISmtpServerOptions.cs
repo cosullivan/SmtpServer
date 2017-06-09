@@ -55,6 +55,11 @@ namespace SmtpServer
         bool AllowUnsecureAuthentication { get; }
 
         /// <summary>
+        /// Gets a value indicating whether the client must authenticate in order to proceed.
+        /// </summary>
+        bool AuthenticationRequired { get; }
+
+        /// <summary>
         /// The supported SSL protocols.
         /// </summary>
         SslProtocols SupportedSslProtocols { get; }

@@ -37,8 +37,7 @@ namespace SmtpServer.Protocol
                     { RsetCommand.Command, TryMakeRset },
                     { QuitCommand.Command, TryMakeQuit },
                     { HeloCommand.Command, TryMakeHelo, SmtpState.WaitingForMail },
-                    { EhloCommand.Command, TryMakeEhlo, SmtpState.WaitingForMail },
-                    { MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction },
+                    { EhloCommand.Command, TryMakeEhlo, SmtpState.WaitingForMail }
                 },
                 new State(SmtpState.WaitingForMailSecure)
                 {
@@ -47,8 +46,7 @@ namespace SmtpServer.Protocol
                     { QuitCommand.Command, TryMakeQuit },
                     { AuthCommand.Command, TryMakeAuth },
                     { HeloCommand.Command, TryMakeHelo, SmtpState.WaitingForMailSecure },
-                    { EhloCommand.Command, TryMakeEhlo, SmtpState.WaitingForMailSecure },
-                    { MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction }
+                    { EhloCommand.Command, TryMakeEhlo, SmtpState.WaitingForMailSecure }
                 },
                 new State(SmtpState.WithinTransaction)
                 {
@@ -72,6 +70,17 @@ namespace SmtpServer.Protocol
                 WaitingForMail.Add(AuthCommand.Command, TryMakeAuth);
             }
 
+            if (options.AuthenticationRequired == false)
+            {
+                WaitingForMail.Add(MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction);
+                WaitingForMailSecure.Add(MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction);
+            }
+            else
+            {
+                WaitingForMail.Add(MailCommand.Command, MakeResponse(SmtpResponse.AuthenticationRequired));
+                WaitingForMailSecure.Add(MailCommand.Command, MakeResponse(SmtpResponse.AuthenticationRequired));
+            }
+
             if (options.ServerCertificate != null)
             {
                 WaitingForMail.Add(StartTlsCommand.Command, TryMakeStartTls, SmtpState.WaitingForMailSecure);
@@ -91,6 +100,28 @@ namespace SmtpServer.Protocol
 
             WaitingForMail.Clear(AuthCommand.Command);
             WaitingForMailSecure.Clear(AuthCommand.Command);
+
+            if (_options.AuthenticationRequired)
+            {
+                WaitingForMail.Add(MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction);
+                WaitingForMailSecure.Add(MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction);
+            }
+        }
+
+        /// <summary>
+        /// Make a delegate to return a known response.
+        /// </summary>
+        /// <param name="errorResponse">The error response to return.</param>
+        /// <returns>The delegate that will return the correct error response.</returns>
+        static State.TryMakeDelegate MakeResponse(SmtpResponse errorResponse)
+        {
+            return (TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse response) =>
+            {
+                command = null;
+                response = errorResponse;
+
+                return false;
+            };
         }
 
         /// <summary>
