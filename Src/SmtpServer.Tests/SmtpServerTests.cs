@@ -127,6 +127,40 @@ namespace SmtpServer.Tests
             Wait(smtpServerTask);
         }
 
+        [Fact]
+        public void CanReceiveBccInMessageTransaction()
+        {
+            // arrange
+            var smtpServer = new SmtpServer(_optionsBuilder.Build());
+            var smtpClient = new SmtpClient();
+            var smtpServerTask = smtpServer.StartAsync(_cancellationTokenSource.Token);
+
+            var message = new MimeKit.MimeMessage();
+            message.From.Add(new MailboxAddress("test1@test.com"));
+            message.To.Add(new MailboxAddress("test2@test.com"));
+            message.Cc.Add(new MailboxAddress("test3@test.com"));
+            message.Bcc.Add(new MailboxAddress("test4@test.com"));
+            message.Subject = "Test";
+            message.Body = new TextPart("plain")
+            {
+                Text = "Test Message"
+            };
+
+            // act
+            smtpClient.Connect("localhost", 25, false);
+            smtpClient.Send(message);
+
+            // assert
+            Assert.Equal(1, _messageStore.Messages.Count);
+            Assert.Equal("test1@test.com", _messageStore.Messages[0].From.AsAddress());
+            Assert.Equal(3, _messageStore.Messages[0].To.Count);
+            Assert.Equal("test2@test.com", _messageStore.Messages[0].To[0].AsAddress());
+            Assert.Equal("test3@test.com", _messageStore.Messages[0].To[1].AsAddress());
+            Assert.Equal("test4@test.com", _messageStore.Messages[0].To[2].AsAddress());
+
+            Wait(smtpServerTask);
+        }
+
         void Wait(Task smtpServerTask)
         {
             _cancellationTokenSource.Cancel();
@@ -139,37 +173,6 @@ namespace SmtpServer.Tests
             {
                 e.Handle(exception => exception is OperationCanceledException);
             }
-        }
-    }
-
-    public sealed class DelegatingUserAuthenticator : UserAuthenticator
-    {
-        readonly Func<string, string, bool> _delegate;
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="delegate">THe delegate to execute for the authentication.</param>
-        public DelegatingUserAuthenticator(Func<string, string, bool> @delegate)
-        {
-            _delegate = @delegate;
-        }
-
-        /// <summary>
-        /// Authenticate a user account.
-        /// </summary>
-        /// <param name="context">The session context.</param>
-        /// <param name="user">The user to authenticate.</param>
-        /// <param name="password">The password of the user.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>true if the user is authenticated, false if not.</returns>
-        public override Task<bool> AuthenticateAsync(
-            ISessionContext context,
-            string user,
-            string password,
-            CancellationToken cancellationToken)
-        {
-            return Task.FromResult(_delegate(user, password));
         }
     }
 }
