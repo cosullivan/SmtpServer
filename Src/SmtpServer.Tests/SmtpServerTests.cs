@@ -10,6 +10,57 @@ using SmtpServer.Authentication;
 
 namespace SmtpServer.Tests
 {
+    public abstract class SmtpServerTest : IDisposable
+    {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        protected SmtpServerTest()
+        {
+            MessageStore = new MockMessageStore();
+            CancellationTokenSource = new CancellationTokenSource();
+        }
+
+        /// <summary>
+        /// Create an instance of the options builder for the tests.
+        /// </summary>
+        /// <returns>The options builder to use for the test.</returns>
+        public virtual OptionsBuilder CreateOptionsBuilder()
+        {
+            return new OptionsBuilder()
+                .ServerName("localhost")
+                .Port(25)
+                .MessageStore(MessageStore);
+        }
+
+        /// <summary>
+        /// Dispose of the resources used by the test.
+        /// </summary>
+        public virtual void Dispose()
+        {
+            CancellationTokenSource.Cancel();
+
+            //try
+            //{
+            //    _smtpServerTask.Wait();
+            //}
+            //catch (AggregateException e)
+            //{
+            //    e.Handle(exception => exception is OperationCanceledException);
+            //}
+        }
+
+        /// <summary>
+        /// The message store that is being used to store the messages by default.
+        /// </summary>
+        public MockMessageStore MessageStore { get; }
+
+        /// <summary>
+        /// The cancellation token source for the test.
+        /// </summary>
+        public CancellationTokenSource CancellationTokenSource { get; }
+    }
+
     public class SmtpServerTests
     {
         readonly MockMessageStore _messageStore;
