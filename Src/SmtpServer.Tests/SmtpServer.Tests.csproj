@@ -63,6 +63,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DelegatingDisposable.cs" />
+    <Compile Include="MailClient.cs" />
     <Compile Include="Mocks\MockMessageStore.cs" />
     <Compile Include="NetworkClientTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

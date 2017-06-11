@@ -1,137 +1,51 @@
 ﻿using System;
 using System.Threading;
-using System.Threading.Tasks;
 using SmtpServer.Mail;
 using SmtpServer.Tests.Mocks;
 using Xunit;
-using MailKit.Net.Smtp;
-using MimeKit;
 using SmtpServer.Authentication;
 
 namespace SmtpServer.Tests
 {
-    public abstract class SmtpServerTest : IDisposable
+    public class SmtpServerTests
     {
         /// <summary>
         /// Constructor.
         /// </summary>
-        protected SmtpServerTest()
+        public SmtpServerTests()
         {
             MessageStore = new MockMessageStore();
             CancellationTokenSource = new CancellationTokenSource();
         }
 
-        /// <summary>
-        /// Create an instance of the options builder for the tests.
-        /// </summary>
-        /// <returns>The options builder to use for the test.</returns>
-        public virtual OptionsBuilder CreateOptionsBuilder()
-        {
-            return new OptionsBuilder()
-                .ServerName("localhost")
-                .Port(25)
-                .MessageStore(MessageStore);
-        }
-
-        /// <summary>
-        /// Dispose of the resources used by the test.
-        /// </summary>
-        public virtual void Dispose()
-        {
-            CancellationTokenSource.Cancel();
-
-            //try
-            //{
-            //    _smtpServerTask.Wait();
-            //}
-            //catch (AggregateException e)
-            //{
-            //    e.Handle(exception => exception is OperationCanceledException);
-            //}
-        }
-
-        /// <summary>
-        /// The message store that is being used to store the messages by default.
-        /// </summary>
-        public MockMessageStore MessageStore { get; }
-
-        /// <summary>
-        /// The cancellation token source for the test.
-        /// </summary>
-        public CancellationTokenSource CancellationTokenSource { get; }
-    }
-
-    public class SmtpServerTests
-    {
-        readonly MockMessageStore _messageStore;
-        readonly OptionsBuilder _optionsBuilder;
-        readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
-
-        public SmtpServerTests()
-        {
-            _messageStore = new MockMessageStore();
-
-            _optionsBuilder = new OptionsBuilder()
-                .ServerName("localhost")
-                .Port(25)
-                .MessageStore(_messageStore);
-        }
-
         [Fact]
         public void CanReceiveMessage()
         {
-            // arrange
-            var smtpServer = new SmtpServer(_optionsBuilder.Build());
-            var smtpClient = new SmtpClient();
-            var smtpServerTask = smtpServer.StartAsync(_cancellationTokenSource.Token);
-
-            var message = new MimeKit.MimeMessage();
-            message.From.Add(new MailboxAddress("test1@test.com"));
-            message.To.Add(new MailboxAddress("test2@test.com"));
-            message.Subject = "Test";
-            message.Body = new TextPart("plain")
+            using (CreateServer())
             {
-                Text = "Test Message"
-            };
+                // act
+                MailClient.Send(from: "test1@test.com", to: "test2@test.com");
 
-            // act
-            smtpClient.Connect("localhost", 25, false);
-            smtpClient.Send(message);
-
-            // assert
-            Assert.Equal(1, _messageStore.Messages.Count);
-            Assert.Equal("test1@test.com", _messageStore.Messages[0].From.AsAddress());
-            Assert.Equal(1, _messageStore.Messages[0].To.Count);
-            Assert.Equal("test2@test.com", _messageStore.Messages[0].To[0].AsAddress());
-
-            Wait(smtpServerTask);
+                // assert
+                Assert.Equal(1, MessageStore.Messages.Count);
+                Assert.Equal("test1@test.com", MessageStore.Messages[0].From.AsAddress());
+                Assert.Equal(1, MessageStore.Messages[0].To.Count);
+                Assert.Equal("test2@test.com", MessageStore.Messages[0].To[0].AsAddress());
+            }
         }
 
         [Fact]
         public void CanReceive8BitMimeMessage()
         {
-            // arrange
-            var smtpServer = new SmtpServer(_optionsBuilder.Build());
-            var smtpClient = new SmtpClient();
-            var smtpServerTask = smtpServer.StartAsync(_cancellationTokenSource.Token);
-
-            var message = new MimeKit.MimeMessage();
-            message.From.Add(new MailboxAddress("test1@test.com"));
-            message.To.Add(new MailboxAddress("test2@test.com"));
-            message.Subject = "Assunto teste acento çãõáéíóú";
-            message.Body = new TextPart("plain")
+            using (CreateServer())
             {
-                Text = "Assunto teste acento çãõáéíóú"
-            };
-            
-            // act
-            smtpClient.Connect("localhost", 25, false);
-            smtpClient.Send(message);
+                // act
+                MailClient.Send(subject: "Assunto teste acento çãõáéíóú");
 
-            // assert
-            Assert.Equal(1, _messageStore.Messages.Count);
-
-            Wait(smtpServerTask);
+                // assert
+                Assert.Equal(1, MessageStore.Messages.Count);
+                Assert.Equal("Assunto teste acento çãõáéíóú", MessageStore.Messages[0].Subject());
+            }
         }
 
         [Fact]
@@ -148,82 +62,121 @@ namespace SmtpServer.Tests
                 return true;
             });
 
-            var options = _optionsBuilder
-                .AllowUnsecureAuthentication()
-                .UserAuthenticator(userAuthenticator);
-
-            var smtpServer = new SmtpServer(options.Build());
-            var smtpClient = new SmtpClient();
-            var smtpServerTask = smtpServer.StartAsync(_cancellationTokenSource.Token);
-
-            var message = new MimeKit.MimeMessage();
-            message.From.Add(new MailboxAddress("test1@test.com"));
-            message.To.Add(new MailboxAddress("test2@test.com"));
-            message.Subject = "Assunto teste acento çãõáéíóú";
-            message.Body = new TextPart("plain")
+            using (CreateServer(options => options.AllowUnsecureAuthentication().UserAuthenticator(userAuthenticator)))
             {
-                Text = "Assunto teste acento çãõáéíóú"
-            };
+                // act
+                MailClient.Send(user: "user", password: "password");
 
-            // act
-            smtpClient.Connect("localhost", 25, false);
-            smtpClient.Authenticate("user", "password");
-            smtpClient.Send(message);
-
-            // assert
-            Assert.Equal(1, _messageStore.Messages.Count);
-            Assert.Equal("user", user);
-            Assert.Equal("password", password);
-
-            Wait(smtpServerTask);
+                // assert
+                Assert.Equal(1, MessageStore.Messages.Count);
+                Assert.Equal("user", user);
+                Assert.Equal("password", password);
+            }
         }
 
         [Fact]
         public void CanReceiveBccInMessageTransaction()
         {
-            // arrange
-            var smtpServer = new SmtpServer(_optionsBuilder.Build());
-            var smtpClient = new SmtpClient();
-            var smtpServerTask = smtpServer.StartAsync(_cancellationTokenSource.Token);
-
-            var message = new MimeKit.MimeMessage();
-            message.From.Add(new MailboxAddress("test1@test.com"));
-            message.To.Add(new MailboxAddress("test2@test.com"));
-            message.Cc.Add(new MailboxAddress("test3@test.com"));
-            message.Bcc.Add(new MailboxAddress("test4@test.com"));
-            message.Subject = "Test";
-            message.Body = new TextPart("plain")
+            using (CreateServer())
             {
-                Text = "Test Message"
-            };
+                // act
+                MailClient.Send(from: "test1@test.com", to: "test2@test.com", cc: "test3@test.com", bcc: "test4@test.com");
 
-            // act
-            smtpClient.Connect("localhost", 25, false);
-            smtpClient.Send(message);
-
-            // assert
-            Assert.Equal(1, _messageStore.Messages.Count);
-            Assert.Equal("test1@test.com", _messageStore.Messages[0].From.AsAddress());
-            Assert.Equal(3, _messageStore.Messages[0].To.Count);
-            Assert.Equal("test2@test.com", _messageStore.Messages[0].To[0].AsAddress());
-            Assert.Equal("test3@test.com", _messageStore.Messages[0].To[1].AsAddress());
-            Assert.Equal("test4@test.com", _messageStore.Messages[0].To[2].AsAddress());
-
-            Wait(smtpServerTask);
+                // assert
+                Assert.Equal(1, MessageStore.Messages.Count);
+                Assert.Equal("test1@test.com", MessageStore.Messages[0].From.AsAddress());
+                Assert.Equal(3, MessageStore.Messages[0].To.Count);
+                Assert.Equal("test2@test.com", MessageStore.Messages[0].To[0].AsAddress());
+                Assert.Equal("test3@test.com", MessageStore.Messages[0].To[1].AsAddress());
+                Assert.Equal("test4@test.com", MessageStore.Messages[0].To[2].AsAddress());
+            }
         }
 
-        void Wait(Task smtpServerTask)
+        /// <summary>
+        /// Create a running instance of a server.
+        /// </summary>
+        /// <returns>A disposable instance which will close and release the server instance.</returns>
+        IDisposable CreateServer()
         {
-            _cancellationTokenSource.Cancel();
+            return CreateServer(options => { });
+        }
 
-            try
+        /// <summary>
+        /// Create a running instance of a server.
+        /// </summary>
+        /// <param name="configuration">The configuration to apply to run the server.</param>
+        /// <returns>A disposable instance which will close and release the server instance.</returns>
+        IDisposable CreateServer(Action<OptionsBuilder> configuration)
+        {
+            var options = new OptionsBuilder()
+                .ServerName("localhost")
+                .Port(9025)
+                .MessageStore(MessageStore);
+
+            configuration(options);
+
+            var smtpServerTask = new SmtpServer(options.Build()).StartAsync(CancellationTokenSource.Token);
+
+            return new DelegatingDisposable(() =>
             {
-                smtpServerTask.Wait();
-            }
-            catch (AggregateException e)
+                CancellationTokenSource.Cancel();
+
+                try
+                {
+                    smtpServerTask.Wait();
+                }
+                catch (AggregateException e)
+                {
+                    e.Handle(exception => exception is OperationCanceledException);
+                }
+            });
+        }
+
+        /// <summary>
+        /// The message store that is being used to store the messages by default.
+        /// </summary>
+        public MockMessageStore MessageStore { get; }
+
+        /// <summary>
+        /// The cancellation token source for the test.
+        /// </summary>
+        public CancellationTokenSource CancellationTokenSource { get; }
+    }
+
+    internal static class MessageTransactionExtensions
+    {
+        /// <summary>
+        /// Returns the subject from the message.
+        /// </summary>
+        /// <param name="messageTransaction">The message transaction to return the message subject from.</param>
+        /// <returns>The message subject from the message transaction.</returns>
+        public static string Subject(this IMessageTransaction messageTransaction)
+        {
+            if (messageTransaction == null)
             {
-                e.Handle(exception => exception is OperationCanceledException);
+                throw new ArgumentNullException(nameof(messageTransaction));
             }
+
+            var textMessage = (ITextMessage)messageTransaction.Message;
+
+            return MimeKit.MimeMessage.Load(textMessage.Content).Subject;
+        }
+
+        /// <summary>
+        /// Returns the text message body.
+        /// </summary>
+        /// <param name="messageTransaction">The message transaction to return the message text body from.</param>
+        /// <returns>The message text body from the message transaction.</returns>
+        public static string Text(this IMessageTransaction messageTransaction)
+        {
+            if (messageTransaction == null)
+            {
+                throw new ArgumentNullException(nameof(messageTransaction));
+            }
+
+            var textMessage = (ITextMessage) messageTransaction.Message;
+
+            return MimeKit.MimeMessage.Load(textMessage.Content).TextBody;
         }
     }
 }
