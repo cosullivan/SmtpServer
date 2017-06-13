@@ -12,6 +12,7 @@ namespace SampleApp.Examples
             var options = new OptionsBuilder()
                 .ServerName("SmtpServer SampleApp")
                 .Port(9025)
+                .AuthenticationRequired()
                 .Build();
 
             var server = new SmtpServer.SmtpServer(options);

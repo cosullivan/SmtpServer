@@ -126,6 +126,18 @@ namespace SmtpServer
         }
 
         /// <summary>
+        /// Sets a value indicating whether the client must authenticate in order to proceed.
+        /// </summary>
+        /// <param name="value">true if the client must issue an AUTH command before sending any mail, false if not.</param>
+        /// <returns>A OptionsBuilder to continue building on.</returns>
+        public OptionsBuilder AuthenticationRequired(bool value = true)
+        {
+            _options.AuthenticationRequired = value;
+
+            return this;
+        }
+
+        /// <summary>
         /// Sets the maximum message size.
         /// </summary>
         /// <param name="maxMessageSize">The maximum message size to allow.</param>

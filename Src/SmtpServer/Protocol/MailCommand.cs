@@ -68,7 +68,7 @@ namespace SmtpServer.Protocol
                 }
             }
 
-            throw new NotSupportedException("The Acceptance state is not supported.");
+            throw new SmtpResponseException(SmtpResponse.TransactionFailed);
         }
 
         /// <summary>

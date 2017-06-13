@@ -79,26 +79,41 @@ namespace SmtpServer
         /// <returns>A task which asynchronously performs the execution.</returns>
         async Task ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            var retryCount = _options.MaxRetryCount;
+            var retries = _options.MaxRetryCount;
 
-            while (retryCount-- > 0 && context.IsQuitRequested == false && cancellationToken.IsCancellationRequested == false)
+            while (retries-- > 0 && context.IsQuitRequested == false && cancellationToken.IsCancellationRequested == false)
             {
                 var text = await context.Client.ReadLineAsync(cancellationToken).ReturnOnAnyThread();
 
-                if (TryAccept(text, out SmtpCommand command, out SmtpResponse errorResponse) == false)
+                if (TryAccept(text, out SmtpCommand command, out SmtpResponse response))
                 {
-                    var response = new SmtpResponse(errorResponse.ReplyCode, $"{errorResponse.Message}, {retryCount} retry(ies) remaining.");
+                    try
+                    {
+                        await ExecuteAsync(command, context, cancellationToken).ReturnOnAnyThread();
 
-                    await context.Client.ReplyAsync(response, cancellationToken);
+                        retries = _options.MaxRetryCount;
 
-                    continue;
+                        continue;
+                    }
+                    catch (SmtpResponseException responseException)
+                    {
+                        response = responseException.Response;
+                    }
                 }
 
-                // the command was a normal command so we can reset the retry count
-                retryCount = _options.MaxRetryCount;
-
-                await ExecuteAsync(command, context, cancellationToken).ConfigureAwait(false);
+                await context.Client.ReplyAsync(CreateErrorResponse(response, retries), cancellationToken);
             }
+        }
+
+        /// <summary>
+        /// Create an error response.
+        /// </summary>
+        /// <param name="response">The original response to wrap with the error message information.</param>
+        /// <param name="retries">The number of retries remaining before the session is terminated.</param>
+        /// <returns>The response that wraps the original response with the additional error information.</returns>
+        static SmtpResponse CreateErrorResponse(SmtpResponse response, int retries)
+        {
+            return new SmtpResponse(response.ReplyCode, $"{response.Message}, {retries} retry(ies) remaining.");
         }
 
         /// <summary>
