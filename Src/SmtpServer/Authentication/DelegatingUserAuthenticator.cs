@@ -6,15 +6,52 @@ namespace SmtpServer.Authentication
 {
     public sealed class DelegatingUserAuthenticator : UserAuthenticator
     {
-        readonly Func<string, string, bool> _delegate;
+        readonly Func<ISessionContext, string, string, bool> _delegate;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="delegate">THe delegate to execute for the authentication.</param>
-        public DelegatingUserAuthenticator(Func<string, string, bool> @delegate)
+        public DelegatingUserAuthenticator(Action<string, string> @delegate) : this(Wrap(@delegate)) { }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="delegate">THe delegate to execute for the authentication.</param>
+        public DelegatingUserAuthenticator(Func<string, string, bool> @delegate) : this(Wrap(@delegate)) { }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="delegate">THe delegate to execute for the authentication.</param>
+        public DelegatingUserAuthenticator(Func<ISessionContext, string, string, bool> @delegate)
         {
             _delegate = @delegate;
+        }
+
+        /// <summary>
+        /// Wrap the delegate into a function that is compatible with the signature.
+        /// </summary>
+        /// <param name="delegate">The delegate to wrap.</param>
+        /// <returns>The function that is compatible with the main signature.</returns>
+        static Func<ISessionContext, string, string, bool> Wrap(Func<string, string, bool> @delegate)
+        {
+            return (context, user, password) => @delegate(user, password);
+        }
+
+        /// <summary>
+        /// Wrap the delegate into a function that is compatible with the signature.
+        /// </summary>
+        /// <param name="delegate">The delegate to wrap.</param>
+        /// <returns>The function that is compatible with the main signature.</returns>
+        static Func<ISessionContext, string, string, bool> Wrap(Action<string, string> @delegate)
+        {
+            return (context, user, password) =>
+            {
+                @delegate(user, password);
+
+                return true;
+            };
         }
 
         /// <summary>
@@ -31,7 +68,7 @@ namespace SmtpServer.Authentication
             string password,
             CancellationToken cancellationToken)
         {
-            return Task.FromResult(_delegate(user, password));
+            return Task.FromResult(_delegate(context, user, password));
         }
     }
 }

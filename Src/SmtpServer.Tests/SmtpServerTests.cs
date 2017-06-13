@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Threading;
+using MailKit;
 using SmtpServer.Mail;
 using SmtpServer.Tests.Mocks;
 using Xunit;
 using SmtpServer.Authentication;
+using SmtpServer.Protocol;
+using SmtpServer.Storage;
 
 namespace SmtpServer.Tests
 {
@@ -92,6 +95,36 @@ namespace SmtpServer.Tests
             }
         }
 
+        [Fact]
+        public void CanReturnSmtpResponseException()
+        {
+            // arrange
+            var mailboxFilter = new DelegatingMailboxFilter(@from =>
+            {
+                throw new SmtpResponseException(SmtpResponse.AuthenticationRequired);
+
+#pragma warning disable 162
+                return MailboxFilterResult.Yes;
+#pragma warning restore 162
+            });
+
+            using (CreateServer(options => options.MailboxFilter(mailboxFilter)))
+            {
+                Assert.Throws<ServiceNotAuthenticatedException>(() => MailClient.Send());
+            }
+        }
+
+        [Fact]
+        public void CanForceUserAuthentication()
+        {
+            var userAuthenticator = new DelegatingUserAuthenticator((user, password) => true);
+
+            using (CreateServer(options => options.AllowUnsecureAuthentication().AuthenticationRequired().UserAuthenticator(userAuthenticator)))
+            {
+                Assert.Throws<ServiceNotAuthenticatedException>(() => MailClient.Send());
+            }
+        }
+
         /// <summary>
         /// Create a running instance of a server.
         /// </summary>
@@ -141,42 +174,5 @@ namespace SmtpServer.Tests
         /// The cancellation token source for the test.
         /// </summary>
         public CancellationTokenSource CancellationTokenSource { get; }
-    }
-
-    internal static class MessageTransactionExtensions
-    {
-        /// <summary>
-        /// Returns the subject from the message.
-        /// </summary>
-        /// <param name="messageTransaction">The message transaction to return the message subject from.</param>
-        /// <returns>The message subject from the message transaction.</returns>
-        public static string Subject(this IMessageTransaction messageTransaction)
-        {
-            if (messageTransaction == null)
-            {
-                throw new ArgumentNullException(nameof(messageTransaction));
-            }
-
-            var textMessage = (ITextMessage)messageTransaction.Message;
-
-            return MimeKit.MimeMessage.Load(textMessage.Content).Subject;
-        }
-
-        /// <summary>
-        /// Returns the text message body.
-        /// </summary>
-        /// <param name="messageTransaction">The message transaction to return the message text body from.</param>
-        /// <returns>The message text body from the message transaction.</returns>
-        public static string Text(this IMessageTransaction messageTransaction)
-        {
-            if (messageTransaction == null)
-            {
-                throw new ArgumentNullException(nameof(messageTransaction));
-            }
-
-            var textMessage = (ITextMessage) messageTransaction.Message;
-
-            return MimeKit.MimeMessage.Load(textMessage.Content).TextBody;
-        }
     }
 }

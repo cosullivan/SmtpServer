@@ -4,7 +4,7 @@
     <TargetFrameworks>net45;netstandard1.3</TargetFrameworks>
     <AssemblyName>SmtpServer</AssemblyName>
     <RootNamespace>SmtpServer</RootNamespace>
-    <Version>4.0.0</Version>
+    <Version>4.1.0</Version>
     <Description>.NET SmtpServer</Description>
     <Authors>Cain O'Sullivan</Authors>
     <Company />
@@ -14,9 +14,9 @@
     <PackageTags>Smtp SmtpServer</PackageTags>
     <PackageLicenseUrl>https://raw.githubusercontent.com/cosullivan/SmtpServer/master/LICENSE</PackageLicenseUrl>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-    <AssemblyVersion>4.0.0.1</AssemblyVersion>
-    <FileVersion>4.0.0.1</FileVersion>
-    <PackageReleaseNotes>This version introduces a breaking API change by adding the ISessionContext parameter to the IUserAuthenticator interface. The IUserAuthenticator is now also created through the IUserAuthenticatorFactory interface. This also contains a bug fix for the AUTH command not allowing single line authentication.
+    <AssemblyVersion>4.1.0.0</AssemblyVersion>
+    <FileVersion>4.1.0.0</FileVersion>
+    <PackageReleaseNotes>This version adds the ability for a custom callback to throw a SmtpResponseException and have a custom response propogated back to the client. Also added is the AuthenticationRequired option which forces the client to authenticate against the server.
 </PackageReleaseNotes>
   </PropertyGroup>
 
