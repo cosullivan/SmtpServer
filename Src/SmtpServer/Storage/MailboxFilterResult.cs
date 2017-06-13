@@ -20,11 +20,6 @@
         /// <summary>
         /// The message siz limit has been exceeded.
         /// </summary>
-        SizeLimitExceeded = 3,
-
-        /// <summary>
-        /// The operation cannot be completed without authentication
-        /// </summary>
-        AuthenticationRequired = 4
+        SizeLimitExceeded = 3
     }
 }
