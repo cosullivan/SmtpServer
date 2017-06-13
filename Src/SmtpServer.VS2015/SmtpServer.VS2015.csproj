@@ -208,6 +208,12 @@
     <Compile Include="..\SmtpServer\Storage\CompositeMailboxFilterFactory.cs">
       <Link>Storage\CompositeMailboxFilterFactory.cs</Link>
     </Compile>
+    <Compile Include="..\SmtpServer\Storage\DelegatingMailboxFilter.cs">
+      <Link>Storage\DelegatingMailboxFilter.cs</Link>
+    </Compile>
+    <Compile Include="..\SmtpServer\Storage\DelegatingMessageStore.cs">
+      <Link>Storage\DelegatingMessageStore.cs</Link>
+    </Compile>
     <Compile Include="..\SmtpServer\Storage\DisposableContainer.cs">
       <Link>Storage\DisposableContainer.cs</Link>
     </Compile>
