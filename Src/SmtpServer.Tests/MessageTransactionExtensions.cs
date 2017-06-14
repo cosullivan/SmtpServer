@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using SmtpServer.Mail;
 
 namespace SmtpServer.Tests
@@ -18,6 +19,7 @@ namespace SmtpServer.Tests
             }
 
             var textMessage = (ITextMessage)messageTransaction.Message;
+            textMessage.Content.Position = 0;
 
             return MimeKit.MimeMessage.Load(textMessage.Content).Subject;
         }
@@ -35,8 +37,9 @@ namespace SmtpServer.Tests
             }
 
             var textMessage = (ITextMessage) messageTransaction.Message;
+            textMessage.Content.Position = 0;
 
-            return MimeKit.MimeMessage.Load(textMessage.Content).TextBody;
+            return MimeKit.MimeMessage.Load(textMessage.Content).TextBody.TrimEnd('\n', '\r');
         }
     }
 }

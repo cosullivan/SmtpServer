@@ -1,4 +1,7 @@
-﻿using SampleApp.Examples;
+﻿using System.IO;
+using MimeKit;
+using MimeKit.Text;
+using SampleApp.Examples;
 
 namespace SampleApp
 {

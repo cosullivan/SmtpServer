@@ -37,17 +37,20 @@ namespace SmtpServer.Tests
             }
         }
 
-        [Fact]
-        public void CanReceive8BitMimeMessage()
+        [Theory]
+        [InlineData("Assunto teste acento çãõáéíóú")]
+        [InlineData("שלום שלום שלום")]
+        public void CanReceive8BitMimeMessage(string text)
         {
             using (CreateServer())
             {
                 // act
-                MailClient.Send(subject: "Assunto teste acento çãõáéíóú");
+                MailClient.Send(subject: text, text: text);
 
                 // assert
                 Assert.Equal(1, MessageStore.Messages.Count);
-                Assert.Equal("Assunto teste acento çãõáéíóú", MessageStore.Messages[0].Subject());
+                Assert.Equal(text, MessageStore.Messages[0].Subject());
+                Assert.Equal(text, MessageStore.Messages[0].Text());
             }
         }
 
