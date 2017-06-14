@@ -41,5 +41,42 @@ namespace SmtpServer.Tests
 
             return MimeKit.MimeMessage.Load(textMessage.Content).TextBody.TrimEnd('\n', '\r');
         }
+
+        /// <summary>
+        /// Return the MIME content of the text message.
+        /// </summary>
+        /// <param name="messageTransaction">The message transaction to return the message text body from.</param>
+        /// <returns>The MIME content of the text message.</returns>
+        public static string Mime(this IMessageTransaction messageTransaction)
+        {
+            if (messageTransaction == null)
+            {
+                throw new ArgumentNullException(nameof(messageTransaction));
+            }
+
+            var textMessage = (ITextMessage)messageTransaction.Message;
+
+            return textMessage.Mime();
+        }
+
+        /// <summary>
+        /// Return the MIME content of the text message.
+        /// </summary>
+        /// <param name="textMessage">The text message to return the MIME content for.</param>
+        /// <returns>The MIME content of the text message.</returns>
+        public static string Mime(this ITextMessage textMessage)
+        {
+            if (textMessage == null)
+            {
+                throw new ArgumentNullException(nameof(textMessage));
+            }
+
+            textMessage.Content.Position = 0;
+
+            using (var reader = new StreamReader(textMessage.Content))
+            {
+                return reader.ReadToEnd();
+            }
+        }
     }
 }

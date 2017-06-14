@@ -40,7 +40,7 @@ namespace SmtpServer.Tests
         [Theory]
         [InlineData("Assunto teste acento çãõáéíóú")]
         [InlineData("שלום שלום שלום")]
-        public void CanReceive8BitMimeMessage(string text)
+        public void CanReceiveUnicodeMimeMessage(string text)
         {
             using (CreateServer())
             {
