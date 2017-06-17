@@ -11,7 +11,8 @@ namespace SampleApp
             string subject = null,
             string user = null, 
             string password = null,
-            MimeEntity body = null)
+            MimeEntity body = null,
+            int count = 1)
         {
             var message = new MimeMessage();
 
@@ -32,7 +33,11 @@ namespace SampleApp
                     client.Authenticate(user, password);
                 }
 
-                client.Send(message);
+                while (count-- > 0)
+                {
+                    client.Send(message);
+                }
+
                 client.Disconnect(true);
             }
         }

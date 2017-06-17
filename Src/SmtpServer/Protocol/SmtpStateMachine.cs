@@ -37,7 +37,8 @@ namespace SmtpServer.Protocol
                     { RsetCommand.Command, TryMakeRset },
                     { QuitCommand.Command, TryMakeQuit },
                     { HeloCommand.Command, TryMakeHelo, SmtpState.WaitingForMail },
-                    { EhloCommand.Command, TryMakeEhlo, SmtpState.WaitingForMail }
+                    { EhloCommand.Command, TryMakeEhlo, SmtpState.WaitingForMail },
+                    { MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction }
                 },
                 new State(SmtpState.WaitingForMailSecure)
                 {
@@ -46,7 +47,8 @@ namespace SmtpServer.Protocol
                     { QuitCommand.Command, TryMakeQuit },
                     { AuthCommand.Command, TryMakeAuth },
                     { HeloCommand.Command, TryMakeHelo, SmtpState.WaitingForMailSecure },
-                    { EhloCommand.Command, TryMakeEhlo, SmtpState.WaitingForMailSecure }
+                    { EhloCommand.Command, TryMakeEhlo, SmtpState.WaitingForMailSecure },
+                    { MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction }
                 },
                 new State(SmtpState.WithinTransaction)
                 {
@@ -70,15 +72,10 @@ namespace SmtpServer.Protocol
                 WaitingForMail.Add(AuthCommand.Command, TryMakeAuth);
             }
 
-            if (options.AuthenticationRequired == false)
+            if (options.AuthenticationRequired)
             {
-                WaitingForMail.Add(MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction);
-                WaitingForMailSecure.Add(MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction);
-            }
-            else
-            {
-                WaitingForMail.Add(MailCommand.Command, MakeResponse(SmtpResponse.AuthenticationRequired));
-                WaitingForMailSecure.Add(MailCommand.Command, MakeResponse(SmtpResponse.AuthenticationRequired));
+                WaitingForMail.Replace(MailCommand.Command, MakeResponse(SmtpResponse.AuthenticationRequired));
+                WaitingForMailSecure.Replace(MailCommand.Command, MakeResponse(SmtpResponse.AuthenticationRequired));
             }
 
             if (options.ServerCertificate != null)
@@ -98,13 +95,13 @@ namespace SmtpServer.Protocol
         {
             _context.SessionAuthenticated -= OnSessionAuthenticated;
 
-            WaitingForMail.Clear(AuthCommand.Command);
-            WaitingForMailSecure.Clear(AuthCommand.Command);
+            WaitingForMail.Remove(AuthCommand.Command);
+            WaitingForMailSecure.Remove(AuthCommand.Command);
 
             if (_options.AuthenticationRequired)
             {
-                WaitingForMail.Add(MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction);
-                WaitingForMailSecure.Add(MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction);
+                WaitingForMail.Replace(MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction);
+                WaitingForMailSecure.Replace(MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction);
             }
         }
 
@@ -377,7 +374,7 @@ namespace SmtpServer.Protocol
             /// <param name="transitionTo">The state to transition to.</param>
             public void Replace(string command, TryMakeDelegate tryMake, SmtpState? transitionTo = null)
             {
-                Clear(command);
+                Remove(command);
                 Add(command, tryMake, transitionTo);
             }
 
@@ -385,7 +382,7 @@ namespace SmtpServer.Protocol
             /// Clear the command from the current state.
             /// </summary>
             /// <param name="command">The command to clear.</param>
-            public void Clear(string command)
+            public void Remove(string command)
             {
                 Actions.Remove(command);
             }

@@ -22,6 +22,7 @@ namespace SampleApp.Examples
                 .Port(9025)
                 .UserAuthenticator(new AuthenticationHandler())
                 .AllowUnsecureAuthentication()
+                .AuthenticationRequired()
                 .Build();
 
             var server = new SmtpServer.SmtpServer(options);
@@ -31,7 +32,7 @@ namespace SampleApp.Examples
 
             var serverTask = server.StartAsync(_cancellationTokenSource.Token);
 
-            SampleMailClient.Send(user: "cain", password: "o'sullivan");
+            SampleMailClient.Send(user: "cain", password: "o'sullivan", count: 5);
 
             serverTask.WaitWithoutException();
         }

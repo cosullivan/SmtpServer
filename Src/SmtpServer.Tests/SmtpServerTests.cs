@@ -118,7 +118,18 @@ namespace SmtpServer.Tests
         }
 
         [Fact]
-        public void CanForceUserAuthentication()
+        public void CanForceUserAuthentication_DoesNotThrowIfLoginIsSent()
+        {
+            var userAuthenticator = new DelegatingUserAuthenticator((user, password) => true);
+
+            using (CreateServer(options => options.AllowUnsecureAuthentication().AuthenticationRequired().UserAuthenticator(userAuthenticator)))
+            {
+                MailClient.Send(user: "user", password: "password");
+            }
+        }
+
+        [Fact]
+        public void CanForceUserAuthentication_ThrowsIfLoginIsNotSent()
         {
             var userAuthenticator = new DelegatingUserAuthenticator((user, password) => true);
 

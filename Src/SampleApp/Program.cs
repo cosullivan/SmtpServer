@@ -1,7 +1,10 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
+using System.Text;
 using MimeKit;
 using MimeKit.Text;
 using SampleApp.Examples;
+using SmtpServer.Mail;
 
 namespace SampleApp
 {
@@ -9,9 +12,9 @@ namespace SampleApp
     {
         static void Main(string[] args)
         {
-            SimpleExample.Run();
+            //SimpleExample.Run();
             //SessionTracingExample.Run();
-            //SessionContextExample.Run();
+            SessionContextExample.Run();
         }
 
         //var cancellationTokenSource = new CancellationTokenSource();
