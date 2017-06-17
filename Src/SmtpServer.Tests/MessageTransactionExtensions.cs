@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using MimeKit;
 using SmtpServer.Mail;
 
 namespace SmtpServer.Tests
@@ -28,8 +29,9 @@ namespace SmtpServer.Tests
         /// Returns the text message body.
         /// </summary>
         /// <param name="messageTransaction">The message transaction to return the message text body from.</param>
+        /// <param name="charset">The character set to use.</param>
         /// <returns>The message text body from the message transaction.</returns>
-        public static string Text(this IMessageTransaction messageTransaction)
+        public static string Text(this IMessageTransaction messageTransaction, string charset = "utf-8")
         {
             if (messageTransaction == null)
             {
@@ -39,7 +41,9 @@ namespace SmtpServer.Tests
             var textMessage = (ITextMessage) messageTransaction.Message;
             textMessage.Content.Position = 0;
 
-            return MimeKit.MimeMessage.Load(textMessage.Content).TextBody.TrimEnd('\n', '\r');
+            var message = MimeKit.MimeMessage.Load(textMessage.Content);
+
+            return ((TextPart) message.Body).GetText(charset).TrimEnd('\n', '\r');
         }
 
         /// <summary>

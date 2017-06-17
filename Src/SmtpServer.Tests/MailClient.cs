@@ -1,5 +1,7 @@
-﻿using MailKit.Net.Smtp;
+﻿using System.Text;
+using MailKit.Net.Smtp;
 using MimeKit;
+using MimeKit.Text;
 
 namespace SmtpServer.Tests
 {
@@ -14,6 +16,7 @@ namespace SmtpServer.Tests
             string user = null,
             string password = null,
             string text = null,
+            string charset = null,
             MimeEntity body = null)
         {
             var message = new MimeMessage();
@@ -33,10 +36,13 @@ namespace SmtpServer.Tests
 
             message.Subject = subject ?? "Hello";
 
-            message.Body = body ?? new TextPart("plain")
+            if (body == null)
             {
-                Text = text ?? "Hello World"
-            };
+                body = new TextPart(TextFormat.Plain);
+                ((TextPart)body).SetText(charset, text ?? "Hello World");
+            }
+
+            message.Body = body;
 
             using (var client = new SmtpClient())
             {

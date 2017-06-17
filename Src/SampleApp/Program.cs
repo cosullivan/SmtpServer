@@ -14,7 +14,18 @@ namespace SampleApp
         {
             //SimpleExample.Run();
             //SessionTracingExample.Run();
-            SessionContextExample.Run();
+            //SessionContextExample.Run();
+            //SimpleServerExample.Run();
+
+            TextPart textPart = new TextPart(TextFormat.Plain);
+            //textPart.Text = "שלום";
+            //textPart.ContentType.Charset = "windows-1255";
+
+            //textPart.SetText(Encoding.GetEncoding(1255), "שלום");
+            textPart.SetText("windows-1255", "שלום");
+            Console.WriteLine(textPart.ContentType.Charset);
+
+            Console.WriteLine(textPart.Text);
         }
 
         //var cancellationTokenSource = new CancellationTokenSource();

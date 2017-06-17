@@ -38,19 +38,19 @@ namespace SmtpServer.Tests
         }
 
         [Theory]
-        [InlineData("Assunto teste acento çãõáéíóú")]
-        [InlineData("שלום שלום שלום")]
-        public void CanReceiveUnicodeMimeMessage(string text)
+        [InlineData("Assunto teste acento çãõáéíóú", "utf-8")]
+        [InlineData("שלום שלום שלום", "windows-1255")]
+        public void CanReceiveUnicodeMimeMessage(string text, string charset)
         {
             using (CreateServer())
             {
                 // act
-                MailClient.Send(subject: text, text: text);
+                MailClient.Send(subject: text, text: text, charset: charset);
 
                 // assert
                 Assert.Equal(1, MessageStore.Messages.Count);
                 Assert.Equal(text, MessageStore.Messages[0].Subject());
-                Assert.Equal(text, MessageStore.Messages[0].Text());
+                Assert.Equal(text, MessageStore.Messages[0].Text(charset));
             }
         }
 
