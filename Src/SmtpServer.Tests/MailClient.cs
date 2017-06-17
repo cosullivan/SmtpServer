@@ -16,7 +16,7 @@ namespace SmtpServer.Tests
             string user = null,
             string password = null,
             string text = null,
-            string charset = null,
+            string charset = "utf-8",
             MimeEntity body = null)
         {
             var message = new MimeMessage();
