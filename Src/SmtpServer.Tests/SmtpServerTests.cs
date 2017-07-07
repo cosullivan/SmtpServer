@@ -27,7 +27,7 @@ namespace SmtpServer.Tests
             using (CreateServer())
             {
                 // act
-                MailClient.Send(from: "test1@test.com", to: "test2@test.com");
+                MailClient.Send(MailClient.Message(from: "test1@test.com", to: "test2@test.com"));
 
                 // assert
                 Assert.Equal(1, MessageStore.Messages.Count);
@@ -45,7 +45,7 @@ namespace SmtpServer.Tests
             using (CreateServer())
             {
                 // act
-                MailClient.Send(subject: text, text: text, charset: charset);
+                MailClient.Send(MailClient.Message(subject: text, text: text, charset: charset));
 
                 // assert
                 Assert.Equal(1, MessageStore.Messages.Count);
@@ -86,7 +86,7 @@ namespace SmtpServer.Tests
             using (CreateServer())
             {
                 // act
-                MailClient.Send(from: "test1@test.com", to: "test2@test.com", cc: "test3@test.com", bcc: "test4@test.com");
+                MailClient.Send(MailClient.Message(from: "test1@test.com", to: "test2@test.com", cc: "test3@test.com", bcc: "test4@test.com"));
 
                 // assert
                 Assert.Equal(1, MessageStore.Messages.Count);
@@ -99,7 +99,7 @@ namespace SmtpServer.Tests
         }
 
         [Fact]
-        public void CanReturnSmtpResponseException()
+        public void CanReturnSmtpResponseException_DoesNotQuit()
         {
             // arrange
             var mailboxFilter = new DelegatingMailboxFilter(@from =>
@@ -113,7 +113,37 @@ namespace SmtpServer.Tests
 
             using (CreateServer(options => options.MailboxFilter(mailboxFilter)))
             {
-                Assert.Throws<ServiceNotAuthenticatedException>(() => MailClient.Send());
+                using (var client = MailClient.Client())
+                {
+                    Assert.Throws<ServiceNotAuthenticatedException>(() => client.Send(MailClient.Message()));
+
+                    client.NoOp();
+                }
+            }
+        }
+
+        [Fact]
+        public void CanReturnSmtpResponseException_SessionWillQuit()
+        {
+            // arrange
+            var mailboxFilter = new DelegatingMailboxFilter(@from =>
+            {
+                throw new SmtpResponseException(SmtpResponse.AuthenticationRequired, true);
+
+#pragma warning disable 162
+                return MailboxFilterResult.Yes;
+#pragma warning restore 162
+            });
+
+            using (CreateServer(options => options.MailboxFilter(mailboxFilter)))
+            {
+                using (var client = MailClient.Client())
+                {
+                    Assert.Throws<ServiceNotAuthenticatedException>(() => client.Send(MailClient.Message()));
+
+                    // no longer connected to this is invalid
+                    Assert.ThrowsAny<Exception>(() => client.NoOp());
+                }
             }
         }
 

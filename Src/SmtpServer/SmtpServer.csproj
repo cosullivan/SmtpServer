@@ -4,7 +4,7 @@
     <TargetFrameworks>net45;netstandard1.3</TargetFrameworks>
     <AssemblyName>SmtpServer</AssemblyName>
     <RootNamespace>SmtpServer</RootNamespace>
-    <Version>4.1.1</Version>
+    <Version>4.2.0</Version>
     <Description>.NET SmtpServer</Description>
     <Authors>Cain O'Sullivan</Authors>
     <Company />
@@ -14,9 +14,9 @@
     <PackageTags>Smtp SmtpServer</PackageTags>
     <PackageLicenseUrl>https://raw.githubusercontent.com/cosullivan/SmtpServer/master/LICENSE</PackageLicenseUrl>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-    <AssemblyVersion>4.1.1.0</AssemblyVersion>
-    <FileVersion>4.1.1.0</FileVersion>
-    <PackageReleaseNotes>Fixes a bug where the AuthenticationRequired() option would throw an exception when the user was authenticated.
+    <AssemblyVersion>4.2.0.0</AssemblyVersion>
+    <FileVersion>4.2.0.0</FileVersion>
+    <PackageReleaseNotes>Added a "quit" parameter to the SmtpResponseException that indicates that the response should be return and the session terminated.
 </PackageReleaseNotes>
   </PropertyGroup>
 

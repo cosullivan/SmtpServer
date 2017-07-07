@@ -1,5 +1,4 @@
-﻿using System.Text;
-using MailKit.Net.Smtp;
+﻿using MailKit.Net.Smtp;
 using MimeKit;
 using MimeKit.Text;
 
@@ -7,14 +6,12 @@ namespace SmtpServer.Tests
 {
     internal static class MailClient
     {
-        public static void Send(
+        public static MimeMessage Message(
             string from = null,
             string to = null,
             string cc = null,
             string bcc = null,
             string subject = null,
-            string user = null,
-            string password = null,
             string text = null,
             string charset = "utf-8",
             MimeEntity body = null)
@@ -44,14 +41,33 @@ namespace SmtpServer.Tests
 
             message.Body = body;
 
-            using (var client = new SmtpClient())
-            {
-                client.Connect("localhost", 9025);
+            return message;
+        }
 
+        public static SmtpClient Client(string host = "localhost", int port = 9025)
+        {
+            var client = new SmtpClient();
+
+            client.Connect("localhost", 9025);
+
+            return client;
+        }
+
+        public static void Send(
+            MimeMessage message = null,
+            string user = null,
+            string password = null)
+        {
+            message = message ?? Message();
+
+            using (var client = Client())
+            {
                 if (user != null && password != null)
                 {
                     client.Authenticate(user, password);
                 }
+
+                client.NoOp();
 
                 client.Send(message);
                 client.Disconnect(true);

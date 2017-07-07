@@ -32,14 +32,6 @@ namespace SmtpServer
         }
 
         /// <summary>
-        /// Indicates to the session that it should quit.
-        /// </summary>
-        internal void Quit()
-        {
-            IsQuitRequested = true;
-        }
-
-        /// <summary>
         /// Raise the command executing event.
         /// </summary>
         /// <param name="command">The command that is executing.</param>
@@ -84,7 +76,7 @@ namespace SmtpServer
         /// <summary>
         /// Gets a value indicating whether a quit has been requested.
         /// </summary>
-        public bool IsQuitRequested { get; private set; }
+        public bool IsQuitRequested { get; internal set; }
 
         /// <summary>
         /// Returns a set of propeties for the current session.

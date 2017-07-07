@@ -22,7 +22,7 @@ namespace SmtpServer.Protocol
         /// <returns>A task which asynchronously performs the execution.</returns>
         internal override Task ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            context.Quit();
+            context.IsQuitRequested = true;
 
             return context.Client.ReplyAsync(SmtpResponse.ServiceClosingTransmissionChannel, cancellationToken);
         }

@@ -97,6 +97,8 @@ namespace SmtpServer
                     }
                     catch (SmtpResponseException responseException)
                     {
+                        context.IsQuitRequested = responseException.IsQuitRequested;
+
                         response = responseException.Response;
                     }
                 }
