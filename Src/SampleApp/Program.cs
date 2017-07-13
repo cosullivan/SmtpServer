@@ -16,6 +16,7 @@ namespace SampleApp
             //SessionTracingExample.Run();
             //SessionContextExample.Run();
             //SimpleServerExample.Run();
+            SecureServerExample.Run();
         }
 
         //var cancellationTokenSource = new CancellationTokenSource();

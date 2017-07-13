@@ -1,12 +1,19 @@
 ﻿using System;
+using System.IO;
+using System.Net;
+using System.Net.Security;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using MailKit;
+using MailKit.Net.Smtp;
 using SmtpServer.Mail;
 using SmtpServer.Tests.Mocks;
 using Xunit;
 using SmtpServer.Authentication;
 using SmtpServer.Protocol;
 using SmtpServer.Storage;
+using SmtpResponse = SmtpServer.Protocol.SmtpResponse;
 
 namespace SmtpServer.Tests
 {
@@ -169,11 +176,109 @@ namespace SmtpServer.Tests
             }
         }
 
+        [Fact]
+        public void DoesNotSecureTheSessionWhenCertificateIsEmpty()
+        {
+            using (var disposable = CreateServer())
+            {
+                ISessionContext sessionContext = null;
+                var sessionCreatedHandler = new EventHandler<SessionEventArgs>(
+                    delegate (object sender, SessionEventArgs args)
+                    {
+                        sessionContext = args.Context;
+                    });
+
+                disposable.Server.SessionCreated += sessionCreatedHandler;
+
+                MailClient.Send();
+
+                disposable.Server.SessionCreated -= sessionCreatedHandler;
+
+                Assert.False(sessionContext.IsSecure);
+            }
+
+            ServicePointManager.ServerCertificateValidationCallback = null;
+        }
+
+        [Fact]
+        public void SecuresTheSessionWhenCertificateIsSupplied()
+        {
+            ServicePointManager.ServerCertificateValidationCallback = IgnoreCertificateValidationFailureForTestingOnly;
+
+            using (var disposable = CreateServer(options => options.Certificate(CreateCertificate())))
+            {
+                ISessionContext sessionContext = null;
+                var sessionCreatedHandler = new EventHandler<SessionEventArgs>(
+                    delegate(object sender, SessionEventArgs args)
+                    {
+                        sessionContext = args.Context;
+                    });
+
+                disposable.Server.SessionCreated += sessionCreatedHandler;
+
+                MailClient.Send();
+
+                disposable.Server.SessionCreated -= sessionCreatedHandler;
+
+                Assert.True(sessionContext.IsSecure);
+            }
+
+            ServicePointManager.ServerCertificateValidationCallback = null;
+        }
+
+        [Fact]
+        public void ServerCanBeSecuredAndAuthenticated()
+        {
+            var userAuthenticator = new DelegatingUserAuthenticator((user, password) => true);
+
+            ServicePointManager.ServerCertificateValidationCallback = IgnoreCertificateValidationFailureForTestingOnly;
+
+            using (var disposable = CreateServer(
+                options => 
+                    options
+                        .UserAuthenticator(userAuthenticator)
+                        .AllowUnsecureAuthentication(true)
+                        .Certificate(CreateCertificate())
+                        .SupportedSslProtocols(SslProtocols.Default)))
+            {
+                ISessionContext sessionContext = null;
+                var sessionCreatedHandler = new EventHandler<SessionEventArgs>(
+                    delegate (object sender, SessionEventArgs args)
+                    {
+                        sessionContext = args.Context;
+                    });
+
+                disposable.Server.SessionCreated += sessionCreatedHandler;
+
+                MailClient.Send(user: "user", password: "password");
+
+                disposable.Server.SessionCreated -= sessionCreatedHandler;
+
+                Assert.True(sessionContext.IsSecure);
+                Assert.True(sessionContext.IsAuthenticated);
+            }
+
+            ServicePointManager.ServerCertificateValidationCallback = null;
+        }
+
+        static bool IgnoreCertificateValidationFailureForTestingOnly(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        {
+            return true;
+        }
+
+        static X509Certificate2 CreateCertificate()
+        {
+            var certificate = File.ReadAllBytes(@"C:\Dropbox\Documents\Cain\Programming\SmtpServer\SmtpServer.pfx");
+            var password = File.ReadAllText(@"C:\Dropbox\Documents\Cain\Programming\SmtpServer\SmtpServerPassword.txt");
+
+            return new X509Certificate2(certificate, password);
+        }
+
         /// <summary>
         /// Create a running instance of a server.
         /// </summary>
         /// <returns>A disposable instance which will close and release the server instance.</returns>
-        IDisposable CreateServer()
+        SmtpServerDisposable CreateServer()
         {
             return CreateServer(options => { });
         }
@@ -183,7 +288,7 @@ namespace SmtpServer.Tests
         /// </summary>
         /// <param name="configuration">The configuration to apply to run the server.</param>
         /// <returns>A disposable instance which will close and release the server instance.</returns>
-        IDisposable CreateServer(Action<OptionsBuilder> configuration)
+        SmtpServerDisposable CreateServer(Action<OptionsBuilder> configuration)
         {
             var options = new OptionsBuilder()
                 .ServerName("localhost")
@@ -192,9 +297,10 @@ namespace SmtpServer.Tests
 
             configuration(options);
 
-            var smtpServerTask = new SmtpServer(options.Build()).StartAsync(CancellationTokenSource.Token);
+            var server = new SmtpServer(options.Build());
+            var smtpServerTask = server.StartAsync(CancellationTokenSource.Token);
 
-            return new DelegatingDisposable(() =>
+            return new SmtpServerDisposable(server, () =>
             {
                 CancellationTokenSource.Cancel();
 

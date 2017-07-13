@@ -63,7 +63,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DelegatingDisposable.cs" />
+    <Compile Include="SmtpServerDisposable.cs" />
     <Compile Include="MailClient.cs" />
     <Compile Include="MessageTransactionExtensions.cs" />
     <Compile Include="Mocks\MockMessageStore.cs" />

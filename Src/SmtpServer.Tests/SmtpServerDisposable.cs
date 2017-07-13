@@ -2,16 +2,19 @@
 
 namespace SmtpServer.Tests
 {
-    internal sealed class DelegatingDisposable : IDisposable
+    internal sealed class SmtpServerDisposable : IDisposable
     {
         readonly Action _delegate;
 
         /// <summary>
         /// Constructor.
         /// </summary>
+        /// <param name="server">The SMTP server instance.</param>
         /// <param name="delegate">The delegate to execute upon disposal.</param>
-        public DelegatingDisposable(Action @delegate)
+        public SmtpServerDisposable(SmtpServer server, Action @delegate)
         {
+            Server = server;
+
             _delegate = @delegate;
         }
 
@@ -22,5 +25,10 @@ namespace SmtpServer.Tests
         {
             _delegate();
         }
+
+        /// <summary>
+        /// The SMTP server instance.
+        /// </summary>
+        public SmtpServer Server { get; }
     }
 }
