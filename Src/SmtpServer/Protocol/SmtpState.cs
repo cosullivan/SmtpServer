@@ -2,10 +2,11 @@
 {
     internal enum SmtpState
     {
-        Initialized = 0,
-        WaitingForMail = 1,
-        WaitingForMailSecure = 2,
-        WithinTransaction = 3,
-        CanAcceptData = 4,
+        None = 0,
+        Initialized = 1,
+        WaitingForMail = 2,
+        WaitingForMailSecure = 3,
+        WithinTransaction = 4,
+        CanAcceptData = 5,
     }
 }

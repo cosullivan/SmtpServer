@@ -6,7 +6,6 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using MailKit;
-using MailKit.Net.Smtp;
 using SmtpServer.Mail;
 using SmtpServer.Tests.Mocks;
 using Xunit;

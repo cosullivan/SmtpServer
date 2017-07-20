@@ -85,7 +85,7 @@ namespace SmtpServer
             {
                 var text = await context.Client.ReadLineAsync(cancellationToken).ReturnOnAnyThread();
 
-                if (TryAccept(text, out SmtpCommand command, out SmtpResponse response))
+                if (TryAccept(context, text, out SmtpCommand command, out SmtpResponse response))
                 {
                     try
                     {
@@ -121,13 +121,16 @@ namespace SmtpServer
         /// <summary>
         /// Advances the enumerator to the next command in the stream.
         /// </summary>
+        /// <param name="context">The session context to use when making session based transitions.</param>
         /// <param name="segments">The list of array segments to read the command from.</param>
         /// <param name="command">The command that was found.</param>
         /// <param name="errorResponse">The error response that indicates why a command could not be accepted.</param>
         /// <returns>true if a valid command was found, false if not.</returns>
-        bool TryAccept(IReadOnlyList<ArraySegment<byte>> segments, out SmtpCommand command, out SmtpResponse errorResponse)
+        bool TryAccept(SmtpSessionContext context, IReadOnlyList<ArraySegment<byte>> segments, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return _stateMachine.TryAccept(new TokenEnumerator(new ByteArrayTokenReader(segments)), out command, out errorResponse);
+            var tokenEnumerator = new TokenEnumerator(new ByteArrayTokenReader(segments));
+
+            return _stateMachine.TryAccept(context, tokenEnumerator, out command, out errorResponse);
         }
 
         /// <summary>

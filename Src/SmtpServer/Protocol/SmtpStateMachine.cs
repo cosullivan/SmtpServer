@@ -7,6 +7,8 @@ namespace SmtpServer.Protocol
 {
     internal class SmtpStateMachine 
     {
+        delegate bool TryMakeDelegate(TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse errorResponse);
+
         readonly ISmtpServerOptions _options;
         readonly SmtpSessionContext _context;
         readonly StateTable _stateTable;
@@ -53,14 +55,14 @@ namespace SmtpServer.Protocol
                 new State(SmtpState.WithinTransaction)
                 {
                     { NoopCommand.Command, TryMakeNoop },
-                    { RsetCommand.Command, TryMakeRset },
+                    { RsetCommand.Command, TryMakeRset, c => c.IsSecure ? SmtpState.WaitingForMailSecure : SmtpState.WaitingForMail },
                     { QuitCommand.Command, TryMakeQuit },
                     { RcptCommand.Command, TryMakeRcpt, SmtpState.CanAcceptData },
                 },
                 new State(SmtpState.CanAcceptData)
                 {
                     { NoopCommand.Command, TryMakeNoop },
-                    { RsetCommand.Command, TryMakeRset },
+                    { RsetCommand.Command, TryMakeRset, c => c.IsSecure ? SmtpState.WaitingForMailSecure : SmtpState.WaitingForMail },
                     { QuitCommand.Command, TryMakeQuit },
                     { RcptCommand.Command, TryMakeRcpt },
                     { DataCommand.Command, TryMakeData, SmtpState.WaitingForMail },
@@ -110,7 +112,7 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="errorResponse">The error response to return.</param>
         /// <returns>The delegate that will return the correct error response.</returns>
-        static State.TryMakeDelegate MakeResponse(SmtpResponse errorResponse)
+        static TryMakeDelegate MakeResponse(SmtpResponse errorResponse)
         {
             return (TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse response) =>
             {
@@ -124,13 +126,14 @@ namespace SmtpServer.Protocol
         /// <summary>
         /// Advances the enumerator to the next command in the stream.
         /// </summary>
+        /// <param name="context">The SMTP session context to allow for session based state transitions.</param>
         /// <param name="tokenEnumerator">The token enumerator to accept the command from.</param>
         /// <param name="command">The command that was found.</param>
         /// <param name="errorResponse">The error response that indicates why a command could not be accepted.</param>
         /// <returns>true if a valid command was found, false if not.</returns>
-        public bool TryAccept(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        public bool TryAccept(SmtpSessionContext context, TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return _stateTable.TryAccept(tokenEnumerator, out command, out errorResponse);
+            return _stateTable.TryAccept(context, tokenEnumerator, out command, out errorResponse);
         }
         
         /// <summary>
@@ -268,7 +271,7 @@ namespace SmtpServer.Protocol
         class StateTable : IEnumerable
         {
             readonly Dictionary<SmtpState, State> _states = new Dictionary<SmtpState, State>();
-            State _state;
+            SmtpState _current;
 
             /// <summary>
             /// Sets the initial state.
@@ -276,7 +279,7 @@ namespace SmtpServer.Protocol
             /// <param name="stateId">The ID of the initial state.</param>
             public void Initialize(SmtpState stateId)
             {
-                _state = _states[stateId];
+                _current = stateId;
             }
 
             /// <summary>
@@ -298,17 +301,16 @@ namespace SmtpServer.Protocol
             /// <summary>
             /// Advances the enumerator to the next command in the stream.
             /// </summary>
+            /// <param name="context">The session context to use for making session based transitions.</param>
             /// <param name="tokenEnumerator">The token enumerator to accept the command from.</param>
             /// <param name="command">The command that is defined within the token enumerator.</param>
             /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
             /// <returns>true if a valid command was found, false if not.</returns>
-            public bool TryAccept(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+            public bool TryAccept(SmtpSessionContext context, TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
             {
-                // lookup the correct action
-                Tuple<State.TryMakeDelegate, SmtpState> action;
-                if (_state.Actions.TryGetValue(tokenEnumerator.Peek().Text, out action) == false)
+                if (_states[_current].Transitions.TryGetValue(tokenEnumerator.Peek().Text, out StateTransition transition) == false)
                 {
-                    var response = $"expected {String.Join("/", _state.Actions.Keys)}";
+                    var response = $"expected {String.Join("/", _states[_current].Transitions.Keys)}";
 
                     command = null;
                     errorResponse = new SmtpResponse(SmtpReplyCode.SyntaxError, response);
@@ -316,13 +318,13 @@ namespace SmtpServer.Protocol
                     return false;
                 }
 
-                if (action.Item1(tokenEnumerator, out command, out errorResponse) == false)
+                if (transition.Delegate(tokenEnumerator, out command, out errorResponse) == false)
                 {
                     return false;
                 }
-                
-                // transition to the next state
-                _state = _states[action.Item2];
+
+                _current = transition.Transition(context);
+
                 return true;
             }
 
@@ -343,8 +345,6 @@ namespace SmtpServer.Protocol
 
         class State : IEnumerable
         {
-            public delegate bool TryMakeDelegate(TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse errorResponse);
-
             /// <summary>
             /// Constructor.
             /// </summary>
@@ -352,7 +352,17 @@ namespace SmtpServer.Protocol
             public State(SmtpState stateId)
             {
                 StateId = stateId;
-                Actions = new Dictionary<string, Tuple<TryMakeDelegate, SmtpState>>(StringComparer.OrdinalIgnoreCase);
+                Transitions = new Dictionary<string, StateTransition>(StringComparer.OrdinalIgnoreCase);
+            }
+            
+            /// <summary>
+            /// Add a state action.
+            /// </summary>
+            /// <param name="command">The name of the SMTP command.</param>
+            /// <param name="tryMake">The function callback to create the command.</param>
+            public void Add(string command, TryMakeDelegate tryMake)
+            {
+                Add(command, tryMake, context => StateId);
             }
 
             /// <summary>
@@ -360,10 +370,21 @@ namespace SmtpServer.Protocol
             /// </summary>
             /// <param name="command">The name of the SMTP command.</param>
             /// <param name="tryMake">The function callback to create the command.</param>
-            /// <param name="transitionTo">The state to transition to.</param>
-            public void Add(string command, TryMakeDelegate tryMake, SmtpState? transitionTo = null)
+            /// <param name="transition">The state to transition to.</param>
+            public void Add(string command, TryMakeDelegate tryMake, SmtpState transition)
             {
-                Actions.Add(command, Tuple.Create(tryMake, transitionTo ?? StateId));
+                Add(command, tryMake, context => transition);
+            }
+
+            /// <summary>
+            /// Add a state action.
+            /// </summary>
+            /// <param name="command">The name of the SMTP command.</param>
+            /// <param name="tryMake">The function callback to create the command.</param>
+            /// <param name="transition">The function to determine the new state.</param>
+            public void Add(string command, TryMakeDelegate tryMake, Func<SmtpSessionContext, SmtpState> transition)
+            {
+                Transitions.Add(command, new StateTransition(tryMake, transition));
             }
 
             /// <summary>
@@ -375,7 +396,7 @@ namespace SmtpServer.Protocol
             public void Replace(string command, TryMakeDelegate tryMake, SmtpState? transitionTo = null)
             {
                 Remove(command);
-                Add(command, tryMake, transitionTo);
+                Add(command, tryMake, transitionTo ?? StateId);
             }
 
             /// <summary>
@@ -384,7 +405,7 @@ namespace SmtpServer.Protocol
             /// <param name="command">The command to clear.</param>
             public void Remove(string command)
             {
-                Actions.Remove(command);
+                Transitions.Remove(command);
             }
 
             /// <summary>
@@ -405,7 +426,35 @@ namespace SmtpServer.Protocol
             /// <summary>
             /// Gets the actions that are available to the state.
             /// </summary>
-            public Dictionary<string, Tuple<TryMakeDelegate, SmtpState>> Actions { get; }
+            public Dictionary<string, StateTransition> Transitions { get; }
+        }
+
+        #endregion
+
+        #region StateTransition
+
+        class StateTransition
+        {
+            /// <summary>
+            /// Constructor.
+            /// </summary>
+            /// <param name="delegate">The delegate to match the input.</param>
+            /// <param name="transition">The transition function to move from the previous state to the new state.</param>
+            public StateTransition(TryMakeDelegate @delegate, Func<SmtpSessionContext, SmtpState> transition)
+            {
+                Delegate = @delegate;
+                Transition = transition;
+            }
+
+            /// <summary>
+            /// The delegate to match the input.
+            /// </summary>
+            public TryMakeDelegate Delegate { get; }
+
+            /// <summary>
+            /// The transition function to move from the previous state to the new state.
+            /// </summary>
+            public Func<SmtpSessionContext, SmtpState> Transition { get; }
         }
 
         #endregion
