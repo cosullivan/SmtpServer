@@ -160,7 +160,8 @@ namespace SmtpServer.IO
                 throw new ArgumentNullException(nameof(client));
             }
 
-            return client.WriteAsync(encoding.GetBytes(text + Environment.NewLine), cancellationToken);
+            var newLine = new string(new[] {(char) 13, (char) 10});
+            return client.WriteAsync(encoding.GetBytes(text + newLine), cancellationToken);
         }
 
         /// <summary>
