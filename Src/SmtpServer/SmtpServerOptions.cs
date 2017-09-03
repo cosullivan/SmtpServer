@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Net;
@@ -89,6 +90,21 @@ namespace SmtpServer
         /// The supported SSL protocols.
         /// </summary>
         public SslProtocols SupportedSslProtocols { get; internal set; }
+
+        /// <summary>
+        /// The timeout to use when waiting for a command from the client.
+        /// </summary>
+        public TimeSpan CommandWaitTimeout { get; internal set; }
+
+        /// <summary>
+        /// The size of the buffer that is read from each call to the underlying network client.
+        /// </summary>
+        public int NetworkBufferSize { get; internal set; }
+
+        /// <summary>
+        /// The timeout on each individual buffer read.
+        /// </summary>
+        public TimeSpan NetworkBufferReadTimeout { get; internal set; }
 
         /// <summary>
         /// The logger instance to use.

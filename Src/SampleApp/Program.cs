@@ -1,9 +1,12 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using MimeKit;
 using MimeKit.Text;
 using SampleApp.Examples;
+using SmtpServer;
 using SmtpServer.Mail;
 
 namespace SampleApp
@@ -15,8 +18,8 @@ namespace SampleApp
             //SimpleExample.Run();
             //SessionTracingExample.Run();
             //SessionContextExample.Run();
-            //SimpleServerExample.Run();
-            SecureServerExample.Run();
+            SimpleServerExample.Run();
+            //SecureServerExample.Run();
         }
 
         //var cancellationTokenSource = new CancellationTokenSource();

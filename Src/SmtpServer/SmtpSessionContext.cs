@@ -22,12 +22,13 @@ namespace SmtpServer
         /// <summary>
         /// Constructor.
         /// </summary>
+        /// <param name="options">The server options.</param>
         /// <param name="tcpClient">The TCP client that the session is connected with.</param>
-        internal SmtpSessionContext(TcpClient tcpClient)
+        internal SmtpSessionContext(ISmtpServerOptions options, TcpClient tcpClient)
         {
             Transaction = new SmtpMessageTransaction();
             RemoteEndPoint = tcpClient.Client.RemoteEndPoint;
-            Client = new NetworkClient(tcpClient.GetStream());
+            Client = new NetworkClient(tcpClient.GetStream(), options.NetworkBufferSize, options.NetworkBufferReadTimeout);
             Properties = new Dictionary<string, object>();
         }
 

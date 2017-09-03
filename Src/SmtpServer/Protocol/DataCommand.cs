@@ -37,7 +37,6 @@ namespace SmtpServer.Protocol
 
             try
             {
-                // store the transaction
                 using (var container = new DisposableContainer<IMessageStore>(Options.MessageStoreFactory.CreateInstance(context)))
                 {
                     var response = await container.Instance.SaveAsync(context, context.Transaction, cancellationToken).ConfigureAwait(false);

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -63,6 +64,21 @@ namespace SmtpServer
         /// The supported SSL protocols.
         /// </summary>
         SslProtocols SupportedSslProtocols { get; }
+
+        /// <summary>
+        /// The timeout to use when waiting for a command from the client.
+        /// </summary>
+        TimeSpan CommandWaitTimeout { get; }
+
+        /// <summary>
+        /// The size of the buffer that is read from each call to the underlying network client.
+        /// </summary>
+        int NetworkBufferSize { get; }
+
+        /// <summary>
+        /// The timeout on each individual buffer read.
+        /// </summary>
+        TimeSpan NetworkBufferReadTimeout { get; }
 
         /// <summary>
         /// The logger instance to use.

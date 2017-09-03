@@ -27,7 +27,7 @@ namespace SmtpServer
         {
             _options = options;
             _tcpClient = tcpClient;
-            _context = new SmtpSessionContext(tcpClient);
+            _context = new SmtpSessionContext(options, tcpClient);
             _stateMachine = new SmtpStateMachine(options, _context);
         }
 
@@ -83,8 +83,17 @@ namespace SmtpServer
 
             while (retries-- > 0 && context.IsQuitRequested == false && cancellationToken.IsCancellationRequested == false)
             {
-                var text = await context.Client.ReadLineAsync(cancellationToken).ReturnOnAnyThread();
-
+                IReadOnlyList<ArraySegment<byte>> text;
+                try
+                {
+                    text = await context.Client.ReadLineAsync(_options.CommandWaitTimeout, cancellationToken).ReturnOnAnyThread();
+                }
+                catch (TimeoutException)
+                {
+                    await context.Client.ReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "Timeout whilst waiting for input."), cancellationToken);
+                    return;
+                }
+                
                 if (TryAccept(context, text, out SmtpCommand command, out SmtpResponse response))
                 {
                     try

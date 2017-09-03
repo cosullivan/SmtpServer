@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using SmtpServer.Authentication;
@@ -12,6 +13,9 @@ namespace SmtpServer
         {
             MaxRetryCount = 5,
             SupportedSslProtocols = SslProtocols.Tls,
+            NetworkBufferSize = 128,
+            NetworkBufferReadTimeout = TimeSpan.FromMinutes(2),
+            CommandWaitTimeout = TimeSpan.FromMinutes(5),
             Logger = new NullLogger()
         };
 
@@ -169,6 +173,42 @@ namespace SmtpServer
         public OptionsBuilder SupportedSslProtocols(SslProtocols sslProtocols)
         {
             _options.SupportedSslProtocols = sslProtocols;
+
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the size of the buffer for each read operation.
+        /// </summary>
+        /// <param name="size">The buffer size for each read operation.</param>
+        /// <returns>An OptionsBuilder to continue building on.</returns>
+        public OptionsBuilder NetworkBufferSize(int size)
+        {
+            _options.NetworkBufferSize = size;
+
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the timeout for each network buffer read operation.
+        /// </summary>
+        /// <param name="timeout">The timeout to use whilst waiting for each network buffer read.</param>
+        /// <returns>An OptionsBuilder to continue building on.</returns>
+        public OptionsBuilder NetworkBufferReadTimeout(TimeSpan timeout)
+        {
+            _options.NetworkBufferReadTimeout = timeout;
+
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the timeout to use whilst waiting for a command from the client.
+        /// </summary>
+        /// <param name="timeout">The timeout to use whilst waiting for a command from the client.</param>
+        /// <returns>An OptionsBuilder to continue building on.</returns>
+        public OptionsBuilder CommandWaitTimeout(TimeSpan timeout)
+        {
+            _options.CommandWaitTimeout = timeout;
 
             return this;
         }

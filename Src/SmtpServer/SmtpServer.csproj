@@ -4,7 +4,7 @@
     <TargetFrameworks>net45;netstandard1.3</TargetFrameworks>
     <AssemblyName>SmtpServer</AssemblyName>
     <RootNamespace>SmtpServer</RootNamespace>
-    <Version>4.2.1</Version>
+    <Version>4.3.0-Beta1</Version>
     <Description>.NET SmtpServer</Description>
     <Authors>Cain O'Sullivan</Authors>
     <Company />
@@ -14,9 +14,9 @@
     <PackageTags>Smtp SmtpServer</PackageTags>
     <PackageLicenseUrl>https://raw.githubusercontent.com/cosullivan/SmtpServer/master/LICENSE</PackageLicenseUrl>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-    <AssemblyVersion>4.2.1.0</AssemblyVersion>
-    <FileVersion>4.2.1.0</FileVersion>
-    <PackageReleaseNotes>Fixed a bug whereby if the RSET command issued after a MAIL command then the state wasnt being reset correctly to allow for a new MAIL command to be sent.
+    <AssemblyVersion>4.3.0.0</AssemblyVersion>
+    <FileVersion>4.3.0.0</FileVersion>
+    <PackageReleaseNotes>Added timeouts to the network operations waiting for the client and exposed that configuration via the OptionsBuilder.
 </PackageReleaseNotes>
   </PropertyGroup>
 

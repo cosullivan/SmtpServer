@@ -2,9 +2,11 @@
 using System.IO;
 using System.Net;
 using System.Net.Security;
+using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
+using System.Threading.Tasks;
 using MailKit;
 using SmtpServer.Mail;
 using SmtpServer.Tests.Mocks;
@@ -101,6 +103,26 @@ namespace SmtpServer.Tests
                 Assert.Equal("test2@test.com", MessageStore.Messages[0].To[0].AsAddress());
                 Assert.Equal("test3@test.com", MessageStore.Messages[0].To[1].AsAddress());
                 Assert.Equal("test4@test.com", MessageStore.Messages[0].To[2].AsAddress());
+            }
+        }
+
+        [Fact]
+        public void WillTimeoutWaitingForCommand()
+        {
+            using (CreateServer(c => c.CommandWaitTimeout(TimeSpan.FromSeconds(1))))
+            {
+                var client = MailClient.Client();
+                client.NoOp();
+
+                for (var i = 0; i < 5; i++)
+                {
+                    Task.Delay(TimeSpan.FromMilliseconds(250)).Wait();
+                    client.NoOp();
+                }
+
+                Task.Delay(TimeSpan.FromSeconds(2)).Wait();
+
+                Assert.Throws<IOException>(() => client.NoOp());
             }
         }
 

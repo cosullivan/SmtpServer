@@ -80,5 +80,28 @@ namespace SmtpServer
 
             return await task.ConfigureAwait(false);
         }
+
+        /// <summary>
+        /// Configures the task to stop waiting when the cancellation has been requested.
+        /// </summary>
+        /// <typeparam name="T">The return type of the task.</typeparam>
+        /// <param name="task">The task to wait for.</param>
+        /// <param name="timeout">The timeout to apply to the task.</param>
+        /// <param name="cancellationToken">The cancellation token to watch.</param>
+        /// <returns>The original task.</returns>
+        public static async Task<T> WithTimeout<T>(this Task<T> task, TimeSpan timeout, CancellationToken cancellationToken)
+        {
+            if (task != await Task.WhenAny(task, Task.Delay(timeout, cancellationToken)))
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    throw new OperationCanceledException(cancellationToken);
+                }
+
+                throw new TimeoutException();
+            }
+
+            return await task.ConfigureAwait(false);
+        }
     }
 }

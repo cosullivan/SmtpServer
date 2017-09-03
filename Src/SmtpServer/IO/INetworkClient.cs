@@ -94,6 +94,23 @@ namespace SmtpServer.IO
         /// Read a line from the byte stream.
         /// </summary>
         /// <param name="client">The stream to read a line from.</param>
+        /// <param name="timeout">The timeout to use whilst waiting for a line to be read.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The string that was read from the stream.</returns>
+        public static Task<IReadOnlyList<ArraySegment<byte>>> ReadLineAsync(this INetworkClient client, TimeSpan timeout, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (client == null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
+            return ReadLineAsync(client, cancellationToken).WithTimeout(timeout, cancellationToken);
+        }
+
+        /// <summary>
+        /// Read a line from the byte stream.
+        /// </summary>
+        /// <param name="client">The stream to read a line from.</param>
         /// <param name="encoding">The encoding to use when converting to a string representation.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The string that was read from the stream.</returns>
