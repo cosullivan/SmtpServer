@@ -11,7 +11,7 @@
     <Copyright>2017</Copyright>
     <RepositoryUrl>https://github.com/cosullivan/SmtpServer</RepositoryUrl>
     <PackageProjectUrl>http://cainosullivan.com/smtpserver</PackageProjectUrl>
-    <PackageTags>Smtp SmtpServer</PackageTags>
+    <PackageTags>smtp smtpserver smtp server</PackageTags>
     <PackageLicenseUrl>https://raw.githubusercontent.com/cosullivan/SmtpServer/master/LICENSE</PackageLicenseUrl>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <AssemblyVersion>4.3.0.0</AssemblyVersion>
