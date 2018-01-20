@@ -31,7 +31,7 @@ namespace SmtpServer.Protocol
                 return;
             }
 
-            await context.Client.ReplyAsync(new SmtpResponse(SmtpReplyCode.StartMailInput, "end with <CRLF>.<CRLF>"), cancellationToken).ConfigureAwait(false);
+            await context.Client.ReplyAsync(new SmtpResponse(SmtpReplyCode.StartMailInput, "Receive message content; end with <CRLF>.<CRLF>"), cancellationToken).ConfigureAwait(false);
 
             context.Transaction.Message = await ReadMessageAsync(context, cancellationToken).ConfigureAwait(false);
 
