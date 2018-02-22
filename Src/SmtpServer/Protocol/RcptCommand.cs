@@ -26,25 +26,26 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="context">The execution context to operate on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task which asynchronously performs the execution.</returns>
-        internal override async Task ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
+        /// <returns>Returns true if the command executed successfully such that the transition to the next state should occurr, false 
+        /// if the current state is to be maintained.</returns>
+        internal override async Task<bool> ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
             using (var container = new DisposableContainer<IMailboxFilter>(Options.MailboxFilterFactory.CreateInstance(context)))
             {
-                switch (await container.Instance.CanDeliverToAsync(context, Address, context.Transaction.From, cancellationToken))
+                switch (await container.Instance.CanDeliverToAsync(context, Address, context.Transaction.From, cancellationToken).ReturnOnAnyThread())
                 {
                     case MailboxFilterResult.Yes:
                         context.Transaction.To.Add(Address);
-                        await context.Client.ReplyAsync(SmtpResponse.Ok, cancellationToken);
-                        return;
+                        await context.Client.ReplyAsync(SmtpResponse.Ok, cancellationToken).ReturnOnAnyThread();
+                        return true;
 
                     case MailboxFilterResult.NoTemporarily:
-                        await context.Client.ReplyAsync(SmtpResponse.MailboxUnavailable, cancellationToken);
-                        return;
+                        await context.Client.ReplyAsync(SmtpResponse.MailboxUnavailable, cancellationToken).ReturnOnAnyThread();
+                        return false;
 
                     case MailboxFilterResult.NoPermanently:
-                        await context.Client.ReplyAsync(SmtpResponse.MailboxNameNotAllowed, cancellationToken);
-                        return;
+                        await context.Client.ReplyAsync(SmtpResponse.MailboxNameNotAllowed, cancellationToken).ReturnOnAnyThread();
+                        return false;
                 }
             }
 

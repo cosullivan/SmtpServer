@@ -90,11 +90,14 @@ namespace SmtpServer
                     return;
                 }
 
-                if (TryAccept(context, text, out SmtpCommand command, out SmtpResponse response))
+                if (TryMake(context, text, out SmtpCommand command, out SmtpResponse response))
                 {
                     try
                     {
-                        await ExecuteAsync(command, context, cancellationToken).ReturnOnAnyThread();
+                        if (await ExecuteAsync(command, context, cancellationToken).ReturnOnAnyThread())
+                        {
+                            _stateMachine.Transition(context);
+                        }
 
                         retries = _options.MaxRetryCount;
 
@@ -160,11 +163,11 @@ namespace SmtpServer
         /// <param name="command">The command that was found.</param>
         /// <param name="errorResponse">The error response that indicates why a command could not be accepted.</param>
         /// <returns>true if a valid command was found, false if not.</returns>
-        bool TryAccept(SmtpSessionContext context, IReadOnlyList<ArraySegment<byte>> segments, out SmtpCommand command, out SmtpResponse errorResponse)
+        bool TryMake(SmtpSessionContext context, IReadOnlyList<ArraySegment<byte>> segments, out SmtpCommand command, out SmtpResponse errorResponse)
         {
             var tokenEnumerator = new TokenEnumerator(new ByteArrayTokenReader(segments));
 
-            return _stateMachine.TryAccept(context, tokenEnumerator, out command, out errorResponse);
+            return _stateMachine.TryMake(context, tokenEnumerator, out command, out errorResponse);
         }
 
         /// <summary>
@@ -174,7 +177,7 @@ namespace SmtpServer
         /// <param name="context">The execution context to operate on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which asynchronously performs the execution.</returns>
-        Task ExecuteAsync(SmtpCommand command, SmtpSessionContext context, CancellationToken cancellationToken)
+        Task<bool> ExecuteAsync(SmtpCommand command, SmtpSessionContext context, CancellationToken cancellationToken)
         {
             context.RaiseCommandExecuting(command);
 

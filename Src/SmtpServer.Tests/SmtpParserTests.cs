@@ -171,7 +171,9 @@ namespace SmtpServer.Tests
             // assert
             Assert.True(result);
             Assert.True(command is MailCommand);
-            Assert.Null(((MailCommand)command).Address);
+            Assert.NotNull(((MailCommand)command).Address);
+            Assert.Equal(String.Empty, ((MailCommand)command).Address.Host);
+            Assert.Equal(String.Empty, ((MailCommand)command).Address.User);
         }
 
         [Fact]
@@ -186,7 +188,9 @@ namespace SmtpServer.Tests
             // assert
             Assert.True(result);
             Assert.True(command is MailCommand);
-            Assert.Null(((MailCommand)command).Address);
+            Assert.NotNull(((MailCommand)command).Address);
+            Assert.Equal(String.Empty, ((MailCommand)command).Address.Host);
+            Assert.Equal(String.Empty, ((MailCommand)command).Address.User);
         }
 
         [Theory]

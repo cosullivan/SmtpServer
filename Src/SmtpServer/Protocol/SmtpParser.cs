@@ -380,7 +380,7 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            mailbox = null;
+            mailbox = Mailbox.Empty;
 
             return true;
         }
@@ -393,7 +393,7 @@ namespace SmtpServer.Protocol
         /// <remarks><![CDATA["<" [ A-d-l ":" ] Mailbox ">"]]></remarks>
         public bool TryMakePath(out IMailbox mailbox)
         {
-            mailbox = null;
+            mailbox = Mailbox.Empty;
 
             if (Enumerator.Take() != Tokens.LessThan)
             {
@@ -481,7 +481,7 @@ namespace SmtpServer.Protocol
         /// <remarks><![CDATA[Local-part "@" ( Domain / address-literal )]]></remarks>
         public bool TryMakeMailbox(out IMailbox mailbox)
         {
-            mailbox = null;
+            mailbox = Mailbox.Empty;
 
             if (TryMake(TryMakeLocalPart, out string localpart) == false)
             {

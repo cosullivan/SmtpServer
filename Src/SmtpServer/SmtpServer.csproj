@@ -4,7 +4,7 @@
     <TargetFrameworks>net45;netstandard1.3</TargetFrameworks>
     <AssemblyName>SmtpServer</AssemblyName>
     <RootNamespace>SmtpServer</RootNamespace>
-    <Version>4.3.0-Beta2</Version>
+    <Version>4.4.0</Version>
     <Description>.NET SmtpServer</Description>
     <Authors>Cain O'Sullivan</Authors>
     <Company />
@@ -14,9 +14,9 @@
     <PackageTags>Smtp SmtpServer</PackageTags>
     <PackageLicenseUrl>https://raw.githubusercontent.com/cosullivan/SmtpServer/master/LICENSE</PackageLicenseUrl>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-    <AssemblyVersion>4.3.0.0</AssemblyVersion>
-    <FileVersion>4.3.0.0</FileVersion>
-    <PackageReleaseNotes>Added timeouts to the network operations waiting for the client and exposed that configuration via the OptionsBuilder.
+    <AssemblyVersion>4.4.0.0</AssemblyVersion>
+    <FileVersion>4.4.0.0</FileVersion>
+    <PackageReleaseNotes>Fixed a bug whereby returning a non success code from a mailbox filter would still transition to the next state.
 </PackageReleaseNotes>
   </PropertyGroup>
 

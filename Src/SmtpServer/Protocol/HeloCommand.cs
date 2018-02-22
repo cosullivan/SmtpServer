@@ -23,12 +23,15 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="context">The execution context to operate on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task which asynchronously performs the execution.</returns>
-        internal override Task ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
+        /// <returns>Returns true if the command executed successfully such that the transition to the next state should occurr, false 
+        /// if the current state is to be maintained.</returns>
+        internal override async Task<bool> ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
             var response = new SmtpResponse(SmtpReplyCode.Ok, $"Hello {Domain}, haven't we met before?");
 
-            return context.Client.ReplyAsync(response, cancellationToken);
+            await context.Client.ReplyAsync(response, cancellationToken).ReturnOnAnyThread();
+
+            return true;
         }
 
         /// <summary>

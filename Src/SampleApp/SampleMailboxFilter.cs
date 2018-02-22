@@ -23,6 +23,11 @@ namespace SampleApp
             int size,
             CancellationToken cancellationToken)
         {
+            if (@from == Mailbox.Empty)
+            {
+                return Task.FromResult(MailboxFilterResult.NoPermanently);
+            }
+
             var endpoint = (IPEndPoint) context.RemoteEndPoint;
             
             if (endpoint.Address.Equals(IPAddress.Parse("127.0.0.1")))

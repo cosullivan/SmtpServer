@@ -25,8 +25,9 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="context">The execution context to operate on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task which asynchronously performs the execution.</returns>
-        internal override async Task ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
+        /// <returns>Returns true if the command executed successfully such that the transition to the next state should occurr, false 
+        /// if the current state is to be maintained.</returns>
+        internal override async Task<bool> ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
             var greeting = $"{Options.ServerName} Hello {DomainOrAddress}, haven't we met before?";
             var output = new[] { greeting }.Union(GetExtensions(context)).ToArray();
@@ -38,6 +39,8 @@ namespace SmtpServer.Protocol
 
             await context.Client.WriteLineAsync($"250 {output[output.Length - 1]}", cancellationToken);
             await context.Client.FlushAsync(cancellationToken);
+
+            return true;
         }
 
         /// <summary>

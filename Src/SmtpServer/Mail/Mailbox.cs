@@ -4,6 +4,8 @@ namespace SmtpServer.Mail
 {
     public sealed class Mailbox : IMailbox
     {
+        public static readonly IMailbox Empty = new Mailbox(String.Empty, String.Empty);
+
         /// <summary>
         /// Constructor.
         /// </summary>

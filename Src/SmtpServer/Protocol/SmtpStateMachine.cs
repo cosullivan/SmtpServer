@@ -131,11 +131,20 @@ namespace SmtpServer.Protocol
         /// <param name="command">The command that was found.</param>
         /// <param name="errorResponse">The error response that indicates why a command could not be accepted.</param>
         /// <returns>true if a valid command was found, false if not.</returns>
-        public bool TryAccept(SmtpSessionContext context, TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        public bool TryMake(SmtpSessionContext context, TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return _stateTable.TryAccept(context, tokenEnumerator, out command, out errorResponse);
+            return _stateTable.TryMake(context, tokenEnumerator, out command, out errorResponse);
         }
-        
+
+        /// <summary>
+        /// Accept the state and transition to the new state.
+        /// </summary>
+        /// <param name="context">The session context to use for accepting session based transitions.</param>
+        public void Transition(SmtpSessionContext context)
+        {
+            _stateTable.Transition(context);
+        }
+
         /// <summary>
         /// Try to make a HELO command.
         /// </summary>
@@ -272,6 +281,7 @@ namespace SmtpServer.Protocol
         {
             readonly Dictionary<SmtpState, State> _states = new Dictionary<SmtpState, State>();
             SmtpState _current;
+            StateTransition _transition;
 
             /// <summary>
             /// Sets the initial state.
@@ -306,9 +316,9 @@ namespace SmtpServer.Protocol
             /// <param name="command">The command that is defined within the token enumerator.</param>
             /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
             /// <returns>true if a valid command was found, false if not.</returns>
-            public bool TryAccept(SmtpSessionContext context, TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+            public bool TryMake(SmtpSessionContext context, TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
             {
-                if (_states[_current].Transitions.TryGetValue(tokenEnumerator.Peek().Text, out StateTransition transition) == false)
+                if (_states[_current].Transitions.TryGetValue(tokenEnumerator.Peek().Text, out _transition) == false)
                 {
                     var response = $"expected {String.Join("/", _states[_current].Transitions.Keys)}";
 
@@ -318,14 +328,21 @@ namespace SmtpServer.Protocol
                     return false;
                 }
 
-                if (transition.Delegate(tokenEnumerator, out command, out errorResponse) == false)
+                if (_transition.Delegate(tokenEnumerator, out command, out errorResponse) == false)
                 {
                     return false;
                 }
 
-                _current = transition.Transition(context);
-
                 return true;
+            }
+
+            /// <summary>
+            /// Accept the state and transition to the new state.
+            /// </summary>
+            /// <param name="context">The session context to use for accepting session based transitions.</param>
+            public void Transition(SmtpSessionContext context)
+            {
+                _current = _transition.Transition(context);
             }
 
             /// <summary>

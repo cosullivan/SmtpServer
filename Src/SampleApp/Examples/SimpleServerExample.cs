@@ -14,7 +14,7 @@ namespace SampleApp.Examples
             var options = new OptionsBuilder()
                 .ServerName("SmtpServer SampleApp")
                 .Port(9025)
-                .CommandWaitTimeout(TimeSpan.FromSeconds(10))
+                .CommandWaitTimeout(TimeSpan.FromSeconds(100))
                 .Build();
 
             var server = new SmtpServer.SmtpServer(options);

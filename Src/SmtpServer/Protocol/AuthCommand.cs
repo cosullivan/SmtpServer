@@ -33,8 +33,9 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="context">The execution context to operate on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task which asynchronously performs the execution.</returns>
-        internal override async Task ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
+        /// <returns>Returns true if the command executed successfully such that the transition to the next state should occurr, false 
+        /// if the current state is to be maintained.</returns>
+        internal override async Task<bool> ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
             context.IsAuthenticated = false;
 
@@ -44,7 +45,7 @@ namespace SmtpServer.Protocol
                     if (await TryPlainAsync(context, cancellationToken).ReturnOnAnyThread() == false)
                     {
                         await context.Client.ReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ReturnOnAnyThread();
-                        return;
+                        return false;
                     }
                     break;
 
@@ -52,7 +53,7 @@ namespace SmtpServer.Protocol
                     if (await TryLoginAsync(context, cancellationToken).ReturnOnAnyThread() == false)
                     {
                         await context.Client.ReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ReturnOnAnyThread();
-                        return;
+                        return false;
                     }
                     break;
             }
@@ -62,7 +63,7 @@ namespace SmtpServer.Protocol
                 if (await container.Instance.AuthenticateAsync(context, _user, _password, cancellationToken).ReturnOnAnyThread() == false)
                 {
                     await context.Client.ReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ReturnOnAnyThread();
-                    return;
+                    return false;
                 }
             }
 
@@ -70,6 +71,8 @@ namespace SmtpServer.Protocol
 
             context.IsAuthenticated = true;
             context.RaiseSessionAuthenticated();
+
+            return true;
         }
 
         /// <summary>
