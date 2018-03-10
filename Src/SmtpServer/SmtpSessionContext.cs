@@ -24,11 +24,13 @@ namespace SmtpServer
         /// </summary>
         /// <param name="options">The server options.</param>
         /// <param name="tcpClient">The TCP client that the session is connected with.</param>
-        internal SmtpSessionContext(ISmtpServerOptions options, TcpClient tcpClient)
+        /// <param name="networkClient">The network client to use for communications.</param>
+        internal SmtpSessionContext(ISmtpServerOptions options, TcpClient tcpClient, INetworkClient networkClient)
         {
+            ServerOptions = options;
             Transaction = new SmtpMessageTransaction();
             RemoteEndPoint = tcpClient.Client.RemoteEndPoint;
-            Client = new NetworkClient(tcpClient.GetStream(), options.NetworkBufferSize, options.NetworkBufferReadTimeout);
+            NetworkClient = networkClient;
             Properties = new Dictionary<string, object>();
         }
 
@@ -50,9 +52,14 @@ namespace SmtpServer
         }
 
         /// <summary>
+        /// Gets the options that the server was created with.
+        /// </summary>
+        public ISmtpServerOptions ServerOptions { get; }
+
+        /// <summary>
         /// Gets the text stream to read from and write to.
         /// </summary>
-        public INetworkClient Client { get; }
+        public INetworkClient NetworkClient { get; }
 
         /// <summary>
         /// Gets the current transaction.
@@ -63,11 +70,6 @@ namespace SmtpServer
         /// Gets the remote endpoint of the client.
         /// </summary>
         public EndPoint RemoteEndPoint { get; }
-
-        /// <summary>
-        /// Returns a value indicating whether or not the current session is secure.
-        /// </summary>
-        public bool IsSecure { get; internal set; }
 
         /// <summary>
         /// Returns a value indicating whether or nor the current session is authenticated.

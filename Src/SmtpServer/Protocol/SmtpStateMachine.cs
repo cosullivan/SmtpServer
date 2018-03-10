@@ -30,8 +30,8 @@ namespace SmtpServer.Protocol
                     { NoopCommand.Command, TryMakeNoop },
                     { RsetCommand.Command, TryMakeRset },
                     { QuitCommand.Command, TryMakeQuit },
-                    { HeloCommand.Command, TryMakeHelo, SmtpState.WaitingForMail },
-                    { EhloCommand.Command, TryMakeEhlo, SmtpState.WaitingForMail },
+                    { HeloCommand.Command, TryMakeHelo, c => c.NetworkClient.IsSecure ? SmtpState.WaitingForMailSecure : SmtpState.WaitingForMail },
+                    { EhloCommand.Command, TryMakeEhlo, c => c.NetworkClient.IsSecure ? SmtpState.WaitingForMailSecure : SmtpState.WaitingForMail },
                 },
                 new State(SmtpState.WaitingForMail)
                 {
@@ -55,14 +55,14 @@ namespace SmtpServer.Protocol
                 new State(SmtpState.WithinTransaction)
                 {
                     { NoopCommand.Command, TryMakeNoop },
-                    { RsetCommand.Command, TryMakeRset, c => c.IsSecure ? SmtpState.WaitingForMailSecure : SmtpState.WaitingForMail },
+                    { RsetCommand.Command, TryMakeRset, c => c.NetworkClient.IsSecure ? SmtpState.WaitingForMailSecure : SmtpState.WaitingForMail },
                     { QuitCommand.Command, TryMakeQuit },
                     { RcptCommand.Command, TryMakeRcpt, SmtpState.CanAcceptData },
                 },
                 new State(SmtpState.CanAcceptData)
                 {
                     { NoopCommand.Command, TryMakeNoop },
-                    { RsetCommand.Command, TryMakeRset, c => c.IsSecure ? SmtpState.WaitingForMailSecure : SmtpState.WaitingForMail },
+                    { RsetCommand.Command, TryMakeRset, c => c.NetworkClient.IsSecure ? SmtpState.WaitingForMailSecure : SmtpState.WaitingForMail },
                     { QuitCommand.Command, TryMakeQuit },
                     { RcptCommand.Command, TryMakeRcpt },
                     { DataCommand.Command, TryMakeData, SmtpState.WaitingForMail },
@@ -80,7 +80,7 @@ namespace SmtpServer.Protocol
                 WaitingForMailSecure.Replace(MailCommand.Command, MakeResponse(SmtpResponse.AuthenticationRequired));
             }
 
-            if (options.ServerCertificate != null)
+            if (options.ServerCertificate != null && context.NetworkClient.IsSecure == false)
             {
                 WaitingForMail.Add(StartTlsCommand.Command, TryMakeStartTls, SmtpState.WaitingForMailSecure);
             }

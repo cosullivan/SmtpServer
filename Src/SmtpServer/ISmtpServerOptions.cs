@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using SmtpServer.Authentication;
@@ -33,7 +32,7 @@ namespace SmtpServer
         /// <summary>
         /// Gets the collection of endpoints to listen on.
         /// </summary>
-        IReadOnlyCollection<IPEndPoint> Endpoints { get; }
+        IReadOnlyList<IEndpointDefinition> Endpoints { get; }
 
         /// <summary>
         /// Gets the message store factory to use.

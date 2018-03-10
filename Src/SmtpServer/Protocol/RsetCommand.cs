@@ -25,7 +25,7 @@ namespace SmtpServer.Protocol
         {
             context.Transaction.Reset();
 
-            await context.Client.ReplyAsync(SmtpResponse.Ok, cancellationToken).ReturnOnAnyThread();
+            await context.NetworkClient.ReplyAsync(SmtpResponse.Ok, cancellationToken).ReturnOnAnyThread();
 
             return true;
         }

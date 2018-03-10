@@ -29,7 +29,7 @@ namespace SmtpServer.Protocol
         {
             var response = new SmtpResponse(SmtpReplyCode.Ok, $"Hello {Domain}, haven't we met before?");
 
-            await context.Client.ReplyAsync(response, cancellationToken).ReturnOnAnyThread();
+            await context.NetworkClient.ReplyAsync(response, cancellationToken).ReturnOnAnyThread();
 
             return true;
         }

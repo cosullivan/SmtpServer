@@ -12,7 +12,8 @@ namespace SampleApp
             string user = null, 
             string password = null,
             MimeEntity body = null,
-            int count = 1)
+            int count = 1,
+            bool useSsl = false)
         {
             var message = new MimeMessage();
 
@@ -26,7 +27,7 @@ namespace SampleApp
 
             using (var client = new SmtpClient())
             {
-                client.Connect("localhost", 9025);
+                client.Connect("localhost", 9025, useSsl);
 
                 if (user != null && password != null)
                 {

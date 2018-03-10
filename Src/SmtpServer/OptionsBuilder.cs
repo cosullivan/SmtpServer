@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Net;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using SmtpServer.Authentication;
@@ -55,13 +54,13 @@ namespace SmtpServer
         }
 
         /// <summary>
-        /// Adds an endpoint to listen on.
+        /// Adds a definition for an endpoint to listen on.
         /// </summary>
-        /// <param name="endpoint">The endpoint to listen on.</param>
+        /// <param name="endpointDefinition">The endpoint to listen on.</param>
         /// <returns>A OptionsBuilder to continue building on.</returns>
-        public OptionsBuilder Endpoint(IPEndPoint endpoint)
+        public OptionsBuilder Endpoint(IEndpointDefinition endpointDefinition)
         {
-            _options.Endpoints.Add(endpoint);
+            _options.Endpoints.Add(endpointDefinition);
 
             return this;
         }
@@ -75,8 +74,21 @@ namespace SmtpServer
         {
             foreach (var port in ports)
             {
-                _options.Endpoints.Add(new IPEndPoint(IPAddress.Any, port));
+                _options.Endpoints.Add(new EndpointDefinitionBuilder().Port(port).Build());
             }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Adds an endpoint with the given port.
+        /// </summary>
+        /// <param name="port">The port to add as the endpoint.</param>
+        /// <param name="isSecure">Indicates whether the port is secure by default.</param>
+        /// <returns>A OptionsBuilder to continue building on.</returns>
+        public OptionsBuilder Port(int port, bool isSecure)
+        {
+            _options.Endpoints.Add(new EndpointDefinitionBuilder().Port(port).IsSecure(isSecure).Build());
 
             return this;
         }

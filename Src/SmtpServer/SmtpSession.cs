@@ -17,17 +17,18 @@ namespace SmtpServer
         readonly SmtpStateMachine _stateMachine;
         readonly SmtpSessionContext _context;
         TaskCompletionSource<bool> _taskCompletionSource;
-        
+
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="options">The SMTP server options.</param>
         /// <param name="tcpClient">The TCP client to operate the session on.</param>
-        internal SmtpSession(ISmtpServerOptions options, TcpClient tcpClient)
+        /// <param name="networkClient">The network client to use for communications.</param>
+        internal SmtpSession(ISmtpServerOptions options, TcpClient tcpClient, INetworkClient networkClient)
         {
             _options = options;
             _tcpClient = tcpClient;
-            _context = new SmtpSessionContext(options, tcpClient);
+            _context = new SmtpSessionContext(options, tcpClient, networkClient);
             _stateMachine = new SmtpStateMachine(options, _context);
         }
 
@@ -111,12 +112,12 @@ namespace SmtpServer
                     }
                     catch (OperationCanceledException)
                     {
-                        await context.Client.ReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "The session has be cancelled."), cancellationToken);
+                        await context.NetworkClient.ReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "The session has be cancelled."), cancellationToken);
                         return;
                     }
                 }
 
-                await context.Client.ReplyAsync(CreateErrorResponse(response, retries), cancellationToken);
+                await context.NetworkClient.ReplyAsync(CreateErrorResponse(response, retries), cancellationToken);
             }
         }
 
@@ -130,15 +131,15 @@ namespace SmtpServer
         {
             try
             {
-                return await context.Client.ReadLineAsync(_options.CommandWaitTimeout, cancellationToken).ReturnOnAnyThread();
+                return await context.NetworkClient.ReadLineAsync(_options.CommandWaitTimeout, cancellationToken).ReturnOnAnyThread();
             }
             catch (TimeoutException)
             {
-                await context.Client.ReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "Timeout whilst waiting for input."), cancellationToken);
+                await context.NetworkClient.ReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "Timeout whilst waiting for input."), cancellationToken);
             }
             catch (OperationCanceledException)
             {
-                await context.Client.ReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "The session has be cancelled."), cancellationToken);
+                await context.NetworkClient.ReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "The session has be cancelled."), cancellationToken);
             }
 
             return null;
@@ -193,8 +194,8 @@ namespace SmtpServer
         {
             var version = typeof(SmtpSession).GetTypeInfo().Assembly.GetName().Version;
 
-            await Context.Client.WriteLineAsync($"220 {_options.ServerName} v{version} ESMTP ready", cancellationToken).ReturnOnAnyThread();
-            await Context.Client.FlushAsync(cancellationToken).ReturnOnAnyThread();
+            await Context.NetworkClient.WriteLineAsync($"220 {_options.ServerName} v{version} ESMTP ready", cancellationToken).ReturnOnAnyThread();
+            await Context.NetworkClient.FlushAsync(cancellationToken).ReturnOnAnyThread();
         }
 
         /// <summary>
@@ -202,12 +203,9 @@ namespace SmtpServer
         /// </summary>
         public void Dispose()
         {
-            Context.Client.Dispose();
+            Context.NetworkClient.Dispose();
 
             ((IDisposable)_tcpClient).Dispose();
-//#if !NETSTANDARD1_6
-//            _taskCompletionSource.Task.Dispose();
-//#endif
         }
 
         /// <summary>

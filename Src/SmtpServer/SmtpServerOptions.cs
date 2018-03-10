@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
-using System.Net;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using SmtpServer.Authentication;
@@ -12,8 +10,14 @@ namespace SmtpServer
 {
     internal sealed class SmtpServerOptions : ISmtpServerOptions
     {
-        readonly Collection<IPEndPoint> _endpoints = new Collection<IPEndPoint>();
-        readonly Collection<IMailboxFilterFactory> _mailboxFilterFactories = new Collection<IMailboxFilterFactory>();
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public SmtpServerOptions()
+        {
+            Endpoints = new List<IEndpointDefinition>();
+            MailboxFilterFactories = new List<IMailboxFilterFactory>();
+        }
 
         /// <summary>
         /// Gets or sets the maximum size of a message.
@@ -38,17 +42,17 @@ namespace SmtpServer
         /// <summary>
         /// Gets or sets the endpoint to listen on.
         /// </summary>
-        internal Collection<IPEndPoint> Endpoints => _endpoints;
+        internal List<IEndpointDefinition> Endpoints { get; }
 
         /// <summary>
         /// Gets or sets the endpoint to listen on.
         /// </summary>
-        IReadOnlyCollection<IPEndPoint> ISmtpServerOptions.Endpoints => new ReadOnlyCollection<IPEndPoint>(_endpoints);
+        IReadOnlyList<IEndpointDefinition> ISmtpServerOptions.Endpoints => Endpoints;
 
         /// <summary>
         /// Gets or sets the mailbox filter factories to use.
         /// </summary>
-        internal Collection<IMailboxFilterFactory> MailboxFilterFactories => _mailboxFilterFactories;
+        internal List<IMailboxFilterFactory> MailboxFilterFactories { get; }
 
         /// <summary>
         /// Gets the message store factory to use.
@@ -62,12 +66,12 @@ namespace SmtpServer
         {
             get
             {
-                if (_mailboxFilterFactories.Count == 1)
+                if (MailboxFilterFactories.Count == 1)
                 {
-                    return _mailboxFilterFactories.First();
+                    return MailboxFilterFactories.First();
                 }
 
-                return new CompositeMailboxFilterFactory(_mailboxFilterFactories.ToArray());
+                return new CompositeMailboxFilterFactory(MailboxFilterFactories.ToArray());
             }
         }
 
