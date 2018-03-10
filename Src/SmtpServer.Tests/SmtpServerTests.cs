@@ -308,9 +308,9 @@ namespace SmtpServer.Tests
         /// </summary>
         /// <param name="configuration">The configuration to apply to run the server.</param>
         /// <returns>A disposable instance which will close and release the server instance.</returns>
-        SmtpServerDisposable CreateServer(Action<OptionsBuilder> configuration)
+        SmtpServerDisposable CreateServer(Action<SmtpServerOptionsBuilder> configuration)
         {
-            var options = new OptionsBuilder()
+            var options = new SmtpServerOptionsBuilder()
                 .ServerName("localhost")
                 .Port(9025)
                 .MessageStore(MessageStore);

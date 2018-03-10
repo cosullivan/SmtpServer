@@ -17,7 +17,7 @@ namespace SampleApp.Examples
         {
             _cancellationTokenSource = new CancellationTokenSource();
 
-            var options = new OptionsBuilder()
+            var options = new SmtpServerOptionsBuilder()
                 .ServerName("SmtpServer SampleApp")
                 .Port(9025)
                 .UserAuthenticator(new AuthenticationHandler())

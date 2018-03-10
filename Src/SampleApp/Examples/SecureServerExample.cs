@@ -18,7 +18,7 @@ namespace SampleApp.Examples
 
             var cancellationTokenSource = new CancellationTokenSource();
 
-            var options = new OptionsBuilder()
+            var options = new SmtpServerOptionsBuilder()
                 .ServerName("SmtpServer SampleApp")
                 .Certificate(CreateCertificate())
                 .AllowUnsecureAuthentication(false)
