@@ -23,7 +23,7 @@ namespace SampleApp.Examples
                 .Certificate(CreateCertificate())
                 .AllowUnsecureAuthentication(false)
                 .UserAuthenticator(new SampleUserAuthenticator())
-                .Port(9025)
+                .Port(9025, true)
                 .Build();
 
             var server = new SmtpServer.SmtpServer(options);
@@ -31,7 +31,7 @@ namespace SampleApp.Examples
 
             var serverTask = server.StartAsync(cancellationTokenSource.Token);
 
-            SampleMailClient.Send(user: "user", password: "password");
+            SampleMailClient.Send(user: "user", password: "password", useSsl: true);
 
             cancellationTokenSource.Cancel();
             serverTask.WaitWithoutException();
