@@ -34,11 +34,11 @@ namespace SmtpServer.Protocol
 
             for (var i = 0; i < output.Length - 1; i++)
             {
-                await context.Client.WriteLineAsync($"250-{output[i]}", cancellationToken);
+                await context.NetworkClient.WriteLineAsync($"250-{output[i]}", cancellationToken);
             }
 
-            await context.Client.WriteLineAsync($"250 {output[output.Length - 1]}", cancellationToken);
-            await context.Client.FlushAsync(cancellationToken);
+            await context.NetworkClient.WriteLineAsync($"250 {output[output.Length - 1]}", cancellationToken);
+            await context.NetworkClient.FlushAsync(cancellationToken);
 
             return true;
         }
@@ -53,7 +53,7 @@ namespace SmtpServer.Protocol
             yield return "PIPELINING";
             yield return "8BITMIME";
 
-            if (session.IsSecure == false && Options.ServerCertificate != null)
+            if (session.NetworkClient.IsSecure == false && Options.ServerCertificate != null)
             {
                 yield return "STARTTLS";
             }
@@ -81,7 +81,7 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            return session.IsSecure || Options.AllowUnsecureAuthentication;
+            return session.NetworkClient.IsSecure || Options.AllowUnsecureAuthentication;
         }
 
         /// <summary>

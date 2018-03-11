@@ -4,8 +4,10 @@ using SmtpServer.Protocol;
 
 namespace SmtpServer.Storage
 {
-    internal class DoNothingMessageStore : MessageStore
+    internal sealed class DoNothingMessageStore : MessageStore
     {
+        internal static readonly DoNothingMessageStore Instance = new DoNothingMessageStore();
+
         /// <summary>
         /// Save the given message to the underlying storage system.
         /// </summary>

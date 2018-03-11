@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using SmtpServer.IO;
 
 namespace SmtpServer
 {
@@ -22,9 +23,14 @@ namespace SmtpServer
         EndPoint RemoteEndPoint { get; }
 
         /// <summary>
-        /// Returns a value indicating whether or not the current session is secure.
+        /// Gets the options that the server was created with.
         /// </summary>
-        bool IsSecure { get; }
+        ISmtpServerOptions ServerOptions { get; }
+
+        /// <summary>
+        /// Gets the text stream to read from and write to.
+        /// </summary>
+        INetworkClient NetworkClient { get; }
 
         /// <summary>
         /// Returns a value indicating whether or nor the current session is authenticated.

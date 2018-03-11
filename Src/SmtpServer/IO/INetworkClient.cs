@@ -44,6 +44,11 @@ namespace SmtpServer.IO
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task that asynchronously performs the operation.</returns>
         Task UpgradeAsync(X509Certificate certificate, SslProtocols protocols, CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Returns a value indicating whether or not the current client is secure.
+        /// </summary>
+        bool IsSecure { get; }
     }
 
     public static class NetworkClientExtensions

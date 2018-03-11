@@ -18,8 +18,8 @@ namespace SampleApp
             //SimpleExample.Run();
             //SessionTracingExample.Run();
             //SessionContextExample.Run();
-            SimpleServerExample.Run();
-            //SecureServerExample.Run();
+            //SimpleServerExample.Run();
+            SecureServerExample.Run();
         }
 
         //var cancellationTokenSource = new CancellationTokenSource();

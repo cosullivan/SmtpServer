@@ -36,15 +36,15 @@ namespace SmtpServer.Protocol
                 {
                     case MailboxFilterResult.Yes:
                         context.Transaction.To.Add(Address);
-                        await context.Client.ReplyAsync(SmtpResponse.Ok, cancellationToken).ReturnOnAnyThread();
+                        await context.NetworkClient.ReplyAsync(SmtpResponse.Ok, cancellationToken).ReturnOnAnyThread();
                         return true;
 
                     case MailboxFilterResult.NoTemporarily:
-                        await context.Client.ReplyAsync(SmtpResponse.MailboxUnavailable, cancellationToken).ReturnOnAnyThread();
+                        await context.NetworkClient.ReplyAsync(SmtpResponse.MailboxUnavailable, cancellationToken).ReturnOnAnyThread();
                         return false;
 
                     case MailboxFilterResult.NoPermanently:
-                        await context.Client.ReplyAsync(SmtpResponse.MailboxNameNotAllowed, cancellationToken).ReturnOnAnyThread();
+                        await context.NetworkClient.ReplyAsync(SmtpResponse.MailboxNameNotAllowed, cancellationToken).ReturnOnAnyThread();
                         return false;
                 }
             }

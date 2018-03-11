@@ -168,5 +168,10 @@ namespace SmtpServer.IO
             buffer = new ArraySegment<byte>(_buffer, start, _index - start);
             return @continue(current);
         }
+
+        /// <summary>
+        /// Returns a value indicating whether or not the current client is secure.
+        /// </summary>
+        public bool IsSecure => _stream is SslStream;
     }
 }

@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Linq;
-using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using SmtpServer.IO;
 
 namespace SmtpServer
 {
@@ -62,12 +62,12 @@ namespace SmtpServer
         /// <summary>
         /// Listen for SMTP traffic on the given endpoint.
         /// </summary>
-        /// <param name="endpoint">The endpoint to listen on.</param>
+        /// <param name="endpointDefinition">The definition of the endpoint to listen on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which performs the operation.</returns>
-        async Task ListenAsync(IPEndPoint endpoint, CancellationToken cancellationToken)
+        async Task ListenAsync(IEndpointDefinition endpointDefinition, CancellationToken cancellationToken)
         {
-            var tcpListener = new TcpListener(endpoint);
+            var tcpListener = new TcpListener(endpointDefinition.Endpoint);
             tcpListener.Start();
 
             // keep track of the running tasks for disposal
@@ -79,9 +79,17 @@ namespace SmtpServer
                 {
                     // wait for a client connection
                     var tcpClient = await tcpListener.AcceptTcpClientAsync().WithCancellation(cancellationToken).ConfigureAwait(false);
-                    
+
+                    var networkClient = new NetworkClient(tcpClient.GetStream(), _options.NetworkBufferSize, _options.NetworkBufferReadTimeout);
+
+                    if (endpointDefinition.IsSecure && _options.ServerCertificate != null)
+                    {
+                        await networkClient.UpgradeAsync(_options.ServerCertificate, _options.SupportedSslProtocols, cancellationToken);
+                        cancellationToken.ThrowIfCancellationRequested();
+                    }
+
                     // create a new session to handle the connection
-                    var session = new SmtpSession(_options, tcpClient);
+                    var session = new SmtpSession(_options, tcpClient, networkClient);
                     sessions.TryAdd(session, session);
 
                     OnSessionCreated(new SessionEventArgs(session.Context));

@@ -14,7 +14,9 @@ namespace SmtpServer.Tests
         {
             var segment = new ArraySegment<byte>(Encoding.ASCII.GetBytes(text));
 
-            return new SmtpParser(new SmtpServerOptions { Logger = new NullLogger() }, new TokenEnumerator(new ByteArrayTokenReader(new [] { segment })));
+            var options = new SmtpServerOptionsBuilder().Logger(new NullLogger()).Build();
+
+            return new SmtpParser(options, new TokenEnumerator(new ByteArrayTokenReader(new [] { segment })));
         }
 
         [Fact]

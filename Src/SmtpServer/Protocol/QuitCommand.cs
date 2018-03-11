@@ -25,7 +25,7 @@ namespace SmtpServer.Protocol
         {
             context.IsQuitRequested = true;
 
-            await context.Client.ReplyAsync(SmtpResponse.ServiceClosingTransmissionChannel, cancellationToken).ReturnOnAnyThread();
+            await context.NetworkClient.ReplyAsync(SmtpResponse.ServiceClosingTransmissionChannel, cancellationToken).ReturnOnAnyThread();
 
             return true;
         }
