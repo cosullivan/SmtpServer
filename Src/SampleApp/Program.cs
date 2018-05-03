@@ -15,11 +15,11 @@ namespace SampleApp
     {
         static void Main(string[] args)
         {
-            //SimpleExample.Run();
+            SimpleExample.Run();
             //SessionTracingExample.Run();
             //SessionContextExample.Run();
             //SimpleServerExample.Run();
-            SecureServerExample.Run();
+            //SecureServerExample.Run();
         }
 
         //var cancellationTokenSource = new CancellationTokenSource();
