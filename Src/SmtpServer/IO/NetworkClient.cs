@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Security;
+using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -23,11 +24,23 @@ namespace SmtpServer.IO
         /// <param name="stream">The stream to return the tokens from.</param>
         /// <param name="bufferLength">The buffer length to read.</param>
         /// <param name="bufferReadTimeout">The timeout to apply to each buffer read.</param>
-        internal NetworkClient(Stream stream, int bufferLength, TimeSpan bufferReadTimeout)
+        internal NetworkClient(NetworkStream stream, int bufferLength, TimeSpan bufferReadTimeout)
         {
             _stream = stream;
             _bufferLength = bufferLength;
             _stream.ReadTimeout = (int)bufferReadTimeout.TotalMilliseconds;
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="stream">The stream to return the tokens from.</param>
+        /// <param name="bufferLength">The buffer length to read.</param>
+        /// <remarks>This constructor is used for testing only.</remarks>
+        internal NetworkClient(Stream stream, int bufferLength)
+        {
+            _stream = stream;
+            _bufferLength = bufferLength;
         }
 
         /// <summary>
@@ -52,7 +65,7 @@ namespace SmtpServer.IO
                 return new List<ArraySegment<byte>>();
             }
 
-            if (TryConsume(@continue, ref count, out ArraySegment<byte> segment) == false)
+            if (TryConsume(@continue, ref count, out var segment) == false)
             {
                 return new List<ArraySegment<byte>> { segment };
             }

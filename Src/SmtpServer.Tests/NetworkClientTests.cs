@@ -12,7 +12,7 @@ namespace SmtpServer.Tests
         {
             var stream = new System.IO.MemoryStream(Encoding.ASCII.GetBytes(text));
 
-            return new NetworkClient(stream, bufferLength, TimeSpan.FromMinutes(10));
+            return new NetworkClient(stream, bufferLength);
         }
 
         [Fact]
