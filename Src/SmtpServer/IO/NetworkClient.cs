@@ -12,7 +12,6 @@ namespace SmtpServer.IO
     public sealed class NetworkClient : INetworkClient
     {
         readonly int _bufferLength;
-        readonly TimeSpan _bufferReadTimeout;
         Stream _stream;
         byte[] _buffer;
         int _bytesRead = -1;
@@ -28,7 +27,7 @@ namespace SmtpServer.IO
         {
             _stream = stream;
             _bufferLength = bufferLength;
-            _bufferReadTimeout = bufferReadTimeout;
+            _stream.ReadTimeout = (int)bufferReadTimeout.TotalMilliseconds;
         }
 
         /// <summary>
@@ -136,7 +135,7 @@ namespace SmtpServer.IO
             {
                 _index = 0;
                 _buffer = new byte[_bufferLength];
-                _bytesRead = await _stream.ReadAsync(_buffer, 0, _buffer.Length, cancellationToken).WithTimeout(_bufferReadTimeout, cancellationToken).ReturnOnAnyThread();
+                _bytesRead = await _stream.ReadAsync(_buffer, 0, _buffer.Length, cancellationToken).ReturnOnAnyThread();
             }
 
             return _bytesRead > 0;
