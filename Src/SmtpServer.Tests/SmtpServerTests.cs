@@ -87,6 +87,35 @@ namespace SmtpServer.Tests
             }
         }
 
+        [Theory]
+        [InlineData("", "")]
+        [InlineData("user", "")]
+        [InlineData("", "password")]
+        public void CanFailAuthenticationEmptyUserOrPassword(string user, string password)
+        {
+            // arrange
+            string actualUser = null;
+            string actualPassword = null;
+            var userAuthenticator = new DelegatingUserAuthenticator((u, p) =>
+            {
+                actualUser = u;
+                actualPassword = p;
+
+                return false;
+            });
+
+            using (CreateServer(options => options.AllowUnsecureAuthentication().UserAuthenticator(userAuthenticator)))
+            {
+                // act and assert
+                Assert.Throws<MailKit.Security.AuthenticationException>(() => MailClient.Send(user: user, password: password));
+
+                // assert
+                Assert.Equal(0, MessageStore.Messages.Count);
+                Assert.Equal(user, actualUser);
+                Assert.Equal(password, actualPassword);
+            }
+        }
+
         [Fact]
         public void CanReceiveBccInMessageTransaction()
         {

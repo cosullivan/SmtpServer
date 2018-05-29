@@ -157,7 +157,9 @@ namespace SmtpServer.Protocol
         {
             var text = await client.ReadLineAsync(Encoding.ASCII, cancellationToken).ReturnOnAnyThread();
 
-            return Encoding.UTF8.GetString(Convert.FromBase64String(text));
+            return text == null 
+                ? String.Empty 
+                : Encoding.UTF8.GetString(Convert.FromBase64String(text));
         }
 
         /// <summary>

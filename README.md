@@ -19,7 +19,7 @@ SmtpServer currently supports the following ESMTP extensions:
 At its most basic, it only takes a few lines of code for the server to be listening to incoming requests.
 
 ```cs
-var options = new OptionsBuilder()
+var options = new SmtpServerOptionsBuilder()
     .ServerName("localhost")
     .Port(25, 587)
     .Build();
@@ -31,7 +31,7 @@ await smtpServer.StartAsync(CancellationToken.None);
 # What hooks are provided?
 There are three hooks that can be implemented; IMessageStore, IMailboxFilter, and IUserAuthenticator.
 ```cs
-var options = new OptionsBuilder()
+var options = new SmtpServerOptionsBuilder()
     .ServerName("localhost")
     .Port(25, 587)
     .Port(465, isSecure: true)
