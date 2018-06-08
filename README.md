@@ -61,7 +61,7 @@ public class SampleMessageStore : MessageStore
 ```
 
 ```cs
-public class SampleMailboxFilter : IMailboxFilter
+public class SampleMailboxFilter : IMailboxFilter, IMailboxFilterFactory
 {
     public Task<MailboxFilterResult> CanAcceptFromAsync(ISessionContext context, IMailbox @from, int size = 0, CancellationToken token)
     {
@@ -77,11 +77,16 @@ public class SampleMailboxFilter : IMailboxFilter
     {
         return Task.FromResult(MailboxFilterResult.Yes);
     }
+
+	public IMailboxFilter CreateInstance(ISessionContext context)
+    {
+	    return new SampleMailboxFilter();
+	}
 }
 ```
 
 ```cs  
-public class SampleUserAuthenticator : IUserAuthenticator
+public class SampleUserAuthenticator : IUserAuthenticator, IUserAuthenticatorFactory
 {
     public Task<bool> AuthenticateAsync(ISessionContext context, string user, string password, CancellationToken token)
     {
@@ -89,5 +94,10 @@ public class SampleUserAuthenticator : IUserAuthenticator
 
         return Task.FromResult(user.Length > 4);
     }
+
+	public IUserAuthenticator CreateInstance(ISessionContext context)
+    {
+		return new SampleUserAuthenticator();
+	}
 }
 ```
