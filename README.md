@@ -78,10 +78,10 @@ public class SampleMailboxFilter : IMailboxFilter, IMailboxFilterFactory
         return Task.FromResult(MailboxFilterResult.Yes);
     }
 
-	public IMailboxFilter CreateInstance(ISessionContext context)
+    public IMailboxFilter CreateInstance(ISessionContext context)
     {
-	    return new SampleMailboxFilter();
-	}
+	return new SampleMailboxFilter();
+    }
 }
 ```
 
@@ -95,9 +95,9 @@ public class SampleUserAuthenticator : IUserAuthenticator, IUserAuthenticatorFac
         return Task.FromResult(user.Length > 4);
     }
 
-	public IUserAuthenticator CreateInstance(ISessionContext context)
+    public IUserAuthenticator CreateInstance(ISessionContext context)
     {
-		return new SampleUserAuthenticator();
-	}
+	return new SampleUserAuthenticator();
+    }
 }
 ```
