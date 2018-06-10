@@ -48,7 +48,7 @@ await smtpServer.StartAsync(CancellationToken.None);
 ```cs
 public class SampleMessageStore : MessageStore
 {
-    public Task<SmtpResponse> SaveAsync(ISessionContext context, IMessageTransaction transaction, CancellationToken cancellationToken)
+    public override Task<SmtpResponse> SaveAsync(ISessionContext context, IMessageTransaction transaction, CancellationToken cancellationToken)
     {
         var textMessage = (ITextMessage)transaction.Message;
         
@@ -61,9 +61,9 @@ public class SampleMessageStore : MessageStore
 ```
 
 ```cs
-public class SampleMailboxFilter : IMailboxFilter
+public class SampleMailboxFilter : IMailboxFilter, IMailboxFilterFactory
 {
-    public Task<MailboxFilterResult> CanAcceptFromAsync(ISessionContext context, IMailbox @from, int size = 0)
+    public Task<MailboxFilterResult> CanAcceptFromAsync(ISessionContext context, IMailbox @from, int size = 0, CancellationToken token)
     {
         if (String.Equals(@from.Host, "test.com"))
         {
@@ -73,21 +73,31 @@ public class SampleMailboxFilter : IMailboxFilter
         return Task.FromResult(MailboxFilterResult.NoPermanently);
     }
 
-    public Task<MailboxFilterResult> CanDeliverToAsync(ISessionContext context, IMailbox to, IMailbox @from)
+    public Task<MailboxFilterResult> CanDeliverToAsync(ISessionContext context, IMailbox to, IMailbox @from, CancellationToken token)
     {
         return Task.FromResult(MailboxFilterResult.Yes);
     }
+
+	public IMailboxFilter CreateInstance(ISessionContext context)
+    {
+	    return new SampleMailboxFilter();
+	}
 }
 ```
 
 ```cs  
-public class SampleUserAuthenticator : IUserAuthenticator
+public class SampleUserAuthenticator : IUserAuthenticator, IUserAuthenticatorFactory
 {
-    public Task<bool> AuthenticateAsync(string user, string password)
+    public Task<bool> AuthenticateAsync(ISessionContext context, string user, string password, CancellationToken token)
     {
         Console.WriteLine("User={0} Password={1}", user, password);
 
         return Task.FromResult(user.Length > 4);
     }
+
+	public IUserAuthenticator CreateInstance(ISessionContext context)
+    {
+		return new SampleUserAuthenticator();
+	}
 }
 ```
