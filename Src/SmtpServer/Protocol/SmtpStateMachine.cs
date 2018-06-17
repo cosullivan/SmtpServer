@@ -30,6 +30,7 @@ namespace SmtpServer.Protocol
                     { NoopCommand.Command, TryMakeNoop },
                     { RsetCommand.Command, TryMakeRset },
                     { QuitCommand.Command, TryMakeQuit },
+                    { ProxyProtocolCommand.Command, TryMakeProxy },
                     { HeloCommand.Command, TryMakeHelo, c => c.NetworkClient.IsSecure ? SmtpState.WaitingForMailSecure : SmtpState.WaitingForMail },
                     { EhloCommand.Command, TryMakeEhlo, c => c.NetworkClient.IsSecure ? SmtpState.WaitingForMailSecure : SmtpState.WaitingForMail },
                 },
@@ -87,6 +88,7 @@ namespace SmtpServer.Protocol
 
             _stateTable.Initialize(SmtpState.Initialized);
         }
+        
 
         /// <summary>
         /// Called when the session has been authenticated.
@@ -253,6 +255,18 @@ namespace SmtpServer.Protocol
             return new SmtpParser(_options, tokenEnumerator).TryMakeRcpt(out command, out errorResponse);
         }
 
+        /// <summary>
+        /// Try to make a Proxy Protocol PROXY header.
+        /// </summary>
+        /// <param name="tokenEnumerator">The token enumerator to use when matching the command.</param>
+        /// <param name="command">The command that was found.</param>
+        /// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
+        /// <returns>true if a PROXY command was found, false if not.</returns>
+        private bool TryMakeProxy(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            return new SmtpParser(_options, tokenEnumerator).TryMakeProxy(out command, out errorResponse);
+        }
+        
         /// <summary>
         /// Try to make a DATA command.
         /// </summary>
@@ -476,4 +490,5 @@ namespace SmtpServer.Protocol
 
         #endregion
     }
+    
 }
