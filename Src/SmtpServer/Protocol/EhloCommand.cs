@@ -52,6 +52,7 @@ namespace SmtpServer.Protocol
         {
             yield return "PIPELINING";
             yield return "8BITMIME";
+            yield return "SMTPUTF8";
 
             if (session.NetworkClient.IsSecure == false && Options.ServerCertificate != null)
             {
