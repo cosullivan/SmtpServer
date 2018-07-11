@@ -166,7 +166,7 @@ namespace SmtpServer.Text
         /// <returns>true if the value is considered a UTF-8 character, false if not.</returns>
         public static bool IsUtf8(byte value)
         {
-            return value >= 0xEF;
+            return value >= 0x80;
         }
 
         /// <summary>
