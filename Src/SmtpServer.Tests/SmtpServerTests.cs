@@ -7,12 +7,12 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using MailKit;
-using SmtpServer.Mail;
-using SmtpServer.Tests.Mocks;
-using Xunit;
 using SmtpServer.Authentication;
+using SmtpServer.Mail;
 using SmtpServer.Protocol;
 using SmtpServer.Storage;
+using SmtpServer.Tests.Mocks;
+using Xunit;
 using SmtpResponse = SmtpServer.Protocol.SmtpResponse;
 
 namespace SmtpServer.Tests
@@ -26,6 +26,70 @@ namespace SmtpServer.Tests
         {
             MessageStore = new MockMessageStore();
             CancellationTokenSource = new CancellationTokenSource();
+        }
+
+        [Fact]
+        public void RaisesEndpointStarted()
+        {
+            using (AutoResetEvent started = new AutoResetEvent(false))
+            {
+                ISmtpServerOptions builtOptions = null;
+                Action<SmtpServerOptionsBuilder> configuration = options =>
+                {
+                    builtOptions = options.Build();
+                };
+
+                EndPointEventArgs startedArgs = null;
+                Action<SmtpServer> beforeStart = server =>
+                {
+                    server.EndPointStarted += (sender, args) =>
+                    {
+                        startedArgs = args;
+                        started.Set();
+                    };
+                };
+
+                // act
+                using (CreateServer(configuration, beforeStart))
+                {
+                    // assert
+                    Assert.True(started.WaitOne(TestWaitTimeout));
+                    Assert.Equal(builtOptions.Endpoints[0], startedArgs.EndPointDefinition);
+                }
+            }
+        }
+
+        [Fact]
+        public void RaisesEndpointStopped()
+        {
+            using (AutoResetEvent stopped = new AutoResetEvent(false))
+            {
+                ISmtpServerOptions builtOptions = null;
+                Action<SmtpServerOptionsBuilder> configuration = options =>
+                {
+                    builtOptions = options.Build();
+                };
+
+                EndPointEventArgs stoppedArgs = null;
+                Action<SmtpServer> beforeStart = server =>
+                {
+                    server.EndPointStopped += (sender, args) =>
+                    {
+                        stoppedArgs = args;
+                        stopped.Set();
+                    };
+                };
+
+                using (CreateServer(configuration, beforeStart))
+                {
+                    // act
+                    CancellationTokenSource.Cancel();
+
+                    // assert
+                    Assert.True(stopped.WaitOne(TestWaitTimeout));
+                    Assert.Equal(builtOptions.Endpoints[0], stoppedArgs.EndPointDefinition);
+                }
+            }
         }
 
         [Fact]
@@ -258,7 +322,7 @@ namespace SmtpServer.Tests
             {
                 ISessionContext sessionContext = null;
                 var sessionCreatedHandler = new EventHandler<SessionEventArgs>(
-                    delegate(object sender, SessionEventArgs args)
+                    delegate (object sender, SessionEventArgs args)
                     {
                         sessionContext = args.Context;
                     });
@@ -283,7 +347,7 @@ namespace SmtpServer.Tests
             ServicePointManager.ServerCertificateValidationCallback = IgnoreCertificateValidationFailureForTestingOnly;
 
             using (var disposable = CreateServer(
-                options => 
+                options =>
                     options
                         .UserAuthenticator(userAuthenticator)
                         .AllowUnsecureAuthentication(true)
@@ -310,12 +374,12 @@ namespace SmtpServer.Tests
             ServicePointManager.ServerCertificateValidationCallback = null;
         }
 
-        static bool IgnoreCertificateValidationFailureForTestingOnly(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        private static bool IgnoreCertificateValidationFailureForTestingOnly(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
             return true;
         }
 
-        static X509Certificate2 CreateCertificate()
+        private static X509Certificate2 CreateCertificate()
         {
             var certificate = File.ReadAllBytes(@"C:\Dropbox\Documents\Cain\Programming\SmtpServer\SmtpServer.pfx");
             var password = File.ReadAllText(@"C:\Dropbox\Documents\Cain\Programming\SmtpServer\SmtpServerPassword.txt");
@@ -327,7 +391,7 @@ namespace SmtpServer.Tests
         /// Create a running instance of a server.
         /// </summary>
         /// <returns>A disposable instance which will close and release the server instance.</returns>
-        SmtpServerDisposable CreateServer()
+        private SmtpServerDisposable CreateServer()
         {
             return CreateServer(options => { });
         }
@@ -337,7 +401,18 @@ namespace SmtpServer.Tests
         /// </summary>
         /// <param name="configuration">The configuration to apply to run the server.</param>
         /// <returns>A disposable instance which will close and release the server instance.</returns>
-        SmtpServerDisposable CreateServer(Action<SmtpServerOptionsBuilder> configuration)
+        private SmtpServerDisposable CreateServer(Action<SmtpServerOptionsBuilder> configuration)
+        {
+            return CreateServer(configuration, server => { });
+        }
+
+        /// <summary>
+        /// Create a running instance of a server.
+        /// </summary>
+        /// <param name="configuration">The configuration to apply to run the server.</param>
+        /// <param name="beforeStart">Action invoked before the server is started.</param>
+        /// <returns>A disposable instance which will close and release the server instance.</returns>
+        private SmtpServerDisposable CreateServer(Action<SmtpServerOptionsBuilder> configuration, Action<SmtpServer> beforeStart)
         {
             var options = new SmtpServerOptionsBuilder()
                 .ServerName("localhost")
@@ -347,6 +422,8 @@ namespace SmtpServer.Tests
             configuration(options);
 
             var server = new SmtpServer(options.Build());
+            beforeStart(server);
+
             var smtpServerTask = server.StartAsync(CancellationTokenSource.Token);
 
             return new SmtpServerDisposable(server, () =>
@@ -355,7 +432,7 @@ namespace SmtpServer.Tests
 
                 try
                 {
-                    smtpServerTask.Wait();
+                    smtpServerTask.Wait(TestWaitTimeout);
                 }
                 catch (AggregateException e)
                 {
@@ -373,5 +450,10 @@ namespace SmtpServer.Tests
         /// The cancellation token source for the test.
         /// </summary>
         public CancellationTokenSource CancellationTokenSource { get; }
+
+        /// <summary>
+        /// Gets the time we wait for tests to complete.
+        /// </summary>
+        public TimeSpan TestWaitTimeout => TimeSpan.FromSeconds(10);
     }
 }

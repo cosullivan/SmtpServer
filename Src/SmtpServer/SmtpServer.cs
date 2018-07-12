@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,6 +12,16 @@ namespace SmtpServer
     public class SmtpServer
     {
         /// <summary>
+        /// Raised when an endpoint has been started.
+        /// </summary
+        public event EventHandler<EndPointEventArgs> EndPointStarted;
+
+        /// <summary>
+        /// Raised when an endpoint has been stopped.
+        /// </summary
+        public event EventHandler<EndPointEventArgs> EndPointStopped;
+
+        /// <summary>
         /// Raised when a session has been created.
         /// </summary>
         public event EventHandler<SessionEventArgs> SessionCreated;
@@ -20,7 +31,7 @@ namespace SmtpServer
         /// </summary>
         public event EventHandler<SessionEventArgs> SessionCompleted;
 
-        readonly ISmtpServerOptions _options;
+        private readonly ISmtpServerOptions _options;
 
         /// <summary>
         /// Constructor.
@@ -50,6 +61,24 @@ namespace SmtpServer
         }
 
         /// <summary>
+        /// Raises the EndPointStarted Event.
+        /// </summary>
+        /// <param name="args">The event data.</param>
+        protected virtual void OnEndPointStarted(EndPointEventArgs args)
+        {
+            EndPointStarted?.Invoke(this, args);
+        }
+
+        /// <summary>
+        /// Raises the EndPointStopped Event.
+        /// </summary>
+        /// <param name="args">The event data.</param>
+        protected virtual void OnEndPointStopped(EndPointEventArgs args)
+        {
+            EndPointStopped?.Invoke(this, args);
+        }
+
+        /// <summary>
         /// Starts the SMTP server.
         /// </summary>
         /// <param name="cancellationToken">The cancellation token.</param>
@@ -65,9 +94,10 @@ namespace SmtpServer
         /// <param name="endpointDefinition">The definition of the endpoint to listen on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which performs the operation.</returns>
-        async Task ListenAsync(IEndpointDefinition endpointDefinition, CancellationToken cancellationToken)
+        private async Task ListenAsync(IEndpointDefinition endpointDefinition, CancellationToken cancellationToken)
         {
             var tcpListener = new TcpListener(endpointDefinition.Endpoint);
+            EndPoint localEndPoint = tcpListener.LocalEndpoint;
             tcpListener.Start();
 
             // keep track of the running tasks for disposal
@@ -75,6 +105,8 @@ namespace SmtpServer
 
             try
             {
+                OnEndPointStarted(new EndPointEventArgs(endpointDefinition, localEndPoint));
+
                 while (cancellationToken.IsCancellationRequested == false)
                 {
                     // wait for a client connection
@@ -96,7 +128,7 @@ namespace SmtpServer
 
                     session.Run(cancellationToken);
 
-                    #pragma warning disable 4014
+#pragma warning disable 4014
                     session.Task
                         .ContinueWith(t =>
                         {
@@ -108,7 +140,7 @@ namespace SmtpServer
                             OnSessionCompleted(new SessionEventArgs(session.Context));
                         },
                         cancellationToken);
-                    #pragma warning restore 4014
+#pragma warning restore 4014
                 }
 
                 // the server has been cancelled, wait for the tasks to complete
@@ -117,6 +149,7 @@ namespace SmtpServer
             finally
             {
                 tcpListener.Stop();
+                OnEndPointStopped(new EndPointEventArgs(endpointDefinition, localEndPoint));
             }
         }
     }
