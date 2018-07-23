@@ -156,7 +156,17 @@ namespace SmtpServer.Text
         /// <returns>true if the value is considered a text character, false if not.</returns>
         public static bool IsText(byte value)
         {
-            return IsBetween(value, 65, 90) || IsBetween(value, 97, 122);
+            return IsBetween(value, 65, 90) || IsBetween(value, 97, 122) || IsUtf8(value);
+        }
+
+        /// <summary>
+        /// Returns a value indicating whether or not the given byte is a UTF-8 encoded character.
+        /// </summary>
+        /// <param name="value">The value to test.</param>
+        /// <returns>true if the value is considered a UTF-8 character, false if not.</returns>
+        public static bool IsUtf8(byte value)
+        {
+            return value >= 0x80;
         }
 
         /// <summary>
