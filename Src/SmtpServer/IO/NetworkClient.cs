@@ -22,11 +22,20 @@ namespace SmtpServer.IO
         /// </summary>
         /// <param name="stream">The stream to return the tokens from.</param>
         /// <param name="bufferLength">The buffer length to read.</param>
-        /// <param name="bufferReadTimeout">The timeout to apply to each buffer read.</param>
-        internal NetworkClient(Stream stream, int bufferLength, TimeSpan bufferReadTimeout)
+        internal NetworkClient(Stream stream, int bufferLength)
         {
             _stream = stream;
             _bufferLength = bufferLength;
+        }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="stream">The stream to return the tokens from.</param>
+        /// <param name="bufferLength">The buffer length to read.</param>
+        /// <param name="bufferReadTimeout">The timeout to apply to each buffer read.</param>
+        internal NetworkClient(Stream stream, int bufferLength, TimeSpan bufferReadTimeout) : this(stream, bufferLength)
+        {
             _stream.ReadTimeout = (int)bufferReadTimeout.TotalMilliseconds;
         }
 
