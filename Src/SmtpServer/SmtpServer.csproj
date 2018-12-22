@@ -1,7 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net45;netstandard1.3</TargetFrameworks>
+    <TargetFrameworks>netstandard1.3</TargetFrameworks>
+    <LangVersion>7.2</LangVersion>
     <AssemblyName>SmtpServer</AssemblyName>
     <RootNamespace>SmtpServer</RootNamespace>
     <Version>5.1.1</Version>
