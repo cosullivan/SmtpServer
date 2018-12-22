@@ -35,6 +35,11 @@ namespace SmtpServer
         IReadOnlyList<IEndpointDefinition> Endpoints { get; }
 
         /// <summary>
+        /// The endpoint listener factory.
+        /// </summary>
+        ITcpListenerFactory TcpListenerFactory { get; }
+
+        /// <summary>
         /// Gets the message store factory to use.
         /// </summary>
         IMessageStoreFactory MessageStoreFactory { get; }

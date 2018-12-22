@@ -68,18 +68,15 @@ namespace SmtpServer
         /// <returns>A task which performs the operation.</returns>
         async Task ListenAsync(IEndpointDefinition endpointDefinition, CancellationToken cancellationToken)
         {
-            var tcpListener = new TcpListener(endpointDefinition.Endpoint);
-            tcpListener.Start();
-
             // keep track of the running tasks for disposal
             var sessions = new ConcurrentDictionary<SmtpSession, SmtpSession>();
 
-            try
+            using (var tcpListener = _options.TcpListenerFactory.CreateListener(endpointDefinition))
             {
                 while (cancellationToken.IsCancellationRequested == false)
                 {
                     // wait for a client connection
-                    var tcpClient = await tcpListener.AcceptTcpClientAsync().WithCancellation(cancellationToken).ConfigureAwait(false);
+                    var tcpClient = await tcpListener.AcceptAsync(cancellationToken).ConfigureAwait(false);
 
                     var networkClient = new NetworkClient(tcpClient.GetStream(), _options.NetworkBufferSize, _options.NetworkBufferReadTimeout);
 
@@ -114,10 +111,6 @@ namespace SmtpServer
 
                 // the server has been cancelled, wait for the tasks to complete
                 await Task.WhenAll(sessions.Keys.Select(s => s.Task)).ConfigureAwait(false);
-            }
-            finally
-            {
-                tcpListener.Stop();
             }
         }
     }
@@ -178,7 +171,7 @@ namespace SmtpServer
         /// <returns>The TCP client that was received.</returns>
         public async Task<ITcpClient> AcceptAsync(CancellationToken cancellationToken)
         {
-            var tcpClient = _tcpListener.AcceptTcpClientAsync().WithCancellation(cancellationToken);
+            var tcpClient = await _tcpListener.AcceptTcpClientAsync().WithCancellation(cancellationToken);
 
             return new DefaultTcpClient(tcpClient);
         }
@@ -199,6 +192,11 @@ namespace SmtpServer
         /// </summary>
         /// <returns>The network stream from the TCP client.</returns>
         NetworkStream GetStream();
+
+        /// <summary>
+        /// The remote endpoint that the connection is with.
+        /// </summary>
+        EndPoint RemoteEndPoint { get; }
     }
 
     internal sealed class DefaultTcpClient : ITcpClient

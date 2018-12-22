@@ -20,6 +20,7 @@ namespace SmtpServer
             var serverOptions = new SmtpServerOptions
             {
                 Endpoints = new List<IEndpointDefinition>(),
+                TcpListenerFactory = new DefaultTcpListenerFactory(),
                 MessageStoreFactory = DoNothingMessageStore.Instance,
                 MailboxFilterFactory = DoNothingMailboxFilter.Instance,
                 UserAuthenticatorFactory = DoNothingUserAuthenticator.Instance,
@@ -96,6 +97,18 @@ namespace SmtpServer
         public SmtpServerOptionsBuilder Port(int port, bool isSecure)
         {
             Endpoint(new EndpointDefinitionBuilder().Port(port).IsSecure(isSecure).Build());
+
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a TCP Listener Factory instance.
+        /// </summary>
+        /// <param name="value">The TCP listener factory instance to use.</param>
+        /// <returns>A OptionsBuilder to continue building on.</returns>
+        public SmtpServerOptionsBuilder TcpListenerFactory(ITcpListenerFactory value)
+        {
+            _setters.Add(options => options.TcpListenerFactory = value ?? new DefaultTcpListenerFactory());
 
             return this;
         }
@@ -277,6 +290,11 @@ namespace SmtpServer
             /// Gets or sets the endpoint to listen on.
             /// </summary>
             IReadOnlyList<IEndpointDefinition> ISmtpServerOptions.Endpoints => Endpoints;
+
+            /// <summary>
+            /// Gets the endpoint listener factory.
+            /// </summary>
+            public ITcpListenerFactory TcpListenerFactory { get; set; }
 
             /// <summary>
             /// Gets the message store factory to use.

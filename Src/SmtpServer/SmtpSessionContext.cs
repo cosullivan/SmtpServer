@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
-using System.Net.Sockets;
 using SmtpServer.IO;
 using SmtpServer.Protocol;
 
@@ -25,11 +24,11 @@ namespace SmtpServer
         /// <param name="options">The server options.</param>
         /// <param name="tcpClient">The TCP client that the session is connected with.</param>
         /// <param name="networkClient">The network client to use for communications.</param>
-        internal SmtpSessionContext(ISmtpServerOptions options, TcpClient tcpClient, INetworkClient networkClient)
+        internal SmtpSessionContext(ISmtpServerOptions options, ITcpClient tcpClient, INetworkClient networkClient)
         {
             ServerOptions = options;
             Transaction = new SmtpMessageTransaction();
-            RemoteEndPoint = tcpClient.Client.RemoteEndPoint;
+            RemoteEndPoint = tcpClient.RemoteEndPoint;
             NetworkClient = networkClient;
             Properties = new Dictionary<string, object>();
         }

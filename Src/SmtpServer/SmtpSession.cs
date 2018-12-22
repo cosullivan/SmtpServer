@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.Protocol;
@@ -13,7 +12,7 @@ namespace SmtpServer
     internal sealed class SmtpSession : IDisposable
     {
         readonly ISmtpServerOptions _options;
-        readonly TcpClient _tcpClient;
+        readonly ITcpClient _tcpClient;
         readonly SmtpStateMachine _stateMachine;
         readonly SmtpSessionContext _context;
         TaskCompletionSource<bool> _taskCompletionSource;
@@ -24,7 +23,7 @@ namespace SmtpServer
         /// <param name="options">The SMTP server options.</param>
         /// <param name="tcpClient">The TCP client to operate the session on.</param>
         /// <param name="networkClient">The network client to use for communications.</param>
-        internal SmtpSession(ISmtpServerOptions options, TcpClient tcpClient, INetworkClient networkClient)
+        internal SmtpSession(ISmtpServerOptions options, ITcpClient tcpClient, INetworkClient networkClient)
         {
             _options = options;
             _tcpClient = tcpClient;
@@ -215,7 +214,7 @@ namespace SmtpServer
         {
             Context.NetworkClient.Dispose();
 
-            ((IDisposable)_tcpClient).Dispose();
+            _tcpClient.Dispose();
         }
 
         /// <summary>
