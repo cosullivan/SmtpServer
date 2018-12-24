@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using SmtpServer.Protocol;
 using System.Reflection;
 using SmtpServer.IO;
+using SmtpServer.Net;
 using SmtpServer.Text;
 
 namespace SmtpServer

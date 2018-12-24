@@ -11,6 +11,7 @@ using SmtpServer.Mail;
 using SmtpServer.Tests.Mocks;
 using Xunit;
 using SmtpServer.Authentication;
+using SmtpServer.Net;
 using SmtpServer.Protocol;
 using SmtpServer.Storage;
 using SmtpResponse = SmtpServer.Protocol.SmtpResponse;
@@ -308,6 +309,26 @@ namespace SmtpServer.Tests
             }
 
             ServicePointManager.ServerCertificateValidationCallback = null;
+        }
+
+        [Fact]
+        public void TcpListenerWillRaiseEndPointEvents()
+        {
+            var tcpListenerFactory = new DefaultTcpListenerFactory();
+
+            var started = false;
+            var stopped = false;
+
+            tcpListenerFactory.EndPointStarted += (sender, e) => { started = true; };
+            tcpListenerFactory.EndPointStopped += (sender, e) => { stopped = true; };
+
+            using (CreateServer(options => options.TcpListenerFactory(tcpListenerFactory)))
+            {
+                MailClient.Send();
+            }
+
+            Assert.True(started);
+            Assert.True(stopped);
         }
 
         static bool IgnoreCertificateValidationFailureForTestingOnly(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using SmtpServer.Authentication;
+using SmtpServer.Net;
 using SmtpServer.Storage;
 
 namespace SmtpServer
