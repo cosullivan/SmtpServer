@@ -38,7 +38,7 @@ namespace SmtpServer
         /// <summary>
         /// The endpoint listener factory.
         /// </summary>
-        ITcpListenerFactory TcpListenerFactory { get; }
+        IEndpointListenerFactory EndpointListenerFactory { get; }
 
         /// <summary>
         /// Gets the message store factory to use.

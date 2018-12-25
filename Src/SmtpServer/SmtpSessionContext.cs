@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Net;
 using SmtpServer.IO;
-using SmtpServer.Net;
 using SmtpServer.Protocol;
 
 namespace SmtpServer
@@ -23,14 +21,10 @@ namespace SmtpServer
         /// Constructor.
         /// </summary>
         /// <param name="options">The server options.</param>
-        /// <param name="tcpClient">The TCP client that the session is connected with.</param>
-        /// <param name="networkClient">The network client to use for communications.</param>
-        internal SmtpSessionContext(ISmtpServerOptions options, ITcpClient tcpClient, INetworkClient networkClient)
+        internal SmtpSessionContext(ISmtpServerOptions options)
         {
             ServerOptions = options;
             Transaction = new SmtpMessageTransaction();
-            RemoteEndPoint = tcpClient.RemoteEndPoint;
-            NetworkClient = networkClient;
             Properties = new Dictionary<string, object>();
         }
 
@@ -59,17 +53,12 @@ namespace SmtpServer
         /// <summary>
         /// Gets the text stream to read from and write to.
         /// </summary>
-        public INetworkClient NetworkClient { get; }
+        public INetworkClient NetworkClient { get; internal set; }
 
         /// <summary>
         /// Gets the current transaction.
         /// </summary>
         public SmtpMessageTransaction Transaction { get; }
-
-        /// <summary>
-        /// Gets the remote endpoint of the client.
-        /// </summary>
-        public EndPoint RemoteEndPoint { get; }
 
         /// <summary>
         /// Returns a value indicating whether or nor the current session is authenticated.

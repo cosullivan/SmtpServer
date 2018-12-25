@@ -21,7 +21,7 @@ namespace SmtpServer
             var serverOptions = new SmtpServerOptions
             {
                 Endpoints = new List<IEndpointDefinition>(),
-                TcpListenerFactory = new DefaultTcpListenerFactory(),
+                EndpointListenerFactory = new EndpointListenerFactory(),
                 MessageStoreFactory = DoNothingMessageStore.Instance,
                 MailboxFilterFactory = DoNothingMailboxFilter.Instance,
                 UserAuthenticatorFactory = DoNothingUserAuthenticator.Instance,
@@ -103,13 +103,13 @@ namespace SmtpServer
         }
 
         /// <summary>
-        /// Adds a TCP Listener Factory instance.
+        /// Adds an Endpoint Listener Factory instance.
         /// </summary>
         /// <param name="value">The TCP listener factory instance to use.</param>
         /// <returns>A OptionsBuilder to continue building on.</returns>
-        public SmtpServerOptionsBuilder TcpListenerFactory(ITcpListenerFactory value)
+        public SmtpServerOptionsBuilder EndpointListenerFactory(IEndpointListenerFactory value)
         {
-            _setters.Add(options => options.TcpListenerFactory = value ?? new DefaultTcpListenerFactory());
+            _setters.Add(options => options.EndpointListenerFactory = value ?? new EndpointListenerFactory());
 
             return this;
         }
@@ -295,7 +295,7 @@ namespace SmtpServer
             /// <summary>
             /// Gets the endpoint listener factory.
             /// </summary>
-            public ITcpListenerFactory TcpListenerFactory { get; set; }
+            public IEndpointListenerFactory EndpointListenerFactory { get; set; }
 
             /// <summary>
             /// Gets the message store factory to use.

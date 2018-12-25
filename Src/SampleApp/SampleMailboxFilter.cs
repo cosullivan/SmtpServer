@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer;
 using SmtpServer.Mail;
+using SmtpServer.Net;
 using SmtpServer.Storage;
 
 namespace SampleApp
@@ -28,7 +29,7 @@ namespace SampleApp
                 return Task.FromResult(MailboxFilterResult.NoPermanently);
             }
 
-            var endpoint = (IPEndPoint) context.RemoteEndPoint;
+            var endpoint = (IPEndPoint)context.Properties[EndpointListener.RemoteEndPointKey];
             
             if (endpoint.Address.Equals(IPAddress.Parse("127.0.0.1")))
             {

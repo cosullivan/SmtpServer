@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using SmtpServer;
+using SmtpServer.Net;
 using SmtpServer.Tracing;
 
 namespace SampleApp.Examples
@@ -32,7 +33,7 @@ namespace SampleApp.Examples
 
         static void OnSessionCreated(object sender, SessionEventArgs e)
         {
-            Console.WriteLine("SessionCreated: {0}", e.Context.RemoteEndPoint);
+            Console.WriteLine("SessionCreated: {0}", e.Context.Properties[EndpointListener.RemoteEndPointKey]);
 
             e.Context.CommandExecuting += OnCommandExecuting;
         }
@@ -44,7 +45,7 @@ namespace SampleApp.Examples
 
         static void OnSessionCompleted(object sender, SessionEventArgs e)
         {
-            Console.WriteLine("SessionCompleted: {0}", e.Context.RemoteEndPoint);
+            Console.WriteLine("SessionCompleted: {0}", e.Context.Properties[EndpointListener.RemoteEndPointKey]);
 
             e.Context.CommandExecuting -= OnCommandExecuting;
 

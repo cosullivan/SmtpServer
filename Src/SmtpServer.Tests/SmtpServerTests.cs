@@ -312,17 +312,17 @@ namespace SmtpServer.Tests
         }
 
         [Fact]
-        public void TcpListenerWillRaiseEndPointEvents()
+        public void EndpointListenerWillRaiseEndPointEvents()
         {
-            var tcpListenerFactory = new DefaultTcpListenerFactory();
+            var endpointListenerFactory = new EndpointListenerFactory();
 
             var started = false;
             var stopped = false;
 
-            tcpListenerFactory.EndPointStarted += (sender, e) => { started = true; };
-            tcpListenerFactory.EndPointStopped += (sender, e) => { stopped = true; };
+            endpointListenerFactory.EndpointStarted += (sender, e) => { started = true; };
+            endpointListenerFactory.EndpointStopped += (sender, e) => { stopped = true; };
 
-            using (CreateServer(options => options.TcpListenerFactory(tcpListenerFactory)))
+            using (CreateServer(options => options.EndpointListenerFactory(endpointListenerFactory)))
             {
                 MailClient.Send();
             }

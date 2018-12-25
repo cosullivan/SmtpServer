@@ -2,10 +2,10 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <LangVersion>7.3</LangVersion>
+    <LangVersion>7.2</LangVersion>
     <AssemblyName>SmtpServer</AssemblyName>
     <RootNamespace>SmtpServer</RootNamespace>
-    <Version>5.1.1</Version>
+    <Version>6.0.0-Beta1</Version>
     <Description>.NET SmtpServer</Description>
     <Authors>Cain O'Sullivan</Authors>
     <Company />
@@ -15,10 +15,9 @@
     <PackageTags>smtp smtpserver smtp server</PackageTags>
     <PackageLicenseUrl>https://raw.githubusercontent.com/cosullivan/SmtpServer/master/LICENSE</PackageLicenseUrl>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-    <AssemblyVersion>5.1.1.0</AssemblyVersion>
-    <FileVersion>5.1.1.0</FileVersion>
-    <PackageReleaseNotes>Fixed a bug that caused an exception when a blank user name or password were sent.
-</PackageReleaseNotes>
+    <AssemblyVersion>6.0.0.0</AssemblyVersion>
+    <FileVersion>6.0.0.0</FileVersion>
+    <PackageReleaseNotes>Abstracted out an IEndpointListener service that allows the Tcp connections to be handled externally. The RemoteEndPoint property on ISessionContext is now included in the Context's property bag as opposed to a direct property of the context. Framework requirement has now been bumped to .NET Standard 2.0.</PackageReleaseNotes>
   </PropertyGroup>
 
 </Project>

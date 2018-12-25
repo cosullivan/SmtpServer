@@ -6,7 +6,7 @@ namespace SampleApp
     {
         static void Main(string[] args)
         {
-            SecureServerExample.Run();
+            SessionTracingExample.Run();
         }
 
         //static void Main(string[] args)

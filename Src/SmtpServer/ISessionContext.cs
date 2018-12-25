@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Net;
 using SmtpServer.IO;
 
 namespace SmtpServer
@@ -16,11 +15,6 @@ namespace SmtpServer
         /// Fired when the session has been authenticated.
         /// </summary>
         event EventHandler<EventArgs> SessionAuthenticated;
-
-        /// <summary>
-        /// Gets the remote endpoint of the client.
-        /// </summary>
-        EndPoint RemoteEndPoint { get; }
 
         /// <summary>
         /// Gets the options that the server was created with.

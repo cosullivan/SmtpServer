@@ -45,7 +45,7 @@ namespace SmtpServer.IO
         /// <param name="count">The number of bytes to consume.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The list of buffers that contain the bytes matching while the predicate was true.</returns>
-        public async Task<IReadOnlyList<ArraySegment<byte>>> ReadAsync(Func<byte, bool> @continue, long count, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task<IReadOnlyList<ArraySegment<byte>>> ReadAsync(Func<byte, bool> @continue, long count, CancellationToken cancellationToken = default)
         {
             if (await ReadBufferAsync(cancellationToken) == false)
             {
@@ -86,7 +86,7 @@ namespace SmtpServer.IO
         /// <param name="buffers">The list of array segment buffers to write.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task that asynchronously performs the operation.</returns>
-        public async Task WriteAsync(IReadOnlyList<ArraySegment<byte>> buffers, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task WriteAsync(IReadOnlyList<ArraySegment<byte>> buffers, CancellationToken cancellationToken = default)
         {
             foreach (var buffer in buffers)
             {
@@ -101,7 +101,7 @@ namespace SmtpServer.IO
         /// </summary>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task that represents the asynchronous flush operation.</returns>
-        public Task FlushAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public Task FlushAsync(CancellationToken cancellationToken = default)
         {
             return _stream.FlushAsync(cancellationToken);
         }
@@ -113,7 +113,7 @@ namespace SmtpServer.IO
         /// <param name="protocols">The value that represents the protocol used for authentication.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task that asynchronously performs the operation.</returns>
-        public async Task UpgradeAsync(X509Certificate certificate, SslProtocols protocols, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task UpgradeAsync(X509Certificate certificate, SslProtocols protocols, CancellationToken cancellationToken = default)
         {
             var stream = new SslStream(_stream, true);
 

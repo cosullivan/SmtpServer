@@ -3,14 +3,14 @@ using System.Net;
 
 namespace SmtpServer.Net
 {
-    public sealed class EndPointEventArgs : EventArgs
+    public sealed class EndpointEventArgs : EventArgs
     {
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="endpointDefinition">The endpoint definition.</param>
         /// <param name="localEndPoint">The locally bound endpoint.</param>
-        public EndPointEventArgs(IEndpointDefinition endpointDefinition, EndPoint localEndPoint)
+        public EndpointEventArgs(IEndpointDefinition endpointDefinition, EndPoint localEndPoint)
         {
             EndpointDefinition = endpointDefinition;
             LocalEndPoint = localEndPoint;
