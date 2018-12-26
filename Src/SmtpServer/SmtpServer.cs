@@ -79,6 +79,8 @@ namespace SmtpServer
                     var stream = await endpointListener.GetStreamAsync(sessionContext, cancellationToken).ConfigureAwait(false);
                     cancellationToken.ThrowIfCancellationRequested();
 
+                    HERE: move different options to the endpoint where appropriate
+
                     sessionContext.NetworkClient = new NetworkClient(stream, _options.NetworkBufferSize, _options.NetworkBufferReadTimeout);
 
                     if (endpointDefinition.IsSecure && _options.ServerCertificate != null)
