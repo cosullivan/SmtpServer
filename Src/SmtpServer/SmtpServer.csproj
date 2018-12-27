@@ -5,7 +5,7 @@
     <LangVersion>7.2</LangVersion>
     <AssemblyName>SmtpServer</AssemblyName>
     <RootNamespace>SmtpServer</RootNamespace>
-    <Version>6.0.0-Beta2</Version>
+    <Version>6.0.0-Beta3</Version>
     <Description>.NET SmtpServer</Description>
     <Authors>Cain O'Sullivan</Authors>
     <Company />

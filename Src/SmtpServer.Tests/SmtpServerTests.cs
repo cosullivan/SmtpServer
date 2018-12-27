@@ -190,7 +190,7 @@ namespace SmtpServer.Tests
             {
                 using (var client = MailClient.Client())
                 {
-                    Assert.Throws<ServiceNotAuthenticatedException>(() => client.Send(MailClient.Message()));
+                    Assert.Throws<SmtpProtocolException>(() => client.Send(MailClient.Message()));
 
                     // no longer connected to this is invalid
                     Assert.ThrowsAny<Exception>(() => client.NoOp());
@@ -282,7 +282,7 @@ namespace SmtpServer.Tests
                     server
                         .UserAuthenticator(userAuthenticator)
                         .Certificate(CreateCertificate())
-                        .SupportedSslProtocols(SslProtocols.Default),
+                        .SupportedSslProtocols(SslProtocols.Tls12),
                 endpoint => 
                     endpoint.AllowUnsecureAuthentication(true)))
             {
@@ -326,12 +326,12 @@ namespace SmtpServer.Tests
             Assert.True(stopped);
         }
 
-        static bool IgnoreCertificateValidationFailureForTestingOnly(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        public static bool IgnoreCertificateValidationFailureForTestingOnly(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
             return true;
         }
 
-        static X509Certificate2 CreateCertificate()
+        public static X509Certificate2 CreateCertificate()
         {
             var certificate = File.ReadAllBytes(@"C:\Dropbox\Documents\Cain\Programming\SmtpServer\SmtpServer.pfx");
             var password = File.ReadAllText(@"C:\Dropbox\Documents\Cain\Programming\SmtpServer\SmtpServerPassword.txt");

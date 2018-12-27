@@ -1,4 +1,13 @@
-﻿using SampleApp.Examples;
+﻿using System;
+using System.Net;
+using System.Security.Authentication;
+using System.Threading;
+using SampleApp.Examples;
+using SmtpServer;
+using SmtpServer.Authentication;
+using SmtpServer.Net;
+using SmtpServer.Tests;
+using SmtpServer.Tracing;
 
 namespace SampleApp
 {
@@ -6,7 +15,44 @@ namespace SampleApp
     {
         static void Main(string[] args)
         {
-            SessionTracingExample.Run();
+            //SessionTracingExample.Run();
+            
+            ServicePointManager.ServerCertificateValidationCallback = SmtpServerTests.IgnoreCertificateValidationFailureForTestingOnly;
+
+            var options = new SmtpServerOptionsBuilder()
+                .ServerName("SmtpServer SampleApp")
+                .Port(9025)
+                .UserAuthenticator(new DelegatingUserAuthenticator((user, password) => true))
+                .Certificate(SmtpServerTests.CreateCertificate())
+                .Build();
+
+            var server = new SmtpServer.SmtpServer(options);
+
+            server.SessionCreated += OnSessionCreated;
+            server.SessionCompleted += OnSessionCompleted;
+
+            server.StartAsync(CancellationToken.None);
+
+            Console.ReadKey();
+        }
+
+        static void OnSessionCreated(object sender, SessionEventArgs e)
+        {
+            Console.WriteLine("SessionCreated: {0}", e.Context.Properties[EndpointListener.RemoteEndPointKey]);
+
+            e.Context.CommandExecuting += OnCommandExecuting;
+        }
+
+        static void OnCommandExecuting(object sender, SmtpCommandExecutingEventArgs e)
+        {
+            new TracingSmtpCommandVisitor(Console.Out).Visit(e.Command);
+        }
+
+        static void OnSessionCompleted(object sender, SessionEventArgs e)
+        {
+            Console.WriteLine("SessionCompleted: {0}", e.Context.Properties[EndpointListener.RemoteEndPointKey]);
+
+            e.Context.CommandExecuting -= OnCommandExecuting;
         }
 
         //static void Main(string[] args)

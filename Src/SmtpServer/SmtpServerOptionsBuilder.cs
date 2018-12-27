@@ -26,7 +26,7 @@ namespace SmtpServer
                 MailboxFilterFactory = DoNothingMailboxFilter.Instance,
                 UserAuthenticatorFactory = DoNothingUserAuthenticator.Instance,
                 MaxRetryCount = 5,
-                SupportedSslProtocols = SslProtocols.Tls,
+                SupportedSslProtocols = SslProtocols.Tls12,
                 NetworkBufferSize = 128,
                 NetworkBufferReadTimeout = TimeSpan.FromMinutes(2),
                 CommandWaitTimeout = TimeSpan.FromMinutes(5),
