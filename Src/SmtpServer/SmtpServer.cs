@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Linq;
-using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.IO;
@@ -67,32 +66,32 @@ namespace SmtpServer
         /// <returns>A task which performs the operation.</returns>
         async Task ListenAsync(IEndpointDefinition endpointDefinition, CancellationToken cancellationToken)
         {
-            var tcpListener = new TcpListener(endpointDefinition.Endpoint);
-            tcpListener.Start();
-
             // keep track of the running tasks for disposal
             var sessions = new ConcurrentDictionary<SmtpSession, SmtpSession>();
 
-            try
+            using (var endpointListener = _options.EndpointListenerFactory.CreateListener(endpointDefinition))
             {
                 while (cancellationToken.IsCancellationRequested == false)
                 {
-                    // wait for a client connection
-                    var tcpClient = await tcpListener.AcceptTcpClientAsync().WithCancellation(cancellationToken).ConfigureAwait(false);
+                    var sessionContext = new SmtpSessionContext(_options, endpointDefinition);
 
-                    var networkClient = new NetworkClient(tcpClient.GetStream(), _options.NetworkBufferSize, _options.NetworkBufferReadTimeout);
+                    // wait for a client connection
+                    var stream = await endpointListener.GetStreamAsync(sessionContext, cancellationToken).ConfigureAwait(false);
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    sessionContext.NetworkClient = new NetworkClient(stream, _options.NetworkBufferSize, _options.NetworkBufferReadTimeout);
 
                     if (endpointDefinition.IsSecure && _options.ServerCertificate != null)
                     {
-                        await networkClient.UpgradeAsync(_options.ServerCertificate, _options.SupportedSslProtocols, cancellationToken);
+                        await sessionContext.NetworkClient.UpgradeAsync(_options.ServerCertificate, _options.SupportedSslProtocols, cancellationToken);
                         cancellationToken.ThrowIfCancellationRequested();
                     }
-
+                    
                     // create a new session to handle the connection
-                    var session = new SmtpSession(_options, tcpClient, networkClient);
+                    var session = new SmtpSession(sessionContext);
                     sessions.TryAdd(session, session);
 
-                    OnSessionCreated(new SessionEventArgs(session.Context));
+                    OnSessionCreated(new SessionEventArgs(sessionContext));
 
                     session.Run(cancellationToken);
 
@@ -100,12 +99,12 @@ namespace SmtpServer
                     session.Task
                         .ContinueWith(t =>
                         {
-                            if (sessions.TryRemove(session, out SmtpSession s))
+                            if (sessions.TryRemove(session, out var s))
                             {
-                                s.Dispose();
+                                sessionContext.NetworkClient.Dispose();
                             }
 
-                            OnSessionCompleted(new SessionEventArgs(session.Context));
+                            OnSessionCompleted(new SessionEventArgs(sessionContext));
                         },
                         cancellationToken);
                     #pragma warning restore 4014
@@ -113,10 +112,6 @@ namespace SmtpServer
 
                 // the server has been cancelled, wait for the tasks to complete
                 await Task.WhenAll(sessions.Keys.Select(s => s.Task)).ConfigureAwait(false);
-            }
-            finally
-            {
-                tcpListener.Stop();
             }
         }
     }

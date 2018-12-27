@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.Protocol;
@@ -10,10 +9,8 @@ using SmtpServer.Text;
 
 namespace SmtpServer
 {
-    internal sealed class SmtpSession : IDisposable
+    internal sealed class SmtpSession
     {
-        readonly ISmtpServerOptions _options;
-        readonly TcpClient _tcpClient;
         readonly SmtpStateMachine _stateMachine;
         readonly SmtpSessionContext _context;
         TaskCompletionSource<bool> _taskCompletionSource;
@@ -21,15 +18,11 @@ namespace SmtpServer
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="options">The SMTP server options.</param>
-        /// <param name="tcpClient">The TCP client to operate the session on.</param>
-        /// <param name="networkClient">The network client to use for communications.</param>
-        internal SmtpSession(ISmtpServerOptions options, TcpClient tcpClient, INetworkClient networkClient)
+        /// <param name="context">The session context.</param>
+        internal SmtpSession(SmtpSessionContext context)
         {
-            _options = options;
-            _tcpClient = tcpClient;
-            _context = new SmtpSessionContext(options, tcpClient, networkClient);
-            _stateMachine = new SmtpStateMachine(options, _context);
+            _context = context;
+            _stateMachine = new SmtpStateMachine(_context);
         }
 
         /// <summary>
@@ -69,7 +62,7 @@ namespace SmtpServer
 
             await OutputGreetingAsync(cancellationToken).ReturnOnAnyThread();
 
-            await ExecuteAsync(Context, cancellationToken).ReturnOnAnyThread();
+            await ExecuteAsync(_context, cancellationToken).ReturnOnAnyThread();
         }
 
         /// <summary>
@@ -80,7 +73,7 @@ namespace SmtpServer
         /// <returns>A task which asynchronously performs the execution.</returns>
         async Task ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            var retries = _options.MaxRetryCount;
+            var retries = _context.ServerOptions.MaxRetryCount;
 
             while (retries-- > 0 && context.IsQuitRequested == false && cancellationToken.IsCancellationRequested == false)
             {
@@ -91,7 +84,7 @@ namespace SmtpServer
                     return;
                 }
 
-                if (TryMake(context, text, out SmtpCommand command, out SmtpResponse response))
+                if (TryMake(context, text, out var command, out var response))
                 {
                     try
                     {
@@ -100,7 +93,7 @@ namespace SmtpServer
                             _stateMachine.Transition(context);
                         }
 
-                        retries = _options.MaxRetryCount;
+                        retries = _context.ServerOptions.MaxRetryCount;
 
                         continue;
                     }
@@ -129,7 +122,7 @@ namespace SmtpServer
         /// <returns>The input that was received from the client.</returns>
         async Task<IReadOnlyList<ArraySegment<byte>>> ReadCommandInputAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            var timeout = new CancellationTokenSource(_options.CommandWaitTimeout);
+            var timeout = new CancellationTokenSource(_context.ServerOptions.CommandWaitTimeout);
 
             var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token, cancellationToken);
            
@@ -204,24 +197,9 @@ namespace SmtpServer
         {
             var version = typeof(SmtpSession).GetTypeInfo().Assembly.GetName().Version;
 
-            await Context.NetworkClient.WriteLineAsync($"220 {_options.ServerName} v{version} ESMTP ready", cancellationToken).ReturnOnAnyThread();
-            await Context.NetworkClient.FlushAsync(cancellationToken).ReturnOnAnyThread();
+            await _context.NetworkClient.WriteLineAsync($"220 {_context.ServerOptions.ServerName} v{version} ESMTP ready", cancellationToken).ReturnOnAnyThread();
+            await _context.NetworkClient.FlushAsync(cancellationToken).ReturnOnAnyThread();
         }
-
-        /// <summary>
-        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-        /// </summary>
-        public void Dispose()
-        {
-            Context.NetworkClient.Dispose();
-
-            ((IDisposable)_tcpClient).Dispose();
-        }
-
-        /// <summary>
-        /// Returns the context for the session.
-        /// </summary>
-        internal SmtpSessionContext Context => _context;
         
         /// <summary>
         /// Returns the completion task.

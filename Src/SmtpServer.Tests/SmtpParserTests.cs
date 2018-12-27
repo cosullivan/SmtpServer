@@ -59,7 +59,7 @@ namespace SmtpServer.Tests
             // assert
             Assert.True(result);
             Assert.True(command is HeloCommand);
-            Assert.Equal("abc-1-def.mail.com", ((HeloCommand)command).Domain);
+            Assert.Equal("abc-1-def.mail.com", ((HeloCommand)command).DomainOrAddress);
         }
 
         [Theory]

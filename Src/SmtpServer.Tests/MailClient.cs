@@ -47,6 +47,11 @@ namespace SmtpServer.Tests
         public static SmtpClient Client(string host = "localhost", int port = 9025)
         {
             var client = new SmtpClient();
+            
+            client.Connected += (sender, args) =>
+            {
+
+            };
 
             client.Connect("localhost", 9025);
 

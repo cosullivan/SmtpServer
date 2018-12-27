@@ -82,7 +82,7 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            return session.NetworkClient.IsSecure || Options.AllowUnsecureAuthentication;
+            return session.NetworkClient.IsSecure || session.EndpointDefinition.AllowUnsecureAuthentication;
         }
 
         /// <summary>
