@@ -56,16 +56,6 @@ namespace SmtpServer
         IUserAuthenticatorFactory UserAuthenticatorFactory { get; }
 
         /// <summary>
-        /// Gets a value indicating whether authentication should be allowed on an unsecure session.
-        /// </summary>
-        bool AllowUnsecureAuthentication { get; }
-
-        /// <summary>
-        /// Gets a value indicating whether the client must authenticate in order to proceed.
-        /// </summary>
-        bool AuthenticationRequired { get; }
-
-        /// <summary>
         /// The supported SSL protocols.
         /// </summary>
         SslProtocols SupportedSslProtocols { get; }

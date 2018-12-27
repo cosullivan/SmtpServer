@@ -22,6 +22,11 @@ namespace SmtpServer
         ISmtpServerOptions ServerOptions { get; }
 
         /// <summary>
+        /// Gets the endpoint definition.
+        /// </summary>
+        IEndpointDefinition EndpointDefinition { get; }
+
+        /// <summary>
         /// Gets the text stream to read from and write to.
         /// </summary>
         INetworkClient NetworkClient { get; }

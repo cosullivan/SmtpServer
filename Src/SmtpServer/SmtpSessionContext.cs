@@ -21,9 +21,11 @@ namespace SmtpServer
         /// Constructor.
         /// </summary>
         /// <param name="options">The server options.</param>
-        internal SmtpSessionContext(ISmtpServerOptions options)
+        /// <param name="endpointDefinition">The endpoint definition.</param>
+        internal SmtpSessionContext(ISmtpServerOptions options, IEndpointDefinition endpointDefinition)
         {
             ServerOptions = options;
+            EndpointDefinition = endpointDefinition;
             Transaction = new SmtpMessageTransaction();
             Properties = new Dictionary<string, object>();
         }
@@ -49,6 +51,11 @@ namespace SmtpServer
         /// Gets the options that the server was created with.
         /// </summary>
         public ISmtpServerOptions ServerOptions { get; }
+
+        /// <summary>
+        /// Gets the endpoint definition.
+        /// </summary>
+        public IEndpointDefinition EndpointDefinition { get; }
 
         /// <summary>
         /// Gets the text stream to read from and write to.

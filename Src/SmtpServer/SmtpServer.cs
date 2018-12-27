@@ -73,13 +73,11 @@ namespace SmtpServer
             {
                 while (cancellationToken.IsCancellationRequested == false)
                 {
-                    var sessionContext = new SmtpSessionContext(_options);
+                    var sessionContext = new SmtpSessionContext(_options, endpointDefinition);
 
                     // wait for a client connection
                     var stream = await endpointListener.GetStreamAsync(sessionContext, cancellationToken).ConfigureAwait(false);
                     cancellationToken.ThrowIfCancellationRequested();
-
-                    HERE: move different options to the endpoint where appropriate
 
                     sessionContext.NetworkClient = new NetworkClient(stream, _options.NetworkBufferSize, _options.NetworkBufferReadTimeout);
 

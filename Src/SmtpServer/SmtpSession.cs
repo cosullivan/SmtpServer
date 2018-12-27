@@ -22,7 +22,7 @@ namespace SmtpServer
         internal SmtpSession(SmtpSessionContext context)
         {
             _context = context;
-            _stateMachine = new SmtpStateMachine(context.ServerOptions, _context);
+            _stateMachine = new SmtpStateMachine(_context);
         }
 
         /// <summary>

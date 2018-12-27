@@ -75,6 +75,19 @@ namespace SmtpServer
         }
 
         /// <summary>
+        /// Adds a definition for an endpoint to listen on.
+        /// </summary>
+        /// <param name="configure">The endpoint to listen on.</param>
+        /// <returns>A OptionsBuilder to continue building on.</returns>
+        public SmtpServerOptionsBuilder Endpoint(Action<EndpointDefinitionBuilder> configure)
+        {
+            var endpointDefinitionBuilder = new EndpointDefinitionBuilder();
+            configure(endpointDefinitionBuilder);
+
+            return Endpoint(endpointDefinitionBuilder.Build());
+        }
+
+        /// <summary>
         /// Adds an endpoint with the given port.
         /// </summary>
         /// <param name="ports">The port to add as the endpoint.</param>
@@ -146,30 +159,6 @@ namespace SmtpServer
         public SmtpServerOptionsBuilder UserAuthenticator(IUserAuthenticatorFactory value)
         {
             _setters.Add(options => options.UserAuthenticatorFactory = value ?? DoNothingUserAuthenticator.Instance);
-
-            return this;
-        }
-
-        /// <summary>
-        /// Sets a value indicating whether authentication should be allowed on an unsecure session.
-        /// </summary>
-        /// <param name="value">true if the AUTH command is available on an unsecure session, false if not.</param>
-        /// <returns>A OptionsBuilder to continue building on.</returns>
-        public SmtpServerOptionsBuilder AllowUnsecureAuthentication(bool value = true)
-        {
-            _setters.Add(options => options.AllowUnsecureAuthentication = value);
-
-            return this;
-        }
-
-        /// <summary>
-        /// Sets a value indicating whether the client must authenticate in order to proceed.
-        /// </summary>
-        /// <param name="value">true if the client must issue an AUTH command before sending any mail, false if not.</param>
-        /// <returns>A OptionsBuilder to continue building on.</returns>
-        public SmtpServerOptionsBuilder AuthenticationRequired(bool value = true)
-        {
-            _setters.Add(options => options.AuthenticationRequired = value);
 
             return this;
         }
@@ -311,16 +300,6 @@ namespace SmtpServer
             /// Gets the user authenticator factory to use.
             /// </summary>
             public IUserAuthenticatorFactory UserAuthenticatorFactory { get; set; }
-
-            /// <summary>
-            /// Gets a value indicating whether authentication should be allowed on an unsecure session.
-            /// </summary>
-            public bool AllowUnsecureAuthentication { get; set; }
-
-            /// <summary>
-            /// Gets a value indicating whether the client must authenticate in order to proceed.
-            /// </summary>
-            public bool AuthenticationRequired { get; set; }
 
             /// <summary>
             /// The supported SSL protocols.
