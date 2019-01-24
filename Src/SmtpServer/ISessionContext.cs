@@ -37,6 +37,11 @@ namespace SmtpServer
         bool IsAuthenticated { get; }
 
         /// <summary>
+        /// Returns a value indicating the context's currently authenticated user.  null if no user is authenticated.
+        /// </summary>
+        string AuthenticatedUser { get; }
+
+        /// <summary>
         /// Returns a set of propeties for the current session.
         /// </summary>
         IDictionary<string, object> Properties { get; }

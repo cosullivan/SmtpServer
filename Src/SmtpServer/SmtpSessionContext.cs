@@ -73,6 +73,11 @@ namespace SmtpServer
         public bool IsAuthenticated { get; internal set; }
 
         /// <summary>
+        /// Returns a value indicating the context's currently authenticated user.  null if no user is authenticated.
+        /// </summary>
+        string AuthenticatedUser { get; internal set; }
+
+        /// <summary>
         /// Gets a value indicating whether a quit has been requested.
         /// </summary>
         public bool IsQuitRequested { get; internal set; }

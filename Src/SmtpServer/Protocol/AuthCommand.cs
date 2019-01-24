@@ -70,6 +70,7 @@ namespace SmtpServer.Protocol
             await context.NetworkClient.ReplyAsync(SmtpResponse.AuthenticationSuccessful, cancellationToken).ReturnOnAnyThread();
 
             context.IsAuthenticated = true;
+            context.AuthenticatedUser = _user;
             context.RaiseSessionAuthenticated();
 
             return true;
