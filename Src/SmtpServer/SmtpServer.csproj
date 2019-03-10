@@ -5,7 +5,7 @@
     <LangVersion>7.2</LangVersion>
     <AssemblyName>SmtpServer</AssemblyName>
     <RootNamespace>SmtpServer</RootNamespace>
-    <Version>6.0.0-Beta3</Version>
+    <Version>6.1.0</Version>
     <Description>.NET SmtpServer</Description>
     <Authors>Cain O'Sullivan</Authors>
     <Company />
@@ -15,9 +15,10 @@
     <PackageTags>smtp smtpserver smtp server</PackageTags>
     <PackageLicenseUrl>https://raw.githubusercontent.com/cosullivan/SmtpServer/master/LICENSE</PackageLicenseUrl>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-    <AssemblyVersion>6.0.0.0</AssemblyVersion>
-    <FileVersion>6.0.0.0</FileVersion>
-    <PackageReleaseNotes>Abstracted out an IEndpointListener service that allows the Tcp connections to be handled externally. The RemoteEndPoint property on ISessionContext is now included in the Context's property bag as opposed to a direct property of the context. Framework requirement has now been bumped to .NET Standard 2.0.</PackageReleaseNotes>
+    <AssemblyVersion>6.1.0.0</AssemblyVersion>
+    <FileVersion>6.1.0.0</FileVersion>
+    <PackageReleaseNotes>Added additional codes to SmtpReplyCode.</PackageReleaseNotes>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
 </Project>

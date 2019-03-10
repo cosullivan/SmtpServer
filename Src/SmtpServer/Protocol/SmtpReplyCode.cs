@@ -43,7 +43,7 @@
         Ok = 250,
 
         /// <summary>
-        /// “User not local will forward”: the recipient’s account is not on the present server, so it will be relayed to another.
+        /// "User not local will forward": the recipient’s account is not on the present server, so it will be relayed to another.
         /// </summary>
         RelayToAnotherServer = 251,
 
@@ -63,13 +63,13 @@
         StartMailInput = 354,
 
         /// <summary>
-        /// “Timeout connection problem”: there have been issues during the message transfer.
+        /// "Timeout connection problem": there have been issues during the message transfer.
         /// </summary>
         TimeoutConnectionProblem = 420,
 
         /// <summary>
         /// The service is unavailable due to a connection problem: it may refer to an exceeded limit of simultaneous connections, or a more general temporary problem.
-        /// The server (yours or the recipient’s) is not available at the moment, so the dispatch will be tried again later.
+        /// The server (yours or the recipient's) is not available at the moment, so the dispatch will be tried again later.
         /// </summary>
         ServiceUnavailable = 421,
 
@@ -78,8 +78,8 @@
         /// </summary>
         ExceededStorage = 422,
 
-        /// </summary>
-        /// Not enough space on the disk, or an “out of memory” condition due to a file overload.
+        /// <summary>
+        /// Not enough space on the disk, or an "out of memory" condition due to a file overload.
         /// </summary>
         Overloaded = 431,
 
@@ -88,12 +88,12 @@
         /// </summary>
         RecipientNotResponding = 441,
 
-        /// </summary>
+        /// <summary>
         /// The connection was dropped during the transmission.
         /// </summary>
         ConnectionDropped = 442,
 
-        /// </summary>
+        /// <summary>
         /// The maximum hop count was exceeded for the message: an internal loop has occurred.
         /// </summary>
         MaxHopCountExceeded = 446,
@@ -109,12 +109,12 @@
         RoutingError = 449,
 
         /// <summary>
-        /// “Requested action not taken – The user’s mailbox is unavailable”. The mailbox has been corrupted or placed on an offline server, or your email hasn’t been accepted for IP problems or blacklisting.
+        /// "Requested action not taken – The user’s mailbox is unavailable". The mailbox has been corrupted or placed on an offline server, or your email hasn't been accepted for IP problems or blacklisting.
         /// </summary>
         Unavailable = 450,
 
         /// <summary>
-        /// “Requested action aborted – Local error in processing”. Your ISP’s server or the server that got a first relay from yours has encountered a connection problem.
+        /// "Requested action aborted – Local error in processing". Your ISP's server or the server that got a first relay from yours has encountered a connection problem.
         /// </summary>
         Aborted = 451,
 
@@ -161,22 +161,22 @@
         /// <summary>
         /// Bad email address.
         /// Codes 510 or 511 result the same structure.
-        /// One of the addresses in your TO, CC or BBC line doesn’t exist. Check again your recipients’ accounts and correct any possible misspelling.
+        /// One of the addresses in your TO, CC or BBC line doesn't exist. Check again your recipients' accounts and correct any possible misspelling.
         /// </summary>
         BadEmailAddress = 510,
 
         /// <summary>
-        /// A DNS error: the host server for the recipient’s domain name cannot be found.
+        /// A DNS error: the host server for the recipient's domain name cannot be found.
         /// </summary>
         DnsError = 512,
 
         /// <summary>
-        /// “Address type is incorrect”: another problem concerning address misspelling. In few cases, however, it’s related to an authentication issue.
+        /// "Address type is incorrect": another problem concerning address misspelling. In few cases, however, it's related to an authentication issue.
         /// </summary>
         IncorrectAddressType = 513,
 
         /// <summary>
-        /// The total size of your mailing exceeds the recipient server’s limits.
+        /// The total size of your mailing exceeds the recipient server's limits.
         /// </summary>
         MailingLimitExceeded = 523,
 
@@ -191,7 +191,7 @@
         AuthenticationFailed = 535,
 
         /// <summary>
-        /// The recipient address rejected your message: normally, it’s an error caused by an anti-spam filter.
+        /// The recipient address rejected your message: normally, it's an error caused by an anti-spam filter.
         /// </summary>
         RecipientAddressRejected = 541,
 
@@ -201,7 +201,7 @@
         MailboxUnavailable = 550,
 
         /// <summary>
-        /// “User not local or invalid address – Relay denied”. Meaning, if both your address and the recipient’s are not locally hosted by the server, a relay can be interrupted.
+        /// "User not local or invalid address – Relay denied". Meaning, if both your address and the recipients are not locally hosted by the server, a relay can be interrupted.
         /// </summary>
         RelayDenied = 551,
 
