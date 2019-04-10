@@ -55,7 +55,7 @@ namespace SmtpServer
         /// <returns>A task which performs the operation.</returns>
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            await Task.WhenAll(_options.Endpoints.Select(e => ListenAsync(e, cancellationToken))).ReturnOnAnyThread();
+            await Task.WhenAll(_options.Endpoints.Select(e => ListenAsync(e, cancellationToken))).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -83,7 +83,7 @@ namespace SmtpServer
 
                     if (endpointDefinition.IsSecure && _options.ServerCertificate != null)
                     {
-                        await sessionContext.NetworkClient.UpgradeAsync(_options.ServerCertificate, _options.SupportedSslProtocols, cancellationToken);
+                        await sessionContext.NetworkClient.UpgradeAsync(_options.ServerCertificate, _options.SupportedSslProtocols, cancellationToken).ConfigureAwait(false);
                         cancellationToken.ThrowIfCancellationRequested();
                     }
                     

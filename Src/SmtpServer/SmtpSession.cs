@@ -60,9 +60,9 @@ namespace SmtpServer
                 return;
             }
 
-            await OutputGreetingAsync(cancellationToken).ReturnOnAnyThread();
+            await OutputGreetingAsync(cancellationToken).ConfigureAwait(false);
 
-            await ExecuteAsync(_context, cancellationToken).ReturnOnAnyThread();
+            await ExecuteAsync(_context, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -77,7 +77,7 @@ namespace SmtpServer
 
             while (retries-- > 0 && context.IsQuitRequested == false && cancellationToken.IsCancellationRequested == false)
             {
-                var text = await ReadCommandInputAsync(context, cancellationToken);
+                var text = await ReadCommandInputAsync(context, cancellationToken).ConfigureAwait(false);
 
                 if (text == null)
                 {
@@ -88,7 +88,7 @@ namespace SmtpServer
                 {
                     try
                     {
-                        if (await ExecuteAsync(command, context, cancellationToken).ReturnOnAnyThread())
+                        if (await ExecuteAsync(command, context, cancellationToken).ConfigureAwait(false))
                         {
                             _stateMachine.Transition(context);
                         }
@@ -105,12 +105,12 @@ namespace SmtpServer
                     }
                     catch (OperationCanceledException)
                     {
-                        await context.NetworkClient.ReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "The session has be cancelled."), cancellationToken);
+                        await context.NetworkClient.ReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "The session has be cancelled."), cancellationToken).ConfigureAwait(false);
                         return;
                     }
                 }
 
-                await context.NetworkClient.ReplyAsync(CreateErrorResponse(response, retries), cancellationToken);
+                await context.NetworkClient.ReplyAsync(CreateErrorResponse(response, retries), cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -128,17 +128,17 @@ namespace SmtpServer
            
             try
             {
-                return await context.NetworkClient.ReadLineAsync(cancellationTokenSource.Token).ReturnOnAnyThread();
+                return await context.NetworkClient.ReadLineAsync(cancellationTokenSource.Token).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
                 if (timeout.IsCancellationRequested)
                 {
-                    await context.NetworkClient.ReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "Timeout whilst waiting for input."), cancellationToken);
+                    await context.NetworkClient.ReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "Timeout whilst waiting for input."), cancellationToken).ConfigureAwait(false);
                     return null;
                 }
 
-                await context.NetworkClient.ReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "The session has be cancelled."), CancellationToken.None);
+                await context.NetworkClient.ReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "The session has be cancelled."), CancellationToken.None).ConfigureAwait(false);
                 return null;
             }
             finally
@@ -197,8 +197,8 @@ namespace SmtpServer
         {
             var version = typeof(SmtpSession).GetTypeInfo().Assembly.GetName().Version;
 
-            await _context.NetworkClient.WriteLineAsync($"220 {_context.ServerOptions.ServerName} v{version} ESMTP ready", cancellationToken).ReturnOnAnyThread();
-            await _context.NetworkClient.FlushAsync(cancellationToken).ReturnOnAnyThread();
+            await _context.NetworkClient.WriteLineAsync($"220 {_context.ServerOptions.ServerName} v{version} ESMTP ready", cancellationToken).ConfigureAwait(false);
+            await _context.NetworkClient.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
         
         /// <summary>
