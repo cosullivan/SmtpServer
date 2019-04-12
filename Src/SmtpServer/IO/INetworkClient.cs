@@ -76,7 +76,7 @@ namespace SmtpServer.IO
 
                 return found < sequence.Length;
             },
-            cancellationToken: cancellationToken);
+            cancellationToken: cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -92,7 +92,7 @@ namespace SmtpServer.IO
                 throw new ArgumentNullException(nameof(client));
             }
 
-            return Trim(await client.ReadUntilAsync(new byte[] { 13, 10 }, cancellationToken).ReturnOnAnyThread(), new byte[] { 13, 10 });
+            return Trim(await client.ReadUntilAsync(new byte[] { 13, 10 }, cancellationToken).ConfigureAwait(false), new byte[] { 13, 10 });
         }
 
         /// <summary>
@@ -109,7 +109,7 @@ namespace SmtpServer.IO
                 throw new ArgumentNullException(nameof(client));
             }
 
-            var blocks = await client.ReadLineAsync(cancellationToken);
+            var blocks = await client.ReadLineAsync(cancellationToken).ConfigureAwait(false);
 
             return blocks.Count == 0
                 ? null
@@ -170,7 +170,7 @@ namespace SmtpServer.IO
         }
 
         /// <summary>
-        /// Read a blank-line delimated block.
+        /// Read a blank-line delimited block.
         /// </summary>
         /// <param name="client">The stream to read a line from.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
@@ -182,7 +182,7 @@ namespace SmtpServer.IO
                 throw new ArgumentNullException(nameof(client));
             }
 
-            var blocks = await client.ReadUntilAsync(new byte[] { 13, 10, 13, 10 }, cancellationToken).ReturnOnAnyThread();
+            var blocks = await client.ReadUntilAsync(new byte[] { 13, 10, 13, 10 }, cancellationToken).ConfigureAwait(false);
 
             return Unstuff(Trim(blocks, new byte[] { 13, 10, 13, 10 })).ToList();
         }
@@ -200,7 +200,7 @@ namespace SmtpServer.IO
                 throw new ArgumentNullException(nameof(client));
             }
 
-            var blocks = await client.ReadUntilAsync(new byte[] { 13, 10, 46, 13, 10 }, cancellationToken).ReturnOnAnyThread();
+            var blocks = await client.ReadUntilAsync(new byte[] { 13, 10, 46, 13, 10 }, cancellationToken).ConfigureAwait(false);
 
             return Unstuff(Trim(blocks, new byte[] { 13, 10, 46, 13, 10 })).ToList();
         }
@@ -337,8 +337,8 @@ namespace SmtpServer.IO
                 throw new ArgumentNullException(nameof(client));
             }
 
-            await client.WriteLineAsync($"{(int)response.ReplyCode} {response.Message}", cancellationToken);
-            await client.FlushAsync(cancellationToken);
+            await client.WriteLineAsync($"{(int)response.ReplyCode} {response.Message}", cancellationToken).ConfigureAwait(false);
+            await client.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
     }
 }

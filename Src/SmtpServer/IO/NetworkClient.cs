@@ -56,7 +56,7 @@ namespace SmtpServer.IO
         /// <returns>The list of buffers that contain the bytes matching while the predicate was true.</returns>
         public async Task<IReadOnlyList<ArraySegment<byte>>> ReadAsync(Func<byte, bool> @continue, long count, CancellationToken cancellationToken = default)
         {
-            if (await ReadBufferAsync(cancellationToken) == false)
+            if (await ReadBufferAsync(cancellationToken).ConfigureAwait(false) == false)
             {
                 return new List<ArraySegment<byte>>();
             }
@@ -72,7 +72,7 @@ namespace SmtpServer.IO
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                if (await ReadBufferAsync(cancellationToken) == false)
+                if (await ReadBufferAsync(cancellationToken).ConfigureAwait(false) == false)
                 {
                     return segments;
                 }
@@ -99,7 +99,7 @@ namespace SmtpServer.IO
         {
             foreach (var buffer in buffers)
             {
-                await _stream.WriteAsync(buffer.Array, buffer.Offset, buffer.Count, cancellationToken);
+                await _stream.WriteAsync(buffer.Array, buffer.Offset, buffer.Count, cancellationToken).ConfigureAwait(false);
 
                 cancellationToken.ThrowIfCancellationRequested();
             }
@@ -126,7 +126,7 @@ namespace SmtpServer.IO
         {
             var stream = new SslStream(_stream, true);
 
-            await stream.AuthenticateAsServerAsync(certificate, false, protocols, true);
+            await stream.AuthenticateAsServerAsync(certificate, false, protocols, true).ConfigureAwait(false);
             
             _stream = stream;
         }
@@ -144,7 +144,7 @@ namespace SmtpServer.IO
             {
                 _index = 0;
                 _buffer = new byte[_bufferLength];
-                _bytesRead = await _stream.ReadAsync(_buffer, 0, _buffer.Length, cancellationToken).ReturnOnAnyThread();
+                _bytesRead = await _stream.ReadAsync(_buffer, 0, _buffer.Length, cancellationToken).ConfigureAwait(false);
             }
 
             return _bytesRead > 0;

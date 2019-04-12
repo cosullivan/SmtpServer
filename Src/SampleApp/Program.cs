@@ -2,6 +2,7 @@
 using System.Net;
 using System.Security.Authentication;
 using System.Threading;
+using System.Threading.Tasks;
 using SampleApp.Examples;
 using SmtpServer;
 using SmtpServer.Authentication;
@@ -13,7 +14,7 @@ namespace SampleApp
 {
     class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             //SessionTracingExample.Run();
             
@@ -31,9 +32,11 @@ namespace SampleApp
             server.SessionCreated += OnSessionCreated;
             server.SessionCompleted += OnSessionCompleted;
 
-            server.StartAsync(CancellationToken.None);
+            var serverTask = server.StartAsync(CancellationToken.None);
 
             Console.ReadKey();
+
+            await serverTask.ConfigureAwait(false);
         }
 
         static void OnSessionCreated(object sender, SessionEventArgs e)
@@ -124,7 +127,7 @@ namespace SampleApp
 
         //    var smtpServer = new SmtpServer.SmtpServer(options);
 
-        //    await smtpServer.StartAsync(cancellationToken);
+        //    await smtpServer.StartAsync(cancellationToken).ConfigureAwait(false);
         //}
 
         //static async Task RunClientAsync(
@@ -159,11 +162,11 @@ namespace SampleApp
         //            {
         //                if (smtpClient.IsConnected == false)
         //                {
-        //                    await smtpClient.ConnectAsync("localhost", 9025, false, cancellationToken);
+        //                    await smtpClient.ConnectAsync("localhost", 9025, false, cancellationToken).ConfigureAwait(false);
 
         //                    if (smtpClient.Capabilities.HasFlag(SmtpCapabilities.Authentication))
         //                    {
-        //                        await smtpClient.AuthenticateAsync("user", "password", cancellationToken);
+        //                        await smtpClient.AuthenticateAsync("user", "password", cancellationToken).ConfigureAwait(false);
         //                    }
         //                }
 
@@ -179,7 +182,7 @@ namespace SampleApp
 
         //            if (forceConnection)
         //            {
-        //                await smtpClient.DisconnectAsync(true, cancellationToken);
+        //                await smtpClient.DisconnectAsync(true, cancellationToken).ConfigureAwait(false);
         //            }
 
         //            counter++;

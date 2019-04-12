@@ -23,8 +23,8 @@ namespace SmtpServer.Protocol
         /// if the current state is to be maintained.</returns>
         internal override async Task<bool> ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            await context.NetworkClient.ReplyAsync(SmtpResponse.ServiceReady, cancellationToken).ReturnOnAnyThread();
-            await context.NetworkClient.UpgradeAsync(Options.ServerCertificate, Options.SupportedSslProtocols, cancellationToken).ReturnOnAnyThread();
+            await context.NetworkClient.ReplyAsync(SmtpResponse.ServiceReady, cancellationToken).ConfigureAwait(false);
+            await context.NetworkClient.UpgradeAsync(Options.ServerCertificate, Options.SupportedSslProtocols, cancellationToken).ConfigureAwait(false);
 
             return true;
         }

@@ -33,7 +33,7 @@ namespace SmtpServer.Net
         /// <returns>The stream from the endpoint.</returns>
         public async Task<Stream> GetStreamAsync(ISessionContext context, CancellationToken cancellationToken)
         {
-            var tcpClient = await _tcpListener.AcceptTcpClientAsync().WithCancellation(cancellationToken);
+            var tcpClient = await _tcpListener.AcceptTcpClientAsync().WithCancellation(cancellationToken).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
 
             context.Properties.Add(LocalEndPointKey, _tcpListener.LocalEndpoint);
