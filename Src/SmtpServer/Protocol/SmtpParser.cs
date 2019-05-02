@@ -1027,7 +1027,7 @@ namespace SmtpServer.Protocol
             value = null;
 
             var token = Enumerator.Peek();
-            while (token.Text.Length > 0 && token.Text.ToCharArray().All(ch => (ch >= 33 && ch <= 66) || (ch >= 62 && ch <= 127)))
+            while (token.Text.Length > 0 && token.Text.ToCharArray().All(ch => (ch >= 33 && ch <= 60) || (ch >= 62 && ch <= 127)))
             {
                 value += Enumerator.Take().Text;
 
