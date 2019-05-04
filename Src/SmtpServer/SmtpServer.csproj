@@ -5,20 +5,28 @@
     <LangVersion>7.2</LangVersion>
     <AssemblyName>SmtpServer</AssemblyName>
     <RootNamespace>SmtpServer</RootNamespace>
-    <Version>6.1.0</Version>
+    <Version>6.2.1</Version>
     <Description>.NET SmtpServer</Description>
     <Authors>Cain O'Sullivan</Authors>
     <Company />
-    <Copyright>2018</Copyright>
+    <Copyright>2015-2019</Copyright>
     <RepositoryUrl>https://github.com/cosullivan/SmtpServer</RepositoryUrl>
     <PackageProjectUrl>http://cainosullivan.com/smtpserver</PackageProjectUrl>
     <PackageTags>smtp smtpserver smtp server</PackageTags>
-    <PackageLicenseUrl>https://raw.githubusercontent.com/cosullivan/SmtpServer/master/LICENSE</PackageLicenseUrl>
+    <PackageLicenseUrl></PackageLicenseUrl>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-    <AssemblyVersion>6.1.0.0</AssemblyVersion>
-    <FileVersion>6.1.0.0</FileVersion>
-    <PackageReleaseNotes>Added additional codes to SmtpReplyCode.</PackageReleaseNotes>
+    <AssemblyVersion>6.2.1.0</AssemblyVersion>
+    <FileVersion>6.2.1.0</FileVersion>
+    <PackageReleaseNotes>Fixed a bug that allowed '=' to be parsed in ESMTP values.</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+  </ItemGroup>
 
 </Project>
