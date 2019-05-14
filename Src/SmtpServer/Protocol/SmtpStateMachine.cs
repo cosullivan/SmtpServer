@@ -261,7 +261,7 @@ namespace SmtpServer.Protocol
         /// <returns>true if a PROXY command was found, false if not.</returns>
         private bool TryMakeProxy(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return new SmtpParser(_options, tokenEnumerator).TryMakeProxy(out command, out errorResponse);
+            return new SmtpParser(_context.ServerOptions, tokenEnumerator).TryMakeProxy(out command, out errorResponse);
         }
         
         /// <summary>
