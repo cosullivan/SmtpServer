@@ -13,7 +13,7 @@ namespace SmtpServer.Tests
     {
         static SmtpParser CreateParser(string text)
         {
-            var segment = new ArraySegment<byte>(Encoding.ASCII.GetBytes(text));
+            var segment = new ArraySegment<byte>(Encoding.UTF8.GetBytes(text));
 
             var options = new SmtpServerOptionsBuilder().Logger(new NullLogger()).Build();
 
@@ -60,7 +60,7 @@ namespace SmtpServer.Tests
             // assert
             Assert.True(result);
             Assert.True(command is HeloCommand);
-            Assert.Equal("abc-1-def.mail.com", ((HeloCommand)command).Domain);
+            Assert.Equal("abc-1-def.mail.com", ((HeloCommand)command).DomainOrAddress);
         }
 
         [Theory]
@@ -130,11 +130,21 @@ namespace SmtpServer.Tests
             Assert.Equal("Y2Fpbi5vc3VsbGl2YW5AZ21haWwuY29t", ((AuthCommand)command).Parameter);
         }
 
-        [Fact]
-        public void CanMakeMail()
+        [Theory]
+        [InlineData("cain.osullivan@gmail.com", "cain.osullivan", "gmail.com")]
+        [InlineData(@"""Abc@def""@example.com", "Abc@def", "example.com")]
+        [InlineData("pelé@example.com", "pelé", "example.com", "SMTPUTF8")]
+        public void CanMakeMail(string email, string user, string host, string extension = null)
         {
             // arrange
-            var parser = CreateParser("MAIL FROM:<cain.osullivan@gmail.com>");
+            var mailTo = $"MAIL FROM:<{email}>";
+
+            if (!string.IsNullOrWhiteSpace(extension))
+            {
+                mailTo += $" {extension}";
+            }
+
+            var parser = CreateParser(mailTo);
 
             // act
             var result = parser.TryMakeMail(out SmtpCommand command, out SmtpResponse errorResponse);
@@ -142,25 +152,15 @@ namespace SmtpServer.Tests
             // assert
             Assert.True(result);
             Assert.True(command is MailCommand);
-            Assert.Equal("cain.osullivan", ((MailCommand)command).Address.User);
-            Assert.Equal("gmail.com", ((MailCommand)command).Address.Host);
+            Assert.Equal(user, ((MailCommand)command).Address.User);
+            Assert.Equal(host, ((MailCommand)command).Address.Host);
+
+            if (!string.IsNullOrWhiteSpace(extension))
+            {
+                // verify the extension was put in the parameters
+                Assert.True(((MailCommand)command).Parameters.ContainsKey(extension));
+            }
         }
-
-        //[Fact]
-        //public void CanMakeUtf8Mail()
-        //{
-        //    // arrange
-        //    var parser = CreateParser("MAIL FROM:<pelé@example.com> SMTPUTF8");
-
-        //    // act
-        //    var result = parser.TryMakeMail(out SmtpCommand command, out SmtpResponse errorResponse);
-
-        //    // assert
-        //    Assert.True(result);
-        //    Assert.True(command is MailCommand);
-        //    Assert.Equal("pelé", ((MailCommand)command).Address.User);
-        //    Assert.Equal("example.com", ((MailCommand)command).Address.Host);
-        //}
 
         [Fact]
         public void CanMakeMailWithNoAddress()
@@ -211,11 +211,14 @@ namespace SmtpServer.Tests
             Assert.NotNull(errorResponse);
         }
 
-        [Fact]
-        public void CanMakeRcpt()
+        [Theory]
+        [InlineData("cain.osullivan@gmail.com", "cain.osullivan", "gmail.com")]
+        [InlineData(@"""Abc@def""@example.com", "Abc@def", "example.com")]
+        [InlineData("pelé@example.com", "pelé", "example.com")]
+        public void CanMakeRcpt(string email, string user, string host)
         {
             // arrange
-            var parser = CreateParser("RCPT TO:<cain.osullivan@gmail.com>");
+            var parser = CreateParser($"RCPT TO:<{email}>");
 
             // act
             var result = parser.TryMakeRcpt(out SmtpCommand command, out SmtpResponse errorResponse);
@@ -223,8 +226,8 @@ namespace SmtpServer.Tests
             // assert
             Assert.True(result);
             Assert.True(command is RcptCommand);
-            Assert.Equal("cain.osullivan", ((RcptCommand)command).Address.User);
-            Assert.Equal("gmail.com", ((RcptCommand)command).Address.Host);
+            Assert.Equal(user, ((RcptCommand)command).Address.User);
+            Assert.Equal(host, ((RcptCommand)command).Address.Host);
         }
 
         [Fact]

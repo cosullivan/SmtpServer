@@ -1,12 +1,61 @@
-﻿using SampleApp.Examples;
+﻿using System;
+using System.Net;
+using System.Security.Authentication;
+using System.Threading;
+using System.Threading.Tasks;
+using SampleApp.Examples;
+using SmtpServer;
+using SmtpServer.Authentication;
+using SmtpServer.Net;
+using SmtpServer.Tests;
+using SmtpServer.Tracing;
 
 namespace SampleApp
 {
     class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
-            SecureServerExample.Run();
+            //SessionTracingExample.Run();
+            
+            ServicePointManager.ServerCertificateValidationCallback = SmtpServerTests.IgnoreCertificateValidationFailureForTestingOnly;
+
+            var options = new SmtpServerOptionsBuilder()
+                .ServerName("SmtpServer SampleApp")
+                .Port(9025)
+                .UserAuthenticator(new DelegatingUserAuthenticator((user, password) => true))
+                .Certificate(SmtpServerTests.CreateCertificate())
+                .Build();
+
+            var server = new SmtpServer.SmtpServer(options);
+
+            server.SessionCreated += OnSessionCreated;
+            server.SessionCompleted += OnSessionCompleted;
+
+            var serverTask = server.StartAsync(CancellationToken.None);
+
+            Console.ReadKey();
+
+            await serverTask.ConfigureAwait(false);
+        }
+
+        static void OnSessionCreated(object sender, SessionEventArgs e)
+        {
+            Console.WriteLine("SessionCreated: {0}", e.Context.Properties[EndpointListener.RemoteEndPointKey]);
+
+            e.Context.CommandExecuting += OnCommandExecuting;
+        }
+
+        static void OnCommandExecuting(object sender, SmtpCommandExecutingEventArgs e)
+        {
+            new TracingSmtpCommandVisitor(Console.Out).Visit(e.Command);
+        }
+
+        static void OnSessionCompleted(object sender, SessionEventArgs e)
+        {
+            Console.WriteLine("SessionCompleted: {0}", e.Context.Properties[EndpointListener.RemoteEndPointKey]);
+
+            e.Context.CommandExecuting -= OnCommandExecuting;
         }
 
         //static void Main(string[] args)
@@ -78,7 +127,7 @@ namespace SampleApp
 
         //    var smtpServer = new SmtpServer.SmtpServer(options);
 
-        //    await smtpServer.StartAsync(cancellationToken);
+        //    await smtpServer.StartAsync(cancellationToken).ConfigureAwait(false);
         //}
 
         //static async Task RunClientAsync(
@@ -113,11 +162,11 @@ namespace SampleApp
         //            {
         //                if (smtpClient.IsConnected == false)
         //                {
-        //                    await smtpClient.ConnectAsync("localhost", 9025, false, cancellationToken);
+        //                    await smtpClient.ConnectAsync("localhost", 9025, false, cancellationToken).ConfigureAwait(false);
 
         //                    if (smtpClient.Capabilities.HasFlag(SmtpCapabilities.Authentication))
         //                    {
-        //                        await smtpClient.AuthenticateAsync("user", "password", cancellationToken);
+        //                        await smtpClient.AuthenticateAsync("user", "password", cancellationToken).ConfigureAwait(false);
         //                    }
         //                }
 
@@ -133,7 +182,7 @@ namespace SampleApp
 
         //            if (forceConnection)
         //            {
-        //                await smtpClient.DisconnectAsync(true, cancellationToken);
+        //                await smtpClient.DisconnectAsync(true, cancellationToken).ConfigureAwait(false);
         //            }
 
         //            counter++;

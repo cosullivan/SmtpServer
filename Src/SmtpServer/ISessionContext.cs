@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Net;
 using SmtpServer.IO;
 
 namespace SmtpServer
@@ -18,14 +17,14 @@ namespace SmtpServer
         event EventHandler<EventArgs> SessionAuthenticated;
 
         /// <summary>
-        /// Gets the remote endpoint of the client.
-        /// </summary>
-        EndPoint RemoteEndPoint { get; }
-
-        /// <summary>
         /// Gets the options that the server was created with.
         /// </summary>
         ISmtpServerOptions ServerOptions { get; }
+
+        /// <summary>
+        /// Gets the endpoint definition.
+        /// </summary>
+        IEndpointDefinition EndpointDefinition { get; }
 
         /// <summary>
         /// Gets the text stream to read from and write to.

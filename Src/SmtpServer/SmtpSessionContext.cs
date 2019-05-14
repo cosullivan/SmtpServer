@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Net;
-using System.Net.Sockets;
 using SmtpServer.IO;
 using SmtpServer.Protocol;
 
@@ -23,14 +21,12 @@ namespace SmtpServer
         /// Constructor.
         /// </summary>
         /// <param name="options">The server options.</param>
-        /// <param name="tcpClient">The TCP client that the session is connected with.</param>
-        /// <param name="networkClient">The network client to use for communications.</param>
-        internal SmtpSessionContext(ISmtpServerOptions options, TcpClient tcpClient, INetworkClient networkClient)
+        /// <param name="endpointDefinition">The endpoint definition.</param>
+        internal SmtpSessionContext(ISmtpServerOptions options, IEndpointDefinition endpointDefinition)
         {
             ServerOptions = options;
+            EndpointDefinition = endpointDefinition;
             Transaction = new SmtpMessageTransaction();
-            RemoteEndPoint = tcpClient.Client.RemoteEndPoint;
-            NetworkClient = networkClient;
             Properties = new Dictionary<string, object>();
         }
 
@@ -57,19 +53,19 @@ namespace SmtpServer
         public ISmtpServerOptions ServerOptions { get; }
 
         /// <summary>
+        /// Gets the endpoint definition.
+        /// </summary>
+        public IEndpointDefinition EndpointDefinition { get; }
+
+        /// <summary>
         /// Gets the text stream to read from and write to.
         /// </summary>
-        public INetworkClient NetworkClient { get; }
+        public INetworkClient NetworkClient { get; internal set; }
 
         /// <summary>
         /// Gets the current transaction.
         /// </summary>
         public SmtpMessageTransaction Transaction { get; }
-
-        /// <summary>
-        /// Gets the remote endpoint of the client.
-        /// </summary>
-        public EndPoint RemoteEndPoint { get; }
 
         /// <summary>
         /// Returns a value indicating whether or nor the current session is authenticated.

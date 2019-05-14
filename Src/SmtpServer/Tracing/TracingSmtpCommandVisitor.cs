@@ -48,7 +48,7 @@ namespace SmtpServer.Tracing
         /// <param name="command">The command that is being visited.</param>
         protected override void Visit(HeloCommand command)
         {
-            _output.WriteLine("HELO: Domain={0}", command.Domain);
+            _output.WriteLine("HELO: DomainOrAddress={0}", command.DomainOrAddress);
         }
 
         /// <summary>

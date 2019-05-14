@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Text;
 using SmtpServer.IO;
 using Xunit;
@@ -12,7 +11,7 @@ namespace SmtpServer.Tests
         {
             var stream = new System.IO.MemoryStream(Encoding.ASCII.GetBytes(text));
 
-            return new NetworkClient(stream, bufferLength, TimeSpan.FromMinutes(10));
+            return new NetworkClient(stream, bufferLength);
         }
 
         [Fact]
@@ -23,7 +22,7 @@ namespace SmtpServer.Tests
             var client = CreateNetworkClient("abcde\r\n");
 
             // act
-            var line = await client.ReadLineAsync(Encoding.ASCII);
+            var line = await client.ReadLineAsync(Encoding.ASCII).ConfigureAwait(false);
 
             // assert
             Assert.Equal(5, line.Length);
@@ -37,7 +36,7 @@ namespace SmtpServer.Tests
             var client = CreateNetworkClient("abcde");
 
             // act
-            var line = await client.ReadLineAsync(Encoding.ASCII);
+            var line = await client.ReadLineAsync(Encoding.ASCII).ConfigureAwait(false);
 
             // assert
             Assert.Equal(5, line.Length);
@@ -52,7 +51,7 @@ namespace SmtpServer.Tests
             var client = CreateNetworkClient("ab\rcd\ne\r\n");
 
             // act
-            var line = await client.ReadLineAsync(Encoding.ASCII);
+            var line = await client.ReadLineAsync(Encoding.ASCII).ConfigureAwait(false);
 
             // assert
             Assert.Equal(7, line.Length);
@@ -67,9 +66,9 @@ namespace SmtpServer.Tests
             var client = CreateNetworkClient("abcde\r\nfghij\r\nklmno\r\n");
 
             // act
-            var line1 = await client.ReadLineAsync(Encoding.ASCII);
-            var line2 = await client.ReadLineAsync(Encoding.ASCII);
-            var line3 = await client.ReadLineAsync(Encoding.ASCII);
+            var line1 = await client.ReadLineAsync(Encoding.ASCII).ConfigureAwait(false);
+            var line2 = await client.ReadLineAsync(Encoding.ASCII).ConfigureAwait(false);
+            var line3 = await client.ReadLineAsync(Encoding.ASCII).ConfigureAwait(false);
 
             // assert
             Assert.Equal("abcde", line1);
@@ -84,7 +83,7 @@ namespace SmtpServer.Tests
             var client = CreateNetworkClient("abcd\r\n..1234\r\n.\r\n", 3);
 
             // act
-            var blocks = await client.ReadDotBlockAsync();
+            var blocks = await client.ReadDotBlockAsync().ConfigureAwait(false);
 
             // assert
             Assert.Equal(11, blocks.Sum(b => b.Count));

@@ -1,5 +1,4 @@
-﻿using System.Net;
-using System.Threading;
+﻿using System.Threading;
 using SmtpServer;
 
 namespace SampleApp.Examples
@@ -13,7 +12,6 @@ namespace SampleApp.Examples
             var options = new SmtpServerOptionsBuilder()
                 .ServerName("SmtpServer SampleApp")
                 .Port(9025)
-                //.Endpoint(new EndpointDefinitionBuilder().Endpoint(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 9025)).Build())
                 .Build();
 
             var server = new SmtpServer.SmtpServer(options);

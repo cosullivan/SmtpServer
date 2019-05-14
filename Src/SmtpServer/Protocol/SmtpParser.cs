@@ -144,16 +144,23 @@ namespace SmtpServer.Protocol
             Enumerator.Take();
             Enumerator.Skip(TokenKind.Space);
 
-            if (TryMakeDomain(out string domain) == false)
+            if (TryMakeDomain(out var domain))
             {
-                _options.Logger.LogVerbose("Could not match the domain name (Text={0}).", CompleteTokenizedText());
-
-                errorResponse = SmtpResponse.SyntaxError;
-                return false;
+                command = new HeloCommand(_options, domain);
+                return true;
             }
 
-            command = new HeloCommand(_options, domain);
-            return true;
+            // according to RFC5321 the HELO command should only accept the Domain
+            // and not the address literal, however some mail clients will send the
+            // address literal and there is no harm in accepting it
+            if (TryMakeAddressLiteral(out var address))
+            {
+                command = new HeloCommand(_options, address);
+                return true;
+            }
+
+            errorResponse = SmtpResponse.SyntaxError;
+            return false;
         }
 
         /// <summary>
@@ -170,13 +177,13 @@ namespace SmtpServer.Protocol
             Enumerator.Take();
             Enumerator.Skip(TokenKind.Space);
 
-            if (TryMakeDomain(out string domain))
+            if (TryMakeDomain(out var domain))
             {
                 command = new EhloCommand(_options, domain);
                 return true;
             }
 
-            if (TryMakeAddressLiteral(out string address))
+            if (TryMakeAddressLiteral(out var address))
             {
                 command = new EhloCommand(_options, address);
                 return true;
@@ -1285,8 +1292,7 @@ namespace SmtpServer.Protocol
             value = null;
 
             var token = Enumerator.Peek();
-            while (token.Text.Length > 0 &&
-                   token.Text.ToCharArray().All(ch => (ch >= 33 && ch <= 66) || (ch >= 62 && ch <= 127)))
+            while (token.Text.Length > 0 && token.Text.ToCharArray().All(ch => (ch >= 33 && ch <= 60) || (ch >= 62 && ch <= 127)))
             {
                 value += Enumerator.Take().Text;
 

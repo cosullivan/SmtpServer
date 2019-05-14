@@ -21,9 +21,11 @@ namespace SampleApp.Examples
             var options = new SmtpServerOptionsBuilder()
                 .ServerName("SmtpServer SampleApp")
                 .Certificate(CreateCertificate())
-                .AllowUnsecureAuthentication(false)
+                .Endpoint(builder => 
+                    builder
+                        .Port(9025, true)
+                        .AllowUnsecureAuthentication(false))
                 .UserAuthenticator(new SampleUserAuthenticator())
-                .Port(9025, true)
                 .Build();
 
             var server = new SmtpServer.SmtpServer(options);

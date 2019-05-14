@@ -12,10 +12,10 @@ namespace SmtpServer.Protocol
         /// Constructor.
         /// </summary>
         /// <param name="options">The server options.</param>
-        /// <param name="domain">The domain name.</param>
-        internal HeloCommand(ISmtpServerOptions options, string domain) : base(options)
+        /// <param name="domainOrAddress">The domain name.</param>
+        internal HeloCommand(ISmtpServerOptions options, string domainOrAddress) : base(options)
         {
-            Domain = domain;
+            DomainOrAddress = domainOrAddress;
         }
 
         /// <summary>
@@ -27,9 +27,9 @@ namespace SmtpServer.Protocol
         /// if the current state is to be maintained.</returns>
         internal override async Task<bool> ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            var response = new SmtpResponse(SmtpReplyCode.Ok, $"Hello {Domain}, haven't we met before?");
+            var response = new SmtpResponse(SmtpReplyCode.Ok, $"Hello {DomainOrAddress}, haven't we met before?");
 
-            await context.NetworkClient.ReplyAsync(response, cancellationToken).ReturnOnAnyThread();
+            await context.NetworkClient.ReplyAsync(response, cancellationToken).ConfigureAwait(false);
 
             return true;
         }
@@ -37,6 +37,6 @@ namespace SmtpServer.Protocol
         /// <summary>
         /// Gets the domain name.
         /// </summary>
-        public string Domain { get; }
+        public string DomainOrAddress { get; }
     }
 }

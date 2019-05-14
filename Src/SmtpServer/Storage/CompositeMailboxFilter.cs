@@ -37,7 +37,7 @@ namespace SmtpServer.Storage
                 return MailboxFilterResult.Yes;
             }
 
-            var results = await Task.WhenAll(_filters.Select(f => f.CanAcceptFromAsync(context, @from, size, cancellationToken)));
+            var results = await Task.WhenAll(_filters.Select(f => f.CanAcceptFromAsync(context, @from, size, cancellationToken))).ConfigureAwait(false);
 
             return results.Max();
         }
@@ -61,7 +61,7 @@ namespace SmtpServer.Storage
                 return MailboxFilterResult.Yes;
             }
 
-            var results = await Task.WhenAll(_filters.Select(f => f.CanDeliverToAsync(context, to, @from, cancellationToken)));
+            var results = await Task.WhenAll(_filters.Select(f => f.CanDeliverToAsync(context, to, @from, cancellationToken))).ConfigureAwait(false);
 
             return results.Max();
         }

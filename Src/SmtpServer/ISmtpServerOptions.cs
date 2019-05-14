@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using SmtpServer.Authentication;
+using SmtpServer.Net;
 using SmtpServer.Storage;
 
 namespace SmtpServer
@@ -35,6 +36,11 @@ namespace SmtpServer
         IReadOnlyList<IEndpointDefinition> Endpoints { get; }
 
         /// <summary>
+        /// The endpoint listener factory.
+        /// </summary>
+        IEndpointListenerFactory EndpointListenerFactory { get; }
+
+        /// <summary>
         /// Gets the message store factory to use.
         /// </summary>
         IMessageStoreFactory MessageStoreFactory { get; }
@@ -48,16 +54,6 @@ namespace SmtpServer
         /// Gets the user authenticator factory to use.
         /// </summary>
         IUserAuthenticatorFactory UserAuthenticatorFactory { get; }
-
-        /// <summary>
-        /// Gets a value indicating whether authentication should be allowed on an unsecure session.
-        /// </summary>
-        bool AllowUnsecureAuthentication { get; }
-
-        /// <summary>
-        /// Gets a value indicating whether the client must authenticate in order to proceed.
-        /// </summary>
-        bool AuthenticationRequired { get; }
 
         /// <summary>
         /// The supported SSL protocols.

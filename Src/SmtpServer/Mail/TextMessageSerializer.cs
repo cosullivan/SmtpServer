@@ -14,7 +14,7 @@ namespace SmtpServer.Mail
         /// <returns>The message that was deserialized.</returns>
         public async Task<IMessage> DeserializeAsync(INetworkClient networkClient, CancellationToken cancellationToken = default(CancellationToken))
         {
-            var stream = new ByteArrayStream(await networkClient.ReadDotBlockAsync(cancellationToken));
+            var stream = new ByteArrayStream(await networkClient.ReadDotBlockAsync(cancellationToken).ConfigureAwait(false));
 
             return new TextMessage(stream);
         }

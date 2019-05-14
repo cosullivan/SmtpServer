@@ -9,18 +9,15 @@ namespace SmtpServer.Protocol
     {
         delegate bool TryMakeDelegate(TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse errorResponse);
 
-        readonly ISmtpServerOptions _options;
         readonly SmtpSessionContext _context;
         readonly StateTable _stateTable;
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="options">The options to assist when configuring the state machine.</param>
         /// <param name="context">The SMTP server session context.</param>
-        internal SmtpStateMachine(ISmtpServerOptions options, SmtpSessionContext context)
+        internal SmtpStateMachine(SmtpSessionContext context)
         {
-            _options = options;
             _context = context;
             _context.SessionAuthenticated += OnSessionAuthenticated;
             _stateTable = new StateTable
@@ -70,18 +67,18 @@ namespace SmtpServer.Protocol
                 }
             };
 
-            if (options.AllowUnsecureAuthentication)
+            if (context.EndpointDefinition.AllowUnsecureAuthentication)
             {
                 WaitingForMail.Add(AuthCommand.Command, TryMakeAuth);
             }
 
-            if (options.AuthenticationRequired)
+            if (context.EndpointDefinition.AuthenticationRequired)
             {
                 WaitingForMail.Replace(MailCommand.Command, MakeResponse(SmtpResponse.AuthenticationRequired));
                 WaitingForMailSecure.Replace(MailCommand.Command, MakeResponse(SmtpResponse.AuthenticationRequired));
             }
 
-            if (options.ServerCertificate != null && context.NetworkClient.IsSecure == false)
+            if (context.ServerOptions.ServerCertificate != null && context.NetworkClient.IsSecure == false)
             {
                 WaitingForMail.Add(StartTlsCommand.Command, TryMakeStartTls, SmtpState.WaitingForMailSecure);
             }
@@ -102,7 +99,7 @@ namespace SmtpServer.Protocol
             WaitingForMail.Remove(AuthCommand.Command);
             WaitingForMailSecure.Remove(AuthCommand.Command);
 
-            if (_options.AuthenticationRequired)
+            if (_context.EndpointDefinition.AuthenticationRequired)
             {
                 WaitingForMail.Replace(MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction);
                 WaitingForMailSecure.Replace(MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction);
@@ -156,7 +153,7 @@ namespace SmtpServer.Protocol
         /// <returns>true if a HELO command was found, false if not.</returns>
         bool TryMakeHelo(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return new SmtpParser(_options, tokenEnumerator).TryMakeHelo(out command, out errorResponse);
+            return new SmtpParser(_context.ServerOptions, tokenEnumerator).TryMakeHelo(out command, out errorResponse);
         }
 
         /// <summary>
@@ -168,7 +165,7 @@ namespace SmtpServer.Protocol
         /// <returns>true if a EHLO command was found, false if not.</returns>
         bool TryMakeEhlo(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return new SmtpParser(_options, tokenEnumerator).TryMakeEhlo(out command, out errorResponse);
+            return new SmtpParser(_context.ServerOptions, tokenEnumerator).TryMakeEhlo(out command, out errorResponse);
         }
 
         /// <summary>
@@ -180,7 +177,7 @@ namespace SmtpServer.Protocol
         /// <returns>true if a NOOP command was found, false if not.</returns>
         bool TryMakeNoop(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return new SmtpParser(_options, tokenEnumerator).TryMakeNoop(out command, out errorResponse);
+            return new SmtpParser(_context.ServerOptions, tokenEnumerator).TryMakeNoop(out command, out errorResponse);
         }
 
         /// <summary>
@@ -192,7 +189,7 @@ namespace SmtpServer.Protocol
         /// <returns>true if a QUIT command was found, false if not.</returns>
         bool TryMakeQuit(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return new SmtpParser(_options, tokenEnumerator).TryMakeQuit(out command, out errorResponse);
+            return new SmtpParser(_context.ServerOptions, tokenEnumerator).TryMakeQuit(out command, out errorResponse);
         }
 
         /// <summary>
@@ -204,7 +201,7 @@ namespace SmtpServer.Protocol
         /// <returns>true if a RSET command was found, false if not.</returns>
         bool TryMakeRset(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return new SmtpParser(_options, tokenEnumerator).TryMakeRset(out command, out errorResponse);
+            return new SmtpParser(_context.ServerOptions, tokenEnumerator).TryMakeRset(out command, out errorResponse);
         }
 
         /// <summary>
@@ -216,7 +213,7 @@ namespace SmtpServer.Protocol
         /// <returns>true if a AUTH command was found, false if not.</returns>
         bool TryMakeAuth(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return new SmtpParser(_options, tokenEnumerator).TryMakeAuth(out command, out errorResponse);
+            return new SmtpParser(_context.ServerOptions, tokenEnumerator).TryMakeAuth(out command, out errorResponse);
         }
 
         /// <summary>
@@ -228,7 +225,7 @@ namespace SmtpServer.Protocol
         /// <returns>true if a STARTTLS command was found, false if not.</returns>
         bool TryMakeStartTls(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return new SmtpParser(_options, tokenEnumerator).TryMakeStartTls(out command, out errorResponse);
+            return new SmtpParser(_context.ServerOptions, tokenEnumerator).TryMakeStartTls(out command, out errorResponse);
         }
 
         /// <summary>
@@ -240,7 +237,7 @@ namespace SmtpServer.Protocol
         /// <returns>true if a MAIL command was found, false if not.</returns>
         bool TryMakeMail(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return new SmtpParser(_options, tokenEnumerator).TryMakeMail(out command, out errorResponse);
+            return new SmtpParser(_context.ServerOptions, tokenEnumerator).TryMakeMail(out command, out errorResponse);
         }
 
         /// <summary>
@@ -252,7 +249,7 @@ namespace SmtpServer.Protocol
         /// <returns>true if a RCPT command was found, false if not.</returns>
         bool TryMakeRcpt(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return new SmtpParser(_options, tokenEnumerator).TryMakeRcpt(out command, out errorResponse);
+            return new SmtpParser(_context.ServerOptions, tokenEnumerator).TryMakeRcpt(out command, out errorResponse);
         }
 
         /// <summary>
@@ -276,7 +273,7 @@ namespace SmtpServer.Protocol
         /// <returns>true if a DATA command was found, false if not.</returns>
         bool TryMakeData(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return new SmtpParser(_options, tokenEnumerator).TryMakeData(out command, out errorResponse);
+            return new SmtpParser(_context.ServerOptions, tokenEnumerator).TryMakeData(out command, out errorResponse);
         }
 
         /// <summary>
