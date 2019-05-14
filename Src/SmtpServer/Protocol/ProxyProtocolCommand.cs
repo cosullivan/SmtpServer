@@ -12,6 +12,9 @@ namespace SmtpServer.Protocol
     /// </summary>
     public sealed class ProxyProtocolCommand : SmtpCommand
     {
+        public const string ProxySourceEndpointKey = "ProxyProtocol:ProxySourceEndpoint";
+        public const string ProxyDestinationEndpointKey = "ProxyProtocol:ProxyDestinationEndpoint";
+
         public const string Command = "PROXY";
 
         public IPEndPoint SourceEndpoint { get; }
@@ -25,9 +28,9 @@ namespace SmtpServer.Protocol
 
         internal override Task<bool> ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            context.ProxySourceEndpoint = SourceEndpoint;
-            context.ProxyDestinationEndpoint = DestinationEndpoint;
-
+            context.Properties.Add(ProxySourceEndpointKey, SourceEndpoint);
+            context.Properties.Add(ProxyDestinationEndpointKey, DestinationEndpoint);
+            
             // Do not transition smtp protocol state for these commands.
             return Task.FromResult(false);
         }

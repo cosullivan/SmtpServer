@@ -83,14 +83,6 @@ namespace SmtpServer
         /// </summary>
         public IDictionary<string, object> Properties { get; }
 
-        /// <summary>
-        /// The source address of the client connected to a proxy as reported by proxy-protocol.
-        /// </summary>
-        public IPEndPoint ProxySourceEndpoint { get; internal set; }
-        
-        /// <summary>
-        /// The destination endpoint on the proxy as reported by proxy-protocol.
-        /// </summary>
-        public IPEndPoint ProxyDestinationEndpoint { get; internal set; }
+     
     }
 }

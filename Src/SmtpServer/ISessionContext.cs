@@ -41,15 +41,5 @@ namespace SmtpServer
         /// Returns a set of propeties for the current session.
         /// </summary>
         IDictionary<string, object> Properties { get; }
-
-        /// <summary>
-        /// The source address of the client connected to a proxy as reported by proxy-protocol.
-        /// </summary>
-        IPEndPoint ProxySourceEndpoint { get; }
-
-        /// <summary>
-        /// The destination endpoint on the proxy as reported by proxy-protocol.
-        /// </summary>
-        IPEndPoint ProxyDestinationEndpoint { get; }
     }
 }
