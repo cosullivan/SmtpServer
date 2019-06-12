@@ -16,7 +16,7 @@ namespace SampleApp
     {
         static async Task Main(string[] args)
         {
-            //SessionTracingExample.Run();
+            SessionTracingExample.Run();
             
             ServicePointManager.ServerCertificateValidationCallback = SmtpServerTests.IgnoreCertificateValidationFailureForTestingOnly;
 

@@ -33,11 +33,11 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="context">The execution context to operate on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>Returns true if the command executed successfully such that the transition to the next state should occurr, false 
+        /// <returns>Returns true if the command executed successfully such that the transition to the next state should occur, false 
         /// if the current state is to be maintained.</returns>
         internal override async Task<bool> ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            context.IsAuthenticated = false;
+            context.Authentication = AuthenticationContext.Unauthenticated;
 
             switch (Method)
             {
@@ -69,7 +69,7 @@ namespace SmtpServer.Protocol
 
             await context.NetworkClient.ReplyAsync(SmtpResponse.AuthenticationSuccessful, cancellationToken).ConfigureAwait(false);
 
-            context.IsAuthenticated = true;
+            context.Authentication = new AuthenticationContext(_user);
             context.RaiseSessionAuthenticated();
 
             return true;
@@ -168,7 +168,7 @@ namespace SmtpServer.Protocol
         public AuthenticationMethod Method { get; }
 
         /// <summary>
-        /// The athentication parameter.
+        /// The authentication parameter.
         /// </summary>
         public string Parameter { get; }
     }

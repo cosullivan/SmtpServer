@@ -70,7 +70,13 @@ namespace SmtpServer
         /// <summary>
         /// Returns a value indicating whether or nor the current session is authenticated.
         /// </summary>
-        public bool IsAuthenticated { get; internal set; }
+        [Obsolete("Prefer the use of Authentication.IsAuthenticated")]
+        public bool IsAuthenticated => Authentication.IsAuthenticated;
+
+        /// <summary>
+        /// Returns the authentication context.
+        /// </summary>
+        public AuthenticationContext Authentication { get; internal set; } = AuthenticationContext.Unauthenticated;
 
         /// <summary>
         /// Gets a value indicating whether a quit has been requested.
