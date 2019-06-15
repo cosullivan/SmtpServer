@@ -19,6 +19,11 @@ namespace SmtpServer
         /// </summary>
         public event EventHandler<SessionEventArgs> SessionCompleted;
 
+        /// <summary>
+        /// Raised when a session has faulted.
+        /// </summary>
+        public event EventHandler<SessionFaultedEventArgs> SessionFaulted;
+
         readonly ISmtpServerOptions _options;
 
         /// <summary>
@@ -49,6 +54,15 @@ namespace SmtpServer
         }
 
         /// <summary>
+        /// Raises the SessionCompleted Event.
+        /// </summary>
+        /// <param name="args">The event data.</param>
+        protected virtual void OnSessionFaulted(SessionFaultedEventArgs args)
+        {
+            SessionFaulted?.Invoke(this, args);
+        }
+
+        /// <summary>
         /// Starts the SMTP server.
         /// </summary>
         /// <param name="cancellationToken">The cancellation token.</param>
@@ -75,39 +89,52 @@ namespace SmtpServer
                 {
                     var sessionContext = new SmtpSessionContext(_options, endpointDefinition);
 
-                    // wait for a client connection
-                    var stream = await endpointListener.GetStreamAsync(sessionContext, cancellationToken).ConfigureAwait(false);
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    sessionContext.NetworkClient = new NetworkClient(stream, _options.NetworkBufferSize, _options.NetworkBufferReadTimeout);
-
-                    if (endpointDefinition.IsSecure && _options.ServerCertificate != null)
+                    try
                     {
-                        await sessionContext.NetworkClient.UpgradeAsync(_options.ServerCertificate, _options.SupportedSslProtocols, cancellationToken).ConfigureAwait(false);
+                        // wait for a client connection
+                        var stream = await endpointListener.GetStreamAsync(sessionContext, cancellationToken).ConfigureAwait(false);
                         cancellationToken.ThrowIfCancellationRequested();
-                    }
-                    
-                    // create a new session to handle the connection
-                    var session = new SmtpSession(sessionContext);
-                    sessions.TryAdd(session, session);
 
-                    OnSessionCreated(new SessionEventArgs(sessionContext));
+                        sessionContext.NetworkClient = new NetworkClient(stream, _options.NetworkBufferSize, _options.NetworkBufferReadTimeout);
 
-                    session.Run(cancellationToken);
-
-                    #pragma warning disable 4014
-                    session.Task
-                        .ContinueWith(t =>
+                        if (endpointDefinition.IsSecure && _options.ServerCertificate != null)
                         {
-                            if (sessions.TryRemove(session, out var s))
-                            {
-                                sessionContext.NetworkClient.Dispose();
-                            }
+                            await sessionContext.NetworkClient.UpgradeAsync(_options.ServerCertificate, _options.SupportedSslProtocols, cancellationToken).ConfigureAwait(false);
+                            cancellationToken.ThrowIfCancellationRequested();
+                        }
 
-                            OnSessionCompleted(new SessionEventArgs(sessionContext));
-                        },
-                        cancellationToken);
-                    #pragma warning restore 4014
+                        // create a new session to handle the connection
+                        var session = new SmtpSession(sessionContext);
+                        sessions.TryAdd(session, session);
+
+                        OnSessionCreated(new SessionEventArgs(sessionContext));
+
+                        session.Run(cancellationToken);
+
+                        #pragma warning disable 4014
+                        session.Task
+                            .ContinueWith(t =>
+                            {
+                                if (sessions.TryRemove(session, out var s))
+                                {
+                                    sessionContext.NetworkClient.Dispose();
+                                }
+
+                                if (t.Exception != null)
+                                {
+                                    OnSessionFaulted(new SessionFaultedEventArgs(sessionContext, t.Exception));
+                                }
+
+                                OnSessionCompleted(new SessionEventArgs(sessionContext));
+                            },
+                            cancellationToken);
+                        #pragma warning restore 4014
+                    }
+                    catch (OperationCanceledException) { }
+                    catch (Exception ex)
+                    {
+                        OnSessionFaulted(new SessionFaultedEventArgs(sessionContext, ex));
+                    }
                 }
 
                 // the server has been cancelled, wait for the tasks to complete

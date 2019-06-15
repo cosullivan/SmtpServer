@@ -38,6 +38,11 @@ namespace SmtpServer
                 {
                     try
                     {
+                        if (t.Exception != null)
+                        {
+                            _taskCompletionSource.TrySetException(t.Exception.InnerExceptions);
+                        }
+
                         _taskCompletionSource.SetResult(t.IsCompleted);
                     }
                     catch
