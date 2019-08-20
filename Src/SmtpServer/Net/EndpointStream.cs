@@ -1,5 +1,8 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Net.Sockets;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SmtpServer.Net
 {
@@ -36,17 +39,29 @@ namespace SmtpServer.Net
             _stream.Flush();
         }
 
-        /// <inheritdoc />
-        public override int Read(byte[] buffer, int offset, int count)
-        {
-            return _stream.Read(buffer, offset, count);
-        }
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state) => _stream.BeginRead(buffer, offset, count, callback, state);
+
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state) => _stream.BeginWrite(buffer, offset, count, callback, state);
+
+        public override int EndRead(IAsyncResult asyncResult) => _stream.EndRead(asyncResult);
+
+        public override void EndWrite(IAsyncResult asyncResult) => _stream.EndWrite(asyncResult);
+
+        public override void Close() => _stream.Close();
+
+        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) => _stream.CopyToAsync(destination, bufferSize, cancellationToken);
+
+        public override Task FlushAsync(CancellationToken cancellationToken) => _stream.FlushAsync(cancellationToken);
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => _stream.ReadAsync(buffer, offset, count, cancellationToken);
+
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => _stream.WriteAsync(buffer, offset, count, cancellationToken);
 
         /// <inheritdoc />
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            return _stream.Seek(offset, origin);
-        }
+        public override int Read(byte[] buffer, int offset, int count) => _stream.Read(buffer, offset, count);
+
+        /// <inheritdoc />
+        public override long Seek(long offset, SeekOrigin origin) => _stream.Seek(offset, origin);
 
         /// <inheritdoc />
         public override void SetLength(long value)
