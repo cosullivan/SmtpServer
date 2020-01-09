@@ -333,8 +333,8 @@ namespace SmtpServer.Tests
 
         public static X509Certificate2 CreateCertificate()
         {
-            var certificate = File.ReadAllBytes(@"C:\Dropbox\Documents\Cain\Programming\SmtpServer\SmtpServer.pfx");
-            var password = File.ReadAllText(@"C:\Dropbox\Documents\Cain\Programming\SmtpServer\SmtpServerPassword.txt");
+            var certificate = File.ReadAllBytes(@"C:\Users\cain\Dropbox\Documents\Cain\Programming\SmtpServer\\SmtpServer.pfx");
+            var password = File.ReadAllText(@"C:\Users\cain\Dropbox\Documents\Cain\Programming\SmtpServer\\SmtpServerPassword.txt");
 
             return new X509Certificate2(certificate, password);
         }

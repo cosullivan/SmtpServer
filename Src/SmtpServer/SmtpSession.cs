@@ -36,19 +36,14 @@ namespace SmtpServer
             RunAsync(cancellationToken)
                 .ContinueWith(t =>
                 {
-                    try
+                    if (t.Exception != null)
                     {
-                        if (t.Exception != null)
-                        {
-                            _taskCompletionSource.TrySetException(t.Exception.InnerExceptions);
-                        }
+                        _taskCompletionSource.SetException(t.Exception);
+                        
+                        return;
+                    }
 
-                        _taskCompletionSource.SetResult(t.IsCompleted);
-                    }
-                    catch
-                    {
-                        _taskCompletionSource.SetResult(false);
-                    }
+                    _taskCompletionSource.SetResult(t.IsCompleted);
                 }, 
                 cancellationToken);
         }

@@ -16,27 +16,43 @@ namespace SampleApp
     {
         static async Task Main(string[] args)
         {
-            SessionTracingExample.Run();
-            
+            //SessionTracingExample.Run();
+
             ServicePointManager.ServerCertificateValidationCallback = SmtpServerTests.IgnoreCertificateValidationFailureForTestingOnly;
 
             var options = new SmtpServerOptionsBuilder()
                 .ServerName("SmtpServer SampleApp")
-                .Port(9025)
-                .UserAuthenticator(new DelegatingUserAuthenticator((user, password) => true))
+                .Port(587, false)
                 .Certificate(SmtpServerTests.CreateCertificate())
                 .Build();
+
+            //var options = new SmtpServerOptionsBuilder()
+            //    .ServerName("SmtpServer SampleApp")
+            //    .Endpoint(endpoint =>
+            //        endpoint
+            //            .Port(587, true)
+            //            .AllowUnsecureAuthentication(false)
+            //            .AuthenticationRequired(false))
+            //    .Certificate(SmtpServerTests.CreateCertificate())
+            //    .Build();
 
             var server = new SmtpServer.SmtpServer(options);
 
             server.SessionCreated += OnSessionCreated;
             server.SessionCompleted += OnSessionCompleted;
+            server.SessionFaulted += OnSessionFaulted;
 
             var serverTask = server.StartAsync(CancellationToken.None);
 
             Console.ReadKey();
 
             await serverTask.ConfigureAwait(false);
+        }
+
+        static void OnSessionFaulted(object sender, SessionFaultedEventArgs e)
+        {
+            Console.WriteLine("SessionFaulted: {0}", e.Context.Properties[EndpointListener.RemoteEndPointKey]);
+            Console.WriteLine(e.Exception.Message);
         }
 
         static void OnSessionCreated(object sender, SessionEventArgs e)
