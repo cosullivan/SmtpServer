@@ -56,6 +56,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Examples\SecureServerExample.cs" />
+    <Compile Include="Examples\CustomEndpointListenerExample.cs" />
     <Compile Include="Examples\SimpleServerExample.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
