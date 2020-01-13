@@ -24,7 +24,7 @@ namespace SmtpServer.Protocol
         internal override async Task<bool> ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
             await context.NetworkClient.ReplyAsync(SmtpResponse.ServiceReady, cancellationToken).ConfigureAwait(false);
-            await context.NetworkClient.UpgradeAsync(Options.ServerCertificate, Options.SupportedSslProtocols, cancellationToken).ConfigureAwait(false);
+            await context.NetworkClient.Stream.UpgradeAsync(Options.ServerCertificate, Options.SupportedSslProtocols, cancellationToken).ConfigureAwait(false);
 
             return true;
         }

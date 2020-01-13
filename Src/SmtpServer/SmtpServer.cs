@@ -95,11 +95,11 @@ namespace SmtpServer
                         var stream = await endpointListener.GetStreamAsync(sessionContext, cancellationToken).ConfigureAwait(false);
                         cancellationToken.ThrowIfCancellationRequested();
 
-                        sessionContext.NetworkClient = new NetworkClient(stream, _options.NetworkBufferSize, _options.NetworkBufferReadTimeout);
+                        sessionContext.NetworkClient = new NetworkClient(stream, _options.NetworkBufferSize);
 
                         if (endpointDefinition.IsSecure && _options.ServerCertificate != null)
                         {
-                            await sessionContext.NetworkClient.UpgradeAsync(_options.ServerCertificate, _options.SupportedSslProtocols, cancellationToken).ConfigureAwait(false);
+                            await sessionContext.NetworkClient.Stream.UpgradeAsync(_options.ServerCertificate, _options.SupportedSslProtocols, cancellationToken).ConfigureAwait(false);
                             cancellationToken.ThrowIfCancellationRequested();
                         }
 

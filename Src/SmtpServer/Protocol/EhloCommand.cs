@@ -54,7 +54,7 @@ namespace SmtpServer.Protocol
             yield return "8BITMIME";
             yield return "SMTPUTF8";
 
-            if (session.NetworkClient.IsSecure == false && Options.ServerCertificate != null)
+            if (session.NetworkClient.Stream.IsSecure == false && Options.ServerCertificate != null)
             {
                 yield return "STARTTLS";
             }
@@ -82,7 +82,7 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            return session.NetworkClient.IsSecure || session.EndpointDefinition.AllowUnsecureAuthentication;
+            return session.NetworkClient.Stream.IsSecure || session.EndpointDefinition.AllowUnsecureAuthentication;
         }
 
         /// <summary>

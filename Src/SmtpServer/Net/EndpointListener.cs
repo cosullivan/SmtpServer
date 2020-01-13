@@ -3,6 +3,7 @@ using System.IO;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using SmtpServer.IO;
 
 namespace SmtpServer.Net
 {
@@ -31,7 +32,7 @@ namespace SmtpServer.Net
         /// <param name="context">The session context that the stream is being received for.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The stream from the endpoint.</returns>
-        public async Task<Stream> GetStreamAsync(ISessionContext context, CancellationToken cancellationToken)
+        public async Task<INetworkStream> GetStreamAsync(ISessionContext context, CancellationToken cancellationToken)
         {
             var tcpClient = await _tcpListener.AcceptTcpClientAsync().WithCancellation(cancellationToken).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();

@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Authentication;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -37,18 +35,9 @@ namespace SmtpServer.IO
         Task FlushAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Upgrade to a secure stream.
+        /// Returns the underlying Network stream instance.
         /// </summary>
-        /// <param name="certificate">The X509Certificate used to authenticate the server.</param>
-        /// <param name="protocols">The value that represents the protocol used for authentication.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task that asynchronously performs the operation.</returns>
-        Task UpgradeAsync(X509Certificate certificate, SslProtocols protocols, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Returns a value indicating whether or not the current client is secure.
-        /// </summary>
-        bool IsSecure { get; }
+        INetworkStream Stream { get; }
     }
 
     public static class NetworkClientExtensions

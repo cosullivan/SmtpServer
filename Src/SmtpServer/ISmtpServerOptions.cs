@@ -71,11 +71,6 @@ namespace SmtpServer
         int NetworkBufferSize { get; }
 
         /// <summary>
-        /// The timeout on each individual buffer read.
-        /// </summary>
-        TimeSpan NetworkBufferReadTimeout { get; }
-
-        /// <summary>
         /// The logger instance to use.
         /// </summary>
         ILogger Logger { get; }

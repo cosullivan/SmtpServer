@@ -28,7 +28,6 @@ namespace SmtpServer
                 MaxRetryCount = 5,
                 SupportedSslProtocols = SslProtocols.Tls12,
                 NetworkBufferSize = 128,
-                NetworkBufferReadTimeout = TimeSpan.FromMinutes(2),
                 CommandWaitTimeout = TimeSpan.FromMinutes(5),
                 Logger = new NullLogger(),
             };
@@ -212,18 +211,6 @@ namespace SmtpServer
         }
 
         /// <summary>
-        /// Sets the timeout for each network buffer read operation.
-        /// </summary>
-        /// <param name="value">The timeout to use whilst waiting for each network buffer read.</param>
-        /// <returns>An OptionsBuilder to continue building on.</returns>
-        public SmtpServerOptionsBuilder NetworkBufferReadTimeout(TimeSpan value)
-        {
-            _setters.Add(options => options.NetworkBufferReadTimeout = value);
-
-            return this;
-        }
-
-        /// <summary>
         /// Sets the timeout to use whilst waiting for a command from the client.
         /// </summary>
         /// <param name="value">The timeout to use whilst waiting for a command from the client.</param>
@@ -315,11 +302,6 @@ namespace SmtpServer
             /// The size of the buffer that is read from each call to the underlying network client.
             /// </summary>
             public int NetworkBufferSize { get; set; }
-
-            /// <summary>
-            /// The timeout on each individual buffer read.
-            /// </summary>
-            public TimeSpan NetworkBufferReadTimeout { get; set; }
 
             /// <summary>
             /// The logger instance to use.
