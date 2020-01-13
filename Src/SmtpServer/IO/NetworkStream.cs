@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Net.Security;
+using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -10,16 +11,19 @@ namespace SmtpServer.IO
 {
     public sealed class NetworkStream : INetworkStream
     {
+        readonly TcpClient _tcpClient;
         Stream _stream;
+        bool _disposed;
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="stream">The stream to return the tokens from.</param>
+        /// <param name="tcpClient">The TCP client to create the stream from.</param>
         /// <param name="bufferReadTimeout">The timeout to apply to each buffer read.</param>
-        public NetworkStream(Stream stream, TimeSpan bufferReadTimeout)
+        public NetworkStream(TcpClient tcpClient, TimeSpan bufferReadTimeout)
         {
-            _stream = stream;
+            _tcpClient = tcpClient;
+            _stream = tcpClient.GetStream();
             _stream.ReadTimeout = (int)bufferReadTimeout.TotalMilliseconds;
         }
 
@@ -76,11 +80,31 @@ namespace SmtpServer.IO
         }
 
         /// <summary>
+        /// Releases the unmanaged resources used by the stream and optionally releases the managed resources.
+        /// </summary>
+        /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
+        void Dispose(bool disposing)
+        {
+            if (_disposed == false)
+            {
+                if (disposing)
+                {
+                    _tcpClient.Close();
+                    _tcpClient.Dispose();
+
+                    _stream = null;
+                }
+
+                _disposed = true;
+            }
+        }
+
+        /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
         public void Dispose()
         {
-            _stream?.Dispose();
+            Dispose(true);
         }
 
         /// <summary>
