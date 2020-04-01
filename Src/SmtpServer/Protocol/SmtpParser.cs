@@ -657,56 +657,77 @@ namespace SmtpServer.Protocol
         /// Try to make Ip version from ip version tag which is a formatted text IPv[Version]:
         /// </summary>
         /// <param name="version">IP version. IPv6 is supported atm.</param>
-        /// <returns>true if ip version tag can be extracted</returns>
+        /// <returns>true if ip version tag can be extracted.</returns>
         public bool TryMakeIpVersion(out int version)
         {
             version = default;
-            var tag = Enumerator.Peek();
-            if (tag != Tokens.Text.IpVersionTag)
+            
+            if (Enumerator.Take() != Tokens.Text.IpVersionTag)
+            { 
                 return false;
-            Enumerator.Take();
-            var versionToken = Enumerator.Take();
-            if (versionToken.Kind == TokenKind.Number && int.TryParse(versionToken.Text, out var v))
+            }
+
+            var token = Enumerator.Take();
+
+            if (token.Kind == TokenKind.Number && int.TryParse(token.Text, out var v))
             {
                 version = v;
                 return Enumerator.Take() == Tokens.Colon;
             }
+
             return false;
         }
 
         /// <summary>
-        /// Try to make 16 bits hex number
+        /// Try to make 16 bits hex number.
         /// </summary>
-        /// <param name="hexNumber">Extracted hex number</param>
-        /// <returns>true if valid hex number can be extracted</returns>
+        /// <param name="hexNumber">Extracted hex number.</param>
+        /// <returns>true if valid hex number can be extracted.</returns>
         public bool TryMake16BitsHexNumber(out string hexNumber)
         {
             hexNumber = null;
+
             var token = Enumerator.Peek();
             while (token.Kind == TokenKind.Number || token.Kind == TokenKind.Text)
             {
                 if (hexNumber != null && (hexNumber.Length + token.Text.Length) > 4)
+                { 
                     return false;
-                // Validate hex chars
-                if (token.Kind == TokenKind.Text && !token.Text.ToUpperInvariant().All(c => c >= 'A' && c <= 'F'))
+                }
+
+                if (token.Kind == TokenKind.Text && IsHex(token.Text) == false)
+                {
                     return false;
+                }
+                
                 hexNumber = string.Concat(hexNumber ?? string.Empty, token.Text);
+
                 Enumerator.Take();
                 token = Enumerator.Peek();
             }
+
             return true;
+
+            bool IsHex(string text)
+            {
+                return text.ToUpperInvariant().All(c => c >= 'A' && c <= 'F');
+            }
         }
 
         /// <summary>
         /// Try to extract IPv6 address. https://tools.ietf.org/html/rfc4291 section 2.2 used for specification.
         /// </summary>
-        /// <param name="address">Extracted Ipv6 address</param>
-        /// <returns>true if a valid Ipv6 address can be extracted</returns>
+        /// <param name="address">Extracted Ipv6 address.</param>
+        /// <returns>true if a valid Ipv6 address can be extracted.</returns>
         public bool TryMakeIpv6AddressLiteral(out string address)
         {
             address = null;
-            if ((TryMake(TryMakeIpVersion, out int ipVersion) == false) || ipVersion != 6)
+
+            if (TryMake(TryMakeIpVersion, out int ipVersion) == false || ipVersion != 6)
+            { 
                 return false;
+            }
+
             var hasDoubleColumn = false;
             var hexPartCount = 0;
             var hasIpv4Part = false;
@@ -729,15 +750,11 @@ namespace SmtpServer.Protocol
                             builder.Append(ipv4);
                             break;
                         }
-                        else
-                        {
-                            return false;
-                        }
+
+                        return false;
                     }
-                    else
-                    {
-                        cp.Rollback();
-                    }
+
+                    cp.Rollback();
                 }
 
                 if (token == Tokens.Colon)
@@ -746,7 +763,9 @@ namespace SmtpServer.Protocol
                     {
                         // Double column is allowed only once
                         if (hasDoubleColumn)
+                        { 
                             return false;
+                        }
                         hasDoubleColumn = true;
                     }
                     builder.Append(token.Text);
@@ -756,7 +775,10 @@ namespace SmtpServer.Protocol
                 else
                 {
                     if (wasColon == false && builder.Length > 0)
+                    { 
                         return false;
+                    }
+
                     wasColon = false;
                     if (TryMake(TryMake16BitsHexNumber, out string hexNumber))
                     {
@@ -775,7 +797,9 @@ namespace SmtpServer.Protocol
 
             var maxAllowedParts = (hasIpv4Part ? 6 : 8) - Math.Sign(hasDoubleColumn ? 1 : 0);
             if ((hasDoubleColumn && hexPartCount > maxAllowedParts) || (!hasDoubleColumn && hexPartCount != maxAllowedParts))
+            { 
                 return false;
+            }
 
             return true;
         }

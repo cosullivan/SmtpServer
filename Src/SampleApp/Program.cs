@@ -14,41 +14,40 @@ namespace SampleApp
 {
     class Program
     {
-        static Task Main(string[] args)
+        static async Task Main(string[] args)
         {
-            CustomEndpointListenerExample.Run();
+            //CustomEndpointListenerExample.Run();
 
-            //ServicePointManager.ServerCertificateValidationCallback = SmtpServerTests.IgnoreCertificateValidationFailureForTestingOnly;
+            ServicePointManager.ServerCertificateValidationCallback = SmtpServerTests.IgnoreCertificateValidationFailureForTestingOnly;
 
             //var options = new SmtpServerOptionsBuilder()
             //    .ServerName("SmtpServer SampleApp")
             //    .Port(587, false)
-            //    .Certificate(SmtpServerTests.CreateCertificate())
+            //    //.Certificate(SmtpServerTests.CreateCertificate())
             //    .Build();
 
-            ////var options = new SmtpServerOptionsBuilder()
-            ////    .ServerName("SmtpServer SampleApp")
-            ////    .Endpoint(endpoint =>
-            ////        endpoint
-            ////            .Port(587, true)
-            ////            .AllowUnsecureAuthentication(false)
-            ////            .AuthenticationRequired(false))
-            ////    .Certificate(SmtpServerTests.CreateCertificate())
-            ////    .Build();
+            var options = new SmtpServerOptionsBuilder()
+                .ServerName("SmtpServer SampleApp")
+                .Endpoint(endpoint =>
+                    endpoint
+                        .Port(587)
+                        .AllowUnsecureAuthentication(true)
+                        .AuthenticationRequired(false))
+                .UserAuthenticator(new SampleUserAuthenticator())
+                //.Certificate(SmtpServerTests.CreateCertificate())
+                .Build();
 
-            //var server = new SmtpServer.SmtpServer(options);
+            var server = new SmtpServer.SmtpServer(options);
 
-            //server.SessionCreated += OnSessionCreated;
-            //server.SessionCompleted += OnSessionCompleted;
-            //server.SessionFaulted += OnSessionFaulted;
+            server.SessionCreated += OnSessionCreated;
+            server.SessionCompleted += OnSessionCompleted;
+            server.SessionFaulted += OnSessionFaulted;
 
-            //var serverTask = server.StartAsync(CancellationToken.None);
+            var serverTask = server.StartAsync(CancellationToken.None);
 
-            //Console.ReadKey();
+            Console.ReadKey();
 
-            //await serverTask.ConfigureAwait(false);
-
-            return Task.CompletedTask;
+            await serverTask.ConfigureAwait(false);
         }
 
         static void OnSessionFaulted(object sender, SessionFaultedEventArgs e)

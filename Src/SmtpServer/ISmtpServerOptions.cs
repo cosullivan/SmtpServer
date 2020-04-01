@@ -21,6 +21,11 @@ namespace SmtpServer
         int MaxRetryCount { get; }
 
         /// <summary>
+        /// The maximum number of authentication attempts.
+        /// </summary>
+        int MaxAuthenticationAttempts { get; }
+
+        /// <summary>
         /// Gets the SMTP server name.
         /// </summary>
         string ServerName { get; }

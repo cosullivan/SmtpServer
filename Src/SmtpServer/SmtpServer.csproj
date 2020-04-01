@@ -5,7 +5,7 @@
     <LangVersion>7.2</LangVersion>
     <AssemblyName>SmtpServer</AssemblyName>
     <RootNamespace>SmtpServer</RootNamespace>
-    <Version>6.4.1-RC1</Version>
+    <Version>6.5.0</Version>
     <Description>.NET SmtpServer</Description>
     <Authors>Cain O'Sullivan</Authors>
     <Company />
@@ -15,9 +15,9 @@
     <PackageTags>smtp smtpserver smtp server</PackageTags>
     <PackageLicenseUrl></PackageLicenseUrl>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-    <AssemblyVersion>6.4.1.0</AssemblyVersion>
-    <FileVersion>6.4.1.0</FileVersion>
-    <PackageReleaseNotes>Added the SessionFaulted event to the SmtpServer.</PackageReleaseNotes>
+    <AssemblyVersion>6.5.0.0</AssemblyVersion>
+    <FileVersion>6.5.0.0</FileVersion>
+    <PackageReleaseNotes>Added MaxAuthenticationAttempts and support for IPv6 addresses.</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
   </PropertyGroup>
