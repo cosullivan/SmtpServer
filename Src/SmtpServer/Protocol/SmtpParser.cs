@@ -36,6 +36,7 @@ namespace SmtpServer.Protocol
                 internal static readonly Token From = Token.Create("FROM");
                 internal static readonly Token To = Token.Create("TO");
                 internal static readonly Token Last = Token.Create("LAST");
+                internal static readonly Token IpVersionTag = Token.Create("IPv");
             }
             // ReSharper restore InconsistentNaming
         }
@@ -584,7 +585,7 @@ namespace SmtpServer.Protocol
             // skip any whitespace
             Enumerator.Skip(TokenKind.Space);
 
-            if (TryMake(TryMakeIpv4AddressLiteral, out address) == false)
+            if (TryMake(TryMakeIpv4AddressLiteral, out address) == false && TryMake(TryMakeIpv6AddressLiteral, out address) == false)
             {
                 return false;
             }
@@ -650,6 +651,133 @@ namespace SmtpServer.Protocol
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Try to make Ip version from ip version tag which is a formatted text IPv[Version]:
+        /// </summary>
+        /// <param name="version">IP version. IPv6 is supported atm.</param>
+        /// <returns>true if ip version tag can be extracted</returns>
+        public bool TryMakeIpVersion(out int version)
+        {
+            version = default;
+            var tag = Enumerator.Peek();
+            if (tag != Tokens.Text.IpVersionTag)
+                return false;
+            Enumerator.Take();
+            var versionToken = Enumerator.Take();
+            if (versionToken.Kind == TokenKind.Number && int.TryParse(versionToken.Text, out var v))
+            {
+                version = v;
+                return Enumerator.Take() == Tokens.Colon;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Try to make 16 bits hex number
+        /// </summary>
+        /// <param name="hexNumber">Extracted hex number</param>
+        /// <returns>true if valid hex number can be extracted</returns>
+        public bool TryMake16BitsHexNumber(out string hexNumber)
+        {
+            hexNumber = null;
+            var token = Enumerator.Peek();
+            while (token.Kind == TokenKind.Number || token.Kind == TokenKind.Text)
+            {
+                if (hexNumber != null && (hexNumber.Length + token.Text.Length) > 4)
+                    return false;
+                // Validate hex chars
+                if (token.Kind == TokenKind.Text && !token.Text.ToUpperInvariant().All(c => c >= 'A' && c <= 'F'))
+                    return false;
+                hexNumber = string.Concat(hexNumber ?? string.Empty, token.Text);
+                Enumerator.Take();
+                token = Enumerator.Peek();
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Try to extract IPv6 address. https://tools.ietf.org/html/rfc4291 section 2.2 used for specification.
+        /// </summary>
+        /// <param name="address">Extracted Ipv6 address</param>
+        /// <returns>true if a valid Ipv6 address can be extracted</returns>
+        public bool TryMakeIpv6AddressLiteral(out string address)
+        {
+            address = null;
+            if ((TryMake(TryMakeIpVersion, out int ipVersion) == false) || ipVersion != 6)
+                return false;
+            var hasDoubleColumn = false;
+            var hexPartCount = 0;
+            var hasIpv4Part = false;
+            var wasColon = false;
+
+            var token = Enumerator.Peek();
+            var builder = new System.Text.StringBuilder();
+            while (token.Kind == TokenKind.Number || token.Kind == TokenKind.Text || token == Tokens.Colon)
+            {
+                using (var cp = Enumerator.Checkpoint())
+                {
+                    Enumerator.Take();
+                    // Alternate form with mixed IPv6 and IPv4 formats. See https://tools.ietf.org/html/rfc4291 section 2.2 item 3
+                    if (token.Kind == TokenKind.Number && Enumerator.Peek() == Tokens.Period)
+                    {
+                        cp.Rollback();
+                        if (TryMake(TryMakeIpv4AddressLiteral, out string ipv4))
+                        {
+                            hasIpv4Part = true;
+                            builder.Append(ipv4);
+                            break;
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        cp.Rollback();
+                    }
+                }
+
+                if (token == Tokens.Colon)
+                {
+                    if (wasColon)
+                    {
+                        // Double column is allowed only once
+                        if (hasDoubleColumn)
+                            return false;
+                        hasDoubleColumn = true;
+                    }
+                    builder.Append(token.Text);
+                    wasColon = true;
+                    Enumerator.Take();
+                }
+                else
+                {
+                    if (wasColon == false && builder.Length > 0)
+                        return false;
+                    wasColon = false;
+                    if (TryMake(TryMake16BitsHexNumber, out string hexNumber))
+                    {
+                        builder.Append(hexNumber);
+                        hexPartCount++;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                token = Enumerator.Peek();
+            }
+
+            address = builder.ToString();
+
+            var maxAllowedParts = (hasIpv4Part ? 6 : 8) - Math.Sign(hasDoubleColumn ? 1 : 0);
+            if ((hasDoubleColumn && hexPartCount > maxAllowedParts) || (!hasDoubleColumn && hexPartCount != maxAllowedParts))
+                return false;
+
+            return true;
         }
 
         /// <summary>
