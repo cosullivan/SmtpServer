@@ -40,6 +40,8 @@ namespace SmtpServer.Net
             context.Properties.Add(LocalEndPointKey, _tcpListener.LocalEndpoint);
             context.Properties.Add(RemoteEndPointKey, tcpClient.Client.RemoteEndPoint);
 
+            HERE: need to allow external configuration of the stream properties
+
             return new NetworkStream(tcpClient);
         }
 
