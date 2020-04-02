@@ -12,7 +12,7 @@ namespace SmtpServer.Text
         Token Peek();
 
         /// <summary>
-        /// Take the given number of tokens.
+        /// Take the next token.
         /// </summary>
         /// <returns>The last token that was consumed.</returns>
         Token Take();

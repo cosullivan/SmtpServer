@@ -31,7 +31,7 @@ namespace SmtpServer.Text
         }
 
         /// <summary>
-        /// Take the given number of tokens.
+        /// Take the next token.
         /// </summary>
         /// <returns>The last token that was consumed.</returns>
         public Token Take()
@@ -40,7 +40,7 @@ namespace SmtpServer.Text
         }
 
         /// <summary>
-        /// Take the given number of tokens.
+        /// Returns the token at the given index.
         /// </summary>
         /// <returns>The last token that was consumed.</returns>
         Token At(int index)

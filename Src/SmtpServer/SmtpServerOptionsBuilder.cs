@@ -26,6 +26,7 @@ namespace SmtpServer
                 MailboxFilterFactory = DoNothingMailboxFilter.Instance,
                 UserAuthenticatorFactory = DoNothingUserAuthenticator.Instance,
                 MaxRetryCount = 5,
+                MaxAuthenticationAttempts = 3,
                 SupportedSslProtocols = SslProtocols.Tls12,
                 NetworkBufferSize = 128,
                 CommandWaitTimeout = TimeSpan.FromMinutes(5),
@@ -187,6 +188,18 @@ namespace SmtpServer
         }
 
         /// <summary>
+        /// Sets the maximum number of authentication attempts.
+        /// </summary>
+        /// <param name="value">The maximum number of authentication attempts for a failed authentication.</param>
+        /// <returns>A OptionsBuilder to continue building on.</returns>
+        public SmtpServerOptionsBuilder MaxAuthenticationAttempts(int value)
+        {
+            _setters.Add(options => options.MaxAuthenticationAttempts = value);
+
+            return this;
+        }
+
+        /// <summary>
         /// Sets the supported SSL protocols.
         /// </summary>
         /// <param name="value">The supported SSL protocols.</param>
@@ -247,6 +260,11 @@ namespace SmtpServer
             /// The maximum number of retries before quitting the session.
             /// </summary>
             public int MaxRetryCount { get; set; }
+
+            /// <summary>
+            /// The maximum number of authentication attempts.
+            /// </summary>
+            public int MaxAuthenticationAttempts { get; set; }
 
             /// <summary>
             /// Gets or sets the SMTP server name.

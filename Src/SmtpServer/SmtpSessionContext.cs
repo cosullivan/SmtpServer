@@ -79,6 +79,11 @@ namespace SmtpServer
         public AuthenticationContext Authentication { get; internal set; } = AuthenticationContext.Unauthenticated;
 
         /// <summary>
+        /// Returns the number of athentication attempts.
+        /// </summary>
+        public int AuthenticationAttempts { get; internal set; }
+
+        /// <summary>
         /// Gets a value indicating whether a quit has been requested.
         /// </summary>
         public bool IsQuitRequested { get; internal set; }

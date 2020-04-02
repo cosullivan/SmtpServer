@@ -62,7 +62,16 @@ namespace SmtpServer.Protocol
             {
                 if (await container.Instance.AuthenticateAsync(context, _user, _password, cancellationToken).ConfigureAwait(false) == false)
                 {
-                    await context.NetworkClient.ReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ConfigureAwait(false);
+                    var remaining = context.ServerOptions.MaxAuthenticationAttempts - ++context.AuthenticationAttempts;
+                    var response = new SmtpResponse(SmtpReplyCode.AuthenticationFailed, $"authentication failed, {remaining} attempt(s) remaining.");
+
+                    await context.NetworkClient.ReplyAsync(response, cancellationToken).ConfigureAwait(false);
+
+                    if (remaining <= 0)
+                    {
+                        throw new SmtpResponseException(SmtpResponse.ServiceClosingTransmissionChannel, true);
+                    }
+
                     return false;
                 }
             }
