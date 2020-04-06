@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Net.Security;
-using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -9,22 +8,21 @@ using System.Threading.Tasks;
 
 namespace SmtpServer.IO
 {
-    public sealed class NetworkStream : INetworkStream
+    internal sealed class NetworkStream : INetworkStream
     {
-        readonly TcpClient _tcpClient;
+        readonly Action _disposeAction;
         Stream _stream;
         bool _disposed;
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="tcpClient">The TCP client to create the stream from.</param>
-        /// <param name="bufferReadTimeout">The timeout to apply to each buffer read.</param>
-        public NetworkStream(TcpClient tcpClient, TimeSpan bufferReadTimeout)
+        /// <param name="stream">The underlying stream to use.</param>
+        /// <param name="disposeAction">The action to execute when the stream has been disposed.</param>
+        internal NetworkStream(Stream stream, Action disposeAction)
         {
-            _tcpClient = tcpClient;
-            _stream = tcpClient.GetStream();
-            _stream.ReadTimeout = (int)bufferReadTimeout.TotalMilliseconds;
+            _stream = stream;
+            _disposeAction = disposeAction;
         }
 
         /// <summary>
@@ -89,9 +87,7 @@ namespace SmtpServer.IO
             {
                 if (disposing)
                 {
-                    _tcpClient.Close();
-                    _tcpClient.Dispose();
-
+                    _disposeAction();
                     _stream = null;
                 }
 

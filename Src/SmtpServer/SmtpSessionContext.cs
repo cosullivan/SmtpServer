@@ -66,13 +66,7 @@ namespace SmtpServer
         /// Gets the current transaction.
         /// </summary>
         public SmtpMessageTransaction Transaction { get; }
-
-        /// <summary>
-        /// Returns a value indicating whether or nor the current session is authenticated.
-        /// </summary>
-        [Obsolete("Prefer the use of Authentication.IsAuthenticated")]
-        public bool IsAuthenticated => Authentication.IsAuthenticated;
-
+        
         /// <summary>
         /// Returns the authentication context.
         /// </summary>

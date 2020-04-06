@@ -1,10 +1,11 @@
 ﻿using System;
-using System.IO;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer;
+using SmtpServer.IO;
 using SmtpServer.Net;
-using SmtpServer.Tracing;
 
 namespace SampleApp.Examples
 {
@@ -35,8 +36,6 @@ namespace SampleApp.Examples
             public override IEndpointListener CreateListener(IEndpointDefinition endpointDefinition)
             {
                 return new CustomEndpointListener(base.CreateListener(endpointDefinition));
-
-                //return base.CreateListener(endpointDefinition);
             }
         }
 
@@ -54,73 +53,55 @@ namespace SampleApp.Examples
                 _endpointListener.Dispose();
             }
 
-            public async Task<Stream> GetStreamAsync(ISessionContext context, CancellationToken cancellationToken)
+            public async Task<INetworkStream> GetStreamAsync(ISessionContext context, CancellationToken cancellationToken)
             {
                 var stream = await _endpointListener.GetStreamAsync(context, cancellationToken);
 
-                return new CustomStream(stream);
+                return new CustomNetworkStream(stream);
             }
         }
 
-        public sealed class CustomStream : Stream
+        public sealed class CustomNetworkStream : INetworkStream
         {
-            readonly Stream _stream;
+            readonly INetworkStream _innerStream;
 
-            public CustomStream(Stream stream)
+            public CustomNetworkStream(INetworkStream innerStream)
             {
-                _stream = stream;
+                _innerStream = innerStream;
             }
 
-            public override void Flush()
+            public void Dispose()
             {
-                _stream.Flush();
+                _innerStream.Dispose();
             }
 
-            public override long Seek(long offset, SeekOrigin origin)
+            public Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
-                return _stream.Seek(offset, origin);
+                Console.WriteLine("Writing {0} bytes to the stream.", count);
+
+                return _innerStream.WriteAsync(buffer, offset, count, cancellationToken);
             }
 
-            public override void SetLength(long value)
+            public async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
-                _stream.SetLength(value);
-            }
-
-            public override int Read(byte[] buffer, int offset, int count)
-            {
-                var bytesRead = _stream.Read(buffer, offset, count);
+                var bytesRead = await _innerStream.ReadAsync(buffer, offset, count, cancellationToken);
 
                 Console.WriteLine("Read {0} bytes from the stream.", bytesRead);
 
                 return bytesRead;
             }
 
-            public override void Write(byte[] buffer, int offset, int count)
+            public Task FlushAsync(CancellationToken cancellationToken = default)
             {
-                Console.WriteLine("Writing {0} bytes to the stream.", count);
-
-                _stream.Write(buffer, offset, count);
+                return _innerStream.FlushAsync(cancellationToken);
             }
 
-            public override bool CanRead => _stream.CanRead;
-
-            public override bool CanSeek => _stream.CanSeek;
-
-            public override bool CanWrite => _stream.CanWrite;
-
-            public override long Length => _stream.Length;
-
-            public override long Position
+            public Task UpgradeAsync(X509Certificate certificate, SslProtocols protocols, CancellationToken cancellationToken = default)
             {
-                get => _stream.Position;
-                set => _stream.Position = value;
+                return _innerStream.UpgradeAsync(certificate, protocols, cancellationToken);
             }
 
-            public override int ReadTimeout
-            {
-                get => _stream.ReadTimeout;
-                set => _stream.ReadTimeout = value;
-            }
+            public bool IsSecure => _innerStream.IsSecure;
         }
     }
 }

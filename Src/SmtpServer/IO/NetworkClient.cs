@@ -29,7 +29,7 @@ namespace SmtpServer.IO
         /// </summary>
         public void Dispose()
         {
-            _stream?.Dispose();
+            _stream.Dispose();
         }
         
         /// <summary>

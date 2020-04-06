@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Net.Sockets;
 
 namespace SmtpServer.Net
@@ -29,7 +28,7 @@ namespace SmtpServer.Net
             var endpointEventArgs = new EndpointEventArgs(endpointDefinition, tcpListener.LocalEndpoint);
             OnEndpointStarted(endpointEventArgs);
 
-            return new EndpointListener(tcpListener, () => OnEndpointStopped(endpointEventArgs));
+            return new EndpointListener(endpointDefinition, tcpListener, () => OnEndpointStopped(endpointEventArgs));
         }
 
         /// <summary>

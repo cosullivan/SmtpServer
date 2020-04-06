@@ -238,7 +238,7 @@ namespace SmtpServer.Tests
 
                 disposable.Server.SessionCreated -= sessionCreatedHandler;
 
-                Assert.False(sessionContext.NetworkClient.IsSecure);
+                Assert.False(sessionContext.NetworkClient.Stream.IsSecure);
             }
 
             ServicePointManager.ServerCertificateValidationCallback = null;
@@ -264,7 +264,7 @@ namespace SmtpServer.Tests
 
                 disposable.Server.SessionCreated -= sessionCreatedHandler;
 
-                Assert.True(sessionContext.NetworkClient.IsSecure);
+                Assert.True(sessionContext.NetworkClient.Stream.IsSecure);
             }
 
             ServicePointManager.ServerCertificateValidationCallback = null;
@@ -299,7 +299,7 @@ namespace SmtpServer.Tests
 
                 disposable.Server.SessionCreated -= sessionCreatedHandler;
 
-                Assert.True(sessionContext.NetworkClient.IsSecure);
+                Assert.True(sessionContext.NetworkClient.Stream.IsSecure);
                 Assert.True(sessionContext.Authentication.IsAuthenticated);
             }
 
