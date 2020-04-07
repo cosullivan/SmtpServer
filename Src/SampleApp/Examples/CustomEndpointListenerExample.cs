@@ -1,6 +1,8 @@
 ﻿using System;
+using System.IO;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer;
@@ -17,7 +19,12 @@ namespace SampleApp.Examples
 
             var options = new SmtpServerOptionsBuilder()
                 .ServerName("SmtpServer SampleApp")
-                .Port(9025)
+                .Certificate(CreateCertificate())
+                //.Port(9025)
+                .Endpoint(builder =>
+                    builder
+                        .Port(9025, true)
+                        .AllowUnsecureAuthentication(false))
                 .EndpointListenerFactory(new CustomEndpointListenerFactory())
                 .Build();
 
@@ -25,7 +32,7 @@ namespace SampleApp.Examples
 
             var serverTask = server.StartAsync(cancellationTokenSource.Token);
 
-            SampleMailClient.Send();
+            SampleMailClient.Send(useSsl: true);
 
             cancellationTokenSource.Cancel();
             serverTask.WaitWithoutException();
@@ -77,7 +84,7 @@ namespace SampleApp.Examples
 
             public Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
-                Console.WriteLine("Writing {0} bytes to the stream.", count);
+                Console.WriteLine(Encoding.ASCII.GetString(buffer, offset, count));
 
                 return _innerStream.WriteAsync(buffer, offset, count, cancellationToken);
             }
@@ -86,7 +93,7 @@ namespace SampleApp.Examples
             {
                 var bytesRead = await _innerStream.ReadAsync(buffer, offset, count, cancellationToken);
 
-                Console.WriteLine("Read {0} bytes from the stream.", bytesRead);
+                Console.WriteLine(Encoding.ASCII.GetString(buffer, offset, count));
 
                 return bytesRead;
             }
@@ -98,10 +105,23 @@ namespace SampleApp.Examples
 
             public Task UpgradeAsync(X509Certificate certificate, SslProtocols protocols, CancellationToken cancellationToken = default)
             {
+                Console.WriteLine("Upgrading the stream to SSL");
+
                 return _innerStream.UpgradeAsync(certificate, protocols, cancellationToken);
             }
 
             public bool IsSecure => _innerStream.IsSecure;
+        }
+
+        static X509Certificate2 CreateCertificate()
+        {
+            // to create an X509Certificate for testing you need to run MAKECERT.EXE and then PVK2PFX.EXE
+            // http://www.digitallycreated.net/Blog/38/using-makecert-to-create-certificates-for-development
+
+            var certificate = File.ReadAllBytes(@"C:\Users\cain\Dropbox\Documents\Cain\Programming\SmtpServer\SmtpServer.pfx");
+            var password = File.ReadAllText(@"C:\Users\cain\Dropbox\Documents\Cain\Programming\SmtpServer\SmtpServerPassword.txt");
+
+            return new X509Certificate2(certificate, password);
         }
     }
 }
