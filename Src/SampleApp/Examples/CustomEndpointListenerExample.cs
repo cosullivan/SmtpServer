@@ -20,7 +20,6 @@ namespace SampleApp.Examples
             var options = new SmtpServerOptionsBuilder()
                 .ServerName("SmtpServer SampleApp")
                 .Certificate(CreateCertificate())
-                //.Port(9025)
                 .Endpoint(builder =>
                     builder
                         .Port(9025, true)
