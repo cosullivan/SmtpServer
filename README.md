@@ -63,7 +63,7 @@ public class SampleMessageStore : MessageStore
 ```cs
 public class SampleMailboxFilter : IMailboxFilter, IMailboxFilterFactory
 {
-    public Task<MailboxFilterResult> CanAcceptFromAsync(ISessionContext context, IMailbox @from, int size = 0, CancellationToken token)
+    public Task<MailboxFilterResult> CanAcceptFromAsync(ISessionContext context, IMailbox @from, int size, CancellationToken cancellationToken)
     {
         if (String.Equals(@from.Host, "test.com"))
         {
