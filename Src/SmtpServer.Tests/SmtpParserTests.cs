@@ -282,37 +282,6 @@ namespace SmtpServer.Tests
             Assert.Equal(16789, ((ProxyProtocolCommand)command).DestinationEndpoint.Port);
         }
 
-        [Theory]
-        [InlineData("2001:1234:abcd::0001")]
-        [InlineData("2001:1234:abcd::0001 ")]
-        [InlineData("2001::0001")]
-        [InlineData("2001::0001 ")]
-        [InlineData("2001:1234:abcd::0001 ")]
-        [InlineData("2001:1:ab::0001")]
-        [InlineData("2001:1:ab::001 ")]
-        [InlineData("2001:1:ab::001")]
-        [InlineData("2001:db8:0:0:1:0:0:1")]
-        [InlineData("::1")]
-        [InlineData("::1110")]
-        [InlineData("::1110:1")] 
-        public void CanMakeIpv6(string data)
-        {
-            // arrange
-            var parser = CreateParser(data);
-
-            string address;
-            // act
-            var result = parser.TryMakeIpv6AddressLiteralWithPrefix(out address);
-
-            IPAddress ipAddr;
-            // assert
-            Assert.True(result);
-            Assert.True(IPAddress.TryParse(address, out ipAddr));
-
-            IPAddress checkAddress = IPAddress.Parse(data.Trim());
-            Assert.Equal(ipAddr.ToString(), checkAddress.ToString());
-        }
-
         [Fact]
         public void CanMakeAtom()
         {
