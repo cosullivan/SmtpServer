@@ -84,7 +84,7 @@ namespace SmtpServer.Tracing
         /// Visit an PROXY command.
         /// </summary>
         /// <param name="command">The command that is being visited.</param>
-        protected override void Visit(ProxyProtocolCommand command)
+        protected override void Visit(ProxyCommand command)
         {
             _output.WriteLine($"PROXY {command.SourceEndpoint} --> {command.DestinationEndpoint}");
         }

@@ -298,7 +298,7 @@ namespace SmtpServer.Protocol
             if (inetProto == "UNKNOWN")
             {
                 // IF INET PROTO IS UNKNOWN REST OF THIS LINE SHOULD BE IGNORED.
-                command = new ProxyProtocolCommand(_options, null, null);
+                command = new ProxyCommand(_options, null, null);
                 return true;
             }
 
@@ -344,7 +344,7 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            command = new ProxyProtocolCommand(_options, new IPEndPoint(sourceIp, sourcePort),
+            command = new ProxyCommand(_options, new IPEndPoint(sourceIp, sourcePort),
                 new IPEndPoint(destinationIp, destinationPort));
             return true;
         }

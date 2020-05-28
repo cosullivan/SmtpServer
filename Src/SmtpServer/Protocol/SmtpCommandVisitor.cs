@@ -46,9 +46,9 @@ namespace SmtpServer.Protocol
                 return;
             }
 
-            if (command is ProxyProtocolCommand)
+            if (command is ProxyCommand)
             {
-                Visit((ProxyProtocolCommand)command);
+                Visit((ProxyCommand)command);
                 return;
             }
 
@@ -119,8 +119,7 @@ namespace SmtpServer.Protocol
         /// Visit an PROXY command.
         /// </summary>
         /// <param name="command">The command that is being visited.</param>
-        protected virtual void Visit(ProxyProtocolCommand command) { }
-
+        protected virtual void Visit(ProxyCommand command) { }
 
         /// <summary>
         /// Visit an QUIT command.
