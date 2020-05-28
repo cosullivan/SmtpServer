@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Net;
 using SmtpServer.Mail;
 using SmtpServer.Text;
 
@@ -270,6 +271,155 @@ namespace SmtpServer.Protocol
             // TODO: support optional service extension parameters here
 
             command = new RcptCommand(_options, mailbox);
+            return true;
+        }
+
+        /// <summary>
+        /// Support proxy protocol version 1 header for use with HAProxy.
+        /// Documented at http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
+        /// </summary>
+        /// <param name="command"></param>
+        /// <param name="errorResponse"></param>
+        /// <returns></returns>
+        public bool TryMakeProxy(out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            command = null;
+            errorResponse = null;
+
+            Enumerator.Take();
+            Enumerator.Skip(TokenKind.Space);
+
+            string inetProto;
+            if (TryMake(TryMakeProxyProtoTypeString, out inetProto) == false)
+            {
+                return false;
+            }
+
+            if (inetProto == "UNKNOWN")
+            {
+                // IF INET PROTO IS UNKNOWN REST OF THIS LINE SHOULD BE IGNORED.
+                command = new ProxyProtocolCommand(_options, null, null);
+                return true;
+            }
+
+            Enumerator.Skip(TokenKind.Space);
+
+            IPAddress sourceIp;
+            IPAddress destinationIp;
+            // read addresses if IPv4
+            if (inetProto == "TCP4")
+            {
+                if (TryMakeProxyFromAndToAddresses(TryMakeIpv4AddressLiteral, out sourceIp, out destinationIp) == false)
+                {
+                    return false;
+                }
+            }
+            else if (inetProto == "TCP6")
+            {
+                if (TryMakeProxyFromAndToAddresses(TryMakeIpv6AddressLiteral, out sourceIp, out destinationIp) == false)
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                // Unexpected  / Invalid protocol in proxy protocol format.
+                return false;
+            }
+
+            Enumerator.Skip(TokenKind.Space);
+
+            // Read ports
+            int sourcePort;
+            int destinationPort;
+            if (TryMakeShortNum(out sourcePort) == false)
+            {
+                return false;
+            }
+
+            Enumerator.Skip(TokenKind.Space);
+
+            if (TryMakeShortNum(out destinationPort) == false)
+            {
+                return false;
+            }
+
+            command = new ProxyProtocolCommand(_options, new IPEndPoint(sourceIp, sourcePort),
+                new IPEndPoint(destinationIp, destinationPort));
+            return true;
+        }
+
+        protected bool TryMakeProxyFromAndToAddresses(TryMakeDelegate<string> @delegate, out IPAddress fromIp,
+            out IPAddress toIp)
+        {
+            fromIp = null;
+            toIp = null;
+
+            string fromAddress;
+            if (TryMake(@delegate, out fromAddress) == false)
+            {
+                return false;
+            }
+
+            if (!IPAddress.TryParse(fromAddress, out fromIp))
+            {
+                return false;
+            }
+
+            Enumerator.Skip(TokenKind.Space);
+
+            string toAddress;
+            if (TryMake(@delegate, out toAddress) == false)
+            {
+                return false;
+            }
+
+            if (!IPAddress.TryParse(toAddress, out toIp))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Proxy inet protocol part e.g. "TCP4" or "TCP6" or "UNKNOWN"
+        /// </summary>
+        /// <param name="inetProtocol"></param>
+        /// <returns></returns>
+        public bool TryMakeProxyProtoTypeString(out string inetProtocol)
+        {
+            inetProtocol = "";
+
+            var tokenA = Enumerator.Take();
+            if (tokenA.Kind != TokenKind.Text)
+            {
+                return false;
+            }
+
+            inetProtocol += tokenA.Text;
+
+            if (inetProtocol == "UNKNOWN")
+            {
+                // Unknown is a valid type here - but may signify that the rest of the line is missing.
+                return true;
+            }
+
+            var tokenB = Enumerator.Take();
+            if (tokenB.Kind != TokenKind.Number)
+            {
+                return false;
+            }
+
+            inetProtocol += tokenB.Text;
+
+            // This is probably impossible.
+            if (string.IsNullOrWhiteSpace(inetProtocol))
+            {
+                inetProtocol = null;
+                return false;
+            }
+
             return true;
         }
 
@@ -585,7 +735,7 @@ namespace SmtpServer.Protocol
             // skip any whitespace
             Enumerator.Skip(TokenKind.Space);
 
-            if (TryMake(TryMakeIpv4AddressLiteral, out address) == false && TryMake(TryMakeIpv6AddressLiteral, out address) == false)
+            if (TryMake(TryMakeIpv4AddressLiteral, out address) == false && TryMake(TryMakeIpv6AddressLiteralWithPrefix, out address) == false)
             {
                 return false;
             }
@@ -716,17 +866,30 @@ namespace SmtpServer.Protocol
 
         /// <summary>
         /// Try to extract IPv6 address. https://tools.ietf.org/html/rfc4291 section 2.2 used for specification.
+        /// This method expects the address to have the IPv6: prefix.
+        /// </summary>
+        /// <param name="address">Extracted Ipv6 address.</param>
+        /// <returns>true if a valid Ipv6 address can be extracted.</returns>
+        public bool TryMakeIpv6AddressLiteralWithPrefix(out string address)
+        {
+            address = null;
+
+            if (TryMake(TryMakeIpVersion, out int ipVersion) == false || ipVersion != 6)
+            {
+                return false;
+            }
+
+            return TryMakeIpv6AddressLiteral(out address);
+        }
+
+        /// <summary>
+        /// Try to extract IPv6 address. https://tools.ietf.org/html/rfc4291 section 2.2 used for specification.
         /// </summary>
         /// <param name="address">Extracted Ipv6 address.</param>
         /// <returns>true if a valid Ipv6 address can be extracted.</returns>
         public bool TryMakeIpv6AddressLiteral(out string address)
         {
             address = null;
-
-            if (TryMake(TryMakeIpVersion, out int ipVersion) == false || ipVersion != 6)
-            { 
-                return false;
-            }
 
             var hasDoubleColumn = false;
             var hexPartCount = 0;
@@ -805,6 +968,26 @@ namespace SmtpServer.Protocol
         }
 
         /// <summary>
+        /// Try to make an ShortNum (number in the range of 0-65535).
+        /// </summary>
+        /// <param name="shortNum">The snum that was made, or undefined if it was not made.</param>
+        /// <returns>true if the snum was made, false if not.</returns>
+        /// <remarks><![CDATA[ 1*3DIGIT ]]></remarks>
+        public bool TryMakeShortNum(out int shortNum)
+        {
+            shortNum = default(int);
+
+            var token = Enumerator.Take();
+
+            if (token.Kind == TokenKind.Number && Int32.TryParse(token.Text, out shortNum))
+            {
+                return shortNum >= 0 && shortNum <= 65535;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Try to make a text/number/hyphen string.
         /// </summary>
         /// <param name="textOrNumberOrHyphenString">The text, number, or hyphen that was matched, or undefined if it was not matched.</param>
@@ -837,7 +1020,7 @@ namespace SmtpServer.Protocol
             var token = Enumerator.Take();
 
             textOrNumber = token.Text;
-
+            
             return token.Kind == TokenKind.Text || token.Kind == TokenKind.Number;
         }
 
@@ -986,6 +1169,7 @@ namespace SmtpServer.Protocol
                             text += token.Text[0];
                             return true;
                     }
+
                     return false;
             }
 
@@ -1074,6 +1258,7 @@ namespace SmtpServer.Protocol
                             atext += token.Text[0];
                             return true;
                     }
+
                     break;
             }
 
@@ -1214,10 +1399,10 @@ namespace SmtpServer.Protocol
 
             // because the TryMakeBase64Chars method matches tokens, each TextValue token could make
             // up several Base64 encoded "bytes" so we ensure that we have a length divisible by 4
-            return base64 != null 
-                && base64.Length % 4 == 0 
-                && new [] { TokenKind.None, TokenKind.Space, TokenKind.NewLine }.Contains(Enumerator.Peek().Kind);
-            }
+            return base64 != null
+                   && base64.Length % 4 == 0
+                   && new[] {TokenKind.None, TokenKind.Space, TokenKind.NewLine}.Contains(Enumerator.Peek().Kind);
+        }
 
         /// <summary>
         /// Try to make a base64 encoded string.
@@ -1236,7 +1421,7 @@ namespace SmtpServer.Protocol
 
             return true;
         }
-        
+
         /// <summary>
         /// Try to make the allowable characters in a base64 encoded string.
         /// </summary>
@@ -1263,6 +1448,7 @@ namespace SmtpServer.Protocol
                             base64Chars = token.Text;
                             return true;
                     }
+
                     break;
             }
 
@@ -1288,5 +1474,7 @@ namespace SmtpServer.Protocol
         {
             return String.Concat(Enumerator.Tokens.Select(token => token.Text));
         }
+
+
     }
 }

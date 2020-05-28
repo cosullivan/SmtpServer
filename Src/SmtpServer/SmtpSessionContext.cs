@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Net;
 using SmtpServer.IO;
 using SmtpServer.Protocol;
 
@@ -86,5 +87,7 @@ namespace SmtpServer
         /// Returns a set of propeties for the current session.
         /// </summary>
         public IDictionary<string, object> Properties { get; }
+
+     
     }
 }

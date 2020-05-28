@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Text;
 using SmtpServer.Mail;
 using SmtpServer.Protocol;
@@ -243,6 +244,42 @@ namespace SmtpServer.Tests
             Assert.True(command is RcptCommand);
             Assert.Equal(user, ((RcptCommand)command).Address.User);
             Assert.Equal(host, ((RcptCommand)command).Address.Host);
+        }
+
+        [Fact]
+        public void CanMakeProxyIpV4()
+        {
+            // arrange
+            var parser = CreateParser("PROXY TCP4 192.168.1.1 192.168.1.2 1234 16789");
+
+            // act
+            var result = parser.TryMakeProxy(out SmtpCommand command, out SmtpResponse errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is ProxyProtocolCommand);
+            Assert.Equal("192.168.1.1", ((ProxyProtocolCommand)command).SourceEndpoint.Address.ToString());
+            Assert.Equal("192.168.1.2", ((ProxyProtocolCommand)command).DestinationEndpoint.Address.ToString());
+            Assert.Equal(1234, ((ProxyProtocolCommand)command).SourceEndpoint.Port);
+            Assert.Equal(16789, ((ProxyProtocolCommand)command).DestinationEndpoint.Port);
+        }
+
+        [Fact]
+        public void CanMakeProxyIpV6()
+        {
+            // arrange
+            var parser = CreateParser("PROXY TCP6 2001:1234:abcd::0001 3456:2e76:66d8:f84:abcd:abef:ffff:1234 1234 16789");
+
+            // act
+            var result = parser.TryMakeProxy(out SmtpCommand command, out SmtpResponse errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is ProxyProtocolCommand);
+            Assert.Equal(IPAddress.Parse("2001:1234:abcd::0001").ToString(), ((ProxyProtocolCommand)command).SourceEndpoint.Address.ToString());
+            Assert.Equal(IPAddress.Parse("3456:2e76:66d8:f84:abcd:abef:ffff:1234").ToString(), ((ProxyProtocolCommand)command).DestinationEndpoint.Address.ToString());
+            Assert.Equal(1234, ((ProxyProtocolCommand)command).SourceEndpoint.Port);
+            Assert.Equal(16789, ((ProxyProtocolCommand)command).DestinationEndpoint.Port);
         }
 
         [Fact]
@@ -578,7 +615,7 @@ namespace SmtpServer.Tests
             var parser = CreateParser("IPv6:" + input);
 
             // act
-            var result = parser.TryMakeIpv6AddressLiteral(out var address);
+            var result = parser.TryMakeIpv6AddressLiteralWithPrefix(out var address);
 
             // assert
             Assert.True(result);
@@ -597,7 +634,7 @@ namespace SmtpServer.Tests
             var parser = CreateParser("IPv6:" + input);
 
             // act
-            var result = parser.TryMakeIpv6AddressLiteral(out var address);
+            var result = parser.TryMakeIpv6AddressLiteralWithPrefix(out var address);
 
             // assert
             Assert.False(result);
