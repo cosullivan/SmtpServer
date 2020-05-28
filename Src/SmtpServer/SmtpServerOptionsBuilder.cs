@@ -26,9 +26,9 @@ namespace SmtpServer
                 MailboxFilterFactory = DoNothingMailboxFilter.Instance,
                 UserAuthenticatorFactory = DoNothingUserAuthenticator.Instance,
                 MaxRetryCount = 5,
+                MaxAuthenticationAttempts = 3,
                 SupportedSslProtocols = SslProtocols.Tls12,
                 NetworkBufferSize = 128,
-                NetworkBufferReadTimeout = TimeSpan.FromMinutes(2),
                 CommandWaitTimeout = TimeSpan.FromMinutes(5),
                 Logger = new NullLogger(),
             };
@@ -188,6 +188,18 @@ namespace SmtpServer
         }
 
         /// <summary>
+        /// Sets the maximum number of authentication attempts.
+        /// </summary>
+        /// <param name="value">The maximum number of authentication attempts for a failed authentication.</param>
+        /// <returns>A OptionsBuilder to continue building on.</returns>
+        public SmtpServerOptionsBuilder MaxAuthenticationAttempts(int value)
+        {
+            _setters.Add(options => options.MaxAuthenticationAttempts = value);
+
+            return this;
+        }
+
+        /// <summary>
         /// Sets the supported SSL protocols.
         /// </summary>
         /// <param name="value">The supported SSL protocols.</param>
@@ -207,18 +219,6 @@ namespace SmtpServer
         public SmtpServerOptionsBuilder NetworkBufferSize(int value)
         {
             _setters.Add(options => options.NetworkBufferSize = value);
-
-            return this;
-        }
-
-        /// <summary>
-        /// Sets the timeout for each network buffer read operation.
-        /// </summary>
-        /// <param name="value">The timeout to use whilst waiting for each network buffer read.</param>
-        /// <returns>An OptionsBuilder to continue building on.</returns>
-        public SmtpServerOptionsBuilder NetworkBufferReadTimeout(TimeSpan value)
-        {
-            _setters.Add(options => options.NetworkBufferReadTimeout = value);
 
             return this;
         }
@@ -260,6 +260,11 @@ namespace SmtpServer
             /// The maximum number of retries before quitting the session.
             /// </summary>
             public int MaxRetryCount { get; set; }
+
+            /// <summary>
+            /// The maximum number of authentication attempts.
+            /// </summary>
+            public int MaxAuthenticationAttempts { get; set; }
 
             /// <summary>
             /// Gets or sets the SMTP server name.
@@ -315,11 +320,6 @@ namespace SmtpServer
             /// The size of the buffer that is read from each call to the underlying network client.
             /// </summary>
             public int NetworkBufferSize { get; set; }
-
-            /// <summary>
-            /// The timeout on each individual buffer read.
-            /// </summary>
-            public TimeSpan NetworkBufferReadTimeout { get; set; }
 
             /// <summary>
             /// The logger instance to use.

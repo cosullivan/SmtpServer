@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 
 namespace SmtpServer
 {
@@ -23,5 +24,10 @@ namespace SmtpServer
         /// Gets a value indicating whether authentication should be allowed on an unsecure session.
         /// </summary>
         bool AllowUnsecureAuthentication { get; }
+
+        /// <summary>
+        /// The timeout on each individual buffer read.
+        /// </summary>
+        TimeSpan ReadTimeout { get; }
     }
 }

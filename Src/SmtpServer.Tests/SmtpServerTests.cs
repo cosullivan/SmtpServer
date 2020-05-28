@@ -39,7 +39,7 @@ namespace SmtpServer.Tests
                 MailClient.Send(MailClient.Message(from: "test1@test.com", to: "test2@test.com"));
 
                 // assert
-                Assert.Equal(1, MessageStore.Messages.Count);
+                Assert.Single(MessageStore.Messages);
                 Assert.Equal("test1@test.com", MessageStore.Messages[0].From.AsAddress());
                 Assert.Equal(1, MessageStore.Messages[0].To.Count);
                 Assert.Equal("test2@test.com", MessageStore.Messages[0].To[0].AsAddress());
@@ -57,7 +57,7 @@ namespace SmtpServer.Tests
                 MailClient.Send(MailClient.Message(subject: text, text: text, charset: charset));
 
                 // assert
-                Assert.Equal(1, MessageStore.Messages.Count);
+                Assert.Single(MessageStore.Messages);
                 Assert.Equal(text, MessageStore.Messages[0].Subject());
                 Assert.Equal(text, MessageStore.Messages[0].Text(charset));
             }
@@ -83,7 +83,7 @@ namespace SmtpServer.Tests
                 MailClient.Send(user: "user", password: "password");
 
                 // assert
-                Assert.Equal(1, MessageStore.Messages.Count);
+                Assert.Single(MessageStore.Messages);
                 Assert.Equal("user", user);
                 Assert.Equal("password", password);
             }
@@ -112,7 +112,7 @@ namespace SmtpServer.Tests
                 Assert.Throws<MailKit.Security.AuthenticationException>(() => MailClient.Send(user: user, password: password));
 
                 // assert
-                Assert.Equal(0, MessageStore.Messages.Count);
+                Assert.Empty(MessageStore.Messages);
                 Assert.Equal(user, actualUser);
                 Assert.Equal(password, actualPassword);
             }
@@ -127,7 +127,7 @@ namespace SmtpServer.Tests
                 MailClient.Send(MailClient.Message(from: "test1@test.com", to: "test2@test.com", cc: "test3@test.com", bcc: "test4@test.com"));
 
                 // assert
-                Assert.Equal(1, MessageStore.Messages.Count);
+                Assert.Single(MessageStore.Messages);
                 Assert.Equal("test1@test.com", MessageStore.Messages[0].From.AsAddress());
                 Assert.Equal(3, MessageStore.Messages[0].To.Count);
                 Assert.Equal("test2@test.com", MessageStore.Messages[0].To[0].AsAddress());
@@ -238,7 +238,7 @@ namespace SmtpServer.Tests
 
                 disposable.Server.SessionCreated -= sessionCreatedHandler;
 
-                Assert.False(sessionContext.NetworkClient.IsSecure);
+                Assert.False(sessionContext.NetworkClient.Stream.IsSecure);
             }
 
             ServicePointManager.ServerCertificateValidationCallback = null;
@@ -264,7 +264,7 @@ namespace SmtpServer.Tests
 
                 disposable.Server.SessionCreated -= sessionCreatedHandler;
 
-                Assert.True(sessionContext.NetworkClient.IsSecure);
+                Assert.True(sessionContext.NetworkClient.Stream.IsSecure);
             }
 
             ServicePointManager.ServerCertificateValidationCallback = null;
@@ -299,8 +299,8 @@ namespace SmtpServer.Tests
 
                 disposable.Server.SessionCreated -= sessionCreatedHandler;
 
-                Assert.True(sessionContext.NetworkClient.IsSecure);
-                Assert.True(sessionContext.IsAuthenticated);
+                Assert.True(sessionContext.NetworkClient.Stream.IsSecure);
+                Assert.True(sessionContext.Authentication.IsAuthenticated);
             }
 
             ServicePointManager.ServerCertificateValidationCallback = null;
@@ -333,8 +333,8 @@ namespace SmtpServer.Tests
 
         public static X509Certificate2 CreateCertificate()
         {
-            var certificate = File.ReadAllBytes(@"C:\Dropbox\Documents\Cain\Programming\SmtpServer\SmtpServer.pfx");
-            var password = File.ReadAllText(@"C:\Dropbox\Documents\Cain\Programming\SmtpServer\SmtpServerPassword.txt");
+            var certificate = File.ReadAllBytes(@"C:\Users\cain\Dropbox\Documents\Cain\Programming\SmtpServer\\SmtpServer.pfx");
+            var password = File.ReadAllText(@"C:\Users\cain\Dropbox\Documents\Cain\Programming\SmtpServer\\SmtpServerPassword.txt");
 
             return new X509Certificate2(certificate, password);
         }

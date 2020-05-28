@@ -1,9 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Net.Security;
-using System.Security.Authentication;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -12,7 +8,7 @@ namespace SmtpServer.IO
     public sealed class NetworkClient : INetworkClient
     {
         readonly int _bufferLength;
-        Stream _stream;
+        readonly INetworkStream _stream;
         byte[] _buffer;
         int _bytesRead = -1;
         int _index;
@@ -22,21 +18,10 @@ namespace SmtpServer.IO
         /// </summary>
         /// <param name="stream">The stream to return the tokens from.</param>
         /// <param name="bufferLength">The buffer length to read.</param>
-        internal NetworkClient(Stream stream, int bufferLength)
+        internal NetworkClient(INetworkStream stream, int bufferLength)
         {
             _stream = stream;
             _bufferLength = bufferLength;
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="stream">The stream to return the tokens from.</param>
-        /// <param name="bufferLength">The buffer length to read.</param>
-        /// <param name="bufferReadTimeout">The timeout to apply to each buffer read.</param>
-        internal NetworkClient(Stream stream, int bufferLength, TimeSpan bufferReadTimeout) : this(stream, bufferLength)
-        {
-            _stream.ReadTimeout = (int)bufferReadTimeout.TotalMilliseconds;
         }
 
         /// <summary>
@@ -44,7 +29,7 @@ namespace SmtpServer.IO
         /// </summary>
         public void Dispose()
         {
-            _stream?.Dispose();
+            _stream.Dispose();
         }
         
         /// <summary>
@@ -116,22 +101,6 @@ namespace SmtpServer.IO
         }
 
         /// <summary>
-        /// Upgrade to a secure stream.
-        /// </summary>
-        /// <param name="certificate">The X509Certificate used to authenticate the server.</param>
-        /// <param name="protocols">The value that represents the protocol used for authentication.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task that asynchronously performs the operation.</returns>
-        public async Task UpgradeAsync(X509Certificate certificate, SslProtocols protocols, CancellationToken cancellationToken = default)
-        {
-            var stream = new SslStream(_stream, true);
-
-            await stream.AuthenticateAsServerAsync(certificate, false, protocols, true).ConfigureAwait(false);
-            
-            _stream = stream;
-        }
-
-        /// <summary>
         /// Ensure that the buffer is full for a read operation.
         /// </summary>
         /// <param name="cancellationToken">The cancellation token.</param>
@@ -178,8 +147,8 @@ namespace SmtpServer.IO
         }
 
         /// <summary>
-        /// Returns a value indicating whether or not the current client is secure.
+        /// Returns the underlying Network stream instance.
         /// </summary>
-        public bool IsSecure => _stream is SslStream;
+        public INetworkStream Stream => _stream;
     }
 }

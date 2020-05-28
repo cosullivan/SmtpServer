@@ -21,6 +21,11 @@ namespace SmtpServer
         int MaxRetryCount { get; }
 
         /// <summary>
+        /// The maximum number of authentication attempts.
+        /// </summary>
+        int MaxAuthenticationAttempts { get; }
+
+        /// <summary>
         /// Gets the SMTP server name.
         /// </summary>
         string ServerName { get; }
@@ -69,11 +74,6 @@ namespace SmtpServer
         /// The size of the buffer that is read from each call to the underlying network client.
         /// </summary>
         int NetworkBufferSize { get; }
-
-        /// <summary>
-        /// The timeout on each individual buffer read.
-        /// </summary>
-        TimeSpan NetworkBufferReadTimeout { get; }
 
         /// <summary>
         /// The logger instance to use.

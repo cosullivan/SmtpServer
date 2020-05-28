@@ -28,7 +28,7 @@ namespace SmtpServer.Net
             var endpointEventArgs = new EndpointEventArgs(endpointDefinition, tcpListener.LocalEndpoint);
             OnEndpointStarted(endpointEventArgs);
 
-            return new EndpointListener(tcpListener, () => OnEndpointStopped(endpointEventArgs));
+            return new EndpointListener(endpointDefinition, tcpListener, () => OnEndpointStopped(endpointEventArgs));
         }
 
         /// <summary>

@@ -16,27 +16,46 @@ namespace SampleApp
     {
         static async Task Main(string[] args)
         {
-            //SessionTracingExample.Run();
-            
+            //CustomEndpointListenerExample.Run();
+
             ServicePointManager.ServerCertificateValidationCallback = SmtpServerTests.IgnoreCertificateValidationFailureForTestingOnly;
 
-            var options = new SmtpServerOptionsBuilder()
-                .ServerName("SmtpServer SampleApp")
-                .Port(9025)
-                .UserAuthenticator(new DelegatingUserAuthenticator((user, password) => true))
-                .Certificate(SmtpServerTests.CreateCertificate())
-                .Build();
+            ////var options = new SmtpServerOptionsBuilder()
+            ////    .ServerName("SmtpServer SampleApp")
+            ////    .Port(587, false)
+            ////    //.Certificate(SmtpServerTests.CreateCertificate())
+            ////    .Build();
 
-            var server = new SmtpServer.SmtpServer(options);
+            //var options = new SmtpServerOptionsBuilder()
+            //    .ServerName("SmtpServer SampleApp")
+            //    .Endpoint(endpoint =>
+            //        endpoint
+            //            .Port(587)
+            //            .AllowUnsecureAuthentication(true)
+            //            .AuthenticationRequired(false))
+            //    .UserAuthenticator(new SampleUserAuthenticator())
+            //    //.Certificate(SmtpServerTests.CreateCertificate())
+            //    .Build();
 
-            server.SessionCreated += OnSessionCreated;
-            server.SessionCompleted += OnSessionCompleted;
+            //var server = new SmtpServer.SmtpServer(options);
 
-            var serverTask = server.StartAsync(CancellationToken.None);
+            //server.SessionCreated += OnSessionCreated;
+            //server.SessionCompleted += OnSessionCompleted;
+            //server.SessionFaulted += OnSessionFaulted;
 
-            Console.ReadKey();
+            //var serverTask = server.StartAsync(CancellationToken.None);
 
-            await serverTask.ConfigureAwait(false);
+            //Console.ReadKey();
+
+            //await serverTask.ConfigureAwait(false);
+
+            CustomEndpointListenerExample.Run();
+        }
+
+        static void OnSessionFaulted(object sender, SessionFaultedEventArgs e)
+        {
+            Console.WriteLine("SessionFaulted: {0}", e.Context.Properties[EndpointListener.RemoteEndPointKey]);
+            Console.WriteLine(e.Exception.Message);
         }
 
         static void OnSessionCreated(object sender, SessionEventArgs e)

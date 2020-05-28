@@ -33,9 +33,9 @@ namespace SmtpServer
         INetworkClient NetworkClient { get; }
 
         /// <summary>
-        /// Returns a value indicating whether or nor the current session is authenticated.
+        /// Returns the authentication context.
         /// </summary>
-        bool IsAuthenticated { get; }
+        AuthenticationContext Authentication { get; }
 
         /// <summary>
         /// Returns a set of propeties for the current session.

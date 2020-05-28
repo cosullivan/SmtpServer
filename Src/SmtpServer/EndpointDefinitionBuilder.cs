@@ -14,7 +14,10 @@ namespace SmtpServer
         /// <returns>The endpoint definition that was built.</returns>
         public IEndpointDefinition Build()
         {
-            var definition = new EndpointDefinition();
+            var definition = new EndpointDefinition
+            {
+                ReadTimeout = TimeSpan.FromMinutes(2)
+            };
 
             _setters.ForEach(setter => setter(definition));
 
@@ -38,7 +41,7 @@ namespace SmtpServer
         /// </summary>
         /// <param name="port">The port to add as the endpoint.</param>
         /// <param name="isSecure">Indicates whether the port is secure by default.</param>
-        /// <returns>A OptionsBuilder to continue building on.</returns>
+        /// <returns>A EndpointDefinitionBuilder to continue building on.</returns>
         public EndpointDefinitionBuilder Port(int port, bool isSecure)
         {
             return Port(port).IsSecure(isSecure);
@@ -73,7 +76,7 @@ namespace SmtpServer
         /// Sets a value indicating whether the client must authenticate in order to proceed.
         /// </summary>
         /// <param name="value">true if the client must issue an AUTH command before sending any mail, false if not.</param>
-        /// <returns>A OptionsBuilder to continue building on.</returns>
+        /// <returns>A EndpointDefinitionBuilder to continue building on.</returns>
         public EndpointDefinitionBuilder AuthenticationRequired(bool value = true)
         {
             _setters.Add(options => options.AuthenticationRequired = value);
@@ -85,10 +88,22 @@ namespace SmtpServer
         /// Sets a value indicating whether authentication should be allowed on an unsecure session.
         /// </summary>
         /// <param name="value">true if the AUTH command is available on an unsecure session, false if not.</param>
-        /// <returns>A OptionsBuilder to continue building on.</returns>
+        /// <returns>A EndpointDefinitionBuilder to continue building on.</returns>
         public EndpointDefinitionBuilder AllowUnsecureAuthentication(bool value = true)
         {
             _setters.Add(options => options.AllowUnsecureAuthentication = value);
+
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the read timeout to apply to stream operations.
+        /// </summary>
+        /// <param name="value">The timeout value to apply to read operations.</param>
+        /// <returns>A EndpointDefinitionBuilder to continue building on.</returns>
+        public EndpointDefinitionBuilder ReadTimeout(TimeSpan value)
+        {
+            _setters.Add(options => options.ReadTimeout = value);
 
             return this;
         }
@@ -116,6 +131,11 @@ namespace SmtpServer
             /// Gets a value indicating whether authentication should be allowed on an unsecure session.
             /// </summary>
             public bool AllowUnsecureAuthentication { get; set; }
+
+            /// <summary>
+            /// The timeout on each individual buffer read.
+            /// </summary>
+            public TimeSpan ReadTimeout { get; set; }
         }
 
         #endregion

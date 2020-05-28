@@ -37,6 +37,7 @@ namespace SmtpServer.Protocol
                 internal static readonly Token From = Token.Create("FROM");
                 internal static readonly Token To = Token.Create("TO");
                 internal static readonly Token Last = Token.Create("LAST");
+                internal static readonly Token IpVersionTag = Token.Create("IPv");
             }
             // ReSharper restore InconsistentNaming
         }
@@ -734,7 +735,7 @@ namespace SmtpServer.Protocol
             // skip any whitespace
             Enumerator.Skip(TokenKind.Space);
 
-            if (TryMake(TryMakeIpv4AddressLiteral, out address) == false)
+            if (TryMake(TryMakeIpv4AddressLiteral, out address) == false && TryMake(TryMakeIpv6AddressLiteralWithPrefix, out address) == false)
             {
                 return false;
             }
@@ -783,99 +784,6 @@ namespace SmtpServer.Protocol
         }
 
         /// <summary>
-        /// Try to make an IPv6 address literal.
-        /// Note: Thie method will fail for the :: IPv6 Address
-        /// ... this is not needed for proxy protocol but may be required if this is used elsewhere in future.
-        /// </summary>
-        /// <param name="address">The address that was made, or undefined if it was not made.</param>
-        /// <returns>true if the address was made, false if not.</returns>
-        public bool TryMakeIpv6AddressLiteral(out string address)
-        {
-            address = null;
-
-            string fourHex;
-            if (Enumerator.Peek() == Tokens.Colon)
-            {
-                Enumerator.Take();
-                address = ":";
-            }
-            else
-            {
-                if (TryMake(TryMakeFourHex, out fourHex) == false)
-                {
-                    return false;
-                }
-                address = fourHex;
-            }
-            
-            bool doubleColonSeen = false;
-            for (var i = 0; i < 7 && Enumerator.Peek() == Tokens.Colon; i++)
-            {
-                Enumerator.Take();
-                
-                if (Enumerator.Peek() == Tokens.Colon)
-                {
-                    // This could be a double colon valid in IPv6 Addresses but only once.
-                    if (doubleColonSeen)
-                    {
-                        return false;
-                    }
-
-                    address = String.Concat(address, ':');
-                    doubleColonSeen = true;
-                    continue;
-                }
-                
-                if (TryMake(TryMakeFourHex, out fourHex) == false)
-                {
-                    return false;
-                }
-
-                address = String.Concat(address, ':', fourHex);
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// Try and get four "hex" digits from a IPv6 address sequence.
-        /// </summary>
-        /// <param name="fourHex"></param>
-        /// <returns></returns>
-        private bool TryMakeFourHex(out string fourHex)
-        {
-            fourHex = "";
-
-            var token = Enumerator.Take();
-            do
-            {
-                if (token.Kind != TokenKind.Number
-                    && token.Kind != TokenKind.Text)
-                {
-                    return false;
-                }
-
-                fourHex += token.Text;
-
-                var peek = Enumerator.Peek();
-                if (peek == Tokens.Colon || peek.Kind == TokenKind.Space || peek.Kind == TokenKind.None || peek.Kind == TokenKind.NewLine)
-                {
-                    break;
-                }
-
-                token = Enumerator.Take();
-            } while (fourHex.Length < 4);
-
-            // Check the length is valid.
-            if (fourHex.Length < 1 || fourHex.Length > 4)
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        /// <summary>
         /// Try to make an Snum (number in the range of 0-255).
         /// </summary>
         /// <param name="snum">The snum that was made, or undefined if it was not made.</param>
@@ -893,6 +801,170 @@ namespace SmtpServer.Protocol
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Try to make Ip version from ip version tag which is a formatted text IPv[Version]:
+        /// </summary>
+        /// <param name="version">IP version. IPv6 is supported atm.</param>
+        /// <returns>true if ip version tag can be extracted.</returns>
+        public bool TryMakeIpVersion(out int version)
+        {
+            version = default;
+            
+            if (Enumerator.Take() != Tokens.Text.IpVersionTag)
+            { 
+                return false;
+            }
+
+            var token = Enumerator.Take();
+
+            if (token.Kind == TokenKind.Number && int.TryParse(token.Text, out var v))
+            {
+                version = v;
+                return Enumerator.Take() == Tokens.Colon;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Try to make 16 bits hex number.
+        /// </summary>
+        /// <param name="hexNumber">Extracted hex number.</param>
+        /// <returns>true if valid hex number can be extracted.</returns>
+        public bool TryMake16BitsHexNumber(out string hexNumber)
+        {
+            hexNumber = null;
+
+            var token = Enumerator.Peek();
+            while (token.Kind == TokenKind.Number || token.Kind == TokenKind.Text)
+            {
+                if (hexNumber != null && (hexNumber.Length + token.Text.Length) > 4)
+                { 
+                    return false;
+                }
+
+                if (token.Kind == TokenKind.Text && IsHex(token.Text) == false)
+                {
+                    return false;
+                }
+                
+                hexNumber = string.Concat(hexNumber ?? string.Empty, token.Text);
+
+                Enumerator.Take();
+                token = Enumerator.Peek();
+            }
+
+            return true;
+
+            bool IsHex(string text)
+            {
+                return text.ToUpperInvariant().All(c => c >= 'A' && c <= 'F');
+            }
+        }
+
+        /// <summary>
+        /// Try to extract IPv6 address. https://tools.ietf.org/html/rfc4291 section 2.2 used for specification.
+        /// This method expects the address to have the IPv6: prefix.
+        /// </summary>
+        /// <param name="address">Extracted Ipv6 address.</param>
+        /// <returns>true if a valid Ipv6 address can be extracted.</returns>
+        public bool TryMakeIpv6AddressLiteralWithPrefix(out string address)
+        {
+            address = null;
+
+            if (TryMake(TryMakeIpVersion, out int ipVersion) == false || ipVersion != 6)
+            {
+                return false;
+            }
+
+            return TryMakeIpv6AddressLiteral(out address);
+        }
+
+        /// <summary>
+        /// Try to extract IPv6 address. https://tools.ietf.org/html/rfc4291 section 2.2 used for specification.
+        /// </summary>
+        /// <param name="address">Extracted Ipv6 address.</param>
+        /// <returns>true if a valid Ipv6 address can be extracted.</returns>
+        public bool TryMakeIpv6AddressLiteral(out string address)
+        {
+            address = null;
+
+            var hasDoubleColumn = false;
+            var hexPartCount = 0;
+            var hasIpv4Part = false;
+            var wasColon = false;
+
+            var token = Enumerator.Peek();
+            var builder = new System.Text.StringBuilder();
+            while (token.Kind == TokenKind.Number || token.Kind == TokenKind.Text || token == Tokens.Colon)
+            {
+                using (var cp = Enumerator.Checkpoint())
+                {
+                    Enumerator.Take();
+                    // Alternate form with mixed IPv6 and IPv4 formats. See https://tools.ietf.org/html/rfc4291 section 2.2 item 3
+                    if (token.Kind == TokenKind.Number && Enumerator.Peek() == Tokens.Period)
+                    {
+                        cp.Rollback();
+                        if (TryMake(TryMakeIpv4AddressLiteral, out string ipv4))
+                        {
+                            hasIpv4Part = true;
+                            builder.Append(ipv4);
+                            break;
+                        }
+
+                        return false;
+                    }
+
+                    cp.Rollback();
+                }
+
+                if (token == Tokens.Colon)
+                {
+                    if (wasColon)
+                    {
+                        // Double column is allowed only once
+                        if (hasDoubleColumn)
+                        { 
+                            return false;
+                        }
+                        hasDoubleColumn = true;
+                    }
+                    builder.Append(token.Text);
+                    wasColon = true;
+                    Enumerator.Take();
+                }
+                else
+                {
+                    if (wasColon == false && builder.Length > 0)
+                    { 
+                        return false;
+                    }
+
+                    wasColon = false;
+                    if (TryMake(TryMake16BitsHexNumber, out string hexNumber))
+                    {
+                        builder.Append(hexNumber);
+                        hexPartCount++;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                token = Enumerator.Peek();
+            }
+
+            address = builder.ToString();
+
+            var maxAllowedParts = (hasIpv4Part ? 6 : 8) - Math.Sign(hasDoubleColumn ? 1 : 0);
+            if ((hasDoubleColumn && hexPartCount > maxAllowedParts) || (!hasDoubleColumn && hexPartCount != maxAllowedParts))
+            { 
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>

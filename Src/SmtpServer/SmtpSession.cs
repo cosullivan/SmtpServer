@@ -36,14 +36,14 @@ namespace SmtpServer
             RunAsync(cancellationToken)
                 .ContinueWith(t =>
                 {
-                    try
+                    if (t.Exception != null)
                     {
-                        _taskCompletionSource.SetResult(t.IsCompleted);
+                        _taskCompletionSource.SetException(t.Exception);
+                        
+                        return;
                     }
-                    catch
-                    {
-                        _taskCompletionSource.SetResult(false);
-                    }
+
+                    _taskCompletionSource.SetResult(t.IsCompleted);
                 }, 
                 cancellationToken);
         }
@@ -84,33 +84,37 @@ namespace SmtpServer
                     return;
                 }
 
-                if (TryMake(context, text, out var command, out var response))
+                if (TryMake(context, text, out var command, out var response) == false)
                 {
-                    try
-                    {
-                        if (await ExecuteAsync(command, context, cancellationToken).ConfigureAwait(false))
-                        {
-                            _stateMachine.Transition(context);
-                        }
-
-                        retries = _context.ServerOptions.MaxRetryCount;
-
-                        continue;
-                    }
-                    catch (SmtpResponseException responseException)
-                    {
-                        context.IsQuitRequested = responseException.IsQuitRequested;
-
-                        response = responseException.Response;
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        await context.NetworkClient.ReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "The session has be cancelled."), cancellationToken).ConfigureAwait(false);
-                        return;
-                    }
+                    await context.NetworkClient.ReplyAsync(CreateErrorResponse(response, retries), cancellationToken).ConfigureAwait(false);
+                    continue;
                 }
+                
+                try
+                {
+                    if (await ExecuteAsync(command, context, cancellationToken).ConfigureAwait(false))
+                    {
+                        _stateMachine.Transition(context);
+                    }
 
-                await context.NetworkClient.ReplyAsync(CreateErrorResponse(response, retries), cancellationToken).ConfigureAwait(false);
+                    retries = _context.ServerOptions.MaxRetryCount;
+                }
+                catch (SmtpResponseException responseException) when (responseException.IsQuitRequested)
+                {
+                    await context.NetworkClient.ReplyAsync(responseException.Response, cancellationToken).ConfigureAwait(false);
+                    return;
+                }
+                catch (SmtpResponseException responseException)
+                {
+                    response = CreateErrorResponse(responseException.Response, retries);
+
+                    await context.NetworkClient.ReplyAsync(response, cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    await context.NetworkClient.ReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "The session has be cancelled."), cancellationToken).ConfigureAwait(false);
+                    return;
+                }
             }
         }
 

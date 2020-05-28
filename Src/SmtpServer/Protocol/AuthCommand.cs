@@ -33,11 +33,11 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="context">The execution context to operate on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>Returns true if the command executed successfully such that the transition to the next state should occurr, false 
+        /// <returns>Returns true if the command executed successfully such that the transition to the next state should occur, false 
         /// if the current state is to be maintained.</returns>
         internal override async Task<bool> ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            context.IsAuthenticated = false;
+            context.Authentication = AuthenticationContext.Unauthenticated;
 
             switch (Method)
             {
@@ -62,14 +62,23 @@ namespace SmtpServer.Protocol
             {
                 if (await container.Instance.AuthenticateAsync(context, _user, _password, cancellationToken).ConfigureAwait(false) == false)
                 {
-                    await context.NetworkClient.ReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ConfigureAwait(false);
+                    var remaining = context.ServerOptions.MaxAuthenticationAttempts - ++context.AuthenticationAttempts;
+                    var response = new SmtpResponse(SmtpReplyCode.AuthenticationFailed, $"authentication failed, {remaining} attempt(s) remaining.");
+
+                    await context.NetworkClient.ReplyAsync(response, cancellationToken).ConfigureAwait(false);
+
+                    if (remaining <= 0)
+                    {
+                        throw new SmtpResponseException(SmtpResponse.ServiceClosingTransmissionChannel, true);
+                    }
+
                     return false;
                 }
             }
 
             await context.NetworkClient.ReplyAsync(SmtpResponse.AuthenticationSuccessful, cancellationToken).ConfigureAwait(false);
 
-            context.IsAuthenticated = true;
+            context.Authentication = new AuthenticationContext(_user);
             context.RaiseSessionAuthenticated();
 
             return true;
@@ -168,7 +177,7 @@ namespace SmtpServer.Protocol
         public AuthenticationMethod Method { get; }
 
         /// <summary>
-        /// The athentication parameter.
+        /// The authentication parameter.
         /// </summary>
         public string Parameter { get; }
     }

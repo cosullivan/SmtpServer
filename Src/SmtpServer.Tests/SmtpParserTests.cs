@@ -84,6 +84,8 @@ namespace SmtpServer.Tests
         [Theory]
         [InlineData("EHLO abc-1-def.mail.com")]
         [InlineData("EHLO 192.168.1.200")]
+        [InlineData("EHLO [192.168.1.200]")]
+        [InlineData("EHLO [IPv6:ABCD:EF01:2345:6789:ABCD:EF01:2345:6789]")]
         public void CanMakeEhlo(string input)
         {
             // arrange
@@ -92,10 +94,24 @@ namespace SmtpServer.Tests
             // act
             var result = parser.TryMakeEhlo(out SmtpCommand command, out SmtpResponse errorResponse);
 
+            var ipOrDomainPart = input.Substring(5);
+
+            if (ipOrDomainPart.EndsWith("]"))
+            {
+                if (ipOrDomainPart.StartsWith("[IPv6:", StringComparison.OrdinalIgnoreCase))
+                {
+                    ipOrDomainPart = ipOrDomainPart.Substring(6, ipOrDomainPart.Length - 7);
+                }
+                else
+                {
+                    ipOrDomainPart = ipOrDomainPart.Substring(1, ipOrDomainPart.Length - 2);
+                }
+            }
+
             // assert
             Assert.True(result);
             Assert.True(command is EhloCommand);
-            Assert.Equal(input.Substring(5), ((EhloCommand)command).DomainOrAddress);
+            Assert.Equal(ipOrDomainPart, ((EhloCommand)command).DomainOrAddress);
         }
 
         [Fact]
@@ -286,7 +302,7 @@ namespace SmtpServer.Tests
 
             string address;
             // act
-            var result = parser.TryMakeIpv6AddressLiteral(out address);
+            var result = parser.TryMakeIpv6AddressLiteralWithPrefix(out address);
 
             IPAddress ipAddr;
             // assert
@@ -560,6 +576,99 @@ namespace SmtpServer.Tests
             // assert
             Assert.True(made);
             Assert.Equal(input, base64);
+        }
+
+        [Fact]
+        public void CanMakeIpVersion()
+        {
+            // arrange
+            var parser = CreateParser("IPv6:");
+
+            // act
+            var result = parser.TryMakeIpVersion(out var version);
+
+            // assert
+            Assert.True(result);
+            Assert.Equal(6, version);
+        }
+
+        [Theory]
+        [InlineData("0")]
+        [InlineData("A9")]
+        [InlineData("ABC")]
+        [InlineData("ABCD")]
+        [InlineData("1BCD")]
+        [InlineData("1BC2")]
+        [InlineData("1B2D")]
+        [InlineData("1B23")]
+        [InlineData("AB23")]
+        public void CanMake16BitsHexNumber(string input)
+        {
+            // arrange
+            var parser = CreateParser(input);
+
+            // act
+            var result = parser.TryMake16BitsHexNumber(out var hexNumber);
+
+            // assert
+            Assert.True(result);
+            Assert.Equal(input, hexNumber);
+        }
+
+        [Theory]
+        [InlineData("G")]
+        [InlineData("A123B")]
+        public void CanNotMake16BitsHexNumber(string input)
+        {
+            // arrange
+            var parser = CreateParser(input);
+
+            // act
+            var result = parser.TryMake16BitsHexNumber(out var hexNumber);
+
+            // assert
+            Assert.False(result);
+        }
+
+        [Theory]
+        [InlineData("ABCD:EF01:2345:6789:ABCD:EF01:2345:6789")]
+        [InlineData("2001:DB8::8:800:200C:417A")]
+        [InlineData("FF01::101")]
+        [InlineData("::1")]
+        [InlineData("::")]
+        [InlineData("0:0:0:0:0:0:13.1.68.3")]
+        [InlineData("0:0:0:0:0:FFFF:129.144.52.38")]
+        [InlineData("::13.1.68.3")]
+        [InlineData("::FFFF:129.144.52.38")]
+        public void CanMakeIpv6AddressLiteral(string input)
+        {
+            // arrange
+            var parser = CreateParser("IPv6:" + input);
+
+            // act
+            var result = parser.TryMakeIpv6AddressLiteralWithPrefix(out var address);
+
+            // assert
+            Assert.True(result);
+            Assert.Equal(input, address);
+        }
+
+        [Theory]
+        [InlineData("ABCD:EF01:2345:6789:ABCD:EF01:2345")]
+        [InlineData("ABCD:EF01:2345:6789:ABCD:EF01:2345:6789:0")]
+        [InlineData("FF01:::101")]
+        [InlineData(":::1")]
+        [InlineData(":::")]
+        public void CanNotMakeIpv6AddressLiteral(string input)
+        {
+            // arrange
+            var parser = CreateParser("IPv6:" + input);
+
+            // act
+            var result = parser.TryMakeIpv6AddressLiteralWithPrefix(out var address);
+
+            // assert
+            Assert.False(result);
         }
     }
 }

@@ -67,11 +67,16 @@ namespace SmtpServer
         /// Gets the current transaction.
         /// </summary>
         public SmtpMessageTransaction Transaction { get; }
+        
+        /// <summary>
+        /// Returns the authentication context.
+        /// </summary>
+        public AuthenticationContext Authentication { get; internal set; } = AuthenticationContext.Unauthenticated;
 
         /// <summary>
-        /// Returns a value indicating whether or nor the current session is authenticated.
+        /// Returns the number of athentication attempts.
         /// </summary>
-        public bool IsAuthenticated { get; internal set; }
+        public int AuthenticationAttempts { get; internal set; }
 
         /// <summary>
         /// Gets a value indicating whether a quit has been requested.
