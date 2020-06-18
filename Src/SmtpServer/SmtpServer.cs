@@ -1,9 +1,10 @@
 ﻿using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.IO;
+using SmtpServer.Net;
 
 namespace SmtpServer
 {
@@ -25,6 +26,8 @@ namespace SmtpServer
         public event EventHandler<SessionFaultedEventArgs> SessionFaulted;
 
         readonly ISmtpServerOptions _options;
+        readonly SessionManager _sessions;
+        readonly CancellationTokenSource _shutdownTokenSource = new CancellationTokenSource();
 
         /// <summary>
         /// Constructor.
@@ -33,6 +36,7 @@ namespace SmtpServer
         public SmtpServer(ISmtpServerOptions options)
         {
             _options = options;
+            _sessions = new SessionManager(this);
         }
 
         /// <summary>
@@ -73,6 +77,14 @@ namespace SmtpServer
         }
 
         /// <summary>
+        /// Shutdown the server and allow any active sessions to finish.
+        /// </summary>
+        public void Shutdown()
+        {
+            _shutdownTokenSource.Cancel();
+        }
+
+        /// <summary>
         /// Listen for SMTP traffic on the given endpoint.
         /// </summary>
         /// <param name="endpointDefinition">The definition of the endpoint to listen on.</param>
@@ -80,55 +92,15 @@ namespace SmtpServer
         /// <returns>A task which performs the operation.</returns>
         async Task ListenAsync(IEndpointDefinition endpointDefinition, CancellationToken cancellationToken)
         {
-            // keep track of the running tasks for disposal
-            var sessions = new ConcurrentDictionary<SmtpSession, SmtpSession>();
-
             using (var endpointListener = _options.EndpointListenerFactory.CreateListener(endpointDefinition))
             {
-                while (cancellationToken.IsCancellationRequested == false)
+                while (_shutdownTokenSource.Token.IsCancellationRequested == false && cancellationToken.IsCancellationRequested == false)
                 {
                     var sessionContext = new SmtpSessionContext(_options, endpointDefinition);
 
                     try
                     {
-                        // wait for a client connection
-                        var stream = await endpointListener.GetStreamAsync(sessionContext, cancellationToken).ConfigureAwait(false);
-                        cancellationToken.ThrowIfCancellationRequested();
-
-                        sessionContext.NetworkClient = new NetworkClient(stream, _options.NetworkBufferSize);
-
-                        if (endpointDefinition.IsSecure && _options.ServerCertificate != null)
-                        {
-                            await sessionContext.NetworkClient.Stream.UpgradeAsync(_options.ServerCertificate, _options.SupportedSslProtocols, cancellationToken).ConfigureAwait(false);
-                            cancellationToken.ThrowIfCancellationRequested();
-                        }
-
-                        // create a new session to handle the connection
-                        var session = new SmtpSession(sessionContext);
-                        sessions.TryAdd(session, session);
-
-                        OnSessionCreated(new SessionEventArgs(sessionContext));
-
-                        session.Run(cancellationToken);
-
-                        #pragma warning disable 4014
-                        session.Task
-                            .ContinueWith(t =>
-                            {
-                                if (sessions.TryRemove(session, out var s))
-                                {
-                                    sessionContext.NetworkClient.Dispose();
-                                }
-
-                                if (t.Exception != null)
-                                {
-                                    OnSessionFaulted(new SessionFaultedEventArgs(sessionContext, t.Exception));
-                                }
-
-                                OnSessionCompleted(new SessionEventArgs(sessionContext));
-                            },
-                            cancellationToken);
-                        #pragma warning restore 4014
+                        await ListenAsync(sessionContext, endpointListener, cancellationToken);
                     }
                     catch (OperationCanceledException) { }
                     catch (Exception ex)
@@ -136,10 +108,103 @@ namespace SmtpServer
                         OnSessionFaulted(new SessionFaultedEventArgs(sessionContext, ex));
                     }
                 }
+            }
 
-                // the server has been cancelled, wait for the tasks to complete
-                await Task.WhenAll(sessions.Keys.Select(s => s.Task)).ConfigureAwait(false);
+            // the server has been cancelled, wait for the tasks to complete
+            await _sessions.WaitAsync().ConfigureAwait(false);
+        }
+
+        async Task ListenAsync(SmtpSessionContext sessionContext, IEndpointListener endpointListener, CancellationToken cancellationToken)
+        {
+            // The listener can be stopped either by the caller cancelling the CancellationToken used when starting the server, or when calling
+            // the shutdown method. The Shutdown method will stop the listeners and allow any active sessions to finish gracefully.
+            var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_shutdownTokenSource.Token, cancellationToken);
+
+            // wait for a client connection
+            var stream = await endpointListener.GetStreamAsync(sessionContext, cancellationTokenSource.Token).ConfigureAwait(false);
+            cancellationTokenSource.Token.ThrowIfCancellationRequested();
+
+            sessionContext.NetworkClient = new NetworkClient(stream, _options.NetworkBufferSize);
+
+            if (sessionContext.EndpointDefinition.IsSecure && _options.ServerCertificate != null)
+            {
+                await sessionContext.NetworkClient.Stream.UpgradeAsync(_options.ServerCertificate, _options.SupportedSslProtocols, cancellationToken).ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            _sessions.Run(sessionContext, cancellationToken);
+        }
+
+        #region SessionManager
+
+        class SessionManager
+        {
+            readonly SmtpServer _smtpServer;
+            readonly HashSet<SmtpSession> _sessions = new HashSet<SmtpSession>();
+            readonly object _sessionsLock = new object();
+            
+            public SessionManager(SmtpServer smtpServer)
+            {
+                _smtpServer = smtpServer;
+            }
+
+            public void Run(SmtpSessionContext sessionContext, CancellationToken cancellationToken)
+            {
+                var session = new SmtpSession(sessionContext);
+                Add(session);
+
+                _smtpServer.OnSessionCreated(new SessionEventArgs(sessionContext));
+
+                session.Run(cancellationToken);
+
+#pragma warning disable 4014
+                session.Task.ContinueWith(
+                    task =>
+                    {
+                        Remove(session);
+                        
+                        sessionContext.NetworkClient.Dispose();
+                        
+                        if (task.Exception != null)
+                        {
+                            _smtpServer.OnSessionFaulted(new SessionFaultedEventArgs(sessionContext, task.Exception));
+                        }
+
+                        _smtpServer.OnSessionCompleted(new SessionEventArgs(sessionContext));
+                    },
+                    cancellationToken);
+#pragma warning restore 4014
+            }
+
+            public Task WaitAsync()
+            {
+                IReadOnlyList<Task> tasks;
+                
+                lock (_sessionsLock)
+                {
+                    tasks = _sessions.Select(session => session.Task).ToList();
+                }
+                
+                return Task.WhenAll(tasks);
+            }
+
+            void Add(SmtpSession session)
+            {
+                lock (_sessionsLock)
+                {
+                    _sessions.Add(session);
+                }
+            }
+
+            void Remove(SmtpSession session)
+            {
+                lock (_sessionsLock)
+                {
+                    _sessions.Remove(session);
+                }
             }
         }
+
+        #endregion
     }
 }
