@@ -28,6 +28,7 @@ namespace SmtpServer
         readonly ISmtpServerOptions _options;
         readonly SessionManager _sessions;
         readonly CancellationTokenSource _shutdownTokenSource = new CancellationTokenSource();
+        readonly TaskCompletionSource<bool> _shutdownTask = new TaskCompletionSource<bool>();
 
         /// <summary>
         /// Constructor.
@@ -73,7 +74,13 @@ namespace SmtpServer
         /// <returns>A task which performs the operation.</returns>
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            await Task.WhenAll(_options.Endpoints.Select(e => ListenAsync(e, cancellationToken))).ConfigureAwait(false);
+            var tasks = _options.Endpoints.Select(e => ListenAsync(e, cancellationToken));
+
+            await Task.WhenAll(tasks).ConfigureAwait(false);
+
+            _shutdownTask.TrySetResult(true);
+
+            await _sessions.WaitAsync().ConfigureAwait(false);
         }
 
         /// <summary>
@@ -109,9 +116,6 @@ namespace SmtpServer
                     }
                 }
             }
-
-            // the server has been cancelled, wait for the tasks to complete
-            await _sessions.WaitAsync().ConfigureAwait(false);
         }
 
         async Task ListenAsync(SmtpSessionContext sessionContext, IEndpointListener endpointListener, CancellationToken cancellationToken)
@@ -135,6 +139,11 @@ namespace SmtpServer
             _sessions.Run(sessionContext, cancellationToken);
         }
 
+        /// <summary>
+        /// The task that completes when the server has shutdown and stopped accepting new sessions.
+        /// </summary>
+        public Task ShutdownTask => _shutdownTask.Task;
+        
         #region SessionManager
 
         class SessionManager

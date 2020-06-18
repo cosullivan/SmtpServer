@@ -51,7 +51,9 @@ namespace SampleApp
 
             Console.WriteLine("Shutting down the server.");
 
-            //server.Shutdown();
+            server.Shutdown();
+
+            await server.ShutdownTask;
 
             await serverTask.ConfigureAwait(false);
 
