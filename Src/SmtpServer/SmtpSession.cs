@@ -28,24 +28,29 @@ namespace SmtpServer
         /// <summary>
         /// Executes the session.
         /// </summary>
+        /// <param name="completedAction">The callback to execute when the session has completed.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        public void Run(CancellationToken cancellationToken)
+        public void Run(Action<Exception> completedAction, CancellationToken cancellationToken)
         {
             _taskCompletionSource = new TaskCompletionSource<bool>();
 
-            RunAsync(cancellationToken)
-                .ContinueWith(t =>
+            // ReSharper disable once MethodSupportsCancellation
+            RunAsync(cancellationToken).ContinueWith(
+                task =>
                 {
-                    if (t.Exception != null)
+                    if (task.Exception != null)
                     {
-                        _taskCompletionSource.SetException(t.Exception);
+                        completedAction(task.Exception);
+
+                        _taskCompletionSource.SetException(task.Exception);
                         
                         return;
                     }
 
-                    _taskCompletionSource.SetResult(t.IsCompleted);
-                }, 
-                cancellationToken);
+                    completedAction(null);
+
+                    _taskCompletionSource.SetResult(task.IsCompleted);
+                });
         }
 
         /// <summary>
@@ -102,7 +107,6 @@ namespace SmtpServer
                 catch (SmtpResponseException responseException) when (responseException.IsQuitRequested)
                 {
                     await context.NetworkClient.ReplyAsync(responseException.Response, cancellationToken).ConfigureAwait(false);
-                    return;
                 }
                 catch (SmtpResponseException responseException)
                 {
@@ -112,8 +116,7 @@ namespace SmtpServer
                 }
                 catch (OperationCanceledException)
                 {
-                    await context.NetworkClient.ReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "The session has be cancelled."), cancellationToken).ConfigureAwait(false);
-                    return;
+                    await context.NetworkClient.ReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "The session has be cancelled."), CancellationToken.None).ConfigureAwait(false);
                 }
             }
         }

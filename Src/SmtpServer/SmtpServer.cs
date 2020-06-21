@@ -25,6 +25,11 @@ namespace SmtpServer
         /// </summary>
         public event EventHandler<SessionFaultedEventArgs> SessionFaulted;
 
+        /// <summary>
+        /// Raised when a session has been cancelled through the cancellation token.
+        /// </summary>
+        public event EventHandler<SessionEventArgs> SessionCancelled;
+
         readonly ISmtpServerOptions _options;
         readonly SessionManager _sessions;
         readonly CancellationTokenSource _shutdownTokenSource = new CancellationTokenSource();
@@ -68,6 +73,15 @@ namespace SmtpServer
         }
 
         /// <summary>
+        /// Raises the SessionCancelled Event.
+        /// </summary>
+        /// <param name="args">The event data.</param>
+        protected virtual void OnSessionCancelled(SessionEventArgs args)
+        {
+            SessionCancelled?.Invoke(this, args);
+        }
+
+        /// <summary>
         /// Starts the SMTP server.
         /// </summary>
         /// <param name="cancellationToken">The cancellation token.</param>
@@ -108,6 +122,13 @@ namespace SmtpServer
                     try
                     {
                         await ListenAsync(sessionContext, endpointListener, cancellationToken);
+                    }
+                    catch (OperationCanceledException) when (_shutdownTokenSource.Token.IsCancellationRequested == false)
+                    {
+                        if (sessionContext.NetworkClient != null)
+                        { 
+                            OnSessionCancelled(new SessionEventArgs(sessionContext));
+                        }
                     }
                     catch (OperationCanceledException) { }
                     catch (Exception ex)
@@ -164,25 +185,21 @@ namespace SmtpServer
 
                 _smtpServer.OnSessionCreated(new SessionEventArgs(sessionContext));
 
-                session.Run(cancellationToken);
-
-#pragma warning disable 4014
-                session.Task.ContinueWith(
-                    task =>
+                session.Run(
+                    exception =>
                     {
                         Remove(session);
-                        
-                        sessionContext.NetworkClient.Dispose();
-                        
-                        if (task.Exception != null)
-                        {
-                            _smtpServer.OnSessionFaulted(new SessionFaultedEventArgs(sessionContext, task.Exception));
-                        }
 
+                        sessionContext.NetworkClient.Dispose();
+
+                        if (exception != null)
+                        {
+                            _smtpServer.OnSessionFaulted(new SessionFaultedEventArgs(sessionContext, exception));
+                        }
+                        
                         _smtpServer.OnSessionCompleted(new SessionEventArgs(sessionContext));
-                    },
+                    }, 
                     cancellationToken);
-#pragma warning restore 4014
             }
 
             public Task WaitAsync()

@@ -20,46 +20,48 @@ namespace SampleApp
 
             ServicePointManager.ServerCertificateValidationCallback = SmtpServerTests.IgnoreCertificateValidationFailureForTestingOnly;
 
-            var options = new SmtpServerOptionsBuilder()
-                .ServerName("SmtpServer SampleApp")
-                .Port(587, false)
-                //.Certificate(SmtpServerTests.CreateCertificate())
-                .Build();
+            ServerShutdownExample.Run();
 
             //var options = new SmtpServerOptionsBuilder()
             //    .ServerName("SmtpServer SampleApp")
-            //    .Endpoint(endpoint =>
-            //        endpoint
-            //            .Port(587)
-            //            .AllowUnsecureAuthentication(true)
-            //            .AuthenticationRequired(false))
-            //    .UserAuthenticator(new SampleUserAuthenticator())
+            //    .Port(587, false)
             //    //.Certificate(SmtpServerTests.CreateCertificate())
             //    .Build();
 
-            var server = new SmtpServer.SmtpServer(options);
+            ////var options = new SmtpServerOptionsBuilder()
+            ////    .ServerName("SmtpServer SampleApp")
+            ////    .Endpoint(endpoint =>
+            ////        endpoint
+            ////            .Port(587)
+            ////            .AllowUnsecureAuthentication(true)
+            ////            .AuthenticationRequired(false))
+            ////    .UserAuthenticator(new SampleUserAuthenticator())
+            ////    //.Certificate(SmtpServerTests.CreateCertificate())
+            ////    .Build();
 
-            server.SessionCreated += OnSessionCreated;
-            server.SessionCompleted += OnSessionCompleted;
-            server.SessionFaulted += OnSessionFaulted;
+            //var server = new SmtpServer.SmtpServer(options);
 
-            var serverTask = server.StartAsync(CancellationToken.None);
+            //server.SessionCreated += OnSessionCreated;
+            //server.SessionCompleted += OnSessionCompleted;
+            //server.SessionFaulted += OnSessionFaulted;
 
-            Console.WriteLine("Starting, press any key to shutdown.");
-            
-            Console.ReadKey();
+            //var serverTask = server.StartAsync(CancellationToken.None);
 
-            Console.WriteLine("Shutting down the server.");
+            //Console.WriteLine("Starting, press any key to shutdown.");
 
-            server.Shutdown();
+            //Console.ReadKey();
 
-            await server.ShutdownTask;
+            //Console.WriteLine("Shutting down the server.");
 
-            await serverTask.ConfigureAwait(false);
+            //server.Shutdown();
 
-            Console.WriteLine("Finished");
+            //await server.ShutdownTask;
 
-            //CustomEndpointListenerExample.Run();
+            //await serverTask.ConfigureAwait(false);
+
+            //Console.WriteLine("Finished");
+
+            ////CustomEndpointListenerExample.Run();
         }
 
         static void OnSessionFaulted(object sender, SessionFaultedEventArgs e)
