@@ -553,13 +553,13 @@ namespace SmtpServer.Tests
         [InlineData("1B2D")]
         [InlineData("1B23")]
         [InlineData("AB23")]
-        public void CanMake16BitsHexNumber(string input)
+        public void CanMake16BitHexNumber(string input)
         {
             // arrange
             var parser = CreateParser(input);
 
             // act
-            var result = parser.TryMake16BitsHexNumber(out var hexNumber);
+            var result = parser.TryMake16BitHex(out var hexNumber);
 
             // assert
             Assert.True(result);
@@ -567,18 +567,48 @@ namespace SmtpServer.Tests
         }
 
         [Theory]
+        [InlineData("!")]
         [InlineData("G")]
         [InlineData("A123B")]
-        public void CanNotMake16BitsHexNumber(string input)
+        public void CanNotMake16BitHexNumber(string input)
         {
             // arrange
             var parser = CreateParser(input);
 
             // act
-            var result = parser.TryMake16BitsHexNumber(out var hexNumber);
+            var result = parser.TryMake16BitHex(out var hexNumber);
 
             // assert
             Assert.False(result);
+        }
+
+        [Theory]
+        [InlineData("127.0.0.1")]
+        public void CanMakeIPv4AddressLiteral(string input)
+        {
+            // arrange
+            var parser = CreateParser(input);
+
+            // act
+            var made = parser.TryMakeIpv4AddressLiteral(out var address);
+
+            // assert
+            Assert.True(made);
+            Assert.Equal(input, address);
+        }
+
+        [Theory]
+        [InlineData("127")]
+        public void CanNotMakeIPv4AddressLiteral(string input)
+        {
+            // arrange
+            var parser = CreateParser(input);
+
+            // act
+            var made = parser.TryMakeIpv4AddressLiteral(out var address);
+
+            // assert
+            Assert.False(made);
         }
 
         [Theory]

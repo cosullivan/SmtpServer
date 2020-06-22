@@ -36,7 +36,6 @@ namespace SmtpServer.Protocol
             {
                 internal static readonly Token From = Token.Create("FROM");
                 internal static readonly Token To = Token.Create("TO");
-                internal static readonly Token Last = Token.Create("LAST");
                 internal static readonly Token IpVersionTag = Token.Create("IPv");
             }
             // ReSharper restore InconsistentNaming
@@ -217,7 +216,7 @@ namespace SmtpServer.Protocol
             // according to the spec, whitespace isnt allowed here but most servers send it
             Enumerator.Skip(TokenKind.Space);
 
-            if (TryMakeReversePath(out IMailbox mailbox) == false)
+            if (TryMakeReversePath(out var mailbox) == false)
             {
                 _options.Logger.LogVerbose("Syntax Error (Text={0})", CompleteTokenizedText());
 
@@ -228,7 +227,7 @@ namespace SmtpServer.Protocol
             Enumerator.Skip(TokenKind.Space);
 
             // match the optional (ESMTP) parameters
-            if (TryMakeMailParameters(out IReadOnlyDictionary<string, string> parameters) == false)
+            if (TryMakeMailParameters(out var parameters) == false)
             {
                 parameters = new Dictionary<string, string>();
             }
@@ -260,7 +259,7 @@ namespace SmtpServer.Protocol
             // according to the spec, whitespace isnt allowed here anyway
             Enumerator.Skip(TokenKind.Space);
 
-            if (TryMakePath(out IMailbox mailbox) == false)
+            if (TryMakePath(out var mailbox) == false)
             {
                 _options.Logger.LogVerbose("Syntax Error (Text={0})", CompleteTokenizedText());
 
@@ -289,8 +288,7 @@ namespace SmtpServer.Protocol
             Enumerator.Take();
             Enumerator.Skip(TokenKind.Space);
 
-            string inetProto;
-            if (TryMake(TryMakeProxyProtoTypeString, out inetProto) == false)
+            if (TryMake(TryMakeProxyProtoTypeString, out string inetProto) == false)
             {
                 return false;
             }
@@ -330,56 +328,46 @@ namespace SmtpServer.Protocol
             Enumerator.Skip(TokenKind.Space);
 
             // Read ports
-            int sourcePort;
-            int destinationPort;
-            if (TryMakeShortNum(out sourcePort) == false)
+            if (TryMakeShortNum(out var sourcePort) == false)
             {
                 return false;
             }
 
             Enumerator.Skip(TokenKind.Space);
 
-            if (TryMakeShortNum(out destinationPort) == false)
+            if (TryMakeShortNum(out var destinationPort) == false)
             {
                 return false;
             }
 
-            command = new ProxyCommand(_options, new IPEndPoint(sourceIp, sourcePort),
-                new IPEndPoint(destinationIp, destinationPort));
+            command = new ProxyCommand(_options, new IPEndPoint(sourceIp, sourcePort), new IPEndPoint(destinationIp, destinationPort));
+
             return true;
         }
 
-        protected bool TryMakeProxyFromAndToAddresses(TryMakeDelegate<string> @delegate, out IPAddress fromIp,
-            out IPAddress toIp)
+        bool TryMakeProxyFromAndToAddresses(TryMakeDelegate<string> @delegate, out IPAddress fromIp, out IPAddress toIp)
         {
             fromIp = null;
             toIp = null;
 
-            string fromAddress;
-            if (TryMake(@delegate, out fromAddress) == false)
+            if (TryMake(@delegate, out var fromAddress) == false)
             {
                 return false;
             }
 
-            if (!IPAddress.TryParse(fromAddress, out fromIp))
+            if (IPAddress.TryParse(fromAddress, out fromIp) == false)
             {
                 return false;
             }
 
             Enumerator.Skip(TokenKind.Space);
 
-            string toAddress;
-            if (TryMake(@delegate, out toAddress) == false)
+            if (TryMake(@delegate, out var toAddress) == false)
             {
                 return false;
             }
 
-            if (!IPAddress.TryParse(toAddress, out toIp))
-            {
-                return false;
-            }
-
-            return true;
+            return IPAddress.TryParse(toAddress, out toIp);
         }
 
         /// <summary>
@@ -688,7 +676,7 @@ namespace SmtpServer.Protocol
                     return false;
                 }
 
-                domain += String.Concat(".", subdomain);
+                domain += string.Concat(".", subdomain);
             }
 
             return true;
@@ -768,16 +756,19 @@ namespace SmtpServer.Protocol
 
             address = snum.ToString(CultureInfo.InvariantCulture);
 
-            for (var i = 0; i < 3 && Enumerator.Peek() == Tokens.Period; i++)
+            for (var i = 0; i < 3; i++)
             {
-                Enumerator.Take();
+                if (Enumerator.Take() != Tokens.Period)
+                {
+                    return false;
+                }
 
                 if (TryMake(TryMakeSnum, out snum) == false)
                 {
                     return false;
                 }
 
-                address = String.Concat(address, '.', snum);
+                address = string.Concat(address, '.', snum);
             }
 
             return true;
@@ -795,7 +786,7 @@ namespace SmtpServer.Protocol
 
             var token = Enumerator.Take();
 
-            if (token.Kind == TokenKind.Number && Int32.TryParse(token.Text, out snum))
+            if (token.Kind == TokenKind.Number && int.TryParse(token.Text, out snum))
             {
                 return snum >= 0 && snum <= 255;
             }
@@ -829,34 +820,29 @@ namespace SmtpServer.Protocol
         }
 
         /// <summary>
-        /// Try to make 16 bits hex number.
+        /// Try to make 16 bit hex number.
         /// </summary>
-        /// <param name="hexNumber">Extracted hex number.</param>
+        /// <param name="hex">Extracted hex number.</param>
         /// <returns>true if valid hex number can be extracted.</returns>
-        public bool TryMake16BitsHexNumber(out string hexNumber)
+        public bool TryMake16BitHex(out string hex)
         {
-            hexNumber = null;
+            hex = string.Empty;
 
             var token = Enumerator.Peek();
-            while (token.Kind == TokenKind.Number || token.Kind == TokenKind.Text)
+            while ((token.Kind == TokenKind.Text || token.Kind == TokenKind.Number) && hex.Length < 4)
             {
-                if (hexNumber != null && (hexNumber.Length + token.Text.Length) > 4)
-                { 
-                    return false;
-                }
-
                 if (token.Kind == TokenKind.Text && IsHex(token.Text) == false)
                 {
                     return false;
                 }
-                
-                hexNumber = string.Concat(hexNumber ?? string.Empty, token.Text);
+
+                hex = string.Concat(hex, token.Text);
 
                 Enumerator.Take();
                 token = Enumerator.Peek();
             }
 
-            return true;
+            return hex.Length > 0 && hex.Length <= 4;
 
             bool IsHex(string text)
             {
@@ -882,89 +868,488 @@ namespace SmtpServer.Protocol
             return TryMakeIpv6AddressLiteral(out address);
         }
 
+        ///// <summary>
+        ///// Try to extract IPv6 address. https://tools.ietf.org/html/rfc4291 section 2.2 used for specification.
+        ///// </summary>
+        ///// <param name="address">Extracted Ipv6 address.</param>
+        ///// <returns>true if a valid Ipv6 address can be extracted.</returns>
+        //public bool TryMakeIpv6AddressLiteral(out string address)
+        //{
+        //    address = null;
+
+        //    var hasDoubleColumn = false;
+        //    var hexPartCount = 0;
+        //    var hasIpv4Part = false;
+        //    var wasColon = false;
+
+        //    var token = Enumerator.Peek();
+        //    var builder = new System.Text.StringBuilder();
+        //    while (token.Kind == TokenKind.Number || token.Kind == TokenKind.Text || token == Tokens.Colon)
+        //    {
+        //        using (var cp = Enumerator.Checkpoint())
+        //        {
+        //            Enumerator.Take();
+        //            // Alternate form with mixed IPv6 and IPv4 formats. See https://tools.ietf.org/html/rfc4291 section 2.2 item 3
+        //            if (token.Kind == TokenKind.Number && Enumerator.Peek() == Tokens.Period)
+        //            {
+        //                cp.Rollback();
+        //                if (TryMake(TryMakeIpv4AddressLiteral, out string ipv4))
+        //                {
+        //                    hasIpv4Part = true;
+        //                    builder.Append(ipv4);
+        //                    break;
+        //                }
+
+        //                return false;
+        //            }
+
+        //            cp.Rollback();
+        //        }
+
+        //        if (token == Tokens.Colon)
+        //        {
+        //            if (wasColon)
+        //            {
+        //                // Double column is allowed only once
+        //                if (hasDoubleColumn)
+        //                { 
+        //                    return false;
+        //                }
+        //                hasDoubleColumn = true;
+        //            }
+        //            builder.Append(token.Text);
+        //            wasColon = true;
+        //            Enumerator.Take();
+        //        }
+        //        else
+        //        {
+        //            if (wasColon == false && builder.Length > 0)
+        //            { 
+        //                return false;
+        //            }
+
+        //            wasColon = false;
+        //            if (TryMake(TryMake16BitsHexNumber, out string hexNumber))
+        //            {
+        //                builder.Append(hexNumber);
+        //                hexPartCount++;
+        //            }
+        //            else
+        //            {
+        //                return false;
+        //            }
+        //        }
+        //        token = Enumerator.Peek();
+        //    }
+
+        //    address = builder.ToString();
+
+        //    var maxAllowedParts = (hasIpv4Part ? 6 : 8) - Math.Sign(hasDoubleColumn ? 1 : 0);
+        //    if ((hasDoubleColumn && hexPartCount > maxAllowedParts) || (!hasDoubleColumn && hexPartCount != maxAllowedParts))
+        //    { 
+        //        return false;
+        //    }
+
+        //    return true;
+        //}
+
         /// <summary>
-        /// Try to extract IPv6 address. https://tools.ietf.org/html/rfc4291 section 2.2 used for specification.
+        /// Try to make an IPv6 address literal.
         /// </summary>
-        /// <param name="address">Extracted Ipv6 address.</param>
-        /// <returns>true if a valid Ipv6 address can be extracted.</returns>
+        /// <param name="address">The address that was made, or undefined if it was not made.</param>
+        /// <returns>true if the address was made, false if not.</returns>
+        /// <remarks><![CDATA[  ]]></remarks>
         public bool TryMakeIpv6AddressLiteral(out string address)
         {
-            address = null;
+            // https://tools.ietf.org/html/rfc3986#appendix-A
 
-            var hasDoubleColumn = false;
-            var hexPartCount = 0;
-            var hasIpv4Part = false;
-            var wasColon = false;
-
-            var token = Enumerator.Peek();
-            var builder = new System.Text.StringBuilder();
-            while (token.Kind == TokenKind.Number || token.Kind == TokenKind.Text || token == Tokens.Colon)
+            if (TryMake(TryMakeIPv6PartSegments, out address))
             {
-                using (var cp = Enumerator.Checkpoint())
-                {
-                    Enumerator.Take();
-                    // Alternate form with mixed IPv6 and IPv4 formats. See https://tools.ietf.org/html/rfc4291 section 2.2 item 3
-                    if (token.Kind == TokenKind.Number && Enumerator.Peek() == Tokens.Period)
-                    {
-                        cp.Rollback();
-                        if (TryMake(TryMakeIpv4AddressLiteral, out string ipv4))
-                        {
-                            hasIpv4Part = true;
-                            builder.Append(ipv4);
-                            break;
-                        }
-
-                        return false;
-                    }
-
-                    cp.Rollback();
-                }
-
-                if (token == Tokens.Colon)
-                {
-                    if (wasColon)
-                    {
-                        // Double column is allowed only once
-                        if (hasDoubleColumn)
-                        { 
-                            return false;
-                        }
-                        hasDoubleColumn = true;
-                    }
-                    builder.Append(token.Text);
-                    wasColon = true;
-                    Enumerator.Take();
-                }
-                else
-                {
-                    if (wasColon == false && builder.Length > 0)
-                    { 
-                        return false;
-                    }
-
-                    wasColon = false;
-                    if (TryMake(TryMake16BitsHexNumber, out string hexNumber))
-                    {
-                        builder.Append(hexNumber);
-                        hexPartCount++;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-                token = Enumerator.Peek();
+                return true;
             }
 
-            address = builder.ToString();
+            return false;
+        }
 
-            var maxAllowedParts = (hasIpv4Part ? 6 : 8) - Math.Sign(hasDoubleColumn ? 1 : 0);
-            if ((hasDoubleColumn && hexPartCount > maxAllowedParts) || (!hasDoubleColumn && hexPartCount != maxAllowedParts))
-            { 
+        //bool TryMakeIPv6PartSegments(out string address)
+        //{
+        //    // 6( h16 ":" ) ls32
+        //    bool TryMakeRule1(out string address1)
+        //    {
+        //        if (TryMake(TryMakeIPv6HexParts, 6, out address1) && TryMake(TryMakeIPv6Ls32, out string ls32))
+        //        {
+        //            address1 += ls32;
+        //            return true;
+        //        }
+
+        //        return false;
+        //    }
+
+        //    if (TryMake(TryMakeRule1, out address))
+        //    {
+        //        return true;
+        //    }
+
+        //    //// "::" 5( h16 ":" ) ls32
+        //    //if (TryMake(TryMakeIPv6ZeroGroup) && TryMake(TryMakeIPv6HexParts, 5, out address) && TryMake(TryMakeIPv6Ls32, out ls32))
+        //    //{
+        //    //    address += ls32;
+        //    //    return true;
+        //    //}
+
+        //    //// [ h16 ] "::" 4( h16 ":" ) ls32
+        //    //if (TryMake(TryMake16BitHex, out address) && TryMake(TryMakeIPv6ZeroGroup) && TryMake(TryMakeIPv6HexParts, 4, out string parts) && TryMake(TryMakeIPv6Ls32, out ls32))
+        //    //{
+        //    //    address += "::" + parts + ls32;
+        //    //    return true;
+        //    //}
+
+        //    //// [ *1( h16 ":" ) h16 ] "::" 3( h16 ":" ) ls32
+        //    //if (TryMake(TryMakeIPv6OptionalHexParts, 1, out address) && TryMake(TryMake16BitHex, out string hexNumber) && TryMake(TryMakeIPv6ZeroGroup) && TryMake(TryMakeIPv6HexParts, 3, out parts) && TryMake(TryMakeIPv6Ls32, out ls32))
+        //    //{
+        //    //    address += hexNumber + "::" + parts + ls32;
+        //    //    return true;
+        //    //}
+
+        //    //// [ *2( h16 ":" ) h16 ] "::" 2( h16 ":" ) ls32
+        //    //if (TryMake(TryMakeIPv6OptionalHexParts, 2, out address) && TryMake(TryMake16BitHex, out hexNumber) && TryMake(TryMakeIPv6ZeroGroup) && TryMake(TryMakeIPv6HexParts, 2, out parts) && TryMake(TryMakeIPv6Ls32, out ls32))
+        //    //{
+        //    //    address += hexNumber + "::" + parts + ls32;
+        //    //    return true;
+        //    //}
+
+        //    //// [ *3( h16 ":" ) h16 ] "::" h16 ":" ls32
+        //    //if (TryMake(TryMakeIPv6OptionalHexParts, 3, out address) && TryMake(TryMake16BitHex, out hexNumber) && TryMake(TryMakeIPv6ZeroGroup) && TryMake(TryMakeIPv6HexParts, 1, out parts) && TryMake(TryMakeIPv6Ls32, out ls32))
+        //    //{
+        //    //    address += hexNumber + "::" + parts + ls32;
+        //    //    return true;
+        //    //}
+
+        //    //// [ *4( h16 ":" ) h16 ] "::" ls32
+        //    //if (TryMake(TryMakeIPv6OptionalHexParts, 4, out address) && TryMake(TryMake16BitHex, out hexNumber) && TryMake(TryMakeIPv6ZeroGroup) && TryMake(TryMakeIPv6Ls32, out ls32))
+        //    //{
+        //    //    address += hexNumber + "::" + ls32;
+        //    //    return true;
+        //    //}
+
+        //    //// [ *5( h16 ":" ) h16 ] "::" h16
+        //    //if (TryMake(TryMakeIPv6OptionalHexParts, 5, out address) && TryMake(TryMake16BitHex, out hexNumber) && TryMake(TryMakeIPv6ZeroGroup) && TryMake(TryMake16BitHex, out string hexNumber2))
+        //    //{
+        //    //    address += hexNumber + "::" + hexNumber2;
+        //    //    return true;
+        //    //}
+
+        //    //// [ *6( h16 ":" ) h16 ] "::"
+        //    //if (TryMake(TryMakeIPv6OptionalHexParts, 6, out address) && TryMake(TryMake16BitHex, out hexNumber) && TryMake(TryMakeIPv6ZeroGroup))
+        //    //{
+        //    //    address += hexNumber + "::";
+        //    //    return true;
+        //    //}
+
+        //    return false;
+        //}
+
+        bool TryMakeIPv6PartSegments(out string address)
+        {
+            //// 6( h16 ":" ) ls32
+            //if (TryMake(TryMakeIPv6Rule1, out address))
+            //{
+            //    return true;
+            //}
+
+            //// "::" 5( h16 ":" ) ls32
+            //if (TryMake(TryMakeIPv6Rule2, out address))
+            //{
+            //    return true;
+            //}
+
+            //// [ h16 ] "::" 4( h16 ":" ) ls32
+            //if (TryMake(TryMakeIPv6Rule3, out address))
+            //{
+            //    return true;
+            //}
+
+            //// [ *1( h16 ":" ) h16 ] "::" 3( h16 ":" ) ls32
+            //if (TryMake(TryMakeIPv6Rule4, out address))
+            //{
+            //    return true;
+            //}
+
+            // [ *2( h16 ":" ) h16 ] "::" 2( h16 ":" ) ls32
+            if (TryMake(TryMakeIPv6Rule5, out address))
+            {
+                return true;
+            }
+
+            //// [ *3( h16 ":" ) h16 ] "::" h16 ":" ls32
+            //if (TryMake(TryMakeIPv6Rule6, out address))
+            //{
+            //    return true;
+            //}
+
+            //// [ *4( h16 ":" ) h16 ] "::" ls32
+            //if (TryMake(TryMakeIPv6Rule7, out address))
+            //{
+            //    return true;
+            //}
+
+            //// [ *5( h16 ":" ) h16 ] "::" h16
+            //if (TryMake(TryMakeIPv6Rule8, out address))
+            //{
+            //    return true;
+            //}
+
+            //// [ *6( h16 ":" ) h16 ] "::"
+            //if (TryMake(TryMakeIPv6Rule9, out address))
+            //{
+            //    return true;
+            //}
+
+            return false;
+        }
+
+        //bool TryMakeIPv6Rule1(out string address)
+        //{
+        //    // 6( h16 ":" ) ls32
+        //    if (TryMake(TryMakeIPv6HexParts, 6, out address) && TryMake(TryMakeIPv6Ls32, out string ls32))
+        //    {
+        //        address += ls32;
+        //        return true;
+        //    }
+
+        //    return false;
+        //}
+
+        //bool TryMakeIPv6Rule2(out string address)
+        //{
+        //    address = null;
+
+        //    // "::" 5( h16 ":" ) ls32
+        //    if (TryMake(TryMakeIPv6ZeroGroup) && TryMake(TryMakeIPv6HexParts, 5, out address) && TryMake(TryMakeIPv6Ls32, out string ls32))
+        //    {
+        //        address += ls32;
+        //        return true;
+        //    }
+
+        //    return false;
+        //}
+
+        //bool TryMakeIPv6Rule3(out string address)
+        //{
+        //    // [ h16 ] "::" 4( h16 ":" ) ls32
+        //    if (TryMake(TryMake16BitHex, out address) && TryMake(TryMakeIPv6ZeroGroup) && TryMake(TryMakeIPv6HexParts, 4, out string parts) && TryMake(TryMakeIPv6Ls32, out string ls32))
+        //    {
+        //        address += "::" + parts + ls32;
+        //        return true;
+        //    }
+
+        //    return false;
+        //}
+
+        //bool TryMakeIPv6Rule4(out string address)
+        //{
+        //    // [ *1( h16 ":" ) h16 ] "::" 3( h16 ":" ) ls32
+        //    if (TryMake(TryMakeIPv6OptionalHexParts, 1, out address) && TryMake(TryMake16BitHex, out string hexNumber) && TryMake(TryMakeIPv6ZeroGroup) && TryMake(TryMakeIPv6HexParts, 3, out string parts) && TryMake(TryMakeIPv6Ls32, out string ls32))
+        //    {
+        //        address += hexNumber + "::" + parts + ls32;
+        //        return true;
+        //    }
+
+        //    return false;
+        //}
+
+        bool TryMakeIPv6Rule5(out string address)
+        {
+            // [ *2( h16 ":" ) h16 ] "::" 2( h16 ":" ) ls32
+            //if (TryMake(TryMakeIPv6OptionalHexParts, 2, out address) && TryMake(TryMake16BitHex, out string hexNumber) && TryMake(TryMakeIPv6ZeroGroup) && TryMake(TryMakeIPv6HexParts, 2, out string parts) && TryMake(TryMakeIPv6Ls32, out string ls32))
+            //{
+            //    address += hexNumber + "::" + parts + ls32;
+            //    return true;
+            //}
+
+            address = null;
+
+            if (TryMake(TryMakeIPv6HexPrefix, 3, out string prefix) == false)
+            {
+                return false;
+            }
+            
+            if (Enumerator.Take() != Tokens.Colon || Enumerator.Take() != Tokens.Colon)
+            {
                 return false;
             }
 
+            if (TryMake(TryMakeIPv6HexString, 2, out string hexString) == false)
+            {
+                return false;
+            }
+
+            if (Enumerator.Take() != Tokens.Colon)
+            {
+                return false;
+            }
+
+            if (TryMake(TryMakeIPv6Ls32, out string ls32) == false)
+            {
+                return false;
+            }
+
+            address = prefix + "::" + hexString + ":" + ls32;
             return true;
+        }
+
+        //bool TryMakeIPv6Rule6(out string address)
+        //{
+        //    // [ *3( h16 ":" ) h16 ] "::" h16 ":" ls32
+        //    if (TryMake(TryMakeIPv6OptionalHexParts, 3, out address) && TryMake(TryMake16BitHex, out string hexNumber) && TryMake(TryMakeIPv6ZeroGroup) && TryMake(TryMakeIPv6HexParts, 1, out string parts) && TryMake(TryMakeIPv6Ls32, out string ls32))
+        //    {
+        //        address += hexNumber + "::" + parts + ls32;
+        //        return true;
+        //    }
+
+        //    return false;
+        //}
+
+        //bool TryMakeIPv6Rule7(out string address)
+        //{
+        //    // [ *4( h16 ":" ) h16 ] "::" ls32
+        //    if (TryMake(TryMakeIPv6OptionalHexParts, 4, out address) && TryMake(TryMake16BitHex, out string hexNumber) && TryMake(TryMakeIPv6ZeroGroup) && TryMake(TryMakeIPv6Ls32, out string ls32))
+        //    {
+        //        address += hexNumber + "::" + ls32;
+        //        return true;
+        //    }
+
+        //    return false;
+        //}
+
+        //bool TryMakeIPv6Rule8(out string address)
+        //{
+        //    // [ *5( h16 ":" ) h16 ] "::" h16
+        //    if (TryMake(TryMakeIPv6OptionalHexParts, 5, out address) && TryMake(TryMake16BitHex, out string hexNumber) && TryMake(TryMakeIPv6ZeroGroup) && TryMake(TryMake16BitHex, out string hexNumber2))
+        //    {
+        //        address += hexNumber + "::" + hexNumber2;
+        //        return true;
+        //    }
+
+        //    return false;
+        //}
+
+        //bool TryMakeIPv6Rule9(out string address)
+        //{
+        //    // [ *6( h16 ":" ) h16 ] "::"
+        //    if (TryMake(TryMakeIPv6OptionalHexParts, 6, out address) && TryMake(TryMake16BitHex, out string hexNumber) && TryMake(TryMakeIPv6ZeroGroup))
+        //    {
+        //        address += hexNumber + "::";
+        //        return true;
+        //    }
+
+        //    return false;
+        //}
+
+        //bool TryMakeIPv6ZeroGroup()
+        //{
+        //    return Enumerator.Take() == Tokens.Colon && Enumerator.Take() == Tokens.Colon;
+        //}
+
+        //bool TryMakeIPv6HexParts(int count, out string address)
+        //{
+        //    address = null;
+
+        //    while (count-- > 0)
+        //    {
+        //        if (TryMakeIPv6HexPart(out var part) == false)
+        //        {
+        //            return false;
+        //        }
+
+        //        address += part;
+        //    }
+
+        //    return true;
+        //}
+
+        // https://tools.ietf.org/html/rfc3986#appendix-A
+
+        //bool TryMakeIPv6OptionalHexParts(int maximum, out string address)
+        //{
+        //    if (TryMakeIPv6HexPart(out address) == false)
+        //    {
+        //        return false;
+        //    }
+
+        //    while (--maximum > 0)
+        //    {
+        //        if (TryMakeIPv6HexPart(out var hex) == false)
+        //        {
+        //            return false;
+        //        }
+
+        //        address += hex;
+        //    }
+
+        //    return true;
+        //}
+
+        bool TryMakeIPv6HexPrefix(int maximum, out string hexPrefix)
+        {
+            hexPrefix = null;
+
+            while (maximum > 0)
+            {
+                if (TryMake(TryMakeIPv6HexString, maximum--, out hexPrefix))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        //bool TryMakeIPv6HexSuffix(int count, out string hexSuffix)
+        //{
+        //    hexSuffix = null;
+
+        //    if (TryMakeIPv6HexString(count, out hexSuffix) == false)
+        //    {
+        //        return false;
+        //    }
+
+        //    return false;
+        //}
+
+        bool TryMakeIPv6HexString(int count, out string hexString)
+        {
+            if (TryMake16BitHex(out hexString) == false)
+            {
+                return false;
+            }
+
+            while (--count > 0)
+            {
+                if (Enumerator.Take() != Tokens.Colon)
+                {
+                    return false;
+                }
+
+                if (TryMake16BitHex(out var hex) == false)
+                {
+                    return false;
+                }
+
+                hexString += ":" + hex;
+            }
+
+            return true;
+        }
+
+        bool TryMakeIPv6Ls32(out string address)
+        {
+            if (TryMake(TryMakeIpv4AddressLiteral, out address))
+            {
+                return true;
+            }
+
+            return TryMakeIPv6HexString(2, out address);
         }
 
         /// <summary>
@@ -975,11 +1360,11 @@ namespace SmtpServer.Protocol
         /// <remarks><![CDATA[ 1*3DIGIT ]]></remarks>
         public bool TryMakeShortNum(out int shortNum)
         {
-            shortNum = default(int);
+            shortNum = default;
 
             var token = Enumerator.Take();
 
-            if (token.Kind == TokenKind.Number && Int32.TryParse(token.Text, out shortNum))
+            if (token.Kind == TokenKind.Number && int.TryParse(token.Text, out shortNum))
             {
                 return shortNum >= 0 && shortNum <= 65535;
             }
@@ -1063,7 +1448,7 @@ namespace SmtpServer.Protocol
                     return true;
                 }
 
-                dotString += String.Concat(".", atom);
+                dotString += string.Concat(".", atom);
             }
 
             return true;
@@ -1086,7 +1471,7 @@ namespace SmtpServer.Protocol
 
             while (Enumerator.Peek() != Tokens.Quote)
             {
-                if (TryMakeQContentSmtp(out string text) == false)
+                if (TryMakeQContentSmtp(out var text) == false)
                 {
                     return false;
                 }
@@ -1206,8 +1591,7 @@ namespace SmtpServer.Protocol
         {
             atom = null;
 
-            string atext;
-            while (TryMake(TryMakeAtext, out atext))
+            while (TryMake(TryMakeAtext, out string atext))
             {
                 atom += atext;
             }
@@ -1277,8 +1661,7 @@ namespace SmtpServer.Protocol
 
             while (Enumerator.Peek().Kind != TokenKind.None)
             {
-                KeyValuePair<string, string> parameter;
-                if (TryMake(TryMakeEsmtpParameter, out parameter) == false)
+                if (TryMake(TryMakeEsmtpParameter, out KeyValuePair<string, string> parameter) == false)
                 {
                     parameters = null;
                     return false;
@@ -1302,8 +1685,7 @@ namespace SmtpServer.Protocol
         {
             parameter = default(KeyValuePair<string, string>);
 
-            string keyword;
-            if (TryMake(TryMakeEsmtpKeyword, out keyword) == false)
+            if (TryMake(TryMakeEsmtpKeyword, out string keyword) == false)
             {
                 return false;
             }
@@ -1321,8 +1703,7 @@ namespace SmtpServer.Protocol
 
             Enumerator.Take();
 
-            string value;
-            if (TryMake(TryMakeEsmtpValue, out value) == false)
+            if (TryMake(TryMakeEsmtpValue, out string value) == false)
             {
                 return false;
             }
@@ -1400,8 +1781,8 @@ namespace SmtpServer.Protocol
             // because the TryMakeBase64Chars method matches tokens, each TextValue token could make
             // up several Base64 encoded "bytes" so we ensure that we have a length divisible by 4
             return base64 != null
-                   && base64.Length % 4 == 0
-                   && new[] {TokenKind.None, TokenKind.Space, TokenKind.NewLine}.Contains(Enumerator.Peek().Kind);
+                && base64.Length % 4 == 0
+                && new[] {TokenKind.None, TokenKind.Space, TokenKind.NewLine}.Contains(Enumerator.Peek().Kind);
         }
 
         /// <summary>
@@ -1472,9 +1853,7 @@ namespace SmtpServer.Protocol
         /// <returns>The complete tokenized text.</returns>
         string CompleteTokenizedText()
         {
-            return String.Concat(Enumerator.Tokens.Select(token => token.Text));
+            return string.Concat(Enumerator.Tokens.Select(token => token.Text));
         }
-
-
     }
 }
