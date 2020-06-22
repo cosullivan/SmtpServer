@@ -598,7 +598,10 @@ namespace SmtpServer.Tests
         }
 
         [Theory]
-        [InlineData("127")]
+        [InlineData("0")]
+        [InlineData("0.0")]
+        [InlineData("0.0.0")]
+        [InlineData("999.999.999.999")]
         public void CanNotMakeIPv4AddressLiteral(string input)
         {
             // arrange

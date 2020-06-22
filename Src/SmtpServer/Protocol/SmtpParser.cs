@@ -963,223 +963,70 @@ namespace SmtpServer.Protocol
         {
             // https://tools.ietf.org/html/rfc3986#appendix-A
 
-            if (TryMake(TryMakeIPv6PartSegments, out address))
-            {
-                return true;
-            }
+            //if (TryMake(TryMakeIPv6AddressRule1, out address))
+            //{
+            //    return true;
+            //}
 
-            return false;
+            //if (TryMake(TryMakeIPv6AddressRule2, out address))
+            //{
+            //    return true;
+            //}
+
+            //if (TryMake(TryMakeIPv6AddressRule3, out address))
+            //{
+            //    return true;
+            //}
+
+            //if (TryMake(TryMakeIPv6AddressRule4, out address))
+            //{
+            //    return true;
+            //}
+
+            //if (TryMake(TryMakeIPv6AddressRule5, out address))
+            //{
+            //    return true;
+            //}
+
+            //if (TryMake(TryMakeIPv6AddressRule6, out address))
+            //{
+            //    return true;
+            //}
+
+            //if (TryMake(TryMakeIPv6AddressRule7, out address))
+            //{
+            //    return true;
+            //}
+
+            //if (TryMake(TryMakeIPv6AddressRule8, out address))
+            //{
+            //    return true;
+            //}
+
+            //if (TryMake(TryMakeIPv6AddressRule9, out address))
+            //{
+            //    return true;
+            //}
+
+            //return false;
+
+            return TryMake(TryMakeIPv6AddressRule1, out address) 
+                || TryMake(TryMakeIPv6AddressRule2, out address)
+                || TryMake(TryMakeIPv6AddressRule3, out address)
+                || TryMake(TryMakeIPv6AddressRule4, out address)
+                || TryMake(TryMakeIPv6AddressRule5, out address)
+                || TryMake(TryMakeIPv6AddressRule6, out address)
+                || TryMake(TryMakeIPv6AddressRule7, out address)
+                || TryMake(TryMakeIPv6AddressRule8, out address)
+                || TryMake(TryMakeIPv6AddressRule9, out address);
         }
 
-        //bool TryMakeIPv6PartSegments(out string address)
-        //{
-        //    // 6( h16 ":" ) ls32
-        //    bool TryMakeRule1(out string address1)
-        //    {
-        //        if (TryMake(TryMakeIPv6HexParts, 6, out address1) && TryMake(TryMakeIPv6Ls32, out string ls32))
-        //        {
-        //            address1 += ls32;
-        //            return true;
-        //        }
-
-        //        return false;
-        //    }
-
-        //    if (TryMake(TryMakeRule1, out address))
-        //    {
-        //        return true;
-        //    }
-
-        //    //// "::" 5( h16 ":" ) ls32
-        //    //if (TryMake(TryMakeIPv6ZeroGroup) && TryMake(TryMakeIPv6HexParts, 5, out address) && TryMake(TryMakeIPv6Ls32, out ls32))
-        //    //{
-        //    //    address += ls32;
-        //    //    return true;
-        //    //}
-
-        //    //// [ h16 ] "::" 4( h16 ":" ) ls32
-        //    //if (TryMake(TryMake16BitHex, out address) && TryMake(TryMakeIPv6ZeroGroup) && TryMake(TryMakeIPv6HexParts, 4, out string parts) && TryMake(TryMakeIPv6Ls32, out ls32))
-        //    //{
-        //    //    address += "::" + parts + ls32;
-        //    //    return true;
-        //    //}
-
-        //    //// [ *1( h16 ":" ) h16 ] "::" 3( h16 ":" ) ls32
-        //    //if (TryMake(TryMakeIPv6OptionalHexParts, 1, out address) && TryMake(TryMake16BitHex, out string hexNumber) && TryMake(TryMakeIPv6ZeroGroup) && TryMake(TryMakeIPv6HexParts, 3, out parts) && TryMake(TryMakeIPv6Ls32, out ls32))
-        //    //{
-        //    //    address += hexNumber + "::" + parts + ls32;
-        //    //    return true;
-        //    //}
-
-        //    //// [ *2( h16 ":" ) h16 ] "::" 2( h16 ":" ) ls32
-        //    //if (TryMake(TryMakeIPv6OptionalHexParts, 2, out address) && TryMake(TryMake16BitHex, out hexNumber) && TryMake(TryMakeIPv6ZeroGroup) && TryMake(TryMakeIPv6HexParts, 2, out parts) && TryMake(TryMakeIPv6Ls32, out ls32))
-        //    //{
-        //    //    address += hexNumber + "::" + parts + ls32;
-        //    //    return true;
-        //    //}
-
-        //    //// [ *3( h16 ":" ) h16 ] "::" h16 ":" ls32
-        //    //if (TryMake(TryMakeIPv6OptionalHexParts, 3, out address) && TryMake(TryMake16BitHex, out hexNumber) && TryMake(TryMakeIPv6ZeroGroup) && TryMake(TryMakeIPv6HexParts, 1, out parts) && TryMake(TryMakeIPv6Ls32, out ls32))
-        //    //{
-        //    //    address += hexNumber + "::" + parts + ls32;
-        //    //    return true;
-        //    //}
-
-        //    //// [ *4( h16 ":" ) h16 ] "::" ls32
-        //    //if (TryMake(TryMakeIPv6OptionalHexParts, 4, out address) && TryMake(TryMake16BitHex, out hexNumber) && TryMake(TryMakeIPv6ZeroGroup) && TryMake(TryMakeIPv6Ls32, out ls32))
-        //    //{
-        //    //    address += hexNumber + "::" + ls32;
-        //    //    return true;
-        //    //}
-
-        //    //// [ *5( h16 ":" ) h16 ] "::" h16
-        //    //if (TryMake(TryMakeIPv6OptionalHexParts, 5, out address) && TryMake(TryMake16BitHex, out hexNumber) && TryMake(TryMakeIPv6ZeroGroup) && TryMake(TryMake16BitHex, out string hexNumber2))
-        //    //{
-        //    //    address += hexNumber + "::" + hexNumber2;
-        //    //    return true;
-        //    //}
-
-        //    //// [ *6( h16 ":" ) h16 ] "::"
-        //    //if (TryMake(TryMakeIPv6OptionalHexParts, 6, out address) && TryMake(TryMake16BitHex, out hexNumber) && TryMake(TryMakeIPv6ZeroGroup))
-        //    //{
-        //    //    address += hexNumber + "::";
-        //    //    return true;
-        //    //}
-
-        //    return false;
-        //}
-
-        bool TryMakeIPv6PartSegments(out string address)
+        bool TryMakeIPv6AddressRule1(out string address)
         {
-            //// 6( h16 ":" ) ls32
-            //if (TryMake(TryMakeIPv6Rule1, out address))
-            //{
-            //    return true;
-            //}
-
-            //// "::" 5( h16 ":" ) ls32
-            //if (TryMake(TryMakeIPv6Rule2, out address))
-            //{
-            //    return true;
-            //}
-
-            //// [ h16 ] "::" 4( h16 ":" ) ls32
-            //if (TryMake(TryMakeIPv6Rule3, out address))
-            //{
-            //    return true;
-            //}
-
-            //// [ *1( h16 ":" ) h16 ] "::" 3( h16 ":" ) ls32
-            //if (TryMake(TryMakeIPv6Rule4, out address))
-            //{
-            //    return true;
-            //}
-
-            // [ *2( h16 ":" ) h16 ] "::" 2( h16 ":" ) ls32
-            if (TryMake(TryMakeIPv6Rule5, out address))
-            {
-                return true;
-            }
-
-            //// [ *3( h16 ":" ) h16 ] "::" h16 ":" ls32
-            //if (TryMake(TryMakeIPv6Rule6, out address))
-            //{
-            //    return true;
-            //}
-
-            //// [ *4( h16 ":" ) h16 ] "::" ls32
-            //if (TryMake(TryMakeIPv6Rule7, out address))
-            //{
-            //    return true;
-            //}
-
-            //// [ *5( h16 ":" ) h16 ] "::" h16
-            //if (TryMake(TryMakeIPv6Rule8, out address))
-            //{
-            //    return true;
-            //}
-
-            //// [ *6( h16 ":" ) h16 ] "::"
-            //if (TryMake(TryMakeIPv6Rule9, out address))
-            //{
-            //    return true;
-            //}
-
-            return false;
-        }
-
-        //bool TryMakeIPv6Rule1(out string address)
-        //{
-        //    // 6( h16 ":" ) ls32
-        //    if (TryMake(TryMakeIPv6HexParts, 6, out address) && TryMake(TryMakeIPv6Ls32, out string ls32))
-        //    {
-        //        address += ls32;
-        //        return true;
-        //    }
-
-        //    return false;
-        //}
-
-        //bool TryMakeIPv6Rule2(out string address)
-        //{
-        //    address = null;
-
-        //    // "::" 5( h16 ":" ) ls32
-        //    if (TryMake(TryMakeIPv6ZeroGroup) && TryMake(TryMakeIPv6HexParts, 5, out address) && TryMake(TryMakeIPv6Ls32, out string ls32))
-        //    {
-        //        address += ls32;
-        //        return true;
-        //    }
-
-        //    return false;
-        //}
-
-        //bool TryMakeIPv6Rule3(out string address)
-        //{
-        //    // [ h16 ] "::" 4( h16 ":" ) ls32
-        //    if (TryMake(TryMake16BitHex, out address) && TryMake(TryMakeIPv6ZeroGroup) && TryMake(TryMakeIPv6HexParts, 4, out string parts) && TryMake(TryMakeIPv6Ls32, out string ls32))
-        //    {
-        //        address += "::" + parts + ls32;
-        //        return true;
-        //    }
-
-        //    return false;
-        //}
-
-        //bool TryMakeIPv6Rule4(out string address)
-        //{
-        //    // [ *1( h16 ":" ) h16 ] "::" 3( h16 ":" ) ls32
-        //    if (TryMake(TryMakeIPv6OptionalHexParts, 1, out address) && TryMake(TryMake16BitHex, out string hexNumber) && TryMake(TryMakeIPv6ZeroGroup) && TryMake(TryMakeIPv6HexParts, 3, out string parts) && TryMake(TryMakeIPv6Ls32, out string ls32))
-        //    {
-        //        address += hexNumber + "::" + parts + ls32;
-        //        return true;
-        //    }
-
-        //    return false;
-        //}
-
-        bool TryMakeIPv6Rule5(out string address)
-        {
-            // [ *2( h16 ":" ) h16 ] "::" 2( h16 ":" ) ls32
-            //if (TryMake(TryMakeIPv6OptionalHexParts, 2, out address) && TryMake(TryMake16BitHex, out string hexNumber) && TryMake(TryMakeIPv6ZeroGroup) && TryMake(TryMakeIPv6HexParts, 2, out string parts) && TryMake(TryMakeIPv6Ls32, out string ls32))
-            //{
-            //    address += hexNumber + "::" + parts + ls32;
-            //    return true;
-            //}
-
             address = null;
 
-            if (TryMake(TryMakeIPv6HexPrefix, 3, out string prefix) == false)
-            {
-                return false;
-            }
-            
-            if (Enumerator.Take() != Tokens.Colon || Enumerator.Take() != Tokens.Colon)
-            {
-                return false;
-            }
-
-            if (TryMake(TryMakeIPv6HexString, 2, out string hexString) == false)
+            // 6( h16 ":" ) ls32
+            if (TryMakeIPv6HexString(6, out var hexString) == false)
             {
                 return false;
             }
@@ -1189,7 +1036,70 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            if (TryMake(TryMakeIPv6Ls32, out string ls32) == false)
+            if (TryMakeIPv6Ls32(out var ls32) == false)
+            {
+                return false;
+            }
+
+            address = hexString + ":" + ls32;
+            return true;
+        }
+
+        bool TryMakeIPv6AddressRule2(out string address)
+        {
+            address = null;
+
+            // "::" 5( h16 ":" ) ls32
+            if (Enumerator.Take() != Tokens.Colon || Enumerator.Take() != Tokens.Colon)
+            {
+                return false;
+            }
+
+            if (TryMakeIPv6HexString(6, out var hexString) == false)
+            {
+                return false;
+            }
+
+            if (Enumerator.Take() != Tokens.Colon)
+            {
+                return false;
+            }
+
+            if (TryMakeIPv6Ls32(out var ls32) == false)
+            {
+                return false;
+            }
+
+            address = "::" + hexString + ":" + ls32;
+            return true;
+        }
+
+        bool TryMakeIPv6AddressRule3(out string address)
+        {
+            // [ h16 ] "::" 4( h16 ":" ) ls32
+            address = null;
+
+            if (TryMakeIPv6HexPrefix(1, out var prefix) == false)
+            {
+                return false;
+            }
+
+            if (Enumerator.Take() != Tokens.Colon || Enumerator.Take() != Tokens.Colon)
+            {
+                return false;
+            }
+
+            if (TryMakeIPv6HexString(4, out var hexString) == false)
+            {
+                return false;
+            }
+
+            if (Enumerator.Take() != Tokens.Colon)
+            {
+                return false;
+            }
+
+            if (TryMakeIPv6Ls32(out var ls32) == false)
             {
                 return false;
             }
@@ -1198,53 +1108,174 @@ namespace SmtpServer.Protocol
             return true;
         }
 
-        //bool TryMakeIPv6Rule6(out string address)
-        //{
-        //    // [ *3( h16 ":" ) h16 ] "::" h16 ":" ls32
-        //    if (TryMake(TryMakeIPv6OptionalHexParts, 3, out address) && TryMake(TryMake16BitHex, out string hexNumber) && TryMake(TryMakeIPv6ZeroGroup) && TryMake(TryMakeIPv6HexParts, 1, out string parts) && TryMake(TryMakeIPv6Ls32, out string ls32))
-        //    {
-        //        address += hexNumber + "::" + parts + ls32;
-        //        return true;
-        //    }
+        bool TryMakeIPv6AddressRule4(out string address)
+        {
+            // [ *1( h16 ":" ) h16 ] "::" 3( h16 ":" ) ls32
+            address = null;
 
-        //    return false;
-        //}
+            if (TryMakeIPv6HexPrefix(2, out var prefix) == false)
+            {
+                return false;
+            }
 
-        //bool TryMakeIPv6Rule7(out string address)
-        //{
-        //    // [ *4( h16 ":" ) h16 ] "::" ls32
-        //    if (TryMake(TryMakeIPv6OptionalHexParts, 4, out address) && TryMake(TryMake16BitHex, out string hexNumber) && TryMake(TryMakeIPv6ZeroGroup) && TryMake(TryMakeIPv6Ls32, out string ls32))
-        //    {
-        //        address += hexNumber + "::" + ls32;
-        //        return true;
-        //    }
+            if (Enumerator.Take() != Tokens.Colon || Enumerator.Take() != Tokens.Colon)
+            {
+                return false;
+            }
 
-        //    return false;
-        //}
+            if (TryMakeIPv6HexString(3, out var hexString) == false)
+            {
+                return false;
+            }
 
-        //bool TryMakeIPv6Rule8(out string address)
-        //{
-        //    // [ *5( h16 ":" ) h16 ] "::" h16
-        //    if (TryMake(TryMakeIPv6OptionalHexParts, 5, out address) && TryMake(TryMake16BitHex, out string hexNumber) && TryMake(TryMakeIPv6ZeroGroup) && TryMake(TryMake16BitHex, out string hexNumber2))
-        //    {
-        //        address += hexNumber + "::" + hexNumber2;
-        //        return true;
-        //    }
+            if (Enumerator.Take() != Tokens.Colon)
+            {
+                return false;
+            }
 
-        //    return false;
-        //}
+            if (TryMakeIPv6Ls32(out var ls32) == false)
+            {
+                return false;
+            }
 
-        //bool TryMakeIPv6Rule9(out string address)
-        //{
-        //    // [ *6( h16 ":" ) h16 ] "::"
-        //    if (TryMake(TryMakeIPv6OptionalHexParts, 6, out address) && TryMake(TryMake16BitHex, out string hexNumber) && TryMake(TryMakeIPv6ZeroGroup))
-        //    {
-        //        address += hexNumber + "::";
-        //        return true;
-        //    }
+            address = prefix + "::" + hexString + ":" + ls32;
+            return true;
+        }
 
-        //    return false;
-        //}
+        bool TryMakeIPv6AddressRule5(out string address)
+        {
+            // [ *2( h16 ":" ) h16 ] "::" 2( h16 ":" ) ls32
+            address = null;
+
+            if (TryMakeIPv6HexPrefix(3, out var prefix) == false)
+            {
+                return false;
+            }
+            
+            if (Enumerator.Take() != Tokens.Colon || Enumerator.Take() != Tokens.Colon)
+            {
+                return false;
+            }
+
+            if (TryMakeIPv6HexString(2, out var hexString) == false)
+            {
+                return false;
+            }
+
+            if (Enumerator.Take() != Tokens.Colon)
+            {
+                return false;
+            }
+
+            if (TryMakeIPv6Ls32(out var ls32) == false)
+            {
+                return false;
+            }
+
+            address = prefix + "::" + hexString + ":" + ls32;
+            return true;
+        }
+
+        bool TryMakeIPv6AddressRule6(out string address)
+        {
+            // [ *3( h16 ":" ) h16 ] "::" h16 ":" ls32
+            address = null;
+
+            if (TryMakeIPv6HexPrefix(4, out var prefix) == false)
+            {
+                return false;
+            }
+
+            if (Enumerator.Take() != Tokens.Colon || Enumerator.Take() != Tokens.Colon)
+            {
+                return false;
+            }
+
+            if (TryMake16BitHex(out var hex) == false)
+            {
+                return false;
+            }
+
+            if (Enumerator.Take() != Tokens.Colon)
+            {
+                return false;
+            }
+
+            if (TryMakeIPv6Ls32(out var ls32) == false)
+            {
+                return false;
+            }
+
+            address = prefix + "::" + hex + ":" + ls32;
+            return true;
+        }
+
+        bool TryMakeIPv6AddressRule7(out string address)
+        {
+            // [ *4( h16 ":" ) h16 ] "::" ls32
+            address = null;
+
+            if (TryMakeIPv6HexPrefix(5, out var prefix) == false)
+            {
+                return false;
+            }
+
+            if (Enumerator.Take() != Tokens.Colon || Enumerator.Take() != Tokens.Colon)
+            {
+                return false;
+            }
+
+            if (TryMakeIPv6Ls32(out var ls32) == false)
+            {
+                return false;
+            }
+
+            address = prefix + "::" + ls32;
+            return true;
+        }
+
+        bool TryMakeIPv6AddressRule8(out string address)
+        {
+            // [ *5( h16 ":" ) h16 ] "::" h16
+            address = null;
+
+            if (TryMakeIPv6HexPrefix(6, out var prefix) == false)
+            {
+                return false;
+            }
+
+            if (Enumerator.Take() != Tokens.Colon || Enumerator.Take() != Tokens.Colon)
+            {
+                return false;
+            }
+
+            if (TryMake16BitHex(out var hex) == false)
+            {
+                return false;
+            }
+
+            address = prefix + "::" + hex;
+            return true;
+        }
+
+        bool TryMakeIPv6AddressRule9(out string address)
+        {
+            // [ *6( h16 ":" ) h16 ] "::"
+            address = null;
+
+            if (TryMakeIPv6HexPrefix(7, out var prefix) == false)
+            {
+                return false;
+            }
+
+            if (Enumerator.Take() != Tokens.Colon || Enumerator.Take() != Tokens.Colon)
+            {
+                return false;
+            }
+
+            address = prefix + "::";
+            return true;
+        }
 
         //bool TryMakeIPv6ZeroGroup()
         //{
