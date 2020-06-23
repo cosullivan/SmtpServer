@@ -1010,15 +1010,17 @@ namespace SmtpServer.Protocol
 
             //return false;
 
-            return TryMake(TryMakeIPv6AddressRule1, out address) 
-                || TryMake(TryMakeIPv6AddressRule2, out address)
-                || TryMake(TryMakeIPv6AddressRule3, out address)
-                || TryMake(TryMakeIPv6AddressRule4, out address)
-                || TryMake(TryMakeIPv6AddressRule5, out address)
-                || TryMake(TryMakeIPv6AddressRule6, out address)
-                || TryMake(TryMakeIPv6AddressRule7, out address)
-                || TryMake(TryMakeIPv6AddressRule8, out address)
-                || TryMake(TryMakeIPv6AddressRule9, out address);
+            //return TryMake(TryMakeIPv6AddressRule1, out address) 
+            //    || TryMake(TryMakeIPv6AddressRule2, out address)
+            //    || TryMake(TryMakeIPv6AddressRule3, out address)
+            //    || TryMake(TryMakeIPv6AddressRule4, out address)
+            //    || TryMake(TryMakeIPv6AddressRule5, out address)
+            //    || TryMake(TryMakeIPv6AddressRule6, out address)
+            //    || TryMake(TryMakeIPv6AddressRule7, out address)
+            //    || TryMake(TryMakeIPv6AddressRule8, out address)
+            //    || TryMake(TryMakeIPv6AddressRule9, out address);
+
+            return TryMake(TryMakeIPv6AddressRule5, out address);
         }
 
         bool TryMakeIPv6AddressRule1(out string address)
@@ -1142,37 +1144,56 @@ namespace SmtpServer.Protocol
             return true;
         }
 
+        //bool TryMakeIPv6AddressRule5(out string address)
+        //{
+        //    // [ *2( h16 ":" ) h16 ] "::" 2( h16 ":" ) ls32
+        //    address = null;
+
+        //    if (TryMakeIPv6HexPrefix(3, out var prefix) == false)
+        //    {
+        //        return false;
+        //    }
+
+        //    if (Enumerator.Take() != Tokens.Colon || Enumerator.Take() != Tokens.Colon)
+        //    {
+        //        return false;
+        //    }
+
+        //    if (TryMakeIPv6HexString(2, out var hexString) == false)
+        //    {
+        //        return false;
+        //    }
+
+        //    if (Enumerator.Take() != Tokens.Colon)
+        //    {
+        //        return false;
+        //    }
+
+        //    if (TryMakeIPv6Ls32(out var ls32) == false)
+        //    {
+        //        return false;
+        //    }
+
+        //    address = prefix + "::" + hexString + ":" + ls32;
+        //    return true;
+        //}
+
         bool TryMakeIPv6AddressRule5(out string address)
         {
             // [ *2( h16 ":" ) h16 ] "::" 2( h16 ":" ) ls32
             address = null;
 
-            if (TryMakeIPv6HexPrefix(3, out var prefix) == false)
-            {
-                return false;
-            }
-            
-            if (Enumerator.Take() != Tokens.Colon || Enumerator.Take() != Tokens.Colon)
+            if (TryMakeIPv6HexPreamble(3, out var hexPreamble) == false)
             {
                 return false;
             }
 
-            if (TryMakeIPv6HexString(2, out var hexString) == false)
+            if (TryMakeIPv6HexPostamble(2, out var hexPostamble) == false)
             {
                 return false;
             }
 
-            if (Enumerator.Take() != Tokens.Colon)
-            {
-                return false;
-            }
-
-            if (TryMakeIPv6Ls32(out var ls32) == false)
-            {
-                return false;
-            }
-
-            address = prefix + "::" + hexString + ":" + ls32;
+            address = hexPreamble + hexPostamble;
             return true;
         }
 
@@ -1336,17 +1357,75 @@ namespace SmtpServer.Protocol
             return false;
         }
 
-        //bool TryMakeIPv6HexSuffix(int count, out string hexSuffix)
-        //{
-        //    hexSuffix = null;
+        bool TryMakeIPv6HexPreamble(int maximum, out string hexPreamble)
+        {
+            hexPreamble = null;
 
-        //    if (TryMakeIPv6HexString(count, out hexSuffix) == false)
-        //    {
-        //        return false;
-        //    }
+            for (var i = 0; i < maximum; i++)
+            {
+                if (TryMake(TryMakeTerminal))
+                {
+                    hexPreamble += "::";
+                    return true;
+                }
 
-        //    return false;
-        //}
+                if (i > 0)
+                {
+                    if (Enumerator.Take() != Tokens.Colon)
+                    {
+                        return false;
+                    }
+
+                    hexPreamble += ":";
+                }
+
+                if (TryMake16BitHex(out var hex) == false)
+                {
+                    return false;
+                }
+
+                hexPreamble += hex;
+            }
+
+            hexPreamble += "::";
+
+            return TryMake(TryMakeTerminal);
+
+            bool TryMakeTerminal()
+            {
+                return Enumerator.Take() == Tokens.Colon && Enumerator.Take() == Tokens.Colon;
+            }
+        }
+
+        bool TryMakeIPv6HexPostamble(int count, out string hexPostamble)
+        {
+            hexPostamble = null;
+
+            while (count-- > 0)
+            {
+                if (TryMake16BitHex(out var hex) == false)
+                {
+                    return false;
+                }
+
+                hexPostamble += hex;
+
+                if (Enumerator.Take() != Tokens.Colon)
+                {
+                    return false;
+                }
+
+                hexPostamble += ":";
+            }
+
+            if (TryMakeIPv6Ls32(out var ls32) == false)
+            {
+                return false;
+            }
+
+            hexPostamble += ls32;
+            return true;
+        }
 
         bool TryMakeIPv6HexString(int count, out string hexString)
         {
