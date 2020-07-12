@@ -6,7 +6,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Test.eml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Test.eml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.11.5" />
+    <PackageReference Include="MailKit" Version="2.8.0" />
   </ItemGroup>
 
   <ItemGroup>

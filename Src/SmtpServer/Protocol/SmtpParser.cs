@@ -1442,7 +1442,7 @@ namespace SmtpServer.Protocol
         /// <remarks><![CDATA[esmtp-keyword ["=" esmtp-value]]]></remarks>
         public bool TryMakeEsmtpParameter(out KeyValuePair<string, string> parameter)
         {
-            parameter = default(KeyValuePair<string, string>);
+            parameter = default;
 
             if (TryMake(TryMakeEsmtpKeyword, out string keyword) == false)
             {
