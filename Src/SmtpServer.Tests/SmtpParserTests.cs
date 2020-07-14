@@ -245,7 +245,23 @@ namespace SmtpServer.Tests
         }
 
         [Fact]
-        public void CanMakeProxyIpV4()
+        public void CanMakeProxyUnknown()
+        {
+            // arrange
+            var parser = CreateParser("PROXY UNKNOWN");
+
+            // act
+            var result = parser.TryMakeProxy(out var command, out var errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is ProxyCommand);
+            Assert.Null(((ProxyCommand)command).SourceEndpoint);
+            Assert.Null(((ProxyCommand)command).DestinationEndpoint);
+        }
+
+        [Fact]
+        public void CanMakeProxyTcp4()
         {
             // arrange
             var parser = CreateParser("PROXY TCP4 192.168.1.1 192.168.1.2 1234 16789");
@@ -263,7 +279,7 @@ namespace SmtpServer.Tests
         }
 
         [Fact]
-        public void CanMakeProxyIpV6()
+        public void CanMakeProxyTcp6()
         {
             // arrange
             var parser = CreateParser("PROXY TCP6 2001:1234:abcd::0001 3456:2e76:66d8:f84:abcd:abef:ffff:1234 1234 16789");
@@ -553,13 +569,13 @@ namespace SmtpServer.Tests
         [InlineData("1B2D")]
         [InlineData("1B23")]
         [InlineData("AB23")]
-        public void CanMake16BitsHexNumber(string input)
+        public void CanMake16BitHexNumber(string input)
         {
             // arrange
             var parser = CreateParser(input);
 
             // act
-            var result = parser.TryMake16BitsHexNumber(out var hexNumber);
+            var result = parser.TryMake16BitHex(out var hexNumber);
 
             // assert
             Assert.True(result);
@@ -567,18 +583,51 @@ namespace SmtpServer.Tests
         }
 
         [Theory]
+        [InlineData("!")]
         [InlineData("G")]
-        [InlineData("A123B")]
-        public void CanNotMake16BitsHexNumber(string input)
+        [InlineData("Z321")]
+        public void CanNotMake16BitHex(string input)
         {
             // arrange
             var parser = CreateParser(input);
 
             // act
-            var result = parser.TryMake16BitsHexNumber(out var hexNumber);
+            var result = parser.TryMake16BitHex(out var hex);
 
             // assert
             Assert.False(result);
+        }
+
+        [Theory]
+        [InlineData("127.0.0.1")]
+        public void CanMakeIPv4AddressLiteral(string input)
+        {
+            // arrange
+            var parser = CreateParser(input);
+
+            // act
+            var made = parser.TryMakeIPv4AddressLiteral(out var address);
+
+            // assert
+            Assert.True(made);
+            Assert.Equal(input, address);
+        }
+
+        [Theory]
+        [InlineData("0")]
+        [InlineData("0.0")]
+        [InlineData("0.0.0")]
+        [InlineData("999.999.999.999")]
+        public void CanNotMakeIPv4AddressLiteral(string input)
+        {
+            // arrange
+            var parser = CreateParser(input);
+
+            // act
+            var made = parser.TryMakeIPv4AddressLiteral(out var address);
+
+            // assert
+            Assert.False(made);
         }
 
         [Theory]
@@ -591,13 +640,13 @@ namespace SmtpServer.Tests
         [InlineData("0:0:0:0:0:FFFF:129.144.52.38")]
         [InlineData("::13.1.68.3")]
         [InlineData("::FFFF:129.144.52.38")]
-        public void CanMakeIpv6AddressLiteral(string input)
+        public void CanMakeIPv6AddressLiteral(string input)
         {
             // arrange
             var parser = CreateParser("IPv6:" + input);
 
             // act
-            var result = parser.TryMakeIpv6AddressLiteralWithPrefix(out var address);
+            var result = parser.TryMakeIPv6AddressLiteral(out var address);
 
             // assert
             Assert.True(result);
@@ -606,17 +655,14 @@ namespace SmtpServer.Tests
 
         [Theory]
         [InlineData("ABCD:EF01:2345:6789:ABCD:EF01:2345")]
-        [InlineData("ABCD:EF01:2345:6789:ABCD:EF01:2345:6789:0")]
-        [InlineData("FF01:::101")]
-        [InlineData(":::1")]
-        [InlineData(":::")]
-        public void CanNotMakeIpv6AddressLiteral(string input)
+        [InlineData("ABCD:EF01:ZZZZ:6789:ABCD:EF01:2345:6789")]
+        public void CanNotMakeIPv6AddressLiteral(string input)
         {
             // arrange
             var parser = CreateParser("IPv6:" + input);
 
             // act
-            var result = parser.TryMakeIpv6AddressLiteralWithPrefix(out var address);
+            var result = parser.TryMakeIPv6AddressLiteral(out var address);
 
             // assert
             Assert.False(result);

@@ -58,7 +58,7 @@ namespace SmtpServer.Text
         /// <returns>The token that was created.</returns>
         public static Token Create(TokenKind kind, char ch)
         {
-            return new Token(KindOf(ch), ch.ToString());
+            return new Token(kind, ch.ToString());
         }
 
         /// <summary>

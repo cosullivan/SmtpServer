@@ -36,8 +36,15 @@ namespace SmtpServer.Protocol
             {
                 internal static readonly Token From = Token.Create("FROM");
                 internal static readonly Token To = Token.Create("TO");
-                internal static readonly Token Last = Token.Create("LAST");
                 internal static readonly Token IpVersionTag = Token.Create("IPv");
+                internal static readonly Token Unknown = Token.Create("UNKNOWN");
+                internal static readonly Token Tcp = Token.Create("TCP");
+            }
+
+            internal static class Numbers
+            {
+                internal static readonly Token Four = Token.Create(TokenKind.Number, "4");
+                internal static readonly Token Six = Token.Create(TokenKind.Number, "6");
             }
             // ReSharper restore InconsistentNaming
         }
@@ -217,7 +224,7 @@ namespace SmtpServer.Protocol
             // according to the spec, whitespace isnt allowed here but most servers send it
             Enumerator.Skip(TokenKind.Space);
 
-            if (TryMakeReversePath(out IMailbox mailbox) == false)
+            if (TryMakeReversePath(out var mailbox) == false)
             {
                 _options.Logger.LogVerbose("Syntax Error (Text={0})", CompleteTokenizedText());
 
@@ -228,7 +235,7 @@ namespace SmtpServer.Protocol
             Enumerator.Skip(TokenKind.Space);
 
             // match the optional (ESMTP) parameters
-            if (TryMakeMailParameters(out IReadOnlyDictionary<string, string> parameters) == false)
+            if (TryMakeMailParameters(out var parameters) == false)
             {
                 parameters = new Dictionary<string, string>();
             }
@@ -260,7 +267,7 @@ namespace SmtpServer.Protocol
             // according to the spec, whitespace isnt allowed here anyway
             Enumerator.Skip(TokenKind.Space);
 
-            if (TryMakePath(out IMailbox mailbox) == false)
+            if (TryMakePath(out var mailbox) == false)
             {
                 _options.Logger.LogVerbose("Syntax Error (Text={0})", CompleteTokenizedText());
 
@@ -278,149 +285,133 @@ namespace SmtpServer.Protocol
         /// Support proxy protocol version 1 header for use with HAProxy.
         /// Documented at http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
         /// </summary>
-        /// <param name="command"></param>
-        /// <param name="errorResponse"></param>
-        /// <returns></returns>
+        /// <param name="command">The PROXY command that is defined within the token enumerator.</param>
+        /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
+        /// <returns>Returns true if a command could be made, false if not.</returns>
         public bool TryMakeProxy(out SmtpCommand command, out SmtpResponse errorResponse)
         {
+            // ABNF
+            // proxy            = "PROXY" space ( unknown-proxy | tcp4-proxy | tcp6-proxy )
+            // unknown-proxy    = "UNKNOWN"
+            // tcp4-proxy       = "TCP4" space ipv4-address-literal space ipv4-address-literal space ip-port-number space ip-port-number   
+            // tcp6-proxy       = "TCP6" space ipv6-address-literal space ipv6-address-literal space ip-port-number space ip-port-number
+            // space            = " "
+            // ip-port          = wnum
+            // wnum             = 1*5DIGIT ; in the range of 0-65535
+
             command = null;
             errorResponse = null;
 
             Enumerator.Take();
             Enumerator.Skip(TokenKind.Space);
 
-            string inetProto;
-            if (TryMake(TryMakeProxyProtoTypeString, out inetProto) == false)
+            if (TryMake(TryMakeUnknownProxy, out command))
             {
-                return false;
-            }
-
-            if (inetProto == "UNKNOWN")
-            {
-                // IF INET PROTO IS UNKNOWN REST OF THIS LINE SHOULD BE IGNORED.
-                command = new ProxyCommand(_options, null, null);
                 return true;
             }
 
-            Enumerator.Skip(TokenKind.Space);
-
-            IPAddress sourceIp;
-            IPAddress destinationIp;
-            // read addresses if IPv4
-            if (inetProto == "TCP4")
+            if (TryMake(TryMakeTcp4Proxy, out command))
             {
-                if (TryMakeProxyFromAndToAddresses(TryMakeIpv4AddressLiteral, out sourceIp, out destinationIp) == false)
-                {
-                    return false;
-                }
-            }
-            else if (inetProto == "TCP6")
-            {
-                if (TryMakeProxyFromAndToAddresses(TryMakeIpv6AddressLiteral, out sourceIp, out destinationIp) == false)
-                {
-                    return false;
-                }
-            }
-            else
-            {
-                // Unexpected  / Invalid protocol in proxy protocol format.
-                return false;
+                return true;
             }
 
-            Enumerator.Skip(TokenKind.Space);
-
-            // Read ports
-            int sourcePort;
-            int destinationPort;
-            if (TryMakeShortNum(out sourcePort) == false)
-            {
-                return false;
-            }
-
-            Enumerator.Skip(TokenKind.Space);
-
-            if (TryMakeShortNum(out destinationPort) == false)
-            {
-                return false;
-            }
-
-            command = new ProxyCommand(_options, new IPEndPoint(sourceIp, sourcePort),
-                new IPEndPoint(destinationIp, destinationPort));
-            return true;
-        }
-
-        protected bool TryMakeProxyFromAndToAddresses(TryMakeDelegate<string> @delegate, out IPAddress fromIp,
-            out IPAddress toIp)
-        {
-            fromIp = null;
-            toIp = null;
-
-            string fromAddress;
-            if (TryMake(@delegate, out fromAddress) == false)
-            {
-                return false;
-            }
-
-            if (!IPAddress.TryParse(fromAddress, out fromIp))
-            {
-                return false;
-            }
-
-            Enumerator.Skip(TokenKind.Space);
-
-            string toAddress;
-            if (TryMake(@delegate, out toAddress) == false)
-            {
-                return false;
-            }
-
-            if (!IPAddress.TryParse(toAddress, out toIp))
-            {
-                return false;
-            }
-
-            return true;
+            return TryMakeTcp6Proxy(out command);
         }
 
         /// <summary>
-        /// Proxy inet protocol part e.g. "TCP4" or "TCP6" or "UNKNOWN"
+        /// Attempt to make the Unknown Proxy command.
         /// </summary>
-        /// <param name="inetProtocol"></param>
-        /// <returns></returns>
-        public bool TryMakeProxyProtoTypeString(out string inetProtocol)
+        /// <param name="command">The command that was made.</param>
+        /// <returns>true if the command was made, false if not.</returns>
+        bool TryMakeUnknownProxy(out SmtpCommand command)
         {
-            inetProtocol = "";
+            command = new ProxyCommand(_options);
 
-            var tokenA = Enumerator.Take();
-            if (tokenA.Kind != TokenKind.Text)
+            return Enumerator.Take() == Tokens.Text.Unknown;
+        }
+
+        bool TryMakeTcp4Proxy(out SmtpCommand command)
+        {
+            command = null;
+
+            if (Enumerator.Take() != Tokens.Text.Tcp)
             {
                 return false;
             }
 
-            inetProtocol += tokenA.Text;
-
-            if (inetProtocol == "UNKNOWN")
-            {
-                // Unknown is a valid type here - but may signify that the rest of the line is missing.
-                return true;
-            }
-
-            var tokenB = Enumerator.Take();
-            if (tokenB.Kind != TokenKind.Number)
+            if (Enumerator.Take() != Tokens.Numbers.Four)
             {
                 return false;
             }
 
-            inetProtocol += tokenB.Text;
+            return TryMakeProxyAddresses(TryMakeIPv4AddressLiteral, out command);
+        }
 
-            // This is probably impossible.
-            if (string.IsNullOrWhiteSpace(inetProtocol))
+        bool TryMakeTcp6Proxy(out SmtpCommand command)
+        {
+            command = null;
+
+            if (Enumerator.Take() != Tokens.Text.Tcp)
             {
-                inetProtocol = null;
                 return false;
             }
 
+            if (Enumerator.Take() != Tokens.Numbers.Six)
+            {
+                return false;
+            }
+
+            return TryMakeProxyAddresses(TryMakeIPv6Address, out command);
+        }
+
+        bool TryMakeProxyAddresses(TryMakeDelegate<string> tryMakeAddressDelegate, out SmtpCommand command)
+        {
+            command = null;
+            
+            Enumerator.Skip(TokenKind.Space);
+
+            if (tryMakeAddressDelegate(out var sourceAddress) == false)
+            {
+                return false;
+            }
+
+            Enumerator.Skip(TokenKind.Space);
+
+            if (tryMakeAddressDelegate(out var destinationAddress) == false)
+            {
+                return false;
+            }
+
+            Enumerator.Skip(TokenKind.Space);
+
+            if (TryMakeWnum(out var sourcePort) == false)
+            {
+                return false;
+            }
+
+            Enumerator.Skip(TokenKind.Space);
+
+            if (TryMakeWnum(out var destinationPort) == false)
+            {
+                return false;
+            }
+
+            command = new ProxyCommand(_options, new IPEndPoint(IPAddress.Parse(sourceAddress), sourcePort), new IPEndPoint(IPAddress.Parse(destinationAddress), destinationPort));
             return true;
+        }
+
+        bool TryMakeWnum(out int wnum)
+        {
+            wnum = default;
+
+            var token = Enumerator.Take();
+
+            if (token.Kind == TokenKind.Number && int.TryParse(token.Text, out wnum))
+            {
+                return wnum >= 0 && wnum <= 65535;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -688,7 +679,7 @@ namespace SmtpServer.Protocol
                     return false;
                 }
 
-                domain += String.Concat(".", subdomain);
+                domain += string.Concat(".", subdomain);
             }
 
             return true;
@@ -735,7 +726,7 @@ namespace SmtpServer.Protocol
             // skip any whitespace
             Enumerator.Skip(TokenKind.Space);
 
-            if (TryMake(TryMakeIpv4AddressLiteral, out address) == false && TryMake(TryMakeIpv6AddressLiteralWithPrefix, out address) == false)
+            if (TryMake(TryMakeIPv4AddressLiteral, out address) == false && TryMake(TryMakeIPv6AddressLiteral, out address) == false)
             {
                 return false;
             }
@@ -757,7 +748,7 @@ namespace SmtpServer.Protocol
         /// <param name="address">The address that was made, or undefined if it was not made.</param>
         /// <returns>true if the address was made, false if not.</returns>
         /// <remarks><![CDATA[ Snum 3("."  Snum) ]]></remarks>
-        public bool TryMakeIpv4AddressLiteral(out string address)
+        public bool TryMakeIPv4AddressLiteral(out string address)
         {
             address = null;
 
@@ -768,16 +759,19 @@ namespace SmtpServer.Protocol
 
             address = snum.ToString(CultureInfo.InvariantCulture);
 
-            for (var i = 0; i < 3 && Enumerator.Peek() == Tokens.Period; i++)
+            for (var i = 0; i < 3; i++)
             {
-                Enumerator.Take();
+                if (Enumerator.Take() != Tokens.Period)
+                {
+                    return false;
+                }
 
                 if (TryMake(TryMakeSnum, out snum) == false)
                 {
                     return false;
                 }
 
-                address = String.Concat(address, '.', snum);
+                address = string.Concat(address, '.', snum);
             }
 
             return true;
@@ -791,11 +785,11 @@ namespace SmtpServer.Protocol
         /// <remarks><![CDATA[ 1*3DIGIT ]]></remarks>
         public bool TryMakeSnum(out int snum)
         {
-            snum = default(int);
+            snum = default;
 
             var token = Enumerator.Take();
 
-            if (token.Kind == TokenKind.Number && Int32.TryParse(token.Text, out snum))
+            if (token.Kind == TokenKind.Number && int.TryParse(token.Text, out snum))
             {
                 return snum >= 0 && snum <= 255;
             }
@@ -829,34 +823,29 @@ namespace SmtpServer.Protocol
         }
 
         /// <summary>
-        /// Try to make 16 bits hex number.
+        /// Try to make 16 bit hex number.
         /// </summary>
-        /// <param name="hexNumber">Extracted hex number.</param>
+        /// <param name="hex">Extracted hex number.</param>
         /// <returns>true if valid hex number can be extracted.</returns>
-        public bool TryMake16BitsHexNumber(out string hexNumber)
+        public bool TryMake16BitHex(out string hex)
         {
-            hexNumber = null;
+            hex = string.Empty;
 
             var token = Enumerator.Peek();
-            while (token.Kind == TokenKind.Number || token.Kind == TokenKind.Text)
+            while ((token.Kind == TokenKind.Text || token.Kind == TokenKind.Number) && hex.Length < 4)
             {
-                if (hexNumber != null && (hexNumber.Length + token.Text.Length) > 4)
-                { 
-                    return false;
-                }
-
                 if (token.Kind == TokenKind.Text && IsHex(token.Text) == false)
                 {
                     return false;
                 }
-                
-                hexNumber = string.Concat(hexNumber ?? string.Empty, token.Text);
+
+                hex = string.Concat(hex, token.Text);
 
                 Enumerator.Take();
                 token = Enumerator.Peek();
             }
 
-            return true;
+            return hex.Length > 0 && hex.Length <= 4;
 
             bool IsHex(string text)
             {
@@ -870,7 +859,7 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="address">Extracted Ipv6 address.</param>
         /// <returns>true if a valid Ipv6 address can be extracted.</returns>
-        public bool TryMakeIpv6AddressLiteralWithPrefix(out string address)
+        public bool TryMakeIPv6AddressLiteral(out string address)
         {
             address = null;
 
@@ -879,112 +868,267 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            return TryMakeIpv6AddressLiteral(out address);
+            return TryMakeIPv6Address(out address);
         }
 
         /// <summary>
-        /// Try to extract IPv6 address. https://tools.ietf.org/html/rfc4291 section 2.2 used for specification.
+        /// Try to make an IPv6 address.
         /// </summary>
-        /// <param name="address">Extracted Ipv6 address.</param>
-        /// <returns>true if a valid Ipv6 address can be extracted.</returns>
-        public bool TryMakeIpv6AddressLiteral(out string address)
+        /// <param name="address">The address that was made, or undefined if it was not made.</param>
+        /// <returns>true if the address was made, false if not.</returns>
+        /// <remarks><![CDATA[  ]]></remarks>
+        public bool TryMakeIPv6Address(out string address)
+        {
+            return TryMake(TryMakeIPv6AddressRule1, out address)
+                || TryMake(TryMakeIPv6AddressRule2, out address)
+                || TryMake(TryMakeIPv6AddressRule3, out address)
+                || TryMake(TryMakeIPv6AddressRule4, out address)
+                || TryMake(TryMakeIPv6AddressRule5, out address)
+                || TryMake(TryMakeIPv6AddressRule6, out address)
+                || TryMake(TryMakeIPv6AddressRule7, out address)
+                || TryMake(TryMakeIPv6AddressRule8, out address)
+                || TryMake(TryMakeIPv6AddressRule9, out address);
+        }
+
+        bool TryMakeIPv6AddressRule1(out string address)
+        {
+            // 6( h16 ":" ) ls32
+            return TryMakeIPv6HexPostamble(6, out address);
+        }
+
+        bool TryMakeIPv6AddressRule2(out string address)
         {
             address = null;
 
-            var hasDoubleColumn = false;
-            var hexPartCount = 0;
-            var hasIpv4Part = false;
-            var wasColon = false;
-
-            var token = Enumerator.Peek();
-            var builder = new System.Text.StringBuilder();
-            while (token.Kind == TokenKind.Number || token.Kind == TokenKind.Text || token == Tokens.Colon)
+            // "::" 5( h16 ":" ) ls32
+            if (Enumerator.Take() != Tokens.Colon || Enumerator.Take() != Tokens.Colon)
             {
-                using (var cp = Enumerator.Checkpoint())
-                {
-                    Enumerator.Take();
-                    // Alternate form with mixed IPv6 and IPv4 formats. See https://tools.ietf.org/html/rfc4291 section 2.2 item 3
-                    if (token.Kind == TokenKind.Number && Enumerator.Peek() == Tokens.Period)
-                    {
-                        cp.Rollback();
-                        if (TryMake(TryMakeIpv4AddressLiteral, out string ipv4))
-                        {
-                            hasIpv4Part = true;
-                            builder.Append(ipv4);
-                            break;
-                        }
-
-                        return false;
-                    }
-
-                    cp.Rollback();
-                }
-
-                if (token == Tokens.Colon)
-                {
-                    if (wasColon)
-                    {
-                        // Double column is allowed only once
-                        if (hasDoubleColumn)
-                        { 
-                            return false;
-                        }
-                        hasDoubleColumn = true;
-                    }
-                    builder.Append(token.Text);
-                    wasColon = true;
-                    Enumerator.Take();
-                }
-                else
-                {
-                    if (wasColon == false && builder.Length > 0)
-                    { 
-                        return false;
-                    }
-
-                    wasColon = false;
-                    if (TryMake(TryMake16BitsHexNumber, out string hexNumber))
-                    {
-                        builder.Append(hexNumber);
-                        hexPartCount++;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-                token = Enumerator.Peek();
-            }
-
-            address = builder.ToString();
-
-            var maxAllowedParts = (hasIpv4Part ? 6 : 8) - Math.Sign(hasDoubleColumn ? 1 : 0);
-            if ((hasDoubleColumn && hexPartCount > maxAllowedParts) || (!hasDoubleColumn && hexPartCount != maxAllowedParts))
-            { 
                 return false;
             }
 
+            if (TryMakeIPv6HexPostamble(5, out var hexPostamble) == false)
+            {
+                return false;
+            }
+
+            address = "::" + hexPostamble;
             return true;
         }
 
-        /// <summary>
-        /// Try to make an ShortNum (number in the range of 0-65535).
-        /// </summary>
-        /// <param name="shortNum">The snum that was made, or undefined if it was not made.</param>
-        /// <returns>true if the snum was made, false if not.</returns>
-        /// <remarks><![CDATA[ 1*3DIGIT ]]></remarks>
-        public bool TryMakeShortNum(out int shortNum)
+        bool TryMakeIPv6AddressRule3(out string address)
         {
-            shortNum = default(int);
+            // [ h16 ] "::" 4( h16 ":" ) ls32
+            address = null;
 
-            var token = Enumerator.Take();
-
-            if (token.Kind == TokenKind.Number && Int32.TryParse(token.Text, out shortNum))
+            if (TryMakeIPv6HexPreamble(1, out var hexPreamble) == false)
             {
-                return shortNum >= 0 && shortNum <= 65535;
+                return false;
             }
 
-            return false;
+            if (TryMakeIPv6HexPostamble(4, out var hexPostamble) == false)
+            {
+                return false;
+            }
+
+            address = hexPreamble + hexPostamble;
+            return true;
+        }
+
+        bool TryMakeIPv6AddressRule4(out string address)
+        {
+            // [ *1( h16 ":" ) h16 ] "::" 3( h16 ":" ) ls32
+            address = null;
+
+            if (TryMakeIPv6HexPreamble(2, out var hexPreamble) == false)
+            {
+                return false;
+            }
+
+            if (TryMakeIPv6HexPostamble(3, out var hexPostamble) == false)
+            {
+                return false;
+            }
+
+            address = hexPreamble + hexPostamble;
+            return true;
+        }
+
+        bool TryMakeIPv6AddressRule5(out string address)
+        {
+            // [ *2( h16 ":" ) h16 ] "::" 2( h16 ":" ) ls32
+            address = null;
+
+            if (TryMakeIPv6HexPreamble(3, out var hexPreamble) == false)
+            {
+                return false;
+            }
+
+            if (TryMakeIPv6HexPostamble(2, out var hexPostamble) == false)
+            {
+                return false;
+            }
+
+            address = hexPreamble + hexPostamble;
+            return true;
+        }
+
+        bool TryMakeIPv6AddressRule6(out string address)
+        {
+            // [ *3( h16 ":" ) h16 ] "::" h16 ":" ls32
+            address = null;
+
+            if (TryMakeIPv6HexPreamble(4, out var hexPreamble) == false)
+            {
+                return false;
+            }
+
+            if (TryMakeIPv6HexPostamble(1, out var hexPostamble) == false)
+            {
+                return false;
+            }
+
+            address = hexPreamble + hexPostamble;
+            return true;
+        }
+
+        bool TryMakeIPv6AddressRule7(out string address)
+        {
+            // [ *4( h16 ":" ) h16 ] "::" ls32
+            address = null;
+
+            if (TryMakeIPv6HexPreamble(5, out var hexPreamble) == false)
+            {
+                return false;
+            }
+
+            if (TryMakeIPv6Ls32(out var ls32) == false)
+            {
+                return false;
+            }
+
+            address = hexPreamble + ls32;
+            return true;
+        }
+
+        bool TryMakeIPv6AddressRule8(out string address)
+        {
+            // [ *5( h16 ":" ) h16 ] "::" h16
+            address = null;
+
+            if (TryMakeIPv6HexPreamble(6, out var hexPreamble) == false)
+            {
+                return false;
+            }
+            
+            if (TryMake16BitHex(out var hex) == false)
+            {
+                return false;
+            }
+
+            address = hexPreamble + hex;
+            return true;
+        }
+
+        bool TryMakeIPv6AddressRule9(out string address)
+        {
+            // [ *6( h16 ":" ) h16 ] "::"
+            return TryMakeIPv6HexPreamble(7, out address);
+        }
+
+        bool TryMakeIPv6HexPreamble(int maximum, out string hexPreamble)
+        {
+            hexPreamble = null;
+
+            for (var i = 0; i < maximum; i++)
+            {
+                if (TryMake(TryMakeTerminal))
+                {
+                    hexPreamble += "::";
+                    return true;
+                }
+
+                if (i > 0)
+                {
+                    if (Enumerator.Take() != Tokens.Colon)
+                    {
+                        return false;
+                    }
+
+                    hexPreamble += ":";
+                }
+
+                if (TryMake16BitHex(out var hex) == false)
+                {
+                    return false;
+                }
+
+                hexPreamble += hex;
+            }
+
+            hexPreamble += "::";
+
+            return TryMake(TryMakeTerminal);
+
+            bool TryMakeTerminal()
+            {
+                return Enumerator.Take() == Tokens.Colon && Enumerator.Take() == Tokens.Colon;
+            }
+        }
+
+        bool TryMakeIPv6HexPostamble(int count, out string hexPostamble)
+        {
+            hexPostamble = null;
+
+            while (count-- > 0)
+            {
+                if (TryMake16BitHex(out var hex) == false)
+                {
+                    return false;
+                }
+
+                hexPostamble += hex;
+
+                if (Enumerator.Take() != Tokens.Colon)
+                {
+                    return false;
+                }
+
+                hexPostamble += ":";
+            }
+
+            if (TryMakeIPv6Ls32(out var ls32) == false)
+            {
+                return false;
+            }
+
+            hexPostamble += ls32;
+            return true;
+        }
+
+        bool TryMakeIPv6Ls32(out string address)
+        {
+            if (TryMake(TryMakeIPv4AddressLiteral, out address))
+            {
+                return true;
+            }
+
+            if (TryMake16BitHex(out var hex1) == false)
+            {
+                return false;
+            }
+
+            if (Enumerator.Take() != Tokens.Colon)
+            {
+                return false;
+            }
+
+            if (TryMake16BitHex(out var hex2) == false)
+            {
+                return false;
+            }
+
+            address = hex1 + ":" + hex2;
+            return true;
         }
 
         /// <summary>
@@ -1063,7 +1207,7 @@ namespace SmtpServer.Protocol
                     return true;
                 }
 
-                dotString += String.Concat(".", atom);
+                dotString += string.Concat(".", atom);
             }
 
             return true;
@@ -1086,7 +1230,7 @@ namespace SmtpServer.Protocol
 
             while (Enumerator.Peek() != Tokens.Quote)
             {
-                if (TryMakeQContentSmtp(out string text) == false)
+                if (TryMakeQContentSmtp(out var text) == false)
                 {
                     return false;
                 }
@@ -1206,8 +1350,7 @@ namespace SmtpServer.Protocol
         {
             atom = null;
 
-            string atext;
-            while (TryMake(TryMakeAtext, out atext))
+            while (TryMake(TryMakeAtext, out string atext))
             {
                 atom += atext;
             }
@@ -1277,8 +1420,7 @@ namespace SmtpServer.Protocol
 
             while (Enumerator.Peek().Kind != TokenKind.None)
             {
-                KeyValuePair<string, string> parameter;
-                if (TryMake(TryMakeEsmtpParameter, out parameter) == false)
+                if (TryMake(TryMakeEsmtpParameter, out KeyValuePair<string, string> parameter) == false)
                 {
                     parameters = null;
                     return false;
@@ -1300,10 +1442,9 @@ namespace SmtpServer.Protocol
         /// <remarks><![CDATA[esmtp-keyword ["=" esmtp-value]]]></remarks>
         public bool TryMakeEsmtpParameter(out KeyValuePair<string, string> parameter)
         {
-            parameter = default(KeyValuePair<string, string>);
+            parameter = default;
 
-            string keyword;
-            if (TryMake(TryMakeEsmtpKeyword, out keyword) == false)
+            if (TryMake(TryMakeEsmtpKeyword, out string keyword) == false)
             {
                 return false;
             }
@@ -1321,8 +1462,7 @@ namespace SmtpServer.Protocol
 
             Enumerator.Take();
 
-            string value;
-            if (TryMake(TryMakeEsmtpValue, out value) == false)
+            if (TryMake(TryMakeEsmtpValue, out string value) == false)
             {
                 return false;
             }
@@ -1400,8 +1540,8 @@ namespace SmtpServer.Protocol
             // because the TryMakeBase64Chars method matches tokens, each TextValue token could make
             // up several Base64 encoded "bytes" so we ensure that we have a length divisible by 4
             return base64 != null
-                   && base64.Length % 4 == 0
-                   && new[] {TokenKind.None, TokenKind.Space, TokenKind.NewLine}.Contains(Enumerator.Peek().Kind);
+                && base64.Length % 4 == 0
+                && new[] {TokenKind.None, TokenKind.Space, TokenKind.NewLine}.Contains(Enumerator.Peek().Kind);
         }
 
         /// <summary>
@@ -1472,9 +1612,7 @@ namespace SmtpServer.Protocol
         /// <returns>The complete tokenized text.</returns>
         string CompleteTokenizedText()
         {
-            return String.Concat(Enumerator.Tokens.Select(token => token.Text));
+            return string.Concat(Enumerator.Tokens.Select(token => token.Text));
         }
-
-
     }
 }
