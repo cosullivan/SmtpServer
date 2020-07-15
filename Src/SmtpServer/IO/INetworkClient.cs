@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO.Pipelines;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -56,16 +57,18 @@ namespace SmtpServer.IO
                 throw new ArgumentNullException(nameof(client));
             }
 
-            var found = 0;
-            return await client.ReadAsync(current =>
-            {
-                found = current == sequence[found]
-                    ? found + 1
-                    : current == sequence[0] ? 1 : 0;
+            //var found = 0;
+            //return await client.ReadAsync(current =>
+            //{
+            //    found = current == sequence[found]
+            //        ? found + 1
+            //        : current == sequence[0] ? 1 : 0;
 
-                return found < sequence.Length;
-            },
-            cancellationToken: cancellationToken).ConfigureAwait(false);
+            //    return found < sequence.Length;
+            //},
+            //cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -119,7 +122,9 @@ namespace SmtpServer.IO
                 throw new ArgumentNullException(nameof(client));
             }
 
-            return client.WriteAsync(new [] { new ArraySegment<byte>(buffer) }, cancellationToken);
+            //return client.WriteAsync(new [] { new ArraySegment<byte>(buffer) }, cancellationToken);
+
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -326,8 +331,10 @@ namespace SmtpServer.IO
                 throw new ArgumentNullException(nameof(client));
             }
 
-            await client.WriteLineAsync($"{(int)response.ReplyCode} {response.Message}", cancellationToken).ConfigureAwait(false);
-            await client.FlushAsync(cancellationToken).ConfigureAwait(false);
+            //await client.WriteLineAsync($"{(int)response.ReplyCode} {response.Message}", cancellationToken).ConfigureAwait(false);
+            //await client.FlushAsync(cancellationToken).ConfigureAwait(false);
+
+            throw new NotImplementedException();
         }
     }
 }

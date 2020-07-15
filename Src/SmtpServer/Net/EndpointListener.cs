@@ -53,6 +53,30 @@ namespace SmtpServer.Net
             });
         }
 
+        ///// <summary>
+        ///// Returns a stream from the endpoint.
+        ///// </summary>
+        ///// <param name="context">The session context that the stream is being received for.</param>
+        ///// <param name="cancellationToken">The cancellation token.</param>
+        ///// <returns>The stream from the endpoint.</returns>
+        //public async Task<INetworkStream> GetStreamAsync(ISessionContext context, CancellationToken cancellationToken)
+        //{
+        //    var tcpClient = await _tcpListener.AcceptSocketAsync().WithCancellation(cancellationToken).ConfigureAwait(false);
+        //    cancellationToken.ThrowIfCancellationRequested();
+
+        //    context.Properties.Add(LocalEndPointKey, _tcpListener.LocalEndpoint);
+        //    context.Properties.Add(RemoteEndPointKey, tcpClient.Client.RemoteEndPoint);
+
+        //    var stream = tcpClient.GetStream();
+        //    stream.ReadTimeout = (int)_endpointDefinition.ReadTimeout.TotalMilliseconds;
+
+        //    return new NetworkStream(stream, () =>
+        //    {
+        //        tcpClient.Close();
+        //        tcpClient.Dispose();
+        //    });
+        //}
+
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
