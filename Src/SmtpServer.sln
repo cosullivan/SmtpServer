@@ -11,8 +11,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SmtpServer.Benchmarks", "Sm
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleApp", "SampleApp\SampleApp.csproj", "{63B8D94B-BCAE-473C-B1C9-A46021E5C7EA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmtpServer.Tests", "SmtpServer.Tests\SmtpServer.Tests.csproj", "{2D2D8BB9-7570-4AEA-8046-D0B2C5C4F256}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -31,10 +29,6 @@ Global
 		{63B8D94B-BCAE-473C-B1C9-A46021E5C7EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{63B8D94B-BCAE-473C-B1C9-A46021E5C7EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{63B8D94B-BCAE-473C-B1C9-A46021E5C7EA}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2D2D8BB9-7570-4AEA-8046-D0B2C5C4F256}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2D2D8BB9-7570-4AEA-8046-D0B2C5C4F256}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2D2D8BB9-7570-4AEA-8046-D0B2C5C4F256}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2D2D8BB9-7570-4AEA-8046-D0B2C5C4F256}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

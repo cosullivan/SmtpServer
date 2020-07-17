@@ -1,59 +1,33 @@
 ﻿using System;
-using System.IO;
 using System.IO.Pipelines;
+using System.Threading;
+using System.Threading.Tasks;
+using SmtpServer.Protocol;
 
 namespace SmtpServer.IO
 {
-    public interface INetworkPipe : IDuplexPipe, IDisposable
+    public interface INetworkPipe : IDuplexPipe, IDisposable { }
+
+    public static class NetworkPipeExtensions
     {
-    }
-
-    public sealed class NetworkPipe : INetworkPipe
-    {
-        Stream _stream;
-        bool _disposed;
-
-        public NetworkPipe(Stream stream)
-        {
-            _stream = stream;
-            
-            Input = PipeReader.Create(_stream);
-            Output = PipeWriter.Create(_stream);
-        }
-
         /// <summary>
-        /// Releases the unmanaged resources used by the stream and optionally releases the managed resources.
+        /// Write a reply to the client.
         /// </summary>
-        /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
-        void Dispose(bool disposing)
+        /// <param name="pipe">The pipe to perform the operation on.</param>
+        /// <param name="response">The response to write.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>A task which performs the operation.</returns>
+        public static Task ReplyAsync(this INetworkPipe pipe, SmtpResponse response, CancellationToken cancellationToken)
         {
-            if (_disposed == false)
+            if (pipe == null)
             {
-                if (disposing)
-                {
-                    _stream = null;
-                }
-
-                _disposed = true;
+                throw new ArgumentNullException(nameof(pipe));
             }
+
+            //await client.WriteLineAsync($"{(int)response.ReplyCode} {response.Message}", cancellationToken).ConfigureAwait(false);
+            //await client.FlushAsync(cancellationToken).ConfigureAwait(false);
+
+            throw new NotImplementedException();
         }
-
-        /// <summary>
-        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-        /// </summary>
-        public void Dispose()
-        {
-            Dispose(true);
-        }
-
-        /// <summary>
-        /// Gets the <see cref="T:System.IO.Pipelines.PipeReader" /> half of the duplex pipe.
-        /// </summary>
-        public PipeReader Input { get; }
-
-        /// <summary>
-        /// Gets the <see cref="T:System.IO.Pipelines.PipeWriter" /> half of the duplex pipe.
-        /// </summary>
-        public PipeWriter Output { get; }
     }
 }

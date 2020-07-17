@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.IO;
 
@@ -23,10 +24,12 @@ namespace SmtpServer.Protocol
         /// if the current state is to be maintained.</returns>
         internal override async Task<bool> ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            await context.NetworkClient.ReplyAsync(SmtpResponse.ServiceReady, cancellationToken).ConfigureAwait(false);
-            await context.NetworkClient.Stream.UpgradeAsync(Options.ServerCertificate, Options.SupportedSslProtocols, cancellationToken).ConfigureAwait(false);
+            //await context.NetworkClient.ReplyAsync(SmtpResponse.ServiceReady, cancellationToken).ConfigureAwait(false);
+            //await context.NetworkClient.Stream.UpgradeAsync(Options.ServerCertificate, Options.SupportedSslProtocols, cancellationToken).ConfigureAwait(false);
 
-            return true;
+            //return true;
+
+            throw new NotImplementedException();
         }
     }
 }

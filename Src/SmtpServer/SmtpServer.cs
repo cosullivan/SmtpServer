@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using SmtpServer.IO;
 using SmtpServer.Net;
 
 namespace SmtpServer
@@ -125,7 +124,7 @@ namespace SmtpServer
                     }
                     catch (OperationCanceledException) when (_shutdownTokenSource.Token.IsCancellationRequested == false)
                     {
-                        if (sessionContext.NetworkClient != null)
+                        if (sessionContext.NetworkPipe != null)
                         { 
                             OnSessionCancelled(new SessionEventArgs(sessionContext));
                         }
@@ -146,15 +145,15 @@ namespace SmtpServer
             var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_shutdownTokenSource.Token, cancellationToken);
 
             // wait for a client connection
-            var stream = await endpointListener.GetStreamAsync(sessionContext, cancellationTokenSource.Token).ConfigureAwait(false);
+            sessionContext.NetworkPipe = await endpointListener.GetPipeAsync(sessionContext, cancellationTokenSource.Token).ConfigureAwait(false);
             cancellationTokenSource.Token.ThrowIfCancellationRequested();
-
-            sessionContext.NetworkClient = new NetworkClient(stream, _options.NetworkBufferSize);
 
             if (sessionContext.EndpointDefinition.IsSecure && _options.ServerCertificate != null)
             {
-                await sessionContext.NetworkClient.Stream.UpgradeAsync(_options.ServerCertificate, _options.SupportedSslProtocols, cancellationToken).ConfigureAwait(false);
-                cancellationToken.ThrowIfCancellationRequested();
+                //await sessionContext.NetworkClient.Stream.UpgradeAsync(_options.ServerCertificate, _options.SupportedSslProtocols, cancellationToken).ConfigureAwait(false);
+                //cancellationToken.ThrowIfCancellationRequested();
+
+                throw new NotImplementedException("TODO");
             }
 
             _sessions.Run(sessionContext, cancellationToken);
@@ -190,7 +189,7 @@ namespace SmtpServer
                     {
                         Remove(session);
 
-                        sessionContext.NetworkClient.Dispose();
+                        sessionContext.NetworkPipe.Dispose();
 
                         if (exception != null)
                         {

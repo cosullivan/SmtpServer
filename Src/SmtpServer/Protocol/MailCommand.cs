@@ -42,7 +42,7 @@ namespace SmtpServer.Protocol
             // check against the server supplied maximum
             if (Options.MaxMessageSize > 0 && size > Options.MaxMessageSize)
             {
-                await context.NetworkClient.ReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ConfigureAwait(false);
+                await context.NetworkPipe.ReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ConfigureAwait(false);
                 return false;
             }
 
@@ -52,19 +52,19 @@ namespace SmtpServer.Protocol
                 {
                     case MailboxFilterResult.Yes:
                         context.Transaction.From = Address;
-                        await context.NetworkClient.ReplyAsync(SmtpResponse.Ok, cancellationToken).ConfigureAwait(false);
+                        await context.NetworkPipe.ReplyAsync(SmtpResponse.Ok, cancellationToken).ConfigureAwait(false);
                         return true;
 
                     case MailboxFilterResult.NoTemporarily:
-                        await context.NetworkClient.ReplyAsync(SmtpResponse.MailboxUnavailable, cancellationToken).ConfigureAwait(false);
+                        await context.NetworkPipe.ReplyAsync(SmtpResponse.MailboxUnavailable, cancellationToken).ConfigureAwait(false);
                         return false;
 
                     case MailboxFilterResult.NoPermanently:
-                        await context.NetworkClient.ReplyAsync(SmtpResponse.MailboxNameNotAllowed, cancellationToken).ConfigureAwait(false);
+                        await context.NetworkPipe.ReplyAsync(SmtpResponse.MailboxNameNotAllowed, cancellationToken).ConfigureAwait(false);
                         return false;
 
                     case MailboxFilterResult.SizeLimitExceeded:
-                        await context.NetworkClient.ReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ConfigureAwait(false);
+                        await context.NetworkPipe.ReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ConfigureAwait(false);
                         return false;
                 }
             }
@@ -78,17 +78,12 @@ namespace SmtpServer.Protocol
         /// <returns>The estimated message size that was supplied by the client.</returns>
         int GetMessageSize()
         {
-            if (Parameters.TryGetValue("SIZE", out string value) == false)
+            if (Parameters.TryGetValue("SIZE", out var value) == false)
             {
                 return 0;
             }
 
-            if (Int32.TryParse(value, out int size) == false)
-            {
-                return 0;
-            }
-
-            return size;
+            return int.TryParse(value, out var size) == false ? 0 : size;
         }
 
         /// <summary>

@@ -3,7 +3,6 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.IO;
-using NetworkStream = SmtpServer.IO.NetworkStream;
 
 namespace SmtpServer.Net
 {
@@ -30,12 +29,12 @@ namespace SmtpServer.Net
         }
 
         /// <summary>
-        /// Returns a stream from the endpoint.
+        /// Returns a network pipe to the endpoint.
         /// </summary>
-        /// <param name="context">The session context that the stream is being received for.</param>
+        /// <param name="context">The session context that the pipe is being created for.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The stream from the endpoint.</returns>
-        public async Task<INetworkStream> GetStreamAsync(ISessionContext context, CancellationToken cancellationToken)
+        /// <returns>The network pipe from the endpoint.</returns>
+        public async Task<INetworkPipe> GetPipeAsync(ISessionContext context, CancellationToken cancellationToken)
         {
             var tcpClient = await _tcpListener.AcceptTcpClientAsync().WithCancellation(cancellationToken).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
@@ -46,36 +45,12 @@ namespace SmtpServer.Net
             var stream = tcpClient.GetStream();
             stream.ReadTimeout = (int)_endpointDefinition.ReadTimeout.TotalMilliseconds;
 
-            return new NetworkStream(stream, () =>
+            return new NetworkPipe(stream, () =>
             {
                 tcpClient.Close();
                 tcpClient.Dispose();
             });
         }
-
-        ///// <summary>
-        ///// Returns a stream from the endpoint.
-        ///// </summary>
-        ///// <param name="context">The session context that the stream is being received for.</param>
-        ///// <param name="cancellationToken">The cancellation token.</param>
-        ///// <returns>The stream from the endpoint.</returns>
-        //public async Task<INetworkStream> GetStreamAsync(ISessionContext context, CancellationToken cancellationToken)
-        //{
-        //    var tcpClient = await _tcpListener.AcceptSocketAsync().WithCancellation(cancellationToken).ConfigureAwait(false);
-        //    cancellationToken.ThrowIfCancellationRequested();
-
-        //    context.Properties.Add(LocalEndPointKey, _tcpListener.LocalEndpoint);
-        //    context.Properties.Add(RemoteEndPointKey, tcpClient.Client.RemoteEndPoint);
-
-        //    var stream = tcpClient.GetStream();
-        //    stream.ReadTimeout = (int)_endpointDefinition.ReadTimeout.TotalMilliseconds;
-
-        //    return new NetworkStream(stream, () =>
-        //    {
-        //        tcpClient.Close();
-        //        tcpClient.Dispose();
-        //    });
-        //}
 
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.

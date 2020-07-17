@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Net;
 using SmtpServer.IO;
 using SmtpServer.Protocol;
 
@@ -59,9 +58,9 @@ namespace SmtpServer
         public IEndpointDefinition EndpointDefinition { get; }
 
         /// <summary>
-        /// Gets the text stream to read from and write to.
+        /// Gets the pipeline to read from and write to.
         /// </summary>
-        public INetworkClient NetworkClient { get; internal set; }
+        public INetworkPipe NetworkPipe { get; internal set; }
 
         /// <summary>
         /// Gets the current transaction.
@@ -87,7 +86,5 @@ namespace SmtpServer
         /// Returns a set of propeties for the current session.
         /// </summary>
         public IDictionary<string, object> Properties { get; }
-
-     
     }
 }

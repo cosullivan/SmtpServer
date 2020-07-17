@@ -59,11 +59,16 @@ namespace SampleApp.Examples
                 _endpointListener.Dispose();
             }
 
-            public async Task<INetworkStream> GetStreamAsync(ISessionContext context, CancellationToken cancellationToken)
-            {
-                var stream = await _endpointListener.GetStreamAsync(context, cancellationToken);
+            //public async Task<INetworkStream> GetStreamAsync(ISessionContext context, CancellationToken cancellationToken)
+            //{
+            //    var stream = await _endpointListener.GetStreamAsync(context, cancellationToken);
 
-                return new CustomNetworkStream(stream);
+            //    return new CustomNetworkStream(stream);
+            //}
+
+            public Task<INetworkPipe> GetPipeAsync(ISessionContext context, CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
             }
         }
 

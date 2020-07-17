@@ -27,9 +27,9 @@ namespace SmtpServer
         IEndpointDefinition EndpointDefinition { get; }
 
         /// <summary>
-        /// Gets the text stream to read from and write to.
+        /// Gets the pipeline to read from and write to.
         /// </summary>
-        INetworkClient NetworkClient { get; }
+        INetworkPipe NetworkPipe { get; }
 
         /// <summary>
         /// Returns the authentication context.

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -29,18 +30,20 @@ namespace SmtpServer.Protocol
         /// if the current state is to be maintained.</returns>
         internal override async Task<bool> ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            var greeting = $"{Options.ServerName} Hello {DomainOrAddress}, haven't we met before?";
-            var output = new[] { greeting }.Union(GetExtensions(context)).ToArray();
+            //var greeting = $"{Options.ServerName} Hello {DomainOrAddress}, haven't we met before?";
+            //var output = new[] { greeting }.Union(GetExtensions(context)).ToArray();
 
-            for (var i = 0; i < output.Length - 1; i++)
-            {
-                await context.NetworkClient.WriteLineAsync($"250-{output[i]}", cancellationToken).ConfigureAwait(false);
-            }
+            //for (var i = 0; i < output.Length - 1; i++)
+            //{
+            //    await context.NetworkClient.WriteLineAsync($"250-{output[i]}", cancellationToken).ConfigureAwait(false);
+            //}
 
-            await context.NetworkClient.WriteLineAsync($"250 {output[output.Length - 1]}", cancellationToken).ConfigureAwait(false);
-            await context.NetworkClient.FlushAsync(cancellationToken).ConfigureAwait(false);
+            //await context.NetworkClient.WriteLineAsync($"250 {output[output.Length - 1]}", cancellationToken).ConfigureAwait(false);
+            //await context.NetworkClient.FlushAsync(cancellationToken).ConfigureAwait(false);
 
-            return true;
+            //return true;
+
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -50,24 +53,26 @@ namespace SmtpServer.Protocol
         /// <returns>The list of extensions that are allowed for the session.</returns>
         IEnumerable<string> GetExtensions(SmtpSessionContext session)
         {
-            yield return "PIPELINING";
-            yield return "8BITMIME";
-            yield return "SMTPUTF8";
+            //yield return "PIPELINING";
+            //yield return "8BITMIME";
+            //yield return "SMTPUTF8";
 
-            if (session.NetworkClient.Stream.IsSecure == false && Options.ServerCertificate != null)
-            {
-                yield return "STARTTLS";
-            }
+            //if (session.NetworkClient.Stream.IsSecure == false && Options.ServerCertificate != null)
+            //{
+            //    yield return "STARTTLS";
+            //}
 
-            if (Options.MaxMessageSize > 0)
-            {
-                yield return $"SIZE {Options.MaxMessageSize}";
-            }
+            //if (Options.MaxMessageSize > 0)
+            //{
+            //    yield return $"SIZE {Options.MaxMessageSize}";
+            //}
 
-            if (IsPlainLoginAllowed(session))
-            {
-                yield return "AUTH PLAIN LOGIN";
-            }
+            //if (IsPlainLoginAllowed(session))
+            //{
+            //    yield return "AUTH PLAIN LOGIN";
+            //}
+
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -77,12 +82,14 @@ namespace SmtpServer.Protocol
         /// <returns>true if plain login is allowed for the session, false if not.</returns>
         bool IsPlainLoginAllowed(SmtpSessionContext session)
         {
-            if (Options.UserAuthenticatorFactory == null)
-            {
-                return false;
-            }
+            //if (Options.UserAuthenticatorFactory == null)
+            //{
+            //    return false;
+            //}
 
-            return session.NetworkClient.Stream.IsSecure || session.EndpointDefinition.AllowUnsecureAuthentication;
+            //return session.NetworkClient.Stream.IsSecure || session.EndpointDefinition.AllowUnsecureAuthentication;
+
+            throw new NotImplementedException();
         }
 
         /// <summary>

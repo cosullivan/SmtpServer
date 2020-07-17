@@ -91,7 +91,7 @@ namespace SmtpServer
 
                 if (TryMake(context, text, out var command, out var response) == false)
                 {
-                    await context.NetworkClient.ReplyAsync(CreateErrorResponse(response, retries), cancellationToken).ConfigureAwait(false);
+                    await context.NetworkPipe.ReplyAsync(CreateErrorResponse(response, retries), cancellationToken).ConfigureAwait(false);
                     continue;
                 }
                 
@@ -106,17 +106,17 @@ namespace SmtpServer
                 }
                 catch (SmtpResponseException responseException) when (responseException.IsQuitRequested)
                 {
-                    await context.NetworkClient.ReplyAsync(responseException.Response, cancellationToken).ConfigureAwait(false);
+                    await context.NetworkPipe.ReplyAsync(responseException.Response, cancellationToken).ConfigureAwait(false);
                 }
                 catch (SmtpResponseException responseException)
                 {
                     response = CreateErrorResponse(responseException.Response, retries);
 
-                    await context.NetworkClient.ReplyAsync(response, cancellationToken).ConfigureAwait(false);
+                    await context.NetworkPipe.ReplyAsync(response, cancellationToken).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
-                    await context.NetworkClient.ReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "The session has be cancelled."), CancellationToken.None).ConfigureAwait(false);
+                    await context.NetworkPipe.ReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "The session has be cancelled."), CancellationToken.None).ConfigureAwait(false);
                 }
             }
         }
@@ -129,30 +129,32 @@ namespace SmtpServer
         /// <returns>The input that was received from the client.</returns>
         async Task<IReadOnlyList<ArraySegment<byte>>> ReadCommandInputAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            var timeout = new CancellationTokenSource(_context.ServerOptions.CommandWaitTimeout);
+            throw new NotImplementedException();
 
-            var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token, cancellationToken);
-           
-            try
-            {
-                return await context.NetworkClient.ReadLineAsync(cancellationTokenSource.Token).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                if (timeout.IsCancellationRequested)
-                {
-                    await context.NetworkClient.ReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "Timeout whilst waiting for input."), cancellationToken).ConfigureAwait(false);
-                    return null;
-                }
+            //var timeout = new CancellationTokenSource(_context.ServerOptions.CommandWaitTimeout);
 
-                await context.NetworkClient.ReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "The session has be cancelled."), CancellationToken.None).ConfigureAwait(false);
-                return null;
-            }
-            finally
-            {
-                timeout.Dispose();
-                cancellationTokenSource.Dispose();
-            }
+            //var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token, cancellationToken);
+
+            //try
+            //{
+            //    return await context.NetworkPipe.ReadLineAsync(cancellationTokenSource.Token).ConfigureAwait(false);
+            //}
+            //catch (OperationCanceledException)
+            //{
+            //    if (timeout.IsCancellationRequested)
+            //    {
+            //        await context.NetworkPipe.ReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "Timeout whilst waiting for input."), cancellationToken).ConfigureAwait(false);
+            //        return null;
+            //    }
+
+            //    await context.NetworkPipe.ReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "The session has be cancelled."), CancellationToken.None).ConfigureAwait(false);
+            //    return null;
+            //}
+            //finally
+            //{
+            //    timeout.Dispose();
+            //    cancellationTokenSource.Dispose();
+            //}
         }
 
         /// <summary>
@@ -204,8 +206,10 @@ namespace SmtpServer
         {
             var version = typeof(SmtpSession).GetTypeInfo().Assembly.GetName().Version;
 
-            await _context.NetworkClient.WriteLineAsync($"220 {_context.ServerOptions.ServerName} v{version} ESMTP ready", cancellationToken).ConfigureAwait(false);
-            await _context.NetworkClient.FlushAsync(cancellationToken).ConfigureAwait(false);
+            //await _context.NetworkPipe.WriteLineAsync($"220 {_context.ServerOptions.ServerName} v{version} ESMTP ready", cancellationToken).ConfigureAwait(false);
+            //await _context.NetworkPipe.FlushAsync(cancellationToken).ConfigureAwait(false);
+
+            throw new NotImplementedException();
         }
         
         /// <summary>
