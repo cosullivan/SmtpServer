@@ -1,4 +1,5 @@
 ﻿using BenchmarkDotNet.Configs;
+using BenchmarkDotNet.Diagnosers;
 using BenchmarkDotNet.Running;
 
 namespace SmtpServer.Benchmarks
@@ -18,6 +19,7 @@ namespace SmtpServer.Benchmarks
             //        .With(ConfigOptions.DisableOptimizationsValidator));
 
             var summary = BenchmarkRunner.Run<SmtpParserBenchmarks>();
+            //var summary = BenchmarkRunner.Run<TokenizerBenchmarks>();
         }
     }
 }

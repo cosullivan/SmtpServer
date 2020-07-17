@@ -7,9 +7,10 @@ using SmtpServer.Text;
 
 namespace SmtpServer.Benchmarks
 {
+    [MemoryDiagnoser]
     public class TokenizerBenchmarks
     {
-        static readonly IReadOnlyList<ArraySegment<byte>> Segments = Tokenize("The time has come for all good men\nto go to the aid of their country", "1 23 456 7890", "!@#$%^&*()");
+        static readonly IReadOnlyList<ArraySegment<byte>> Segments = Tokenize("ABCD:EF01:2345:6789:ABCD:EF01:2345:6789");
 
         [Benchmark]
         public void EnumerateTokens()

@@ -6,6 +6,7 @@ using MimeKit;
 
 namespace SmtpServer.Benchmarks
 {
+    [MemoryDiagnoser]
     public class ThroughputBenchmarks
     {
         readonly SmtpServer _smtpServer = new SmtpServer(
