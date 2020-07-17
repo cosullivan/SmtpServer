@@ -1,8 +1,10 @@
-﻿using BenchmarkDotNet.Attributes;
+﻿using System.Net.Mail;
+using BenchmarkDotNet.Attributes;
 using MailKit.Net.Smtp;
 using System.Threading;
 using System.Threading.Tasks;
 using MimeKit;
+using SmtpClient = MailKit.Net.Smtp.SmtpClient;
 
 namespace SmtpServer.Benchmarks
 {

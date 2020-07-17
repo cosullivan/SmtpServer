@@ -1,7 +1,5 @@
-﻿using System.Net;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using SampleApp.Examples;
-using SmtpServer.Tests;
 
 namespace SampleApp
 {
@@ -9,7 +7,7 @@ namespace SampleApp
     {
         static async Task Main(string[] args)
         {
-            ServicePointManager.ServerCertificateValidationCallback = SmtpServerTests.IgnoreCertificateValidationFailureForTestingOnly;
+            //ServicePointManager.ServerCertificateValidationCallback = SmtpServerTests.IgnoreCertificateValidationFailureForTestingOnly;
 
             SimpleExample.Run();
         }
