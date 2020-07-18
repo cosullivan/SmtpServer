@@ -20,72 +20,70 @@ namespace SmtpServer.Protocol
         {
             _context = context;
             _context.SessionAuthenticated += OnSessionAuthenticated;
-            //_stateTable = new StateTable
-            //{
-            //    new State(SmtpState.Initialized)
-            //    {
-            //        { NoopCommand.Command, TryMakeNoop },
-            //        { RsetCommand.Command, TryMakeRset },
-            //        { QuitCommand.Command, TryMakeQuit },
-            //        { ProxyCommand.Command, TryMakeProxy },
-            //        { HeloCommand.Command, TryMakeHelo, c => c.NetworkClient.Stream.IsSecure ? SmtpState.WaitingForMailSecure : SmtpState.WaitingForMail },
-            //        { EhloCommand.Command, TryMakeEhlo, c => c.NetworkClient.Stream.IsSecure ? SmtpState.WaitingForMailSecure : SmtpState.WaitingForMail },
-            //    },
-            //    new State(SmtpState.WaitingForMail)
-            //    {
-            //        { NoopCommand.Command, TryMakeNoop },
-            //        { RsetCommand.Command, TryMakeRset },
-            //        { QuitCommand.Command, TryMakeQuit },
-            //        { HeloCommand.Command, TryMakeHelo, SmtpState.WaitingForMail },
-            //        { EhloCommand.Command, TryMakeEhlo, SmtpState.WaitingForMail },
-            //        { MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction }
-            //    },
-            //    new State(SmtpState.WaitingForMailSecure)
-            //    {
-            //        { NoopCommand.Command, TryMakeNoop },
-            //        { RsetCommand.Command, TryMakeRset },
-            //        { QuitCommand.Command, TryMakeQuit },
-            //        { AuthCommand.Command, TryMakeAuth },
-            //        { HeloCommand.Command, TryMakeHelo, SmtpState.WaitingForMailSecure },
-            //        { EhloCommand.Command, TryMakeEhlo, SmtpState.WaitingForMailSecure },
-            //        { MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction }
-            //    },
-            //    new State(SmtpState.WithinTransaction)
-            //    {
-            //        { NoopCommand.Command, TryMakeNoop },
-            //        { RsetCommand.Command, TryMakeRset, c => c.NetworkClient.Stream.IsSecure ? SmtpState.WaitingForMailSecure : SmtpState.WaitingForMail },
-            //        { QuitCommand.Command, TryMakeQuit },
-            //        { RcptCommand.Command, TryMakeRcpt, SmtpState.CanAcceptData },
-            //    },
-            //    new State(SmtpState.CanAcceptData)
-            //    {
-            //        { NoopCommand.Command, TryMakeNoop },
-            //        { RsetCommand.Command, TryMakeRset, c => c.NetworkClient.Stream.IsSecure ? SmtpState.WaitingForMailSecure : SmtpState.WaitingForMail },
-            //        { QuitCommand.Command, TryMakeQuit },
-            //        { RcptCommand.Command, TryMakeRcpt },
-            //        { DataCommand.Command, TryMakeData, SmtpState.WaitingForMail },
-            //    }
-            //};
+            _stateTable = new StateTable
+            {
+                new State(SmtpState.Initialized)
+                {
+                    { NoopCommand.Command, TryMakeNoop },
+                    { RsetCommand.Command, TryMakeRset },
+                    { QuitCommand.Command, TryMakeQuit },
+                    { ProxyCommand.Command, TryMakeProxy },
+                    { HeloCommand.Command, TryMakeHelo, c => c.NetworkPipe.IsSecure ? SmtpState.WaitingForMailSecure : SmtpState.WaitingForMail },
+                    { EhloCommand.Command, TryMakeEhlo, c => c.NetworkPipe.IsSecure ? SmtpState.WaitingForMailSecure : SmtpState.WaitingForMail },
+                },
+                new State(SmtpState.WaitingForMail)
+                {
+                    { NoopCommand.Command, TryMakeNoop },
+                    { RsetCommand.Command, TryMakeRset },
+                    { QuitCommand.Command, TryMakeQuit },
+                    { HeloCommand.Command, TryMakeHelo, SmtpState.WaitingForMail },
+                    { EhloCommand.Command, TryMakeEhlo, SmtpState.WaitingForMail },
+                    { MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction }
+                },
+                new State(SmtpState.WaitingForMailSecure)
+                {
+                    { NoopCommand.Command, TryMakeNoop },
+                    { RsetCommand.Command, TryMakeRset },
+                    { QuitCommand.Command, TryMakeQuit },
+                    { AuthCommand.Command, TryMakeAuth },
+                    { HeloCommand.Command, TryMakeHelo, SmtpState.WaitingForMailSecure },
+                    { EhloCommand.Command, TryMakeEhlo, SmtpState.WaitingForMailSecure },
+                    { MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction }
+                },
+                new State(SmtpState.WithinTransaction)
+                {
+                    { NoopCommand.Command, TryMakeNoop },
+                    { RsetCommand.Command, TryMakeRset, c => c.NetworkPipe.IsSecure ? SmtpState.WaitingForMailSecure : SmtpState.WaitingForMail },
+                    { QuitCommand.Command, TryMakeQuit },
+                    { RcptCommand.Command, TryMakeRcpt, SmtpState.CanAcceptData },
+                },
+                new State(SmtpState.CanAcceptData)
+                {
+                    { NoopCommand.Command, TryMakeNoop },
+                    { RsetCommand.Command, TryMakeRset, c => c.NetworkPipe.IsSecure ? SmtpState.WaitingForMailSecure : SmtpState.WaitingForMail },
+                    { QuitCommand.Command, TryMakeQuit },
+                    { RcptCommand.Command, TryMakeRcpt },
+                    { DataCommand.Command, TryMakeData, SmtpState.WaitingForMail },
+                }
+            };
 
-            throw new NotImplementedException();
+            if (context.EndpointDefinition.AllowUnsecureAuthentication)
+            {
+                WaitingForMail.Add(AuthCommand.Command, TryMakeAuth);
+            }
 
-            //if (context.EndpointDefinition.AllowUnsecureAuthentication)
-            //{
-            //    WaitingForMail.Add(AuthCommand.Command, TryMakeAuth);
-            //}
+            if (context.EndpointDefinition.AuthenticationRequired)
+            {
+                WaitingForMail.Replace(MailCommand.Command, MakeResponse(SmtpResponse.AuthenticationRequired));
+                WaitingForMailSecure.Replace(MailCommand.Command, MakeResponse(SmtpResponse.AuthenticationRequired));
+            }
 
-            //if (context.EndpointDefinition.AuthenticationRequired)
-            //{
-            //    WaitingForMail.Replace(MailCommand.Command, MakeResponse(SmtpResponse.AuthenticationRequired));
-            //    WaitingForMailSecure.Replace(MailCommand.Command, MakeResponse(SmtpResponse.AuthenticationRequired));
-            //}
+            if (context.ServerOptions.ServerCertificate != null && context.NetworkPipe.IsSecure == false)
+            {
+                WaitingForMail.Add(StartTlsCommand.Command, TryMakeStartTls, SmtpState.WaitingForMailSecure);
+            }
 
-            //if (context.ServerOptions.ServerCertificate != null && context.NetworkClient.Stream.IsSecure == false)
-            //{
-            //    WaitingForMail.Add(StartTlsCommand.Command, TryMakeStartTls, SmtpState.WaitingForMailSecure);
-            //}
-
-            //_stateTable.Initialize(SmtpState.Initialized);
+            _stateTable.Initialize(SmtpState.Initialized);
         }
 
         /// <summary>

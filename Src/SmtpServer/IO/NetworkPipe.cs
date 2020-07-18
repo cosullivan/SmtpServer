@@ -1,6 +1,11 @@
 ﻿using System;
 using System.IO;
 using System.IO.Pipelines;
+using System.Net.Security;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SmtpServer.IO
 {
@@ -20,6 +25,25 @@ namespace SmtpServer.IO
             _stream = stream;
             _disposeAction = disposeAction;
 
+            Input = PipeReader.Create(_stream);
+            Output = PipeWriter.Create(_stream);
+        }
+
+        /// <summary>
+        /// Upgrade to a secure pipeline.
+        /// </summary>
+        /// <param name="certificate">The X509Certificate used to authenticate the server.</param>
+        /// <param name="protocols">The value that represents the protocol used for authentication.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>A task that asynchronously performs the operation.</returns>
+        public async Task UpgradeAsync(X509Certificate certificate, SslProtocols protocols, CancellationToken cancellationToken = default)
+        {
+            var stream = new SslStream(_stream, true);
+
+            await stream.AuthenticateAsServerAsync(certificate, false, protocols, true).ConfigureAwait(false);
+
+            _stream = stream;
+            
             Input = PipeReader.Create(_stream);
             Output = PipeWriter.Create(_stream);
         }
@@ -53,11 +77,16 @@ namespace SmtpServer.IO
         /// <summary>
         /// Gets the <see cref="T:System.IO.Pipelines.PipeReader" /> half of the duplex pipe.
         /// </summary>
-        public PipeReader Input { get; }
+        public PipeReader Input { get; private set; }
 
         /// <summary>
         /// Gets the <see cref="T:System.IO.Pipelines.PipeWriter" /> half of the duplex pipe.
         /// </summary>
-        public PipeWriter Output { get; }
+        public PipeWriter Output { get; private set; }
+
+        /// <summary>
+        /// Returns a value indicating whether or not the current pipeline is secure.
+        /// </summary>
+        public bool IsSecure => _stream is SslStream;
     }
 }
