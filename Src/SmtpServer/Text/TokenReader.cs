@@ -5,21 +5,81 @@ namespace SmtpServer.Text
 {
     public ref struct TokenReader
     {
-        readonly ReadOnlySequence<char> _buffer;
+        /// <summary>
+        /// Delegate for the TryMake function.
+        /// </summary>
+        /// <returns>true if the make operation was a success, false if not.</returns>
+        public delegate bool TryMakeDelegate(ref TokenReader reader);
+
+        readonly ReadOnlySequence<byte> _buffer;
         Token _peek;
         bool _hasPeeked;
-        SequencePosition _position;
+        SequencePosition _spanPosition;
+        ReadOnlySpan<byte> _span;
+        int _spanIndex;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="buffer">The buffer to read from.</param>
-        public TokenReader(ReadOnlySequence<char> buffer)
+        public TokenReader(ReadOnlySequence<byte> buffer)
         {
             _buffer = buffer;
-            _position = buffer.GetPosition(0);
+            _spanPosition = buffer.GetPosition(0);
+            _span = buffer.First.Span;
+            _spanIndex = 0;
             _peek = default;
             _hasPeeked = false;
+        }
+
+        /// <summary>
+        /// Try to make a callback in a transactional way.
+        /// </summary>
+        /// <param name="delegate">The callback to perform the match.</param>
+        /// <returns>true if the match could be made, false if not.</returns>
+        public bool TryMake(TryMakeDelegate @delegate)
+        {
+            if (_buffer.IsSingleSegment)
+            {
+                var index = _spanIndex;
+
+                if (@delegate(ref this) == false)
+                {
+                    _spanIndex = index;
+                    return false;
+                }
+
+                return true;
+            }
+
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Try to make a callback in a transactional way.
+        /// </summary>
+        /// <param name="delegate">The callback to perform the match.</param>
+        /// <param name="buffer">The buffer that was made.</param>
+        /// <returns>true if the match could be made, false if not.</returns>
+        public bool TryMake(TryMakeDelegate @delegate, out ReadOnlySequence<byte> buffer)
+        {
+            buffer = default;
+
+            if (_buffer.IsSingleSegment)
+            {
+                var index = _spanIndex;
+
+                if (@delegate(ref this) == false)
+                {
+                    _spanIndex = index;
+                    return false;
+                }
+
+                buffer = _buffer.Slice(index, _spanIndex - index);
+                return true;
+            }
+
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -30,7 +90,7 @@ namespace SmtpServer.Text
         {
             if (_hasPeeked == false)
             {
-                _peek = ConsumeToken();
+                _peek = ReadToken();
                 _hasPeeked = true;
             }
 
@@ -46,23 +106,40 @@ namespace SmtpServer.Text
             if (_hasPeeked)
             {
                 _hasPeeked = false;
+                _spanIndex += _peek.Text.Length;
+
                 return _peek;
             }
 
-            return ConsumeToken();
+            var token = ReadToken();
+
+            _spanIndex += token.Text.Length;
+
+            return token;
         }
 
         /// <summary>
-        /// Consume the next token from the buffer.
+        /// Skip the tokens.
         /// </summary>
-        /// <returns>The token that was read and consumed from the buffer.</returns>
-        Token ConsumeToken()
+        /// <param name="kind">The token kind to skip.</param>
+        public void Skip(TokenKind kind)
         {
-            var token = ReadToken();
+            while (Peek().Kind == kind)
+            {
+                Take();
+            }
+        }
 
-            _position = _buffer.GetPosition(token.Text.Length, _position);
-
-            return token;
+        /// <summary>
+        /// Skip the tokens.
+        /// </summary>
+        /// <param name="predicate">The predicate to determine whether to skip the tokens.</param>
+        public void Skip(Func<TokenKind, bool> predicate)
+        {
+            while (predicate(Peek().Kind))
+            {
+                Take();
+            }
         }
 
         /// <summary>
@@ -71,62 +148,99 @@ namespace SmtpServer.Text
         /// <returns>The token that was read from the sequence.</returns>
         Token ReadToken()
         {
-            if (_position.Equals(_buffer.End) || _buffer.TryGet(ref _position, out var memory, false) == false)
+            if (_spanIndex >= _span.Length && MoveToNextSpan() == false)
             {
                 return default;
             }
 
-            var span = memory.Span;
-            switch (span[0])
+            switch (_span[_spanIndex])
             {
                 case { } ch when Token.IsText(ch):
-                    return new Token(TokenKind.Text, ReadWhile(ref span, Token.IsText));
+                    return new Token(TokenKind.Text, ReadWhile(Token.IsText));
 
                 case { } ch when Token.IsNumber(ch):
-                    return new Token(TokenKind.Number, ReadWhile(ref span, Token.IsNumber));
+                    return new Token(TokenKind.Number, ReadWhile(Token.IsNumber));
 
                 case { } ch when Token.IsWhiteSpace(ch):
-                    return new Token(TokenKind.Space, ReadOne(ref span));
+                    return new Token(TokenKind.Space, ReadOne());
+
+                case { } ch when ch == '-':
+                    return new Token(TokenKind.Hyphen, ReadOne());
+
+                case { } ch when ch == '.':
+                    return new Token(TokenKind.Period, ReadOne());
             }
 
-            return new Token(TokenKind.Other, ReadOne(ref span));
+            return new Token(TokenKind.Other, ReadOne());
         }
 
-        static ReadOnlySpan<char> ReadWhile(ref ReadOnlySpan<char> span, Func<char, bool> predicate)
+        ///// <summary>
+        ///// Consume the token.
+        ///// </summary>
+        ///// <param name="token">The token to consume.</param>
+        ///// <returns>The token that was consumed.</returns>
+        //Token Consume(Token token)
+        //{
+        //    _spanIndex += token.Text.Length;
+
+        //    return token;
+        //}
+
+        /// <summary>
+        /// Move to the next span in the sequence.
+        /// </summary>
+        /// <returns>true if the reader could be moved to the next span, false if not.</returns>
+        bool MoveToNextSpan()
+        {
+            if (_buffer.IsSingleSegment)
+            {
+                return false;
+            }
+
+            throw new NotImplementedException();
+
+            ////var position = _buffer.GetPosition(_currentSpan.Length, _currentSpanPosition);
+            //var position = _currentSpanPosition;
+            //while (_buffer.TryGet(ref position, out var memory, advance: true))
+            //{
+            //    _currentSpanPosition = position;
+
+            //    if (memory.Length > 0)
+            //    {
+            //        _currentSpan = memory.Span;
+            //        _currentSpanIndex = 0;
+
+            //        return true;
+            //    }
+            //}
+
+            //return false;
+        }
+
+        /// <summary>
+        /// Reads a continual sequence whilst the predicate is matched.
+        /// </summary>
+        /// <param name="predicate">The predicate to match against the characters in the buffer.</param>
+        /// <returns>The span that was matched.</returns>
+        ReadOnlySpan<byte> ReadWhile(Func<byte, bool> predicate)
         {
             var count = 0;
-            while (count < span.Length && predicate(span[count]))
+
+            while (_spanIndex + count < _span.Length && predicate(_span[_spanIndex + count]))
             {
                 count++;
             }
 
-            return span.Slice(0, count);
+            return _span.Slice(_spanIndex, count);
         }
 
-        static ReadOnlySpan<char> ReadOne(ref ReadOnlySpan<char> span)
+        /// <summary>
+        /// Read a single character from the span.
+        /// </summary>
+        /// <returns>The span that was matched.</returns>
+        ReadOnlySpan<byte> ReadOne()
         {
-            return span.Slice(0, 1);
+            return _span.Slice(_spanIndex, 1);
         }
-
-        //public long Checkpoint()
-        //{
-        //    return _reader.Consumed;
-        //}
-
-        //public void Restore(long checkpoint)
-        //{
-        //    var count = _reader.Consumed - checkpoint;
-
-        //    if (count > 0)
-        //    {
-        //        _reader.Rewind(count);
-        //        _hasPeeked = false;
-        //    }
-        //}
-
-        //public ReadOnlySequence<char> Slice(long from, long to)
-        //{
-        //    return _reader.Sequence.Slice(from, to - from);
-        //}
     }
 }

@@ -23,13 +23,18 @@
         Space = 3,
 
         /// <summary>
-        /// A new line token, defined as CRLF.
+        /// A hyphen character ('-').
         /// </summary>
-        NewLine = 4,
+        Hyphen = 4,
+        
+        /// <summary>
+        /// A period character ('.');
+        /// </summary>
+        Period = 5,
 
         /// <summary>
         /// Unknown.
         /// </summary>
-        Other = 5,
+        Other = 99,
     }
 }

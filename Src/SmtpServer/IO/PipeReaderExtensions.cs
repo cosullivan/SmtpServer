@@ -28,7 +28,7 @@ namespace SmtpServer.IO
             }
 
             var read = await reader.ReadAsync(cancellationToken);
-
+            
             while (read.IsCanceled == false && read.IsCompleted == false && read.Buffer.IsEmpty == false)
             {
                 if (read.Buffer.TryFind(sequence, out var head, out var tail))

@@ -2,13 +2,13 @@
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
-using SmtpServer.Text;
+using SmtpServer.Protocol;
 
-namespace SmtpServer.Protocol
+namespace SmtpServer.StateMachine
 {
     internal class SmtpStateMachine 
     {
-        delegate bool TryMakeDelegate(out SmtpCommand command, out SmtpResponse errorResponse);
+        delegate bool TryMakeDelegate(SmtpParser parser, out SmtpCommand command, out SmtpResponse errorResponse);
 
         readonly SmtpSessionContext _context;
         readonly StateTable _stateTable;
@@ -23,6 +23,11 @@ namespace SmtpServer.Protocol
             _context.SessionAuthenticated += OnSessionAuthenticated;
             _stateTable = new StateTable
             {
+                new State(SmtpState.Initialized)
+                {
+                    //{ EhloCommand.Command, EhloCommand.TryMake, c => c.Pipe.IsSecure ? SmtpState.WaitingForMailSecure : SmtpState.WaitingForMail },
+                    EhloCommandHandler.Instance
+                }
                 //new State(SmtpState.Initialized)
                 //{
                 //    { NoopCommand.Command, TryMakeNoop },
@@ -138,12 +143,11 @@ namespace SmtpServer.Protocol
         /// <summary>
         /// Advances the enumerator to the next command in the stream.
         /// </summary>
-        /// <param name="context">The SMTP session context to allow for session based state transitions.</param>
         /// <param name="buffer">The buffer to make the command from.</param>
         /// <param name="command">The command that was found.</param>
         /// <param name="errorResponse">The error response that indicates why a command could not be accepted.</param>
         /// <returns>true if a valid command was found, false if not.</returns>
-        public bool TryMake(SmtpSessionContext context, ReadOnlySequence<char> buffer, out SmtpCommand command, out SmtpResponse errorResponse)
+        public bool TryMake(ReadOnlySequence<char> buffer, out SmtpCommand command, out SmtpResponse errorResponse)
         {
             //return _stateTable.TryMake(context, tokenEnumerator, out command, out errorResponse);
 
@@ -386,6 +390,92 @@ namespace SmtpServer.Protocol
 
         #region State
 
+        //class State : IEnumerable
+        //{
+        //    /// <summary>
+        //    /// Constructor.
+        //    /// </summary>
+        //    /// <param name="stateId">The ID of the state.</param>
+        //    public State(SmtpState stateId)
+        //    {
+        //        StateId = stateId;
+        //        Transitions = new Dictionary<string, StateTransition>(StringComparer.OrdinalIgnoreCase);
+        //    }
+
+        //    /// <summary>
+        //    /// Add a state action.
+        //    /// </summary>
+        //    /// <param name="command">The name of the SMTP command.</param>
+        //    /// <param name="tryMake">The function callback to create the command.</param>
+        //    public void Add(string command, TryMakeDelegate tryMake)
+        //    {
+        //        Add(command, tryMake, context => StateId);
+        //    }
+
+        //    /// <summary>
+        //    /// Add a state action.
+        //    /// </summary>
+        //    /// <param name="command">The name of the SMTP command.</param>
+        //    /// <param name="tryMake">The function callback to create the command.</param>
+        //    /// <param name="transition">The state to transition to.</param>
+        //    public void Add(string command, TryMakeDelegate tryMake, SmtpState transition)
+        //    {
+        //        Add(command, tryMake, context => transition);
+        //    }
+
+        //    /// <summary>
+        //    /// Add a state action.
+        //    /// </summary>
+        //    /// <param name="command">The name of the SMTP command.</param>
+        //    /// <param name="tryMake">The function callback to create the command.</param>
+        //    /// <param name="transition">The function to determine the new state.</param>
+        //    public void Add(string command, TryMakeDelegate tryMake, Func<SmtpSessionContext, SmtpState> transition)
+        //    {
+        //        Transitions.Add(command, new StateTransition(tryMake, transition));
+        //    }
+
+        //    /// <summary>
+        //    /// Add a state action.
+        //    /// </summary>
+        //    /// <param name="command">The name of the SMTP command.</param>
+        //    /// <param name="tryMake">The function callback to create the command.</param>
+        //    /// <param name="transitionTo">The state to transition to.</param>
+        //    public void Replace(string command, TryMakeDelegate tryMake, SmtpState? transitionTo = null)
+        //    {
+        //        Remove(command);
+        //        Add(command, tryMake, transitionTo ?? StateId);
+        //    }
+
+        //    /// <summary>
+        //    /// Clear the command from the current state.
+        //    /// </summary>
+        //    /// <param name="command">The command to clear.</param>
+        //    public void Remove(string command)
+        //    {
+        //        Transitions.Remove(command);
+        //    }
+
+        //    /// <summary>
+        //    /// Returns an enumerator that iterates through a collection.
+        //    /// </summary>
+        //    /// <returns>An <see cref="T:System.Collections.IEnumerator"/> object that can be used to iterate through the collection.</returns>
+        //    IEnumerator IEnumerable.GetEnumerator()
+        //    {
+        //        // this is just here for the collection initializer syntax to work
+        //        throw new NotImplementedException();
+        //    }
+
+        //    /// <summary>
+        //    /// Gets ID of the state.
+        //    /// </summary>
+        //    public SmtpState StateId { get; }
+
+        //    /// <summary>
+        //    /// Gets the actions that are available to the state.
+        //    /// </summary>
+        //    public Dictionary<string, StateTransition> Transitions { get; }
+        //}
+
         class State : IEnumerable
         {
             /// <summary>
@@ -395,61 +485,59 @@ namespace SmtpServer.Protocol
             public State(SmtpState stateId)
             {
                 StateId = stateId;
-                Transitions = new Dictionary<string, StateTransition>(StringComparer.OrdinalIgnoreCase);
-            }
-            
-            /// <summary>
-            /// Add a state action.
-            /// </summary>
-            /// <param name="command">The name of the SMTP command.</param>
-            /// <param name="tryMake">The function callback to create the command.</param>
-            public void Add(string command, TryMakeDelegate tryMake)
-            {
-                Add(command, tryMake, context => StateId);
+                Transitions = new List<StateTransition>();
             }
 
             /// <summary>
             /// Add a state action.
             /// </summary>
-            /// <param name="command">The name of the SMTP command.</param>
-            /// <param name="tryMake">The function callback to create the command.</param>
-            /// <param name="transition">The state to transition to.</param>
-            public void Add(string command, TryMakeDelegate tryMake, SmtpState transition)
+            /// <param name="handler">The command handler to run for the state.</param>
+            public void Add(CommandHandler handler)
             {
-                Add(command, tryMake, context => transition);
+                Add(handler, context => StateId);
             }
+
+            ///// <summary>
+            ///// Add a state action.
+            ///// </summary>
+            ///// <param name="tryMake">The function callback to create the command.</param>
+            ///// <param name="transition">The state to transition to.</param>
+            //public void Add(TryMakeDelegate tryMake, SmtpState transition)
+            //{
+            //    Add(tryMake, context => transition);
+            //}
 
             /// <summary>
             /// Add a state action.
             /// </summary>
-            /// <param name="command">The name of the SMTP command.</param>
-            /// <param name="tryMake">The function callback to create the command.</param>
+            /// <param name="handler">The command handler to run for the state.</param>
             /// <param name="transition">The function to determine the new state.</param>
-            public void Add(string command, TryMakeDelegate tryMake, Func<SmtpSessionContext, SmtpState> transition)
+            public void Add(CommandHandler handler, Func<SmtpSessionContext, SmtpState> transition)
             {
-                Transitions.Add(command, new StateTransition(tryMake, transition));
+                Transitions.Add(new StateTransition(handler, transition));
             }
 
             /// <summary>
             /// Add a state action.
             /// </summary>
-            /// <param name="command">The name of the SMTP command.</param>
             /// <param name="tryMake">The function callback to create the command.</param>
             /// <param name="transitionTo">The state to transition to.</param>
-            public void Replace(string command, TryMakeDelegate tryMake, SmtpState? transitionTo = null)
+            public void Replace(TryMakeDelegate tryMake, SmtpState? transitionTo = null)
             {
-                Remove(command);
-                Add(command, tryMake, transitionTo ?? StateId);
+                throw new NotImplementedException();
+
+                //Remove(command);
+                //Add(command, tryMake, transitionTo ?? StateId);
             }
 
-            /// <summary>
-            /// Clear the command from the current state.
-            /// </summary>
-            /// <param name="command">The command to clear.</param>
-            public void Remove(string command)
-            {
-                Transitions.Remove(command);
-            }
+            ///// <summary>
+            ///// Clear the command from the current state.
+            ///// </summary>
+            ///// <param name="command">The command to clear.</param>
+            //public void Remove(string command)
+            //{
+            //    Transitions.Remove(command);
+            //}
 
             /// <summary>
             /// Returns an enumerator that iterates through a collection.
@@ -469,7 +557,7 @@ namespace SmtpServer.Protocol
             /// <summary>
             /// Gets the actions that are available to the state.
             /// </summary>
-            public Dictionary<string, StateTransition> Transitions { get; }
+            public IList<StateTransition> Transitions { get; }
         }
 
         #endregion
@@ -481,18 +569,18 @@ namespace SmtpServer.Protocol
             /// <summary>
             /// Constructor.
             /// </summary>
-            /// <param name="delegate">The delegate to match the input.</param>
+            /// <param name="command">The command to match the input.</param>
             /// <param name="transition">The transition function to move from the previous state to the new state.</param>
-            public StateTransition(TryMakeDelegate @delegate, Func<SmtpSessionContext, SmtpState> transition)
+            public StateTransition(CommandHandler command, Func<SmtpSessionContext, SmtpState> transition)
             {
-                Delegate = @delegate;
+                Command = command;
                 Transition = transition;
             }
 
             /// <summary>
-            /// The delegate to match the input.
+            /// The command to match the input.
             /// </summary>
-            public TryMakeDelegate Delegate { get; }
+            public CommandHandler Command { get; }
 
             /// <summary>
             /// The transition function to move from the previous state to the new state.

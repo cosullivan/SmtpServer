@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Buffers;
+using System.Text;
 using System.Threading.Tasks;
 using SampleApp.Examples;
+using SmtpServer;
+using SmtpServer.Protocol;
 using SmtpServer.Text;
 
 namespace SampleApp
@@ -14,13 +17,19 @@ namespace SampleApp
 
             //SimpleExample.Run();
 
-            var text = new ReadOnlySequence<char>("The time has come for all good men to go to the aid of their country.".ToCharArray());
+            var text = new ReadOnlySequence<byte>(Encoding.ASCII.GetBytes("EHLO abc-1-def.mail.com"));
 
             var reader = new TokenReader(text);
-            while (reader.Peek() != default)
-            {
-                Console.WriteLine(reader.Take().ToString());
-            }
+            //while (reader.Peek() != default)
+            //{
+            //    var token = reader.Take();
+
+            //    Console.WriteLine("[{0}] {1}", token.Kind, Encoding.ASCII.GetString(token.Text));
+            //}
+
+            var parser = new SmtpParser(new SmtpServerOptionsBuilder().Build());
+            Console.WriteLine(parser.TryMakeEhlo(ref reader, out var command, out var errorResponse));
+            Console.WriteLine("Command={0} ErrorResponse={1}", command, errorResponse);
         }
     }
 }

@@ -7,6 +7,7 @@ using System.Reflection;
 using SmtpServer.IO;
 using SmtpServer.Text;
 using System.IO.Pipelines;
+using SmtpServer.StateMachine;
 
 namespace SmtpServer
 {
@@ -126,20 +127,23 @@ namespace SmtpServer
 
         ValueTask<SmtpCommand> ReadCommandAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            return context.Pipe.Input.ReadLineAsync<SmtpCommand>(
+            return context.Pipe.Input.ReadLineAsync(
                 buffer =>
                 {
-                    //_stateMachine.TryMake(context, default, out var command, out var errorResponse);
+                    var reader = new TokenReader(buffer);
 
-                    //if (errorResponse != null)
+                    var parser = new SmtpParser(context.ServerOptions);
+                    if (parser.TryMakeEhlo(ref reader, out var command, out var errorResponse) == false)
+                    {
+                        throw new SmtpResponseException(errorResponse);
+                    }
+
+                    //if (_stateMachine.Accept(command) == false)
                     //{
-                    //    throw new SmtpResponseException(errorResponse);
+                    //    // TODO
                     //}
 
-                    //return command;
-
-
-                    throw new SmtpResponseException(null);
+                    return command;
                 }, 
                 cancellationToken);
         }

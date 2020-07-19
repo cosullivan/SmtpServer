@@ -7,41 +7,12 @@ namespace SmtpServer.Text
     [DebuggerDisplay("[{Kind}] {Text}")]
     public readonly ref struct Token
     {
-        ///// <summary>
-        ///// Constructor.
-        ///// </summary>
-        ///// <param name="kind">The token kind.</param>
-        ///// <param name="ch">The character that the token represents.</param>
-        //public Token(TokenKind kind, char ch)
-        //{
-        //    Kind = kind;
-        //    Text = new ReadOnlySequence<char>(new[] { ch });
-        //}
-
-        ///// <summary>
-        ///// Constructor.
-        ///// </summary>
-        ///// <param name="kind">The token kind.</param>
-        ///// <param name="text">The text that the token represents.</param>
-        //public Token(TokenKind kind, string text) : this(kind, new ReadOnlySequence<char>(text.ToCharArray())) { }
-
-        ///// <summary>
-        ///// Constructor.
-        ///// </summary>
-        ///// <param name="kind">The token kind.</param>
-        ///// <param name="text">The text that the token represents.</param>
-        //public Token(TokenKind kind, ReadOnlySequence<char> text)
-        //{
-        //    Kind = kind;
-        //    Text = text;
-        //}
-
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="kind">The token kind.</param>
         /// <param name="text">The text that the token represents.</param>
-        public Token(TokenKind kind, ReadOnlySpan<char> text)
+        public Token(TokenKind kind, ReadOnlySpan<byte> text = default)
         {
             Kind = kind;
             Text = text;
@@ -53,7 +24,7 @@ namespace SmtpServer.Text
         /// <param name="value">The value to test.</param>
         /// <returns>true if the value is considered a text character, false if not.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsText(char value)
+        public static bool IsText(byte value)
         {
             return IsBetween(value, 'a', 'z') || IsBetween(value, 'A', 'Z') || IsUtf8(value);
         }
@@ -64,7 +35,7 @@ namespace SmtpServer.Text
         /// <param name="value">The value to test.</param>
         /// <returns>true if the value is considered a UTF-8 character, false if not.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsUtf8(char value)
+        public static bool IsUtf8(byte value)
         {
             return value >= 0x80;
         }
@@ -75,7 +46,7 @@ namespace SmtpServer.Text
         /// <param name="value">The value to test.</param>
         /// <returns>true if the value is considered a digit character, false if not.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsNumber(char value)
+        public static bool IsNumber(byte value)
         {
             return IsBetween(value, '0', '9');
         }
@@ -86,7 +57,7 @@ namespace SmtpServer.Text
         /// <param name="value">The value to test.</param>
         /// <returns>true if the value is considered a whitespace character, false if not.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsWhiteSpace(char value)
+        public static bool IsWhiteSpace(byte value)
         {
             return value == 32 || IsBetween(value, 9, 13);
         }
@@ -99,7 +70,7 @@ namespace SmtpServer.Text
         /// <param name="high">The higher value of the range.</param>
         /// <returns>true if the value is between the range, false if not.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool IsBetween(char value, char low, char high)
+        static bool IsBetween(byte value, char low, char high)
         {
             return value >= low && value <= high;
         }
@@ -112,7 +83,7 @@ namespace SmtpServer.Text
         /// <param name="high">The higher value of the range.</param>
         /// <returns>true if the value is between the range, false if not.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool IsBetween(char value, byte low, byte high)
+        static bool IsBetween(byte value, byte low, byte high)
         {
             return value >= low && value <= high;
         }
@@ -124,8 +95,9 @@ namespace SmtpServer.Text
         /// <returns>true if <paramref name="other"/> and this instance are the same type and represent the same value; otherwise, false. </returns>
         public bool Equals(Token other)
         {
-            //return Kind == other.Kind && Text.ToString().Equals(other.Text.ToString(), StringComparison.OrdinalIgnoreCase);
-            return Kind == other.Kind && Text.Equals(other.Text, StringComparison.OrdinalIgnoreCase);
+            // TODO: need a faster comaprison implementation
+            return Kind == other.Kind && Text.ToString().Equals(other.Text.ToString(), StringComparison.OrdinalIgnoreCase);
+            //return Kind == other.Kind && Text.Equals(other.Text, StringComparison.OrdinalIgnoreCase);
         }
 
         ///// <summary>
@@ -177,6 +149,28 @@ namespace SmtpServer.Text
             return !left.Equals(right);
         }
 
+        ///// <summary>
+        ///// Returns a value indicating the equality of the two objects.
+        ///// </summary>
+        ///// <param name="left">The left hand side of the comparisson.</param>
+        ///// <param name="right">The right hand side of the comparisson.</param>
+        ///// <returns>true if the left and right side are equal, false if not.</returns>
+        //public static bool operator ==(Token left, TokenKind right)
+        //{
+        //    return left.Kind == right;
+        //}
+
+        ///// <summary>
+        ///// Returns a value indicating the inequality of the two objects.
+        ///// </summary>
+        ///// <param name="left">The left hand side of the comparisson.</param>
+        ///// <param name="right">The right hand side of the comparisson.</param>
+        ///// <returns>false if the left and right side are equal, true if not.</returns>
+        //public static bool operator !=(Token left, TokenKind right)
+        //{
+        //    return left.Kind != right;
+        //}
+
         /// <summary>
         /// Returns the string representation of the token.
         /// </summary>
@@ -194,6 +188,6 @@ namespace SmtpServer.Text
         /// <summary>
         /// Returns the text representation of the token.
         /// </summary>
-        public ReadOnlySpan<char> Text { get; }
+        public ReadOnlySpan<byte> Text { get; }
     }
 }

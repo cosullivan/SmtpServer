@@ -1,4 +1,4 @@
-﻿namespace SmtpServer.Protocol
+﻿namespace SmtpServer.StateMachine
 {
     internal enum SmtpState
     {
