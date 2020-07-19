@@ -124,7 +124,7 @@ namespace SmtpServer
                     }
                     catch (OperationCanceledException) when (_shutdownTokenSource.Token.IsCancellationRequested == false)
                     {
-                        if (sessionContext.NetworkPipe != null)
+                        if (sessionContext.Pipe != null)
                         { 
                             OnSessionCancelled(new SessionEventArgs(sessionContext));
                         }
@@ -145,7 +145,7 @@ namespace SmtpServer
             var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_shutdownTokenSource.Token, cancellationToken);
 
             // wait for a client connection
-            sessionContext.NetworkPipe = await endpointListener.GetPipeAsync(sessionContext, cancellationTokenSource.Token).ConfigureAwait(false);
+            sessionContext.Pipe = await endpointListener.GetPipeAsync(sessionContext, cancellationTokenSource.Token).ConfigureAwait(false);
             cancellationTokenSource.Token.ThrowIfCancellationRequested();
 
             if (sessionContext.EndpointDefinition.IsSecure && _options.ServerCertificate != null)
@@ -189,7 +189,7 @@ namespace SmtpServer
                     {
                         Remove(session);
 
-                        sessionContext.NetworkPipe.Dispose();
+                        sessionContext.Pipe.Dispose();
 
                         if (exception != null)
                         {

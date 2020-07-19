@@ -60,7 +60,7 @@ namespace SmtpServer
         /// <summary>
         /// Gets the pipeline to read from and write to.
         /// </summary>
-        public INetworkPipe NetworkPipe { get; internal set; }
+        public ISecurableDuplexPipe Pipe { get; internal set; }
 
         /// <summary>
         /// Gets the current transaction.

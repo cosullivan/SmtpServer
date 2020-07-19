@@ -11,16 +11,16 @@ namespace SmtpServer.Benchmarks
     {
         static readonly IReadOnlyList<ArraySegment<byte>> Segments = Tokenize("The time has come for all good men\nto go to the aid of their country", "1 23 456 7890", "!@#$%^&*()");
 
-        [Benchmark]
-        public void EnumerateTokens()
-        {
-            var tokenizer = new TokenEnumerator(new ByteArrayTokenReader(Segments));
+        //[Benchmark]
+        //public void EnumerateTokens()
+        //{
+        //    var tokenizer = new TokenEnumerator(new ByteArrayTokenReader(Segments));
             
-            while (tokenizer.Peek() != Token.None)
-            {
-                tokenizer.Take();
-            }
-        }
+        //    while (tokenizer.Peek() != Token.None)
+        //    {
+        //        tokenizer.Take();
+        //    }
+        //}
 
         static IReadOnlyList<ArraySegment<byte>> Tokenize(params string[] text)
         {

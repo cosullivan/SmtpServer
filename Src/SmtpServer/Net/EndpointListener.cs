@@ -29,12 +29,12 @@ namespace SmtpServer.Net
         }
 
         /// <summary>
-        /// Returns a network pipe to the endpoint.
+        /// Returns a securable pipe to the endpoint.
         /// </summary>
         /// <param name="context">The session context that the pipe is being created for.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The network pipe from the endpoint.</returns>
-        public async Task<INetworkPipe> GetPipeAsync(ISessionContext context, CancellationToken cancellationToken)
+        /// <returns>The securable pipe from the endpoint.</returns>
+        public async Task<ISecurableDuplexPipe> GetPipeAsync(ISessionContext context, CancellationToken cancellationToken)
         {
             var tcpClient = await _tcpListener.AcceptTcpClientAsync().WithCancellation(cancellationToken).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
@@ -45,7 +45,7 @@ namespace SmtpServer.Net
             var stream = tcpClient.GetStream();
             stream.ReadTimeout = (int)_endpointDefinition.ReadTimeout.TotalMilliseconds;
 
-            return new NetworkPipe(stream, () =>
+            return new SecurableDuplexPipe(stream, () =>
             {
                 tcpClient.Close();
                 tcpClient.Dispose();

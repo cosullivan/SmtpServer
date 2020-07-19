@@ -42,7 +42,7 @@ namespace SmtpServer.Protocol
             // check against the server supplied maximum
             if (Options.MaxMessageSize > 0 && size > Options.MaxMessageSize)
             {
-                await context.NetworkPipe.ReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ConfigureAwait(false);
+                await context.Pipe.Output.WriteReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ConfigureAwait(false);
                 return false;
             }
 
@@ -52,19 +52,19 @@ namespace SmtpServer.Protocol
                 {
                     case MailboxFilterResult.Yes:
                         context.Transaction.From = Address;
-                        await context.NetworkPipe.ReplyAsync(SmtpResponse.Ok, cancellationToken).ConfigureAwait(false);
+                        await context.Pipe.Output.WriteReplyAsync(SmtpResponse.Ok, cancellationToken).ConfigureAwait(false);
                         return true;
 
                     case MailboxFilterResult.NoTemporarily:
-                        await context.NetworkPipe.ReplyAsync(SmtpResponse.MailboxUnavailable, cancellationToken).ConfigureAwait(false);
+                        await context.Pipe.Output.WriteReplyAsync(SmtpResponse.MailboxUnavailable, cancellationToken).ConfigureAwait(false);
                         return false;
 
                     case MailboxFilterResult.NoPermanently:
-                        await context.NetworkPipe.ReplyAsync(SmtpResponse.MailboxNameNotAllowed, cancellationToken).ConfigureAwait(false);
+                        await context.Pipe.Output.WriteReplyAsync(SmtpResponse.MailboxNameNotAllowed, cancellationToken).ConfigureAwait(false);
                         return false;
 
                     case MailboxFilterResult.SizeLimitExceeded:
-                        await context.NetworkPipe.ReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ConfigureAwait(false);
+                        await context.Pipe.Output.WriteReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ConfigureAwait(false);
                         return false;
                 }
             }

@@ -23,7 +23,7 @@ namespace SmtpServer.Protocol
         /// if the current state is to be maintained.</returns>
         internal override async Task<bool> ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            await context.NetworkPipe.ReplyAsync(SmtpResponse.Ok, cancellationToken).ConfigureAwait(false);
+            await context.Pipe.Output.WriteReplyAsync(SmtpResponse.Ok, cancellationToken).ConfigureAwait(false);
 
             return true;
         }

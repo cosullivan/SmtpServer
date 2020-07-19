@@ -6,6 +6,7 @@ using SmtpServer.Protocol;
 using System.Reflection;
 using SmtpServer.IO;
 using SmtpServer.Text;
+using System.IO.Pipelines;
 
 namespace SmtpServer
 {
@@ -108,28 +109,35 @@ namespace SmtpServer
                 }
                 catch (SmtpResponseException responseException) when (responseException.IsQuitRequested)
                 {
-                    await context.NetworkPipe.ReplyAsync(responseException.Response, cancellationToken).ConfigureAwait(false);
+                    await context.Pipe.Output.WriteReplyAsync(responseException.Response, cancellationToken).ConfigureAwait(false);
                 }
                 catch (SmtpResponseException responseException)
                 {
                     var response = CreateErrorResponse(responseException.Response, retries);
 
-                    await context.NetworkPipe.ReplyAsync(response, cancellationToken).ConfigureAwait(false);
+                    await context.Pipe.Output.WriteReplyAsync(response, cancellationToken).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
-                    await context.NetworkPipe.ReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "The session has be cancelled."), CancellationToken.None).ConfigureAwait(false);
+                    await context.Pipe.Output.WriteReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "The session has be cancelled."), CancellationToken.None).ConfigureAwait(false);
                 }
             }
         }
 
         ValueTask<SmtpCommand> ReadCommandAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            return context.NetworkPipe.Input.ReadLineAsync<SmtpCommand>(
+            return context.Pipe.Input.ReadLineAsync<SmtpCommand>(
                 buffer =>
                 {
-                    //throw new SmtpResponseException()
-                    //return (SmtpCommand)null;
+                    //_stateMachine.TryMake(context, default, out var command, out var errorResponse);
+
+                    //if (errorResponse != null)
+                    //{
+                    //    throw new SmtpResponseException(errorResponse);
+                    //}
+
+                    //return command;
+
 
                     throw new SmtpResponseException(null);
                 }, 
@@ -234,20 +242,20 @@ namespace SmtpServer
             return new SmtpResponse(response.ReplyCode, $"{response.Message}, {retries} retry(ies) remaining.");
         }
 
-        /// <summary>
-        /// Advances the enumerator to the next command in the stream.
-        /// </summary>
-        /// <param name="context">The session context to use when making session based transitions.</param>
-        /// <param name="segments">The list of array segments to read the command from.</param>
-        /// <param name="command">The command that was found.</param>
-        /// <param name="errorResponse">The error response that indicates why a command could not be accepted.</param>
-        /// <returns>true if a valid command was found, false if not.</returns>
-        bool TryMake(SmtpSessionContext context, IReadOnlyList<ArraySegment<byte>> segments, out SmtpCommand command, out SmtpResponse errorResponse)
-        {
-            var tokenEnumerator = new TokenEnumerator(new ByteArrayTokenReader(segments));
+        ///// <summary>
+        ///// Advances the enumerator to the next command in the stream.
+        ///// </summary>
+        ///// <param name="context">The session context to use when making session based transitions.</param>
+        ///// <param name="segments">The list of array segments to read the command from.</param>
+        ///// <param name="command">The command that was found.</param>
+        ///// <param name="errorResponse">The error response that indicates why a command could not be accepted.</param>
+        ///// <returns>true if a valid command was found, false if not.</returns>
+        //bool TryMake(SmtpSessionContext context, IReadOnlyList<ArraySegment<byte>> segments, out SmtpCommand command, out SmtpResponse errorResponse)
+        //{
+        //    var tokenEnumerator = new TokenEnumerator(new ByteArrayTokenReader(segments));
 
-            return _stateMachine.TryMake(context, tokenEnumerator, out command, out errorResponse);
-        }
+        //    return _stateMachine.TryMake(context, tokenEnumerator, out command, out errorResponse);
+        //}
 
         /// <summary>
         /// Execute the command.
@@ -268,13 +276,13 @@ namespace SmtpServer
         /// </summary>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which performs the operation.</returns>
-        ValueTask<bool> OutputGreetingAsync(CancellationToken cancellationToken)
+        ValueTask<FlushResult> OutputGreetingAsync(CancellationToken cancellationToken)
         {
             var version = typeof(SmtpSession).GetTypeInfo().Assembly.GetName().Version;
 
-            _context.NetworkPipe.WriteLine($"220 {_context.ServerOptions.ServerName} v{version} ESMTP ready");
+            _context.Pipe.Output.WriteLine($"220 {_context.ServerOptions.ServerName} v{version} ESMTP ready");
             
-            return _context.NetworkPipe.FlushAsync(cancellationToken);
+            return _context.Pipe.Output.FlushAsync(cancellationToken);
         }
         
         /// <summary>

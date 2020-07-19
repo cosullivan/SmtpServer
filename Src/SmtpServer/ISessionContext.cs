@@ -29,7 +29,7 @@ namespace SmtpServer
         /// <summary>
         /// Gets the pipeline to read from and write to.
         /// </summary>
-        INetworkPipe NetworkPipe { get; }
+        ISecurableDuplexPipe Pipe { get; }
 
         /// <summary>
         /// Returns the authentication context.

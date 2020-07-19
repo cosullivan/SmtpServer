@@ -59,15 +59,12 @@ namespace SampleApp.Examples
                 _endpointListener.Dispose();
             }
 
-            //public async Task<INetworkStream> GetStreamAsync(ISessionContext context, CancellationToken cancellationToken)
-            //{
-            //    var stream = await _endpointListener.GetStreamAsync(context, cancellationToken);
-
-            //    return new CustomNetworkStream(stream);
-            //}
-
-            public Task<INetworkPipe> GetPipeAsync(ISessionContext context, CancellationToken cancellationToken)
+            public Task<ISecurableDuplexPipe> GetPipeAsync(ISessionContext context, CancellationToken cancellationToken)
             {
+                //    var pipe = await _endpointListener.GetPipeAsync(context, cancellationToken);
+
+                //    return new CustomDuplexPipe(pipe);
+
                 throw new NotImplementedException();
             }
         }

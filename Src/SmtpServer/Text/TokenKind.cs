@@ -5,31 +5,31 @@
         /// <summary>
         /// No token has been defined.
         /// </summary>
-        None = 1,
+        None = 0,
 
         /// <summary>
         /// A text.
         /// </summary>
-        Text = 2,
+        Text = 1,
 
         /// <summary>
         /// A number.
         /// </summary>
-        Number = 3,
+        Number = 2,
 
         /// <summary>
         /// A single space character.
         /// </summary>
-        Space = 4,
+        Space = 3,
 
         /// <summary>
         /// A new line token, defined as CRLF.
         /// </summary>
-        NewLine = 5,
+        NewLine = 4,
 
         /// <summary>
         /// Unknown.
         /// </summary>
-        Other = 6,
+        Other = 5,
     }
 }

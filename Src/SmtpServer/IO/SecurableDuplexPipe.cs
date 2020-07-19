@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace SmtpServer.IO
 {
-    public sealed class NetworkPipe : INetworkPipe
+    internal sealed class SecurableDuplexPipe : ISecurableDuplexPipe
     {
         readonly Action _disposeAction;
         Stream _stream;
@@ -20,7 +20,7 @@ namespace SmtpServer.IO
         /// </summary>
         /// <param name="stream">The stream that the pipe is reading and writing to.</param>
         /// <param name="disposeAction">The action to execute when the stream has been disposed.</param>
-        public NetworkPipe(Stream stream, Action disposeAction)
+        internal SecurableDuplexPipe(Stream stream, Action disposeAction)
         {
             _stream = stream;
             _disposeAction = disposeAction;

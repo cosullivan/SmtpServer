@@ -35,6 +35,9 @@ namespace SmtpServer.IO
                 return false;
             }
 
+            // this link contains an example
+            // https://github.com/davidfowl/DocsStaging/blob/master/Buffers.md
+
             throw new NotImplementedException("TODO: need to implement for multiple segments");
         }
     }
