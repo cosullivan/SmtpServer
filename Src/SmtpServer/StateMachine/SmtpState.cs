@@ -1,12 +1,36 @@
-﻿namespace SmtpServer.StateMachine
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+
+namespace SmtpServer.StateMachine
 {
-    internal enum SmtpState
+    internal sealed class SmtpState : IEnumerable
     {
-        None = 0,
-        Initialized = 1,
-        WaitingForMail = 2,
-        WaitingForMailSecure = 3,
-        WithinTransaction = 4,
-        CanAcceptData = 5,
+        internal SmtpState(SmtpStateId stateId)
+        {
+            StateId = stateId;
+        }
+
+        internal void Add(string command)
+        {
+            Transitions.Add(command, new SmtpStateTransition(context => true, context => StateId));
+        }
+
+        internal void Add(string command, Func<SmtpSessionContext, SmtpStateId> transitionDelegate)
+        {
+            Transitions.Add(command, new SmtpStateTransition(context => true, transitionDelegate));
+        }
+
+        internal void Add(string command, Func<SmtpSessionContext, bool> canAcceptDelegate, Func<SmtpSessionContext, SmtpStateId> transitionDelegate)
+        {
+            Transitions.Add(command, new SmtpStateTransition(canAcceptDelegate, transitionDelegate));
+        }
+
+        // this is just here for the collection initializer syntax to work
+        IEnumerator IEnumerable.GetEnumerator() => throw new NotImplementedException();
+
+        internal SmtpStateId StateId { get; }
+
+        internal IDictionary<string, SmtpStateTransition> Transitions { get; } = new Dictionary<string, SmtpStateTransition>(StringComparer.OrdinalIgnoreCase);
     }
 }

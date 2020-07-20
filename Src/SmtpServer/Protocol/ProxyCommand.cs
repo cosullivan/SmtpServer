@@ -16,7 +16,7 @@ namespace SmtpServer.Protocol
 
         public const string Command = "PROXY";
 
-        public ProxyCommand(ISmtpServerOptions options, IPEndPoint sourceEndpoint = null, IPEndPoint destinationEndpoint = null) : base(options)
+        public ProxyCommand(ISmtpServerOptions options, IPEndPoint sourceEndpoint = null, IPEndPoint destinationEndpoint = null) : base(Command, options)
         {
             SourceEndpoint = sourceEndpoint;
             DestinationEndpoint = destinationEndpoint;

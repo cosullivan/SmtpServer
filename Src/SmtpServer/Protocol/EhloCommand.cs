@@ -16,7 +16,7 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="options">The server options.</param>
         /// <param name="domainOrAddress">The domain name or address literal.</param>
-        internal EhloCommand(ISmtpServerOptions options, string domainOrAddress) : base(options)
+        internal EhloCommand(ISmtpServerOptions options, string domainOrAddress) : base(Command, options)
         {
             DomainOrAddress = domainOrAddress;
         }

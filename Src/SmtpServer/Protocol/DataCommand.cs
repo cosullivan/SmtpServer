@@ -15,7 +15,7 @@ namespace SmtpServer.Protocol
         /// Constructor.
         /// </summary>
         /// <param name="options">The server options.</param>
-        internal DataCommand(ISmtpServerOptions options) : base(options) { }
+        internal DataCommand(ISmtpServerOptions options) : base(Command, options) { }
 
         /// <summary>
         /// Execute the command.

@@ -12,7 +12,7 @@ namespace SmtpServer.Protocol
         /// Constructor.
         /// </summary>
         /// <param name="options">The server options.</param>
-        internal QuitCommand(ISmtpServerOptions options) : base(options) { }
+        internal QuitCommand(ISmtpServerOptions options) : base(Command, options) { }
 
         /// <summary>
         /// Execute the command.

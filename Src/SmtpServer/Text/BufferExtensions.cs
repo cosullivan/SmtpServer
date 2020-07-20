@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Buffers;
-using System.Text;
 
 namespace SmtpServer.Text
 {
@@ -8,24 +7,29 @@ namespace SmtpServer.Text
     {
         internal static bool CaseInsensitiveStringEquals(this ReadOnlySequence<byte> buffer, ref Span<char> text)
         {
-            //return string.Equals(Encoding.ASCII.GetString(buffer), value, StringComparison.OrdinalIgnoreCase);
-
-            var index = 0;
-            foreach (var segment in buffer)
+            if (buffer.IsSingleSegment)
             {
-                var span = segment.Span;
+                var span = buffer.First.Span;
 
-                if (span.Length == 0)
+                if (text.Length != span.Length)
                 {
-                    continue;
+                    return false;
                 }
 
-                for (var i = 0; i < span.Length; i++, index++)
+                for (var i = 0; i < span.Length; i++)
                 {
+                    var ch = (char)span[i];
+
+                    if (char.ToUpper(ch) != char.ToUpper(text[i]))
+                    {
+                        return false;
+                    }
                 }
+
+                return true;
             }
 
-            return true;
+            throw new NotImplementedException();
         }
     }
 }

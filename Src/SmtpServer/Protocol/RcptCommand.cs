@@ -16,7 +16,7 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="options">The server options.</param>
         /// <param name="address">The address.</param>
-        internal RcptCommand(ISmtpServerOptions options, IMailbox address) : base(options)
+        internal RcptCommand(ISmtpServerOptions options, IMailbox address) : base(Command, options)
         {
             Address = address;
         }

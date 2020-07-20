@@ -9,14 +9,16 @@ namespace SmtpServer.Protocol
         /// <summary>
         /// Constructor.
         /// </summary>
+        /// <param name="name">The name of the command.</param>
         /// <param name="options">The server options.</param>
-        protected SmtpCommand(ISmtpServerOptions options)
+        protected SmtpCommand(string name, ISmtpServerOptions options)
         {
             if (options == null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
 
+            Name = name;
             Options = options;
         }
 
@@ -33,5 +35,10 @@ namespace SmtpServer.Protocol
         /// The options that the command can utilise.
         /// </summary>
         protected ISmtpServerOptions Options { get; }
+
+        /// <summary>
+        /// The name of the command.
+        /// </summary>
+        public string Name { get; }
     }
 }

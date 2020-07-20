@@ -18,7 +18,7 @@ namespace SmtpServer.Protocol
         /// <param name="options">The server options.</param>
         /// <param name="address">The address.</param>
         /// <param name="parameters">The list of extended (ESMTP) parameters.</param>
-        internal MailCommand(ISmtpServerOptions options, IMailbox address, IReadOnlyDictionary<string, string> parameters) : base(options)
+        internal MailCommand(ISmtpServerOptions options, IMailbox address, IReadOnlyDictionary<string, string> parameters) : base(Command, options)
         {
             Address = address;
             Parameters = parameters;
@@ -33,43 +33,45 @@ namespace SmtpServer.Protocol
         /// if the current state is to be maintained.</returns>
         internal override async Task<bool> ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            context.Transaction.Reset();
-            context.Transaction.Parameters = Parameters;
+            throw new NotImplementedException("TODO: might need to check for Authentication here in place of the SmtpStateMachine?");
 
-            // check if a size has been defined
-            var size = GetMessageSize();
+            //context.Transaction.Reset();
+            //context.Transaction.Parameters = Parameters;
 
-            // check against the server supplied maximum
-            if (Options.MaxMessageSize > 0 && size > Options.MaxMessageSize)
-            {
-                await context.Pipe.Output.WriteReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ConfigureAwait(false);
-                return false;
-            }
+            //// check if a size has been defined
+            //var size = GetMessageSize();
 
-            using (var container = new DisposableContainer<IMailboxFilter>(Options.MailboxFilterFactory.CreateInstance(context)))
-            {
-                switch (await container.Instance.CanAcceptFromAsync(context, Address, size, cancellationToken).ConfigureAwait(false))
-                {
-                    case MailboxFilterResult.Yes:
-                        context.Transaction.From = Address;
-                        await context.Pipe.Output.WriteReplyAsync(SmtpResponse.Ok, cancellationToken).ConfigureAwait(false);
-                        return true;
+            //// check against the server supplied maximum
+            //if (Options.MaxMessageSize > 0 && size > Options.MaxMessageSize)
+            //{
+            //    await context.Pipe.Output.WriteReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ConfigureAwait(false);
+            //    return false;
+            //}
 
-                    case MailboxFilterResult.NoTemporarily:
-                        await context.Pipe.Output.WriteReplyAsync(SmtpResponse.MailboxUnavailable, cancellationToken).ConfigureAwait(false);
-                        return false;
+            //using (var container = new DisposableContainer<IMailboxFilter>(Options.MailboxFilterFactory.CreateInstance(context)))
+            //{
+            //    switch (await container.Instance.CanAcceptFromAsync(context, Address, size, cancellationToken).ConfigureAwait(false))
+            //    {
+            //        case MailboxFilterResult.Yes:
+            //            context.Transaction.From = Address;
+            //            await context.Pipe.Output.WriteReplyAsync(SmtpResponse.Ok, cancellationToken).ConfigureAwait(false);
+            //            return true;
 
-                    case MailboxFilterResult.NoPermanently:
-                        await context.Pipe.Output.WriteReplyAsync(SmtpResponse.MailboxNameNotAllowed, cancellationToken).ConfigureAwait(false);
-                        return false;
+            //        case MailboxFilterResult.NoTemporarily:
+            //            await context.Pipe.Output.WriteReplyAsync(SmtpResponse.MailboxUnavailable, cancellationToken).ConfigureAwait(false);
+            //            return false;
 
-                    case MailboxFilterResult.SizeLimitExceeded:
-                        await context.Pipe.Output.WriteReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ConfigureAwait(false);
-                        return false;
-                }
-            }
+            //        case MailboxFilterResult.NoPermanently:
+            //            await context.Pipe.Output.WriteReplyAsync(SmtpResponse.MailboxNameNotAllowed, cancellationToken).ConfigureAwait(false);
+            //            return false;
 
-            throw new SmtpResponseException(SmtpResponse.TransactionFailed);
+            //        case MailboxFilterResult.SizeLimitExceeded:
+            //            await context.Pipe.Output.WriteReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ConfigureAwait(false);
+            //            return false;
+            //    }
+            //}
+
+            //throw new SmtpResponseException(SmtpResponse.TransactionFailed);
         }
 
         /// <summary>

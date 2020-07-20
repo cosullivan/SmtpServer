@@ -1,17 +1,40 @@
 ﻿using System;
 using System.Buffers;
+using System.Buffers.Text;
 using System.Text;
+using System.Threading.Tasks.Sources;
 using SmtpServer.Text;
 
 namespace SmtpServer.Protocol
 {
     public sealed class SmtpParser
     {
+        delegate bool TryMakeDelegate(ref TokenReader reader, out SmtpCommand command, out SmtpResponse errorResponse);
+
         readonly ISmtpServerOptions _options;
 
         public SmtpParser(ISmtpServerOptions options)
         {
             _options = options;
+        }
+
+        /// <summary>
+        /// Make a command from the buffer.
+        /// </summary>
+        /// <param name="buffer">The buffer to read the command from.</param>
+        /// <param name="command">The command that is defined within the token reader.</param>
+        /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
+        /// <returns>Returns true if a command could be made, false if not.</returns>
+        public bool TryMake(ref ReadOnlySequence<byte> buffer, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            return TryMake(buffer, TryMakeEhlo, out command, out errorResponse);
+
+            static bool TryMake(ReadOnlySequence<byte> buffer, TryMakeDelegate tryMakeDelegate, out SmtpCommand command, out SmtpResponse errorResponse)
+            {
+                var reader = new TokenReader(buffer);
+
+                return tryMakeDelegate(ref reader, out command, out errorResponse);
+            }
         }
 
         /// <summary>
@@ -26,19 +49,16 @@ namespace SmtpServer.Protocol
             command = null;
             errorResponse = null;
 
-            //Enumerator.Take();
             if (reader.TryMake(TryMakeEhlo) == false)
             {
                 return false;
             }
 
-            //Enumerator.Skip(TokenKind.Space);
             reader.Skip(TokenKind.Space);
 
             if (reader.TryMake(TryMakeDomain, out var domain))
             {
-                var d = Encoding.ASCII.GetString(domain.ToArray());
-                //command = new EhloCommand(_options, domain);
+                command = new EhloCommand(_options, StringUtil.Create(domain));
                 return true;
             }
 
@@ -52,6 +72,11 @@ namespace SmtpServer.Protocol
             return false;
         }
 
+        /// <summary>
+        /// Try to make the EHLO token.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the EHLO command could be made, false if not.</returns>
         public bool TryMakeEhlo(ref TokenReader reader)
         {
             if (reader.TryMake(TryMakeText, out var text))

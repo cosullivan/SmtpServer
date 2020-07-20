@@ -22,7 +22,7 @@ namespace SmtpServer.Protocol
         /// <param name="options">The server options.</param>
         /// <param name="method">The authentication method.</param>
         /// <param name="parameter">The authentication parameter.</param>
-        internal AuthCommand(ISmtpServerOptions options, AuthenticationMethod method, string parameter) : base(options)
+        internal AuthCommand(ISmtpServerOptions options, AuthenticationMethod method, string parameter) : base(Command, options)
         {
             Method = method;
             Parameter = parameter;

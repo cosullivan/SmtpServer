@@ -13,7 +13,7 @@ namespace SmtpServer.Protocol
         /// Constructor.
         /// </summary>
         /// <param name="options">The server options.</param>
-        internal StartTlsCommand(ISmtpServerOptions options) : base(options) { }
+        internal StartTlsCommand(ISmtpServerOptions options) : base(Command, options) { }
 
         /// <summary>
         /// Execute the command.

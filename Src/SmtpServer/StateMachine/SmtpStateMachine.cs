@@ -8,10 +8,11 @@ namespace SmtpServer.StateMachine
 {
     internal class SmtpStateMachine 
     {
-        delegate bool TryMakeDelegate(SmtpParser parser, out SmtpCommand command, out SmtpResponse errorResponse);
+        //delegate bool TryMakeDelegate(SmtpParser parser, out SmtpCommand command, out SmtpResponse errorResponse);
 
         readonly SmtpSessionContext _context;
-        readonly StateTable _stateTable;
+        SmtpState _state;
+        SmtpStateTransition _transition;
 
         /// <summary>
         /// Constructor.
@@ -19,59 +20,60 @@ namespace SmtpServer.StateMachine
         /// <param name="context">The SMTP server session context.</param>
         internal SmtpStateMachine(SmtpSessionContext context)
         {
+            _state = SmtpStateTable.Shared[SmtpStateId.Initialized];
             _context = context;
-            _context.SessionAuthenticated += OnSessionAuthenticated;
-            _stateTable = new StateTable
-            {
-                new State(SmtpState.Initialized)
-                {
-                    //{ EhloCommand.Command, EhloCommand.TryMake, c => c.Pipe.IsSecure ? SmtpState.WaitingForMailSecure : SmtpState.WaitingForMail },
-                    EhloCommandHandler.Instance
-                }
-                //new State(SmtpState.Initialized)
-                //{
-                //    { NoopCommand.Command, TryMakeNoop },
-                //    { RsetCommand.Command, TryMakeRset },
-                //    { QuitCommand.Command, TryMakeQuit },
-                //    { ProxyCommand.Command, TryMakeProxy },
-                //    { HeloCommand.Command, TryMakeHelo, c => c.Pipe.IsSecure ? SmtpState.WaitingForMailSecure : SmtpState.WaitingForMail },
-                //    { EhloCommand.Command, TryMakeEhlo, c => c.Pipe.IsSecure ? SmtpState.WaitingForMailSecure : SmtpState.WaitingForMail },
-                //},
-                //new State(SmtpState.WaitingForMail)
-                //{
-                //    { NoopCommand.Command, TryMakeNoop },
-                //    { RsetCommand.Command, TryMakeRset },
-                //    { QuitCommand.Command, TryMakeQuit },
-                //    { HeloCommand.Command, TryMakeHelo, SmtpState.WaitingForMail },
-                //    { EhloCommand.Command, TryMakeEhlo, SmtpState.WaitingForMail },
-                //    { MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction }
-                //},
-                //new State(SmtpState.WaitingForMailSecure)
-                //{
-                //    { NoopCommand.Command, TryMakeNoop },
-                //    { RsetCommand.Command, TryMakeRset },
-                //    { QuitCommand.Command, TryMakeQuit },
-                //    { AuthCommand.Command, TryMakeAuth },
-                //    { HeloCommand.Command, TryMakeHelo, SmtpState.WaitingForMailSecure },
-                //    { EhloCommand.Command, TryMakeEhlo, SmtpState.WaitingForMailSecure },
-                //    { MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction }
-                //},
-                //new State(SmtpState.WithinTransaction)
-                //{
-                //    { NoopCommand.Command, TryMakeNoop },
-                //    { RsetCommand.Command, TryMakeRset, c => c.Pipe.IsSecure ? SmtpState.WaitingForMailSecure : SmtpState.WaitingForMail },
-                //    { QuitCommand.Command, TryMakeQuit },
-                //    { RcptCommand.Command, TryMakeRcpt, SmtpState.CanAcceptData },
-                //},
-                //new State(SmtpState.CanAcceptData)
-                //{
-                //    { NoopCommand.Command, TryMakeNoop },
-                //    { RsetCommand.Command, TryMakeRset, c => c.Pipe.IsSecure ? SmtpState.WaitingForMailSecure : SmtpState.WaitingForMail },
-                //    { QuitCommand.Command, TryMakeQuit },
-                //    { RcptCommand.Command, TryMakeRcpt },
-                //    { DataCommand.Command, TryMakeData, SmtpState.WaitingForMail },
-                //}
-            };
+            //_context.SessionAuthenticated += OnSessionAuthenticated;
+            //_stateTable = new StateTable
+            //{
+            //    new State(SmtpStateId.Initialized)
+            //    {
+            //        //{ EhloCommand.Command, EhloCommand.TryMake, c => c.Pipe.IsSecure ? SmtpState.WaitingForMailSecure : SmtpState.WaitingForMail },
+            //        //{ EhloCommand.Command }
+            //    }
+            //    //new State(SmtpState.Initialized)
+            //    //{
+            //    //    { NoopCommand.Command, TryMakeNoop },
+            //    //    { RsetCommand.Command, TryMakeRset },
+            //    //    { QuitCommand.Command, TryMakeQuit },
+            //    //    { ProxyCommand.Command, TryMakeProxy },
+            //    //    { HeloCommand.Command, TryMakeHelo, c => c.Pipe.IsSecure ? SmtpState.WaitingForMailSecure : SmtpState.WaitingForMail },
+            //    //    { EhloCommand.Command, TryMakeEhlo, c => c.Pipe.IsSecure ? SmtpState.WaitingForMailSecure : SmtpState.WaitingForMail },
+            //    //},
+            //    //new State(SmtpState.WaitingForMail)
+            //    //{
+            //    //    { NoopCommand.Command, TryMakeNoop },
+            //    //    { RsetCommand.Command, TryMakeRset },
+            //    //    { QuitCommand.Command, TryMakeQuit },
+            //    //    { HeloCommand.Command, TryMakeHelo, SmtpState.WaitingForMail },
+            //    //    { EhloCommand.Command, TryMakeEhlo, SmtpState.WaitingForMail },
+            //    //    { MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction }
+            //    //},
+            //    //new State(SmtpState.WaitingForMailSecure)
+            //    //{
+            //    //    { NoopCommand.Command, TryMakeNoop },
+            //    //    { RsetCommand.Command, TryMakeRset },
+            //    //    { QuitCommand.Command, TryMakeQuit },
+            //    //    { AuthCommand.Command, TryMakeAuth },
+            //    //    { HeloCommand.Command, TryMakeHelo, SmtpState.WaitingForMailSecure },
+            //    //    { EhloCommand.Command, TryMakeEhlo, SmtpState.WaitingForMailSecure },
+            //    //    { MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction }
+            //    //},
+            //    //new State(SmtpState.WithinTransaction)
+            //    //{
+            //    //    { NoopCommand.Command, TryMakeNoop },
+            //    //    { RsetCommand.Command, TryMakeRset, c => c.Pipe.IsSecure ? SmtpState.WaitingForMailSecure : SmtpState.WaitingForMail },
+            //    //    { QuitCommand.Command, TryMakeQuit },
+            //    //    { RcptCommand.Command, TryMakeRcpt, SmtpState.CanAcceptData },
+            //    //},
+            //    //new State(SmtpState.CanAcceptData)
+            //    //{
+            //    //    { NoopCommand.Command, TryMakeNoop },
+            //    //    { RsetCommand.Command, TryMakeRset, c => c.Pipe.IsSecure ? SmtpState.WaitingForMailSecure : SmtpState.WaitingForMail },
+            //    //    { QuitCommand.Command, TryMakeQuit },
+            //    //    { RcptCommand.Command, TryMakeRcpt },
+            //    //    { DataCommand.Command, TryMakeData, SmtpState.WaitingForMail },
+            //    //}
+            //};
 
             //if (context.EndpointDefinition.AllowUnsecureAuthentication)
             //{
@@ -89,69 +91,48 @@ namespace SmtpServer.StateMachine
             //    WaitingForMail.Add(StartTlsCommand.Command, TryMakeStartTls, SmtpState.WaitingForMailSecure);
             //}
 
-            _stateTable.Initialize(SmtpState.Initialized);
-        }
-
-        /// <summary>
-        /// Called when the session has been authenticated.
-        /// </summary>
-        /// <param name="sender">The object that raised the event.</param>
-        /// <param name="eventArgs">The event data.</param>
-        void OnSessionAuthenticated(object sender, EventArgs eventArgs)
-        {
-            //_context.SessionAuthenticated -= OnSessionAuthenticated;
-
-            //WaitingForMail.Remove(AuthCommand.Command);
-            //WaitingForMailSecure.Remove(AuthCommand.Command);
-
-            //if (_context.EndpointDefinition.AuthenticationRequired)
-            //{
-            //    WaitingForMail.Replace(MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction);
-            //    WaitingForMailSecure.Replace(MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction);
-            //}
+            //_stateTable.Initialize(SmtpStateId.Initialized);
         }
 
         ///// <summary>
-        ///// Make a delegate to return a known response.
+        ///// Called when the session has been authenticated.
         ///// </summary>
-        ///// <param name="errorResponse">The error response to return.</param>
-        ///// <returns>The delegate that will return the correct error response.</returns>
-        //static TryMakeDelegate MakeResponse(SmtpResponse errorResponse)
+        ///// <param name="sender">The object that raised the event.</param>
+        ///// <param name="eventArgs">The event data.</param>
+        //void OnSessionAuthenticated(object sender, EventArgs eventArgs)
         //{
-        //    return (TokenEnumerator enumerator, out SmtpCommand command, out SmtpResponse response) =>
-        //    {
-        //        command = null;
-        //        response = errorResponse;
+        //    // TODO: probably dont need this anymore as it can be handled elsewhere
 
-        //        return false;
-        //    };
-        //}
+        //    //_context.SessionAuthenticated -= OnSessionAuthenticated;
 
-        ///// <summary>
-        ///// Advances the enumerator to the next command in the stream.
-        ///// </summary>
-        ///// <param name="context">The SMTP session context to allow for session based state transitions.</param>
-        ///// <param name="tokenEnumerator">The token enumerator to accept the command from.</param>
-        ///// <param name="command">The command that was found.</param>
-        ///// <param name="errorResponse">The error response that indicates why a command could not be accepted.</param>
-        ///// <returns>true if a valid command was found, false if not.</returns>
-        //public bool TryMake(SmtpSessionContext context, TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
-        //{
-        //    return _stateTable.TryMake(context, tokenEnumerator, out command, out errorResponse);
+        //    //WaitingForMail.Remove(AuthCommand.Command);
+        //    //WaitingForMailSecure.Remove(AuthCommand.Command);
+
+        //    //if (_context.EndpointDefinition.AuthenticationRequired)
+        //    //{
+        //    //    WaitingForMail.Replace(MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction);
+        //    //    WaitingForMailSecure.Replace(MailCommand.Command, TryMakeMail, SmtpState.WithinTransaction);
+        //    //}
         //}
 
         /// <summary>
-        /// Advances the enumerator to the next command in the stream.
+        /// Try to accept the command given the current state.
         /// </summary>
-        /// <param name="buffer">The buffer to make the command from.</param>
-        /// <param name="command">The command that was found.</param>
-        /// <param name="errorResponse">The error response that indicates why a command could not be accepted.</param>
-        /// <returns>true if a valid command was found, false if not.</returns>
-        public bool TryMake(ReadOnlySequence<char> buffer, out SmtpCommand command, out SmtpResponse errorResponse)
+        /// <param name="command">The command to accept.</param>
+        /// <param name="errorResponse">The error response to display if the command was not accepted.</param>
+        /// <returns>true if the command could be accepted, false if not.</returns>
+        public bool TryAccept(SmtpCommand command, out SmtpResponse errorResponse)
         {
-            //return _stateTable.TryMake(context, tokenEnumerator, out command, out errorResponse);
+            errorResponse = null;
 
-            throw new NotImplementedException();
+            if (_state.Transitions.TryGetValue(command.Name, out var transition) == false || transition.CanAccept(_context) == false)
+            {
+                errorResponse = new SmtpResponse(SmtpReplyCode.SyntaxError, $"expected {string.Join("/", _state.Transitions.Keys)}");
+                return false;
+            }
+
+            _transition = transition;
+            return true;
         }
         
         /// <summary>
@@ -160,235 +141,103 @@ namespace SmtpServer.StateMachine
         /// <param name="context">The session context to use for accepting session based transitions.</param>
         public void Transition(SmtpSessionContext context)
         {
-            _stateTable.Transition(context);
+            _state = SmtpStateTable.Shared[_transition.Transition(context)];
         }
 
         ///// <summary>
-        ///// Try to make a HELO command.
+        ///// Returns the waiting for mail state.
         ///// </summary>
-        ///// <param name="tokenEnumerator">The token enumerator to use when matching the command.</param>
-        ///// <param name="command">The command that was found.</param>
-        ///// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
-        ///// <returns>true if a HELO command was found, false if not.</returns>
-        //bool TryMakeHelo(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
-        //{
-        //    return new SmtpParser(_context.ServerOptions, tokenEnumerator).TryMakeHelo(out command, out errorResponse);
-        //}
+        //State WaitingForMail => _stateTable[SmtpState.WaitingForMail];
 
         ///// <summary>
-        ///// Try to make a EHLO command.
+        ///// Returns the waiting for mail in a secure transaction state.
         ///// </summary>
-        ///// <param name="tokenEnumerator">The token enumerator to use when matching the command.</param>
-        ///// <param name="command">The command that was found.</param>
-        ///// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
-        ///// <returns>true if a EHLO command was found, false if not.</returns>
-        //bool TryMakeEhlo(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        //State WaitingForMailSecure => _stateTable[SmtpState.WaitingForMailSecure];
+
+        //#region StateTable
+
+        //class StateTable : IEnumerable
         //{
-        //    return new SmtpParser(_context.ServerOptions, tokenEnumerator).TryMakeEhlo(out command, out errorResponse);
+        //    readonly Dictionary<SmtpStateId, State> _states = new Dictionary<SmtpStateId, State>();
+        //    SmtpStateId _current;
+        //    StateTransition _transition;
+
+        //    /// <summary>
+        //    /// Sets the initial state.
+        //    /// </summary>
+        //    /// <param name="stateId">The ID of the initial state.</param>
+        //    public void Initialize(SmtpStateId stateId)
+        //    {
+        //        _current = stateId;
+        //    }
+
+        //    /// <summary>
+        //    /// Returns the state with the given ID.
+        //    /// </summary>
+        //    /// <param name="stateId">The state ID to return.</param>
+        //    /// <returns>The state with the given id.</returns>
+        //    public State this[SmtpStateId stateId] => _states[stateId];
+
+        //    /// <summary>
+        //    /// Add the given state.
+        //    /// </summary>
+        //    /// <param name="state"></param>
+        //    public void Add(State state)
+        //    {
+        //        _states.Add(state.StateId, state);
+        //    }
+
+        //    ///// <summary>
+        //    ///// Advances the enumerator to the next command in the stream.
+        //    ///// </summary>
+        //    ///// <param name="context">The session context to use for making session based transitions.</param>
+        //    ///// <param name="tokenEnumerator">The token enumerator to accept the command from.</param>
+        //    ///// <param name="command">The command that is defined within the token enumerator.</param>
+        //    ///// <param name="errorResponse">The error that indicates why the command could not be made.</param>
+        //    ///// <returns>true if a valid command was found, false if not.</returns>
+        //    //public bool TryMake(SmtpSessionContext context, TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
+        //    //{
+        //    //    if (_states[_current].Transitions.TryGetValue(tokenEnumerator.Peek().Text, out _transition) == false)
+        //    //    {
+        //    //        var response = $"expected {string.Join("/", _states[_current].Transitions.Keys)}";
+
+        //    //        command = null;
+        //    //        errorResponse = new SmtpResponse(SmtpReplyCode.SyntaxError, response);
+
+        //    //        return false;
+        //    //    }
+
+        //    //    if (_transition.Delegate(tokenEnumerator, out command, out errorResponse) == false)
+        //    //    {
+        //    //        return false;
+        //    //    }
+
+        //    //    return true;
+        //    //}
+
+        //    /// <summary>
+        //    /// Accept the state and transition to the new state.
+        //    /// </summary>
+        //    /// <param name="context">The session context to use for accepting session based transitions.</param>
+        //    public void Transition(SmtpSessionContext context)
+        //    {
+        //        _current = _transition.Transition(context);
+        //    }
+
+        //    /// <summary>
+        //    /// Returns an enumerator that iterates through a collection.
+        //    /// </summary>
+        //    /// <returns>An <see cref="T:System.Collections.IEnumerator"/> object that can be used to iterate through the collection.</returns>
+        //    IEnumerator IEnumerable.GetEnumerator()
+        //    {
+        //        // this is just here for the collection initializer syntax to work
+        //        throw new NotImplementedException();
+        //    }
         //}
 
-        ///// <summary>
-        ///// Try to make a NOOP command.
-        ///// </summary>
-        ///// <param name="tokenEnumerator">The token enumerator to use when matching the command.</param>
-        ///// <param name="command">The command that was found.</param>
-        ///// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
-        ///// <returns>true if a NOOP command was found, false if not.</returns>
-        //bool TryMakeNoop(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
-        //{
-        //    return new SmtpParser(_context.ServerOptions, tokenEnumerator).TryMakeNoop(out command, out errorResponse);
-        //}
+        //#endregion
 
-        ///// <summary>
-        ///// Try to make a QUIT command.
-        ///// </summary>
-        ///// <param name="tokenEnumerator">The token enumerator to use when matching the command.</param>
-        ///// <param name="command">The command that was found.</param>
-        ///// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
-        ///// <returns>true if a QUIT command was found, false if not.</returns>
-        //bool TryMakeQuit(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
-        //{
-        //    return new SmtpParser(_context.ServerOptions, tokenEnumerator).TryMakeQuit(out command, out errorResponse);
-        //}
-
-        ///// <summary>
-        ///// Try to make a RSET command.
-        ///// </summary>
-        ///// <param name="tokenEnumerator">The token enumerator to use when matching the command.</param>
-        ///// <param name="command">The command that was found.</param>
-        ///// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
-        ///// <returns>true if a RSET command was found, false if not.</returns>
-        //bool TryMakeRset(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
-        //{
-        //    return new SmtpParser(_context.ServerOptions, tokenEnumerator).TryMakeRset(out command, out errorResponse);
-        //}
-
-        ///// <summary>
-        ///// Try to make a AUTH command.
-        ///// </summary>
-        ///// <param name="tokenEnumerator">The token enumerator to use when matching the command.</param>
-        ///// <param name="command">The command that was found.</param>
-        ///// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
-        ///// <returns>true if a AUTH command was found, false if not.</returns>
-        //bool TryMakeAuth(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
-        //{
-        //    return new SmtpParser(_context.ServerOptions, tokenEnumerator).TryMakeAuth(out command, out errorResponse);
-        //}
-
-        ///// <summary>
-        ///// Try to make a STARTTLS command.
-        ///// </summary>
-        ///// <param name="tokenEnumerator">The token enumerator to use when matching the command.</param>
-        ///// <param name="command">The command that was found.</param>
-        ///// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
-        ///// <returns>true if a STARTTLS command was found, false if not.</returns>
-        //bool TryMakeStartTls(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
-        //{
-        //    return new SmtpParser(_context.ServerOptions, tokenEnumerator).TryMakeStartTls(out command, out errorResponse);
-        //}
-
-        ///// <summary>
-        ///// Try to make a MAIL command.
-        ///// </summary>
-        ///// <param name="tokenEnumerator">The token enumerator to use when matching the command.</param>
-        ///// <param name="command">The command that was found.</param>
-        ///// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
-        ///// <returns>true if a MAIL command was found, false if not.</returns>
-        //bool TryMakeMail(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
-        //{
-        //    return new SmtpParser(_context.ServerOptions, tokenEnumerator).TryMakeMail(out command, out errorResponse);
-        //}
-
-        ///// <summary>
-        ///// Try to make a RCPT command.
-        ///// </summary>
-        ///// <param name="tokenEnumerator">The token enumerator to use when matching the command.</param>
-        ///// <param name="command">The command that was found.</param>
-        ///// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
-        ///// <returns>true if a RCPT command was found, false if not.</returns>
-        //bool TryMakeRcpt(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
-        //{
-        //    return new SmtpParser(_context.ServerOptions, tokenEnumerator).TryMakeRcpt(out command, out errorResponse);
-        //}
-
-        ///// <summary>
-        ///// Try to make a Proxy Protocol PROXY header.
-        ///// </summary>
-        ///// <param name="tokenEnumerator">The token enumerator to use when matching the command.</param>
-        ///// <param name="command">The command that was found.</param>
-        ///// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
-        ///// <returns>true if a PROXY command was found, false if not.</returns>
-        //bool TryMakeProxy(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
-        //{
-        //    return new SmtpParser(_context.ServerOptions, tokenEnumerator).TryMakeProxy(out command, out errorResponse);
-        //}
-        
-        ///// <summary>
-        ///// Try to make a DATA command.
-        ///// </summary>
-        ///// <param name="tokenEnumerator">The token enumerator to use when matching the command.</param>
-        ///// <param name="command">The command that was found.</param>
-        ///// <param name="errorResponse">The error response that was returned if a command could not be matched.</param>
-        ///// <returns>true if a DATA command was found, false if not.</returns>
-        //bool TryMakeData(TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
-        //{
-        //    return new SmtpParser(_context.ServerOptions, tokenEnumerator).TryMakeData(out command, out errorResponse);
-        //}
-
-        /// <summary>
-        /// Returns the waiting for mail state.
-        /// </summary>
-        State WaitingForMail => _stateTable[SmtpState.WaitingForMail];
-
-        /// <summary>
-        /// Returns the waiting for mail in a secure transaction state.
-        /// </summary>
-        State WaitingForMailSecure => _stateTable[SmtpState.WaitingForMailSecure];
-
-        #region StateTable
-
-        class StateTable : IEnumerable
-        {
-            readonly Dictionary<SmtpState, State> _states = new Dictionary<SmtpState, State>();
-            SmtpState _current;
-            StateTransition _transition;
-
-            /// <summary>
-            /// Sets the initial state.
-            /// </summary>
-            /// <param name="stateId">The ID of the initial state.</param>
-            public void Initialize(SmtpState stateId)
-            {
-                _current = stateId;
-            }
-
-            /// <summary>
-            /// Returns the state with the given ID.
-            /// </summary>
-            /// <param name="stateId">The state ID to return.</param>
-            /// <returns>The state with the given id.</returns>
-            public State this[SmtpState stateId] => _states[stateId];
-
-            /// <summary>
-            /// Add the given state.
-            /// </summary>
-            /// <param name="state"></param>
-            public void Add(State state)
-            {
-                _states.Add(state.StateId, state);
-            }
-
-            ///// <summary>
-            ///// Advances the enumerator to the next command in the stream.
-            ///// </summary>
-            ///// <param name="context">The session context to use for making session based transitions.</param>
-            ///// <param name="tokenEnumerator">The token enumerator to accept the command from.</param>
-            ///// <param name="command">The command that is defined within the token enumerator.</param>
-            ///// <param name="errorResponse">The error that indicates why the command could not be made.</param>
-            ///// <returns>true if a valid command was found, false if not.</returns>
-            //public bool TryMake(SmtpSessionContext context, TokenEnumerator tokenEnumerator, out SmtpCommand command, out SmtpResponse errorResponse)
-            //{
-            //    if (_states[_current].Transitions.TryGetValue(tokenEnumerator.Peek().Text, out _transition) == false)
-            //    {
-            //        var response = $"expected {string.Join("/", _states[_current].Transitions.Keys)}";
-
-            //        command = null;
-            //        errorResponse = new SmtpResponse(SmtpReplyCode.SyntaxError, response);
-
-            //        return false;
-            //    }
-
-            //    if (_transition.Delegate(tokenEnumerator, out command, out errorResponse) == false)
-            //    {
-            //        return false;
-            //    }
-
-            //    return true;
-            //}
-
-            /// <summary>
-            /// Accept the state and transition to the new state.
-            /// </summary>
-            /// <param name="context">The session context to use for accepting session based transitions.</param>
-            public void Transition(SmtpSessionContext context)
-            {
-                _current = _transition.Transition(context);
-            }
-
-            /// <summary>
-            /// Returns an enumerator that iterates through a collection.
-            /// </summary>
-            /// <returns>An <see cref="T:System.Collections.IEnumerator"/> object that can be used to iterate through the collection.</returns>
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                // this is just here for the collection initializer syntax to work
-                throw new NotImplementedException();
-            }
-        }
-
-        #endregion
-
-        #region State
+        //#region State
 
         //class State : IEnumerable
         //{
@@ -396,64 +245,64 @@ namespace SmtpServer.StateMachine
         //    /// Constructor.
         //    /// </summary>
         //    /// <param name="stateId">The ID of the state.</param>
-        //    public State(SmtpState stateId)
+        //    public State(SmtpStateId stateId)
         //    {
         //        StateId = stateId;
         //        Transitions = new Dictionary<string, StateTransition>(StringComparer.OrdinalIgnoreCase);
         //    }
 
-        //    /// <summary>
-        //    /// Add a state action.
-        //    /// </summary>
-        //    /// <param name="command">The name of the SMTP command.</param>
-        //    /// <param name="tryMake">The function callback to create the command.</param>
-        //    public void Add(string command, TryMakeDelegate tryMake)
-        //    {
-        //        Add(command, tryMake, context => StateId);
-        //    }
+        //    ///// <summary>
+        //    ///// Add a state action.
+        //    ///// </summary>
+        //    ///// <param name="command">The name of the SMTP command.</param>
+        //    ///// <param name="tryMake">The function callback to create the command.</param>
+        //    //public void Add(string command, TryMakeDelegate tryMake)
+        //    //{
+        //    //    Add(command, tryMake, context => StateId);
+        //    //}
 
-        //    /// <summary>
-        //    /// Add a state action.
-        //    /// </summary>
-        //    /// <param name="command">The name of the SMTP command.</param>
-        //    /// <param name="tryMake">The function callback to create the command.</param>
-        //    /// <param name="transition">The state to transition to.</param>
-        //    public void Add(string command, TryMakeDelegate tryMake, SmtpState transition)
-        //    {
-        //        Add(command, tryMake, context => transition);
-        //    }
+        //    ///// <summary>
+        //    ///// Add a state action.
+        //    ///// </summary>
+        //    ///// <param name="command">The name of the SMTP command.</param>
+        //    ///// <param name="tryMake">The function callback to create the command.</param>
+        //    ///// <param name="transition">The state to transition to.</param>
+        //    //public void Add(string command, SmtpState transition)
+        //    //{
+        //    //    Add(command, tryMake, context => transition);
+        //    //}
 
-        //    /// <summary>
-        //    /// Add a state action.
-        //    /// </summary>
-        //    /// <param name="command">The name of the SMTP command.</param>
-        //    /// <param name="tryMake">The function callback to create the command.</param>
-        //    /// <param name="transition">The function to determine the new state.</param>
-        //    public void Add(string command, TryMakeDelegate tryMake, Func<SmtpSessionContext, SmtpState> transition)
-        //    {
-        //        Transitions.Add(command, new StateTransition(tryMake, transition));
-        //    }
+        //    ///// <summary>
+        //    ///// Add a state action.
+        //    ///// </summary>
+        //    ///// <param name="command">The name of the SMTP command.</param>
+        //    ///// <param name="tryMake">The function callback to create the command.</param>
+        //    ///// <param name="transition">The function to determine the new state.</param>
+        //    //public void Add(string command, Func<SmtpSessionContext, SmtpState> transition)
+        //    //{
+        //    //    Transitions.Add(command, new StateTransition(tryMake, transition));
+        //    //}
 
-        //    /// <summary>
-        //    /// Add a state action.
-        //    /// </summary>
-        //    /// <param name="command">The name of the SMTP command.</param>
-        //    /// <param name="tryMake">The function callback to create the command.</param>
-        //    /// <param name="transitionTo">The state to transition to.</param>
-        //    public void Replace(string command, TryMakeDelegate tryMake, SmtpState? transitionTo = null)
-        //    {
-        //        Remove(command);
-        //        Add(command, tryMake, transitionTo ?? StateId);
-        //    }
+        //    ///// <summary>
+        //    ///// Add a state action.
+        //    ///// </summary>
+        //    ///// <param name="command">The name of the SMTP command.</param>
+        //    ///// <param name="tryMake">The function callback to create the command.</param>
+        //    ///// <param name="transitionTo">The state to transition to.</param>
+        //    //public void Replace(string command, SmtpState? transitionTo = null)
+        //    //{
+        //    //    Remove(command);
+        //    //    Add(command, tryMake, transitionTo ?? StateId);
+        //    //}
 
-        //    /// <summary>
-        //    /// Clear the command from the current state.
-        //    /// </summary>
-        //    /// <param name="command">The command to clear.</param>
-        //    public void Remove(string command)
-        //    {
-        //        Transitions.Remove(command);
-        //    }
+        //    ///// <summary>
+        //    ///// Clear the command from the current state.
+        //    ///// </summary>
+        //    ///// <param name="command">The command to clear.</param>
+        //    //public void Remove(string command)
+        //    //{
+        //    //    Transitions.Remove(command);
+        //    //}
 
         //    /// <summary>
         //    /// Returns an enumerator that iterates through a collection.
@@ -468,7 +317,7 @@ namespace SmtpServer.StateMachine
         //    /// <summary>
         //    /// Gets ID of the state.
         //    /// </summary>
-        //    public SmtpState StateId { get; }
+        //    public SmtpStateId StateId { get; }
 
         //    /// <summary>
         //    /// Gets the actions that are available to the state.
@@ -476,118 +325,37 @@ namespace SmtpServer.StateMachine
         //    public Dictionary<string, StateTransition> Transitions { get; }
         //}
 
-        class State : IEnumerable
-        {
-            /// <summary>
-            /// Constructor.
-            /// </summary>
-            /// <param name="stateId">The ID of the state.</param>
-            public State(SmtpState stateId)
-            {
-                StateId = stateId;
-                Transitions = new List<StateTransition>();
-            }
+        //#endregion
 
-            /// <summary>
-            /// Add a state action.
-            /// </summary>
-            /// <param name="handler">The command handler to run for the state.</param>
-            public void Add(CommandHandler handler)
-            {
-                Add(handler, context => StateId);
-            }
+        //#region StateTransition
 
-            ///// <summary>
-            ///// Add a state action.
-            ///// </summary>
-            ///// <param name="tryMake">The function callback to create the command.</param>
-            ///// <param name="transition">The state to transition to.</param>
-            //public void Add(TryMakeDelegate tryMake, SmtpState transition)
-            //{
-            //    Add(tryMake, context => transition);
-            //}
+        //class StateTransition
+        //{
+        //    /// <summary>
+        //    /// Constructor.
+        //    /// </summary>
+        //    /// <param name="transition">The transition function to move from the previous state to the new state.</param>
+        //    public StateTransition(Func<SmtpSessionContext, SmtpStateId> transition)
+        //    {
+        //        Transition = transition;
+        //    }
 
-            /// <summary>
-            /// Add a state action.
-            /// </summary>
-            /// <param name="handler">The command handler to run for the state.</param>
-            /// <param name="transition">The function to determine the new state.</param>
-            public void Add(CommandHandler handler, Func<SmtpSessionContext, SmtpState> transition)
-            {
-                Transitions.Add(new StateTransition(handler, transition));
-            }
+        //    /// <summary>
+        //    /// Returns a value indicating whether or not the transition can be accepted.
+        //    /// </summary>
+        //    /// <param name="context">The context to use when determining the acceptance state.</param>
+        //    /// <returns>true if the transition can be accepted, false if not.</returns>
+        //    public bool CanAccept(SmtpSessionContext context)
+        //    {
+        //        return true;
+        //    }
 
-            /// <summary>
-            /// Add a state action.
-            /// </summary>
-            /// <param name="tryMake">The function callback to create the command.</param>
-            /// <param name="transitionTo">The state to transition to.</param>
-            public void Replace(TryMakeDelegate tryMake, SmtpState? transitionTo = null)
-            {
-                throw new NotImplementedException();
+        //    /// <summary>
+        //    /// The transition function to move from the previous state to the new state.
+        //    /// </summary>
+        //    public Func<SmtpSessionContext, SmtpStateId> Transition { get; }
+        //}
 
-                //Remove(command);
-                //Add(command, tryMake, transitionTo ?? StateId);
-            }
-
-            ///// <summary>
-            ///// Clear the command from the current state.
-            ///// </summary>
-            ///// <param name="command">The command to clear.</param>
-            //public void Remove(string command)
-            //{
-            //    Transitions.Remove(command);
-            //}
-
-            /// <summary>
-            /// Returns an enumerator that iterates through a collection.
-            /// </summary>
-            /// <returns>An <see cref="T:System.Collections.IEnumerator"/> object that can be used to iterate through the collection.</returns>
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                // this is just here for the collection initializer syntax to work
-                throw new NotImplementedException();
-            }
-
-            /// <summary>
-            /// Gets ID of the state.
-            /// </summary>
-            public SmtpState StateId { get; }
-
-            /// <summary>
-            /// Gets the actions that are available to the state.
-            /// </summary>
-            public IList<StateTransition> Transitions { get; }
-        }
-
-        #endregion
-
-        #region StateTransition
-
-        class StateTransition
-        {
-            /// <summary>
-            /// Constructor.
-            /// </summary>
-            /// <param name="command">The command to match the input.</param>
-            /// <param name="transition">The transition function to move from the previous state to the new state.</param>
-            public StateTransition(CommandHandler command, Func<SmtpSessionContext, SmtpState> transition)
-            {
-                Command = command;
-                Transition = transition;
-            }
-
-            /// <summary>
-            /// The command to match the input.
-            /// </summary>
-            public CommandHandler Command { get; }
-
-            /// <summary>
-            /// The transition function to move from the previous state to the new state.
-            /// </summary>
-            public Func<SmtpSessionContext, SmtpState> Transition { get; }
-        }
-
-        #endregion
+        //#endregion
     }
 }
