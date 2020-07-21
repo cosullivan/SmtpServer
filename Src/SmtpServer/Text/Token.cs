@@ -149,28 +149,6 @@ namespace SmtpServer.Text
             return !left.Equals(right);
         }
 
-        ///// <summary>
-        ///// Returns a value indicating the equality of the two objects.
-        ///// </summary>
-        ///// <param name="left">The left hand side of the comparisson.</param>
-        ///// <param name="right">The right hand side of the comparisson.</param>
-        ///// <returns>true if the left and right side are equal, false if not.</returns>
-        //public static bool operator ==(Token left, TokenKind right)
-        //{
-        //    return left.Kind == right;
-        //}
-
-        ///// <summary>
-        ///// Returns a value indicating the inequality of the two objects.
-        ///// </summary>
-        ///// <param name="left">The left hand side of the comparisson.</param>
-        ///// <param name="right">The right hand side of the comparisson.</param>
-        ///// <returns>false if the left and right side are equal, true if not.</returns>
-        //public static bool operator !=(Token left, TokenKind right)
-        //{
-        //    return left.Kind != right;
-        //}
-
         /// <summary>
         /// Returns the string representation of the token.
         /// </summary>

@@ -175,6 +175,9 @@ namespace SmtpServer.Text
 
                 case { } ch when ch == ']':
                     return new Token(TokenKind.RightBracket, ReadOne());
+
+                case { } ch when ch == ':':
+                    return new Token(TokenKind.Colon, ReadOne());
             }
 
             return new Token(TokenKind.Other, ReadOne());

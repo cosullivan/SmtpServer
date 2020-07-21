@@ -304,404 +304,353 @@ namespace SmtpServer.Protocol
 
             reader.Skip(TokenKind.Space);
 
-            //if (TryMake(TryMakeIPv4AddressLiteral, out address) == false && TryMake(TryMakeIPv6AddressLiteral, out address) == false)
-            //{
-            //    return false;
-            //}
+            if (reader.TryMake(TryMakeIPv4AddressLiteral) == false && reader.TryMake(TryMakeIPv6AddressLiteral) == false)
+            {
+                return false;
+            }
 
             reader.Skip(TokenKind.Space);
 
-            return reader.Take().Kind != TokenKind.RightBracket;
+            return reader.Take().Kind == TokenKind.RightBracket;
         }
 
-        //        /// <summary>
-        //        /// Try to make an IPv4 address literal.
-        //        /// </summary>
-        //        /// <param name="address">The address that was made, or undefined if it was not made.</param>
-        //        /// <returns>true if the address was made, false if not.</returns>
-        //        /// <remarks><![CDATA[ Snum 3("."  Snum) ]]></remarks>
-        //        public bool TryMakeIPv4AddressLiteral(out string address)
-        //        {
-        //            address = null;
-
-        //            if (TryMake(TryMakeSnum, out int snum) == false)
-        //            {
-        //                return false;
-        //            }
-
-        //            address = snum.ToString(CultureInfo.InvariantCulture);
-
-        //            for (var i = 0; i < 3; i++)
-        //            {
-        //                if (Enumerator.Take() != Tokens.Period)
-        //                {
-        //                    return false;
-        //                }
-
-        //                if (TryMake(TryMakeSnum, out snum) == false)
-        //                {
-        //                    return false;
-        //                }
-
-        //                address = string.Concat(address, '.', snum);
-        //            }
-
-        //            return true;
-        //        }
-
-        //        /// <summary>
-        //        /// Try to make an Snum (number in the range of 0-255).
-        //        /// </summary>
-        //        /// <param name="snum">The snum that was made, or undefined if it was not made.</param>
-        //        /// <returns>true if the snum was made, false if not.</returns>
-        //        /// <remarks><![CDATA[ 1*3DIGIT ]]></remarks>
-        //        public bool TryMakeSnum(out int snum)
-        //        {
-        //            snum = default;
-
-        //            var token = Enumerator.Take();
-
-        //            if (token.Kind == TokenKind.Number && int.TryParse(token.Text, out snum))
-        //            {
-        //                return snum >= 0 && snum <= 255;
-        //            }
-
-        //            return false;
-        //        }
-
-        //        /// <summary>
-        //        /// Try to make Ip version from ip version tag which is a formatted text IPv[Version]:
-        //        /// </summary>
-        //        /// <param name="version">IP version. IPv6 is supported atm.</param>
-        //        /// <returns>true if ip version tag can be extracted.</returns>
-        //        public bool TryMakeIpVersion(out int version)
-        //        {
-        //            version = default;
-
-        //            if (Enumerator.Take() != Tokens.Text.IpVersionTag)
-        //            { 
-        //                return false;
-        //            }
-
-        //            var token = Enumerator.Take();
-
-        //            if (token.Kind == TokenKind.Number && int.TryParse(token.Text, out var v))
-        //            {
-        //                version = v;
-        //                return Enumerator.Take() == Tokens.Colon;
-        //            }
-
-        //            return false;
-        //        }
-
-        //        /// <summary>
-        //        /// Try to make 16 bit hex number.
-        //        /// </summary>
-        //        /// <param name="hex">Extracted hex number.</param>
-        //        /// <returns>true if valid hex number can be extracted.</returns>
-        //        public bool TryMake16BitHex(out string hex)
-        //        {
-        //            hex = string.Empty;
-
-        //            var token = Enumerator.Peek();
-        //            while ((token.Kind == TokenKind.Text || token.Kind == TokenKind.Number) && hex.Length < 4)
-        //            {
-        //                if (token.Kind == TokenKind.Text && IsHex(token.Text) == false)
-        //                {
-        //                    return false;
-        //                }
-
-        //                hex = string.Concat(hex, token.Text);
-
-        //                Enumerator.Take();
-        //                token = Enumerator.Peek();
-        //            }
-
-        //            return hex.Length > 0 && hex.Length <= 4;
-
-        //            bool IsHex(string text)
-        //            {
-        //                return text.ToUpperInvariant().All(c => c >= 'A' && c <= 'F');
-        //            }
-        //        }
-
-        //        /// <summary>
-        //        /// Try to extract IPv6 address. https://tools.ietf.org/html/rfc4291 section 2.2 used for specification.
-        //        /// This method expects the address to have the IPv6: prefix.
-        //        /// </summary>
-        //        /// <param name="address">Extracted Ipv6 address.</param>
-        //        /// <returns>true if a valid Ipv6 address can be extracted.</returns>
-        //        public bool TryMakeIPv6AddressLiteral(out string address)
-        //        {
-        //            address = null;
-
-        //            if (TryMake(TryMakeIpVersion, out int ipVersion) == false || ipVersion != 6)
-        //            {
-        //                return false;
-        //            }
-
-        //            return TryMakeIPv6Address(out address);
-        //        }
-
-        //        /// <summary>
-        //        /// Try to make an IPv6 address.
-        //        /// </summary>
-        //        /// <param name="address">The address that was made, or undefined if it was not made.</param>
-        //        /// <returns>true if the address was made, false if not.</returns>
-        //        /// <remarks><![CDATA[  ]]></remarks>
-        //        public bool TryMakeIPv6Address(out string address)
-        //        {
-        //            return TryMake(TryMakeIPv6AddressRule1, out address)
-        //                || TryMake(TryMakeIPv6AddressRule2, out address)
-        //                || TryMake(TryMakeIPv6AddressRule3, out address)
-        //                || TryMake(TryMakeIPv6AddressRule4, out address)
-        //                || TryMake(TryMakeIPv6AddressRule5, out address)
-        //                || TryMake(TryMakeIPv6AddressRule6, out address)
-        //                || TryMake(TryMakeIPv6AddressRule7, out address)
-        //                || TryMake(TryMakeIPv6AddressRule8, out address)
-        //                || TryMake(TryMakeIPv6AddressRule9, out address);
-        //        }
-
-        //        bool TryMakeIPv6AddressRule1(out string address)
-        //        {
-        //            // 6( h16 ":" ) ls32
-        //            return TryMakeIPv6HexPostamble(6, out address);
-        //        }
-
-        //        bool TryMakeIPv6AddressRule2(out string address)
-        //        {
-        //            address = null;
-
-        //            // "::" 5( h16 ":" ) ls32
-        //            if (Enumerator.Take() != Tokens.Colon || Enumerator.Take() != Tokens.Colon)
-        //            {
-        //                return false;
-        //            }
-
-        //            if (TryMakeIPv6HexPostamble(5, out var hexPostamble) == false)
-        //            {
-        //                return false;
-        //            }
-
-        //            address = "::" + hexPostamble;
-        //            return true;
-        //        }
-
-        //        bool TryMakeIPv6AddressRule3(out string address)
-        //        {
-        //            // [ h16 ] "::" 4( h16 ":" ) ls32
-        //            address = null;
-
-        //            if (TryMakeIPv6HexPreamble(1, out var hexPreamble) == false)
-        //            {
-        //                return false;
-        //            }
-
-        //            if (TryMakeIPv6HexPostamble(4, out var hexPostamble) == false)
-        //            {
-        //                return false;
-        //            }
-
-        //            address = hexPreamble + hexPostamble;
-        //            return true;
-        //        }
-
-        //        bool TryMakeIPv6AddressRule4(out string address)
-        //        {
-        //            // [ *1( h16 ":" ) h16 ] "::" 3( h16 ":" ) ls32
-        //            address = null;
-
-        //            if (TryMakeIPv6HexPreamble(2, out var hexPreamble) == false)
-        //            {
-        //                return false;
-        //            }
-
-        //            if (TryMakeIPv6HexPostamble(3, out var hexPostamble) == false)
-        //            {
-        //                return false;
-        //            }
-
-        //            address = hexPreamble + hexPostamble;
-        //            return true;
-        //        }
-
-        //        bool TryMakeIPv6AddressRule5(out string address)
-        //        {
-        //            // [ *2( h16 ":" ) h16 ] "::" 2( h16 ":" ) ls32
-        //            address = null;
-
-        //            if (TryMakeIPv6HexPreamble(3, out var hexPreamble) == false)
-        //            {
-        //                return false;
-        //            }
-
-        //            if (TryMakeIPv6HexPostamble(2, out var hexPostamble) == false)
-        //            {
-        //                return false;
-        //            }
-
-        //            address = hexPreamble + hexPostamble;
-        //            return true;
-        //        }
-
-        //        bool TryMakeIPv6AddressRule6(out string address)
-        //        {
-        //            // [ *3( h16 ":" ) h16 ] "::" h16 ":" ls32
-        //            address = null;
-
-        //            if (TryMakeIPv6HexPreamble(4, out var hexPreamble) == false)
-        //            {
-        //                return false;
-        //            }
-
-        //            if (TryMakeIPv6HexPostamble(1, out var hexPostamble) == false)
-        //            {
-        //                return false;
-        //            }
-
-        //            address = hexPreamble + hexPostamble;
-        //            return true;
-        //        }
-
-        //        bool TryMakeIPv6AddressRule7(out string address)
-        //        {
-        //            // [ *4( h16 ":" ) h16 ] "::" ls32
-        //            address = null;
-
-        //            if (TryMakeIPv6HexPreamble(5, out var hexPreamble) == false)
-        //            {
-        //                return false;
-        //            }
-
-        //            if (TryMakeIPv6Ls32(out var ls32) == false)
-        //            {
-        //                return false;
-        //            }
-
-        //            address = hexPreamble + ls32;
-        //            return true;
-        //        }
-
-        //        bool TryMakeIPv6AddressRule8(out string address)
-        //        {
-        //            // [ *5( h16 ":" ) h16 ] "::" h16
-        //            address = null;
-
-        //            if (TryMakeIPv6HexPreamble(6, out var hexPreamble) == false)
-        //            {
-        //                return false;
-        //            }
-
-        //            if (TryMake16BitHex(out var hex) == false)
-        //            {
-        //                return false;
-        //            }
-
-        //            address = hexPreamble + hex;
-        //            return true;
-        //        }
-
-        //        bool TryMakeIPv6AddressRule9(out string address)
-        //        {
-        //            // [ *6( h16 ":" ) h16 ] "::"
-        //            return TryMakeIPv6HexPreamble(7, out address);
-        //        }
-
-        //        bool TryMakeIPv6HexPreamble(int maximum, out string hexPreamble)
-        //        {
-        //            hexPreamble = null;
-
-        //            for (var i = 0; i < maximum; i++)
-        //            {
-        //                if (TryMake(TryMakeTerminal))
-        //                {
-        //                    hexPreamble += "::";
-        //                    return true;
-        //                }
-
-        //                if (i > 0)
-        //                {
-        //                    if (Enumerator.Take() != Tokens.Colon)
-        //                    {
-        //                        return false;
-        //                    }
-
-        //                    hexPreamble += ":";
-        //                }
-
-        //                if (TryMake16BitHex(out var hex) == false)
-        //                {
-        //                    return false;
-        //                }
-
-        //                hexPreamble += hex;
-        //            }
-
-        //            hexPreamble += "::";
-
-        //            return TryMake(TryMakeTerminal);
-
-        //            bool TryMakeTerminal()
-        //            {
-        //                return Enumerator.Take() == Tokens.Colon && Enumerator.Take() == Tokens.Colon;
-        //            }
-        //        }
-
-        //        bool TryMakeIPv6HexPostamble(int count, out string hexPostamble)
-        //        {
-        //            hexPostamble = null;
-
-        //            while (count-- > 0)
-        //            {
-        //                if (TryMake16BitHex(out var hex) == false)
-        //                {
-        //                    return false;
-        //                }
-
-        //                hexPostamble += hex;
-
-        //                if (Enumerator.Take() != Tokens.Colon)
-        //                {
-        //                    return false;
-        //                }
-
-        //                hexPostamble += ":";
-        //            }
-
-        //            if (TryMakeIPv6Ls32(out var ls32) == false)
-        //            {
-        //                return false;
-        //            }
-
-        //            hexPostamble += ls32;
-        //            return true;
-        //        }
-
-        //        bool TryMakeIPv6Ls32(out string address)
-        //        {
-        //            if (TryMake(TryMakeIPv4AddressLiteral, out address))
-        //            {
-        //                return true;
-        //            }
-
-        //            if (TryMake16BitHex(out var hex1) == false)
-        //            {
-        //                return false;
-        //            }
-
-        //            if (Enumerator.Take() != Tokens.Colon)
-        //            {
-        //                return false;
-        //            }
-
-        //            if (TryMake16BitHex(out var hex2) == false)
-        //            {
-        //                return false;
-        //            }
-
-        //            address = hex1 + ":" + hex2;
-        //            return true;
-        //        }
+        /// <summary>
+        /// Try to make an IPv4 address literal.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the address was made, false if not.</returns>
+        /// <remarks><![CDATA[ Snum 3("."  Snum) ]]></remarks>
+        public bool TryMakeIPv4AddressLiteral(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeSnum) == false)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < 3; i++)
+            {
+                if (reader.Take().Kind != TokenKind.Period)
+                {
+                    return false;
+                }
+
+                if (reader.TryMake(TryMakeSnum) == false)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Try to make an Snum (number in the range of 0-255).
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the snum was made, false if not.</returns>
+        /// <remarks><![CDATA[ 1*3DIGIT ]]></remarks>
+        public bool TryMakeSnum(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeNumber, out var number) == false)
+            {
+                return false;
+            }
+
+            return int.TryParse(StringUtil.Create(number), out var snum) && snum >= 0 && snum <= 255;
+        }
+
+        ///// <summary>
+        ///// Try to make Ip version from ip version tag which is a formatted text IPv[Version]:
+        ///// </summary>
+        ///// <param name="reader">The reader to perform the operation on.</param>
+        ///// <returns>true if ip version tag can be extracted.</returns>
+        //public bool TryMakeIpVersion(ref TokenReader reader)
+        //{
+        //    //version = default;
+
+        //    //if (Enumerator.Take() != Tokens.Text.IpVersionTag)
+        //    //{
+        //    //    return false;
+        //    //}
+
+        //    //var token = Enumerator.Take();
+
+        //    //if (token.Kind == TokenKind.Number && int.TryParse(token.Text, out var v))
+        //    //{
+        //    //    version = v;
+        //    //    return Enumerator.Take() == Tokens.Colon;
+        //    //}
+
+        //    //return false;
+        //    throw new NotImplementedException();
+        //}
+
+        /// <summary>
+        /// Try to extract IPv6 address. https://tools.ietf.org/html/rfc4291 section 2.2 used for specification.
+        /// This method expects the address to have the IPv6: prefix.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if a valid Ipv6 address can be extracted.</returns>
+        public bool TryMakeIPv6AddressLiteral(ref TokenReader reader)
+        {
+            if (TryMakeIPv6(ref reader) == false)
+            {
+                return false;
+            }
+
+            return TryMakeIPv6Address(ref reader);
+        }
+
+        /// <summary>
+        /// Try to make Ip version from ip version tag which is a formatted text IPv[Version]:
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if ip version tag can be extracted.</returns>
+        public bool TryMakeIPv6(ref TokenReader reader)
+        {
+            if (TryMakeIPv(ref reader) == false)
+            {
+                return false;
+            }
+
+            var token = reader.Take();
+
+            if (token.Kind != TokenKind.Number || token.Text.Length > 1)
+            {
+                return false;
+            }
+
+            return token.Text[0] == '6';
+        }
+
+        /// <summary>
+        /// Try to make the IPv text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if IPv text sequence can be made.</returns>
+        public bool TryMakeIPv(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[3];
+                command[0] = 'I';
+                command[1] = 'P';
+                command[2] = 'v';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Try to make an IPv6 address.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the address was made, false if not.</returns>
+        /// <remarks><![CDATA[  ]]></remarks>
+        public bool TryMakeIPv6Address(ref TokenReader reader)
+        {
+            return reader.TryMake(TryMakeIPv6AddressRule1)
+                || reader.TryMake(TryMakeIPv6AddressRule2)
+                || reader.TryMake(TryMakeIPv6AddressRule3)
+                || reader.TryMake(TryMakeIPv6AddressRule4)
+                || reader.TryMake(TryMakeIPv6AddressRule5)
+                || reader.TryMake(TryMakeIPv6AddressRule6)
+                || reader.TryMake(TryMakeIPv6AddressRule7)
+                || reader.TryMake(TryMakeIPv6AddressRule8)
+                || reader.TryMake(TryMakeIPv6AddressRule9);
+        }
+
+        public bool TryMakeIPv6AddressRule1(ref TokenReader reader)
+        {
+            // 6( h16 ":" ) ls32
+            return TryMakeIPv6HexPostamble(ref reader, 6);
+        }
+
+        bool TryMakeIPv6AddressRule2(ref TokenReader reader)
+        {
+            // "::" 5( h16 ":" ) ls32
+            if (reader.Take().Kind != TokenKind.Colon || reader.Take().Kind != TokenKind.Colon)
+            {
+                return false;
+            }
+
+            return TryMakeIPv6HexPostamble(ref reader, 5);
+        }
+
+        bool TryMakeIPv6AddressRule3(ref TokenReader reader)
+        {
+            // [ h16 ] "::" 4( h16 ":" ) ls32
+            if (TryMakeIPv6HexPreamble(ref reader, 1) == false)
+            {
+                return false;
+            }
+
+            return TryMakeIPv6HexPostamble(ref reader, 4);
+        }
+
+        bool TryMakeIPv6AddressRule4(ref TokenReader reader)
+        {
+            // [ *1( h16 ":" ) h16 ] "::" 3( h16 ":" ) ls32
+            if (TryMakeIPv6HexPreamble(ref reader, 2) == false)
+            {
+                return false;
+            }
+
+            return TryMakeIPv6HexPostamble(ref reader, 3);
+        }
+
+        bool TryMakeIPv6AddressRule5(ref TokenReader reader)
+        {
+            // [ *2( h16 ":" ) h16 ] "::" 2( h16 ":" ) ls32
+            if (TryMakeIPv6HexPreamble(ref reader, 3) == false)
+            {
+                return false;
+            }
+
+            return TryMakeIPv6HexPostamble(ref reader, 2);
+        }
+
+        bool TryMakeIPv6AddressRule6(ref TokenReader reader)
+        {
+            // [ *3( h16 ":" ) h16 ] "::" h16 ":" ls32
+            if (TryMakeIPv6HexPreamble(ref reader, 4) == false)
+            {
+                return false;
+            }
+
+            return TryMakeIPv6HexPostamble(ref reader, 1);
+        }
+
+        bool TryMakeIPv6AddressRule7(ref TokenReader reader)
+        {
+            // [ *4( h16 ":" ) h16 ] "::" ls32
+            if (TryMakeIPv6HexPreamble(ref reader, 5) == false)
+            {
+                return false;
+            }
+
+            return TryMakeIPv6Ls32(ref reader);
+        }
+
+        bool TryMakeIPv6AddressRule8(ref TokenReader reader)
+        {
+            // [ *5( h16 ":" ) h16 ] "::" h16
+            if (TryMakeIPv6HexPreamble(ref reader, 6) == false)
+            {
+                return false;
+            }
+
+            return TryMake16BitHex(ref reader);
+        }
+
+        bool TryMakeIPv6AddressRule9(ref TokenReader reader)
+        {
+            // [ *6( h16 ":" ) h16 ] "::"
+            return TryMakeIPv6HexPreamble(ref reader, 7);
+        }
+
+        bool TryMakeIPv6HexPreamble(ref TokenReader reader, int maximum)
+        {
+            for (var i = 0; i < maximum; i++)
+            {
+                if (reader.TryMake(TryMakeTerminal))
+                {
+                    return true;
+                }
+
+                if (i > 0)
+                {
+                    if (reader.Take().Kind != TokenKind.Colon)
+                    {
+                        return false;
+                    }
+                }
+
+                if (TryMake16BitHex(ref reader) == false)
+                {
+                    return false;
+                }
+            }
+
+            return reader.TryMake(TryMakeTerminal);
+
+            static bool TryMakeTerminal(ref TokenReader reader)
+            {
+                return reader.Take().Kind == TokenKind.Colon && reader.Take().Kind == TokenKind.Colon;
+            }
+        }
+
+        bool TryMakeIPv6HexPostamble(ref TokenReader reader, int count)
+        {
+            while (count-- > 0)
+            {
+                if (TryMake16BitHex(ref reader) == false)
+                {
+                    return false;
+                }
+
+                if (reader.Take().Kind != TokenKind.Colon)
+                {
+                    return false;
+                }
+            }
+
+            return TryMakeIPv6Ls32(ref reader);
+        }
+
+        bool TryMakeIPv6Ls32(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeIPv4AddressLiteral))
+            {
+                return true;
+            }
+
+            if (TryMake16BitHex(ref reader) == false)
+            {
+                return false;
+            }
+
+            if (reader.Take().Kind != TokenKind.Colon)
+            {
+                return false;
+            }
+
+            return TryMake16BitHex(ref reader);
+        }
+
+        /// <summary>
+        /// Try to make 16 bit hex number.
+        /// </summary>
+        /// <param name="reader">The token reader to perform the operation on.</param>
+        /// <returns>true if valid hex number can be extracted.</returns>
+        public bool TryMake16BitHex(ref TokenReader reader)
+        {
+            var hexLength = 0L;
+
+            var token = reader.Peek();
+            while ((token.Kind == TokenKind.Text || token.Kind == TokenKind.Number) && hexLength < 4)
+            {
+                if (token.Kind == TokenKind.Text && IsHex(ref token) == false)
+                {
+                    return false;
+                }
+
+                hexLength += reader.Take().Text.Length;
+
+                token = reader.Peek();
+            }
+
+            return hexLength > 0 && hexLength <= 4;
+
+            static bool IsHex(ref Token token)
+            {
+                var span = token.Text;
+
+                return span.IsHex();
+            }
+        }
 
         /// <summary>
         /// Try to make a text/number/hyphen string.

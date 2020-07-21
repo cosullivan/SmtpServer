@@ -31,5 +31,18 @@ namespace SmtpServer.Text
 
             throw new NotImplementedException();
         }
+
+        internal static bool IsHex(this ref ReadOnlySpan<byte> buffer)
+        {
+            for (var i = 0; i < buffer.Length; i++)
+            {
+                if ((buffer[i] < 'a' || buffer[i] > 'f') && (buffer[i] < 'A' || buffer[i] > 'F'))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
     }
 }

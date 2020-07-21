@@ -43,6 +43,11 @@
         RightBracket = 7,
 
         /// <summary>
+        /// :
+        /// </summary>
+        Colon = 8,
+
+        /// <summary>
         /// Unknown.
         /// </summary>
         Other = 99,
