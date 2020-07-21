@@ -16,9 +16,24 @@ namespace SmtpServer.StateMachine
             Transitions.Add(command, new SmtpStateTransition(context => true, context => StateId));
         }
 
+        internal void Add(string command, SmtpStateId state)
+        {
+            Transitions.Add(command, new SmtpStateTransition(context => true, context => state));
+        }
+
         internal void Add(string command, Func<SmtpSessionContext, SmtpStateId> transitionDelegate)
         {
             Transitions.Add(command, new SmtpStateTransition(context => true, transitionDelegate));
+        }
+
+        internal void Add(string command, Func<SmtpSessionContext, bool> canAcceptDelegate)
+        {
+            Transitions.Add(command, new SmtpStateTransition(canAcceptDelegate, context => StateId));
+        }
+
+        internal void Add(string command, Func<SmtpSessionContext, bool> canAcceptDelegate, SmtpStateId state)
+        {
+            Transitions.Add(command, new SmtpStateTransition(canAcceptDelegate, context => state));
         }
 
         internal void Add(string command, Func<SmtpSessionContext, bool> canAcceptDelegate, Func<SmtpSessionContext, SmtpStateId> transitionDelegate)

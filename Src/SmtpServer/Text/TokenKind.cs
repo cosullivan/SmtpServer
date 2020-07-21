@@ -23,14 +23,24 @@
         Space = 3,
 
         /// <summary>
-        /// A hyphen character ('-').
+        /// -
         /// </summary>
         Hyphen = 4,
         
         /// <summary>
-        /// A period character ('.');
+        /// .
         /// </summary>
         Period = 5,
+
+        /// <summary>
+        /// [
+        /// </summary>
+        LeftBracket = 6,
+
+        /// <summary>
+        /// ]
+        /// </summary>
+        RightBracket = 7,
 
         /// <summary>
         /// Unknown.

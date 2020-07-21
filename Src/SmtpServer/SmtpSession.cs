@@ -117,110 +117,47 @@ namespace SmtpServer
             }
         }
 
-        static ValueTask<SmtpCommand> ReadCommandAsync(ISessionContext context, CancellationToken cancellationToken)
+        static async ValueTask<SmtpCommand> ReadCommandAsync(ISessionContext context, CancellationToken cancellationToken)
         {
-            // TODO: read timouts??
-            return context.Pipe.Input.ReadLineAsync(
-                buffer =>
-                {
-                    var parser = new SmtpParser(context.ServerOptions);
-                    
-                    if (parser.TryMake(ref buffer, out var command, out var errorResponse) == false)
+            var timeout = new CancellationTokenSource(context.ServerOptions.CommandWaitTimeout);
+
+            var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token, cancellationToken);
+
+            try
+            {
+                return await context.Pipe.Input.ReadLineAsync(
+                    buffer =>
                     {
-                        throw new SmtpResponseException(errorResponse);
-                    }
+                        Console.WriteLine(StringUtil.Create(buffer));
 
-                    return command;
-                }, 
-                cancellationToken);
+                        var parser = new SmtpParser(context.ServerOptions);
+
+                        if (parser.TryMake(ref buffer, out var command, out var errorResponse) == false)
+                        {
+                            throw new SmtpResponseException(errorResponse);
+                        }
+
+                        return command;
+                    },
+                    cancellationTokenSource.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                if (timeout.IsCancellationRequested)
+                {
+                    await context.Pipe.Output.WriteReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "Timeout whilst waiting for input."), cancellationToken).ConfigureAwait(false);
+                    return null;
+                }
+
+                await context.Pipe.Output.WriteReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "The session has be cancelled."), CancellationToken.None).ConfigureAwait(false);
+                return null;
+            }
+            finally
+            {
+                timeout.Dispose();
+                cancellationTokenSource.Dispose();
+            }
         }
-
-        ///// <summary>
-        ///// Execute the command handler against the specified session context.
-        ///// </summary>
-        ///// <param name="context">The session context to execute the command handler against.</param>
-        ///// <param name="cancellationToken">The cancellation token.</param>
-        ///// <returns>A task which asynchronously performs the execution.</returns>
-        //async Task ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
-        //{
-        //    var retries = _context.ServerOptions.MaxRetryCount;
-
-        //    while (retries-- > 0 && context.IsQuitRequested == false && cancellationToken.IsCancellationRequested == false)
-        //    {
-        //        var text = await ReadCommandInputAsync(context, cancellationToken).ConfigureAwait(false);
-
-        //        if (text == null)
-        //        {
-        //            return;
-        //        }
-
-        //        if (TryMake(context, text, out var command, out var response) == false)
-        //        {
-        //            await context.NetworkPipe.ReplyAsync(CreateErrorResponse(response, retries), cancellationToken).ConfigureAwait(false);
-        //            continue;
-        //        }
-
-        //        try
-        //        {
-        //            if (await ExecuteAsync(command, context, cancellationToken).ConfigureAwait(false))
-        //            {
-        //                _stateMachine.Transition(context);
-        //            }
-
-        //            retries = _context.ServerOptions.MaxRetryCount;
-        //        }
-        //        catch (SmtpResponseException responseException) when (responseException.IsQuitRequested)
-        //        {
-        //            await context.NetworkPipe.ReplyAsync(responseException.Response, cancellationToken).ConfigureAwait(false);
-        //        }
-        //        catch (SmtpResponseException responseException)
-        //        {
-        //            response = CreateErrorResponse(responseException.Response, retries);
-
-        //            await context.NetworkPipe.ReplyAsync(response, cancellationToken).ConfigureAwait(false);
-        //        }
-        //        catch (OperationCanceledException)
-        //        {
-        //            await context.NetworkPipe.ReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "The session has be cancelled."), CancellationToken.None).ConfigureAwait(false);
-        //        }
-        //    }
-        //}
-
-        ///// <summary>
-        ///// Read the command input.
-        ///// </summary>
-        ///// <param name="context">The session context to execute the command handler against.</param>
-        ///// <param name="cancellationToken">The cancellation token.</param>
-        ///// <returns>The input that was received from the client.</returns>
-        //async Task<IReadOnlyList<ArraySegment<byte>>> ReadCommandInputAsync(SmtpSessionContext context, CancellationToken cancellationToken)
-        //{
-        //    throw new NotImplementedException();
-
-        //    //var timeout = new CancellationTokenSource(_context.ServerOptions.CommandWaitTimeout);
-
-        //    //var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token, cancellationToken);
-
-        //    //try
-        //    //{
-        //    //    return await context.NetworkPipe.ReadLineAsync(cancellationTokenSource.Token).ConfigureAwait(false);
-        //    //}
-        //    //catch (OperationCanceledException)
-        //    //{
-        //    //    if (timeout.IsCancellationRequested)
-        //    //    {
-        //    //        await context.NetworkPipe.ReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "Timeout whilst waiting for input."), cancellationToken).ConfigureAwait(false);
-        //    //        return null;
-        //    //    }
-
-        //    //    await context.NetworkPipe.ReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "The session has be cancelled."), CancellationToken.None).ConfigureAwait(false);
-        //    //    return null;
-        //    //}
-        //    //finally
-        //    //{
-        //    //    timeout.Dispose();
-        //    //    cancellationTokenSource.Dispose();
-        //    //}
-        //}
 
         /// <summary>
         /// Create an error response.

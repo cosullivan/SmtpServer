@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Buffers;
-using System.Buffers.Text;
-using System.Text;
-using System.Threading.Tasks.Sources;
 using SmtpServer.Text;
 
 namespace SmtpServer.Protocol
@@ -62,11 +59,11 @@ namespace SmtpServer.Protocol
                 return true;
             }
 
-            //if (TryMakeAddressLiteral(out var address))
-            //{
-            //    command = new EhloCommand(_options, address);
-            //    return true;
-            //}
+            if (reader.TryMake(TryMakeAddressLiteral, out var address))
+            {
+                command = new EhloCommand(_options, StringUtil.Create(address));
+                return true;
+            }
 
             errorResponse = SmtpResponse.SyntaxError;
             return false;
@@ -292,39 +289,30 @@ namespace SmtpServer.Protocol
             return true;
         }
 
-        //        /// <summary>
-        //        /// Try to make a address.
-        //        /// </summary>
-        //        /// <param name="address">The address that was made, or undefined if it was not made.</param>
-        //        /// <returns>true if the address was made, false if not.</returns>
-        //        /// <remarks><![CDATA["[" ( IPv4-address-literal / IPv6-address-literal / General-address-literal ) "]"]]></remarks>
-        //        public bool TryMakeAddressLiteral(out string address)
-        //        {
-        //            address = null;
+        /// <summary>
+        /// Try to make a address.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the address was made, false if not.</returns>
+        /// <remarks><![CDATA["[" ( IPv4-address-literal / IPv6-address-literal / General-address-literal ) "]"]]></remarks>
+        public bool TryMakeAddressLiteral(ref TokenReader reader)
+        {
+            if (reader.Take().Kind != TokenKind.LeftBracket)
+            {
+                return false;
+            }
 
-        //            if (Enumerator.Take() != Tokens.LeftBracket)
-        //            {
-        //                return false;
-        //            }
+            reader.Skip(TokenKind.Space);
 
-        //            // skip any whitespace
-        //            Enumerator.Skip(TokenKind.Space);
+            //if (TryMake(TryMakeIPv4AddressLiteral, out address) == false && TryMake(TryMakeIPv6AddressLiteral, out address) == false)
+            //{
+            //    return false;
+            //}
 
-        //            if (TryMake(TryMakeIPv4AddressLiteral, out address) == false && TryMake(TryMakeIPv6AddressLiteral, out address) == false)
-        //            {
-        //                return false;
-        //            }
+            reader.Skip(TokenKind.Space);
 
-        //            // skip any whitespace
-        //            Enumerator.Skip(TokenKind.Space);
-
-        //            if (Enumerator.Take() != Tokens.RightBracket)
-        //            {
-        //                return false;
-        //            }
-
-        //            return address != null;
-        //        }
+            return reader.Take().Kind != TokenKind.RightBracket;
+        }
 
         //        /// <summary>
         //        /// Try to make an IPv4 address literal.

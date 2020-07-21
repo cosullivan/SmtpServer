@@ -33,6 +33,12 @@ namespace SmtpServer.Protocol
         /// if the current state is to be maintained.</returns>
         internal override async Task<bool> ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
+            if (context.EndpointDefinition.AuthenticationRequired && context.Authentication.IsAuthenticated == false)
+            {
+                await context.Pipe.Output.WriteReplyAsync(SmtpResponse.AuthenticationRequired, cancellationToken).ConfigureAwait(false);
+                return false;
+            }
+
             throw new NotImplementedException("TODO: might need to check for Authentication here in place of the SmtpStateMachine?");
 
             //context.Transaction.Reset();

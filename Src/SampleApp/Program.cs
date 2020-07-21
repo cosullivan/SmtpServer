@@ -17,7 +17,8 @@ namespace SampleApp
 
             //SimpleExample.Run();
 
-            var text = new ReadOnlySequence<byte>(Encoding.ASCII.GetBytes("EHLO abc-1-def.mail.com"));
+            //var text = new ReadOnlySequence<byte>(Encoding.ASCII.GetBytes("EHLO abc-1-def.mail.com"));
+            var text = new ReadOnlySequence<byte>(Encoding.ASCII.GetBytes("EHLO [127.0.0.1]"));
 
             var reader = new TokenReader(text);
             //while (reader.Peek() != default)

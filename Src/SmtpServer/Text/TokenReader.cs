@@ -169,22 +169,16 @@ namespace SmtpServer.Text
 
                 case { } ch when ch == '.':
                     return new Token(TokenKind.Period, ReadOne());
+
+                case { } ch when ch == '[':
+                    return new Token(TokenKind.LeftBracket, ReadOne());
+
+                case { } ch when ch == ']':
+                    return new Token(TokenKind.RightBracket, ReadOne());
             }
 
             return new Token(TokenKind.Other, ReadOne());
         }
-
-        ///// <summary>
-        ///// Consume the token.
-        ///// </summary>
-        ///// <param name="token">The token to consume.</param>
-        ///// <returns>The token that was consumed.</returns>
-        //Token Consume(Token token)
-        //{
-        //    _spanIndex += token.Text.Length;
-
-        //    return token;
-        //}
 
         /// <summary>
         /// Move to the next span in the sequence.

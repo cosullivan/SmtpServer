@@ -7,8 +7,6 @@ namespace SmtpServer.StateMachine
 {
     internal sealed class SmtpStateTable : IEnumerable
     {
-        // TODO: this is the definition and should be made shareable amongst all sessions 
-
         internal static readonly SmtpStateTable Shared = new SmtpStateTable
         {
             new SmtpState(SmtpStateId.Initialized)
@@ -17,14 +15,55 @@ namespace SmtpServer.StateMachine
                 { RsetCommand.Command },
                 { QuitCommand.Command },
                 { ProxyCommand.Command },
-                { HeloCommand.Command, TransitionToWaitingForMailSecureWhenSecure },
-                { EhloCommand.Command, TransitionToWaitingForMailSecureWhenSecure }
+                { HeloCommand.Command, WaitingForMailSecureWhenSecure },
+                { EhloCommand.Command, WaitingForMailSecureWhenSecure }
+            },
+            new SmtpState(SmtpStateId.WaitingForMail)
+            {
+                { NoopCommand.Command },
+                { RsetCommand.Command },
+                { QuitCommand.Command },
+                { StartTlsCommand.Command, CanAcceptStartTls, SmtpStateId.WaitingForMailSecure },
+                { AuthCommand.Command, context => context.EndpointDefinition.AllowUnsecureAuthentication && context.Authentication.IsAuthenticated == false },
+                { HeloCommand.Command, SmtpStateId.WaitingForMail },
+                { EhloCommand.Command, SmtpStateId.WaitingForMail },
+                { MailCommand.Command, SmtpStateId.WithinTransaction }
+            },
+            new SmtpState(SmtpStateId.WaitingForMailSecure)
+            {
+                { NoopCommand.Command },
+                { RsetCommand.Command },
+                { QuitCommand.Command },
+                { AuthCommand.Command, context => context.Authentication.IsAuthenticated == false },
+                { HeloCommand.Command, SmtpStateId.WaitingForMailSecure },
+                { EhloCommand.Command, SmtpStateId.WaitingForMailSecure },
+                { MailCommand.Command, SmtpStateId.WithinTransaction }
+            },
+            new SmtpState(SmtpStateId.WithinTransaction)
+            {
+                { NoopCommand.Command },
+                { RsetCommand.Command, WaitingForMailSecureWhenSecure },
+                { QuitCommand.Command },
+                { RcptCommand.Command, SmtpStateId.CanAcceptData },
+            },
+            new SmtpState(SmtpStateId.CanAcceptData)
+            {
+                { NoopCommand.Command },
+                { RsetCommand.Command, WaitingForMailSecureWhenSecure },
+                { QuitCommand.Command },
+                { RcptCommand.Command },
+                { DataCommand.Command, SmtpStateId.WaitingForMail },
             }
         };
 
-        static SmtpStateId TransitionToWaitingForMailSecureWhenSecure(SmtpSessionContext context)
+        static SmtpStateId WaitingForMailSecureWhenSecure(SmtpSessionContext context)
         {
             return context.Pipe.IsSecure ? SmtpStateId.WaitingForMailSecure : SmtpStateId.WaitingForMail;
+        }
+
+        static bool CanAcceptStartTls(SmtpSessionContext context)
+        {
+            return context.ServerOptions.ServerCertificate != null && context.Pipe.IsSecure == false;
         }
 
         readonly IDictionary<SmtpStateId, SmtpState> _states = new Dictionary<SmtpStateId, SmtpState>();
