@@ -178,6 +178,27 @@ namespace SmtpServer.Text
 
                 case { } ch when ch == ':':
                     return new Token(TokenKind.Colon, ReadOne());
+
+                case { } ch when ch == '>':
+                    return new Token(TokenKind.GreaterThan, ReadOne());
+
+                case { } ch when ch == '<':
+                    return new Token(TokenKind.LessThan, ReadOne());
+
+                case { } ch when ch == ',':
+                    return new Token(TokenKind.Comma, ReadOne());
+
+                case { } ch when ch == '@':
+                    return new Token(TokenKind.At, ReadOne());
+
+                case { } ch when ch == '"':
+                    return new Token(TokenKind.Quote, ReadOne());
+
+                case { } ch when ch == '=':
+                    return new Token(TokenKind.Equal, ReadOne());
+
+                case { } ch when ch == '\\':
+                    return new Token(TokenKind.BackSlash, ReadOne());
             }
 
             return new Token(TokenKind.Other, ReadOne());

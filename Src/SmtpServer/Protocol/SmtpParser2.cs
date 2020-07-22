@@ -24,7 +24,8 @@ namespace SmtpServer.Protocol
         /// <returns>Returns true if a command could be made, false if not.</returns>
         public bool TryMake(ref ReadOnlySequence<byte> buffer, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return TryMake(buffer, TryMakeEhlo, out command, out errorResponse);
+            return TryMake(buffer, TryMakeEhlo, out command, out errorResponse)
+                || TryMake(buffer, TryMakeMail, out command, out errorResponse);
 
             static bool TryMake(ReadOnlySequence<byte> buffer, TryMakeDelegate tryMakeDelegate, out SmtpCommand command, out SmtpResponse errorResponse)
             {
@@ -46,7 +47,7 @@ namespace SmtpServer.Protocol
             command = null;
             errorResponse = null;
 
-            if (reader.TryMake(TryMakeEhlo) == false)
+            if (TryMakeEhlo(ref reader) == false)
             {
                 return false;
             }
@@ -70,10 +71,10 @@ namespace SmtpServer.Protocol
         }
 
         /// <summary>
-        /// Try to make the EHLO token.
+        /// Try to make the EHLO text sequence.
         /// </summary>
         /// <param name="reader">The reader to perform the operation on.</param>
-        /// <returns>true if the EHLO command could be made, false if not.</returns>
+        /// <returns>true if the EHLO text sequence  could be made, false if not.</returns>
         public bool TryMakeEhlo(ref TokenReader reader)
         {
             if (reader.TryMake(TryMakeText, out var text))
@@ -90,159 +91,221 @@ namespace SmtpServer.Protocol
             return false;
         }
 
-        //        /// <summary>
-        //        /// Try to make a reverse path.
-        //        /// </summary>
-        //        /// <param name="mailbox">The reverse path that was made, or undefined if it was not made.</param>
-        //        /// <returns>true if the reverse path was made, false if not.</returns>
-        //        /// <remarks><![CDATA[Path / "<>"]]></remarks>
-        //        public bool TryMakeReversePath(out IMailbox mailbox)
-        //        {
-        //            if (TryMake(TryMakePath, out mailbox))
-        //            {
-        //                return true;
-        //            }
+        /// <summary>
+        /// Make a MAIL command from the given enumerator.
+        /// </summary>
+        /// <param name="reader">The token reader to parse the command from.</param>
+        /// <param name="command">The MAIL command that is defined within the token enumerator.</param>
+        /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
+        /// <returns>Returns true if a command could be made, false if not.</returns>
+        public bool TryMakeMail(ref TokenReader reader, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            command = null;
+            errorResponse = null;
 
-        //            if (Enumerator.Take() != Tokens.LessThan)
-        //            {
-        //                return false;
-        //            }
+            if (TryMakeMail(ref reader) == false)
+            {
+                return false;
+            }
 
-        //            // not valid according to the spec but some senders do it
-        //            Enumerator.Skip(TokenKind.Space);
+            reader.Skip(TokenKind.Space);
 
-        //            if (Enumerator.Take() != Tokens.GreaterThan)
-        //            {
-        //                return false;
-        //            }
+            if (TryMakeFrom(ref reader) == false || reader.Take().Kind != TokenKind.Colon)
+            {
+                errorResponse = new SmtpResponse(SmtpReplyCode.SyntaxError, "missing the FROM:");
+                return false;
+            }
 
-        //            mailbox = Mailbox.Empty;
+            // according to the spec, whitespace isnt allowed here but most servers send it
+            reader.Skip(TokenKind.Space);
 
-        //            return true;
-        //        }
+            if (reader.TryMake(TryMakeReversePath, out var mailbox) == false)
+            {
+                errorResponse = new SmtpResponse(SmtpReplyCode.SyntaxError);
+                return false;
+            }
 
-        //        /// <summary>
-        //        /// Try to make a path.
-        //        /// </summary>
-        //        /// <param name="mailbox">The path that was made, or undefined if it was not made.</param>
-        //        /// <returns>true if the path was made, false if not.</returns>
-        //        /// <remarks><![CDATA["<" [ A-d-l ":" ] Mailbox ">"]]></remarks>
-        //        public bool TryMakePath(out IMailbox mailbox)
-        //        {
-        //            mailbox = Mailbox.Empty;
+            reader.Skip(TokenKind.Space);
 
-        //            if (Enumerator.Take() != Tokens.LessThan)
-        //            {
-        //                return false;
-        //            }
+            //// match the optional (ESMTP) parameters
+            //if (TryMakeMailParameters(out var parameters) == false)
+            //{
+            //    parameters = new Dictionary<string, string>();
+            //}
 
-        //            // Note, the at-domain-list must be matched, but also must be ignored
-        //            // http://tools.ietf.org/html/rfc5321#appendix-C
-        //            if (TryMake(TryMakeAtDomainList, out string atDomainList))
-        //            {
-        //                // if the @domain list was matched then it needs to be followed by a colon
-        //                if (Enumerator.Take() != Tokens.Colon)
-        //                {
-        //                    return false;
-        //                }
-        //            }
+            //here: how to we pull these values out
 
-        //            if (TryMake(TryMakeMailbox, out mailbox) == false)
-        //            {
-        //                return false;
-        //            }
+            Console.WriteLine(StringUtil.Create(mailbox));
 
-        //            return Enumerator.Take() == Tokens.GreaterThan;
-        //        }
+            //command = new MailCommand(_options, mailbox, parameters);
+            return true;
+        }
 
-        //        /// <summary>
-        //        /// Try to make an @domain list.
-        //        /// </summary>
-        //        /// <param name="atDomainList">The @domain list that was made, or undefined if it was not made.</param>
-        //        /// <returns>true if the @domain list was made, false if not.</returns>
-        //        /// <remarks><![CDATA[At-domain *( "," At-domain )]]></remarks>
-        //        public bool TryMakeAtDomainList(out string atDomainList)
-        //        {
-        //            if (TryMake(TryMakeAtDomain, out atDomainList) == false)
-        //            {
-        //                return false;
-        //            }
+        /// <summary>
+        /// Try to make the MAIL text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the MAIL text sequence could be made, false if not.</returns>
+        public bool TryMakeMail(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[4];
+                command[0] = 'M';
+                command[1] = 'A';
+                command[2] = 'I';
+                command[3] = 'L';
 
-        //            // match the optional list
-        //            while (Enumerator.Peek() == Tokens.Comma)
-        //            {
-        //                Enumerator.Take();
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
 
-        //                if (TryMake(TryMakeAtDomain, out string atDomain) == false)
-        //                {
-        //                    return false;
-        //                }
+            return false;
+        }
 
-        //                atDomainList += $",{atDomain}";
-        //            }
+        /// <summary>
+        /// Try to make the FROM text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the FROM text sequence could be made, false if not.</returns>
+        public bool TryMakeFrom(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[4];
+                command[0] = 'F';
+                command[1] = 'R';
+                command[2] = 'O';
+                command[3] = 'M';
 
-        //            return true;
-        //        }
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
 
-        ///// <summary>
-        ///// Try to make an @domain.
-        ///// </summary>
-        ///// <param name="atDomain">The @domain that was made, or undefined if it was not made.</param>
-        ///// <returns>true if the @domain was made, false if not.</returns>
-        ///// <remarks><![CDATA["@" Domain]]></remarks>
-        //public bool TryMakeAtDomain(out string atDomain)
-        //{
-        //    atDomain = null;
+            return false;
+        }
 
-        //    if (Enumerator.Take() != Tokens.At)
-        //    {
-        //        return false;
-        //    }
+        /// <summary>
+        /// Try to make a reverse path.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the reverse path was made, false if not.</returns>
+        /// <remarks><![CDATA[Path / "<>"]]></remarks>
+        public bool TryMakeReversePath(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakePath))
+            {
+                return true;
+            }
 
-        //    if (TryMake(TryMakeDomain, out string domain) == false)
-        //    {
-        //        return false;
-        //    }
+            if (reader.Take().Kind != TokenKind.LessThan)
+            {
+                return false;
+            }
 
-        //    atDomain = $"@{domain}";
+            // not valid according to the spec but some senders do it
+            reader.Skip(TokenKind.Space);
 
-        //    return true;
-        //}
+            return reader.Take().Kind == TokenKind.GreaterThan;
+        }
 
-        //        /// <summary>
-        //        /// Try to make a mailbox.
-        //        /// </summary>
-        //        /// <param name="mailbox">The mailbox that was made, or undefined if it was not made.</param>
-        //        /// <returns>true if the mailbox was made, false if not.</returns>
-        //        /// <remarks><![CDATA[Local-part "@" ( Domain / address-literal )]]></remarks>
-        //        public bool TryMakeMailbox(out IMailbox mailbox)
-        //        {
-        //            mailbox = Mailbox.Empty;
+        /// <summary>
+        /// Try to make a path.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the path was made, false if not.</returns>
+        /// <remarks><![CDATA["<" [ A-d-l ":" ] Mailbox ">"]]></remarks>
+        public bool TryMakePath(ref TokenReader reader)
+        {
+            if (reader.Take().Kind != TokenKind.LessThan)
+            {
+                return false;
+            }
 
-        //            if (TryMake(TryMakeLocalPart, out string localpart) == false)
-        //            {
-        //                return false;
-        //            }
+            // Note, the at-domain-list must be matched, but also must be ignored
+            // http://tools.ietf.org/html/rfc5321#appendix-C
+            if (reader.TryMake(TryMakeAtDomainList))
+            {
+                // if the @domain list was matched then it needs to be followed by a colon
+                if (reader.Take().Kind != TokenKind.Colon)
+                {
+                    return false;
+                }
+            }
 
-        //            if (Enumerator.Take() != Tokens.At)
-        //            {
-        //                return false;
-        //            }
+            if (TryMakeMailbox(ref reader) == false)
+            {
+                return false;
+            }
 
-        //            if (TryMake(TryMakeDomain, out string domain))
-        //            {
-        //                mailbox = new Mailbox(localpart, domain);
-        //                return true;
-        //            }
+            return reader.Take().Kind == TokenKind.GreaterThan;
+        }
 
-        //            if (TryMake(TryMakeAddressLiteral, out string address))
-        //            {
-        //                mailbox = new Mailbox(localpart, address);
-        //                return true;
-        //            }
+        /// <summary>
+        /// Try to make an @domain list.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the @domain list was made, false if not.</returns>
+        /// <remarks><![CDATA[At-domain *( "," At-domain )]]></remarks>
+        public bool TryMakeAtDomainList(ref TokenReader reader)
+        {
+            if (TryMakeAtDomain(ref reader) == false)
+            {
+                return false;
+            }
 
-        //            return false;
-        //        }
+            while (reader.Peek().Kind == TokenKind.Comma)
+            {
+                reader.Take();
+
+                if (TryMakeAtDomain(ref reader) == false)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Try to make an @domain.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the @domain was made, false if not.</returns>
+        /// <remarks><![CDATA["@" Domain]]></remarks>
+        public bool TryMakeAtDomain(ref TokenReader reader)
+        {
+            if (reader.Take().Kind != TokenKind.At)
+            {
+                return false;
+            }
+
+            return TryMakeDomain(ref reader);
+        }
+
+        /// <summary>
+        /// Try to make a mailbox.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the mailbox was made, false if not.</returns>
+        /// <remarks><![CDATA[Local-part "@" ( Domain / address-literal )]]></remarks>
+        public bool TryMakeMailbox(ref TokenReader reader)
+        {
+            if (TryMakeLocalPart(ref reader) == false)
+            {
+                return false;
+            }
+
+            if (reader.Take().Kind != TokenKind.At)
+            {
+                return false;
+            }
+
+            if (reader.TryMake(TryMakeDomain))
+            {
+                return true;
+            }
+
+            return TryMakeAddressLiteral(ref reader);
+        }
 
         /// <summary>
         /// Try to make a domain name.
@@ -358,32 +421,6 @@ namespace SmtpServer.Protocol
 
             return int.TryParse(StringUtil.Create(number), out var snum) && snum >= 0 && snum <= 255;
         }
-
-        ///// <summary>
-        ///// Try to make Ip version from ip version tag which is a formatted text IPv[Version]:
-        ///// </summary>
-        ///// <param name="reader">The reader to perform the operation on.</param>
-        ///// <returns>true if ip version tag can be extracted.</returns>
-        //public bool TryMakeIpVersion(ref TokenReader reader)
-        //{
-        //    //version = default;
-
-        //    //if (Enumerator.Take() != Tokens.Text.IpVersionTag)
-        //    //{
-        //    //    return false;
-        //    //}
-
-        //    //var token = Enumerator.Take();
-
-        //    //if (token.Kind == TokenKind.Number && int.TryParse(token.Text, out var v))
-        //    //{
-        //    //    version = v;
-        //    //    return Enumerator.Take() == Tokens.Colon;
-        //    //}
-
-        //    //return false;
-        //    throw new NotImplementedException();
-        //}
 
         /// <summary>
         /// Try to extract IPv6 address. https://tools.ietf.org/html/rfc4291 section 2.2 used for specification.
@@ -694,245 +731,227 @@ namespace SmtpServer.Protocol
             return false;
         }
 
-        //        /// <summary>
-        //        /// Try to make the local part of the path.
-        //        /// </summary>
-        //        /// <param name="localPart">The local part that was made, or undefined if it was not made.</param>
-        //        /// <returns>true if the local part was made, false if not.</returns>
-        //        /// <remarks><![CDATA[Dot-string / Quoted-string]]></remarks>
-        //        public bool TryMakeLocalPart(out string localPart)
-        //        {
-        //            if (TryMake(TryMakeDotString, out localPart))
-        //            {
-        //                return true;
-        //            }
+        /// <summary>
+        /// Try to make the local part of the path.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operatio on.</param>
+        /// <returns>true if the local part was made, false if not.</returns>
+        /// <remarks><![CDATA[Dot-string / Quoted-string]]></remarks>
+        public bool TryMakeLocalPart(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeDotString))
+            {
+                return true;
+            }
 
-        //            return TryMakeQuotedString(out localPart);
-        //        }
+            return TryMakeQuotedString(ref reader);
+        }
 
-        //        /// <summary>
-        //        /// Try to make a dot-string from the tokens.
-        //        /// </summary>
-        //        /// <param name="dotString">The dot-string that was made, or undefined if it was not made.</param>
-        //        /// <returns>true if the dot-string was made, false if not.</returns>
-        //        /// <remarks><![CDATA[Atom *("."  Atom)]]></remarks>
-        //        public bool TryMakeDotString(out string dotString)
-        //        {
-        //            if (TryMake(TryMakeAtom, out dotString) == false)
-        //            {
-        //                return false;
-        //            }
+        /// <summary>
+        /// Try to make a dot-string from the tokens.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the dot-string was made, false if not.</returns>
+        /// <remarks><![CDATA[Atom *("."  Atom)]]></remarks>
+        public bool TryMakeDotString(ref TokenReader reader)
+        {
+            if (TryMakeAtom(ref reader) == false)
+            {
+                return false;
+            }
 
-        //            while (Enumerator.Peek() == Tokens.Period)
-        //            {
-        //                // skip the punctuation
-        //                Enumerator.Take();
+            while (reader.Peek().Kind == TokenKind.Period)
+            {
+                reader.Take();
 
-        //                if (TryMake(TryMakeAtom, out string atom) == false)
-        //                {
-        //                    return true;
-        //                }
+                if (TryMakeAtom(ref reader) == false)
+                {
+                    return false;
+                }
+            }
 
-        //                dotString += string.Concat(".", atom);
-        //            }
+            return true;
+        }
 
-        //            return true;
-        //        }
+        /// <summary>
+        /// Try to make a quoted-string from the tokens.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the quoted-string was made, false if not.</returns>
+        /// <remarks><![CDATA[DQUOTE * QcontentSMTP DQUOTE]]></remarks>
+        public bool TryMakeQuotedString(ref TokenReader reader)
+        {
+            if (reader.Take().Kind != TokenKind.Quote)
+            {
+                return false;
+            }
 
-        //        /// <summary>
-        //        /// Try to make a quoted-string from the tokens.
-        //        /// </summary>
-        //        /// <param name="quotedString">The quoted-string that was made, or undefined if it was not made.</param>
-        //        /// <returns>true if the quoted-string was made, false if not.</returns>
-        //        /// <remarks><![CDATA[DQUOTE * QcontentSMTP DQUOTE]]></remarks>
-        //        public bool TryMakeQuotedString(out string quotedString)
-        //        {
-        //            quotedString = null;
+            while (reader.Peek().Kind != TokenKind.Quote)
+            {
+                if (TryMakeQContentSmtp(ref reader) == false)
+                {
+                    return false;
+                }
+            }
 
-        //            if (Enumerator.Take() != Tokens.Quote)
-        //            {
-        //                return false;
-        //            }
+            return reader.Take().Kind == TokenKind.Quote;
+        }
 
-        //            while (Enumerator.Peek() != Tokens.Quote)
-        //            {
-        //                if (TryMakeQContentSmtp(out var text) == false)
-        //                {
-        //                    return false;
-        //                }
+        /// <summary>
+        /// Try to make a QcontentSMTP from the tokens.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the quoted content was made, false if not.</returns>
+        /// <remarks><![CDATA[qtextSMTP / quoted-pairSMTP]]></remarks>
+        public bool TryMakeQContentSmtp(ref TokenReader reader)
+        {
+            if (TryMakeQTextSmtp(ref reader))
+            {
+                return true;
+            }
 
-        //                quotedString += text;
-        //            }
+            return TryMakeQuotedPairSmtp(ref reader);
+        }
 
-        //            return Enumerator.Take() == Tokens.Quote;
-        //        }
+        /// <summary>
+        /// Try to make a QTextSMTP from the tokens.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the quoted text was made, false if not.</returns>
+        /// <remarks><![CDATA[%d32-33 / %d35-91 / %d93-126]]></remarks>
+        public bool TryMakeQTextSmtp(ref TokenReader reader)
+        {
+            switch (reader.Peek().Kind)
+            {
+                case TokenKind.Text:
+                    return TryMakeText(ref reader);
 
-        //        /// <summary>
-        //        /// Try to make a QcontentSMTP from the tokens.
-        //        /// </summary>
-        //        /// <param name="text">The text that was made.</param>
-        //        /// <returns>true if the quoted content was made, false if not.</returns>
-        //        /// <remarks><![CDATA[qtextSMTP / quoted-pairSMTP]]></remarks>
-        //        public bool TryMakeQContentSmtp(out string text)
-        //        {
-        //            if (TryMake(TryMakeQTextSmtp, out text))
-        //            {
-        //                return true;
-        //            }
+                case TokenKind.Number:
+                    return TryMakeNumber(ref reader);
 
-        //            return TryMakeQuotedPairSmtp(out text);
-        //        }
+                default:
+                    var token = reader.Take();
+                    switch ((char)token.Text[0])
+                    {
+                        case ' ':
+                        case '!':
+                        case '#':
+                        case '$':
+                        case '%':
+                        case '&':
+                        case '\'':
+                        case '(':
+                        case ')':
+                        case '*':
+                        case '+':
+                        case ',':
+                        case '-':
+                        case '.':
+                        case '/':
+                        case ':':
+                        case ';':
+                        case '<':
+                        case '=':
+                        case '>':
+                        case '?':
+                        case '@':
+                        case '[':
+                        case ']':
+                        case '^':
+                        case '_':
+                        case '`':
+                        case '{':
+                        case '|':
+                        case '}':
+                        case '~':
+                            return true;
+                    }
+                    break;
+            }
 
-        //        /// <summary>
-        //        /// Try to make a QTextSMTP from the tokens.
-        //        /// </summary>
-        //        /// <param name="text">The text that was made.</param>
-        //        /// <returns>true if the quoted text was made, false if not.</returns>
-        //        /// <remarks><![CDATA[%d32-33 / %d35-91 / %d93-126]]></remarks>
-        //        public bool TryMakeQTextSmtp(out string text)
-        //        {
-        //            text = null;
+            return false;
+        }
 
-        //            var token = Enumerator.Take();
-        //            switch (token.Kind)
-        //            {
-        //                case TokenKind.Text:
-        //                case TokenKind.Number:
-        //                    text += token.Text;
-        //                    return true;
+        /// <summary>
+        /// Try to make a quoted pair from the tokens.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the quoted pair was made, false if not.</returns>
+        /// <remarks><![CDATA[%d92 %d32-126]]></remarks>
+        public bool TryMakeQuotedPairSmtp(ref TokenReader reader)
+        {
+            if (reader.Take().Kind != TokenKind.BackSlash)
+            {
+                return false;
+            }
 
-        //                case TokenKind.Space:
-        //                case TokenKind.Other:
-        //                    switch (token.Text[0])
-        //                    {
-        //                        case ' ':
-        //                        case '!':
-        //                        case '#':
-        //                        case '$':
-        //                        case '%':
-        //                        case '&':
-        //                        case '\'':
-        //                        case '(':
-        //                        case ')':
-        //                        case '*':
-        //                        case '+':
-        //                        case ',':
-        //                        case '-':
-        //                        case '.':
-        //                        case '/':
-        //                        case ':':
-        //                        case ';':
-        //                        case '<':
-        //                        case '=':
-        //                        case '>':
-        //                        case '?':
-        //                        case '@':
-        //                        case '[':
-        //                        case ']':
-        //                        case '^':
-        //                        case '_':
-        //                        case '`':
-        //                        case '{':
-        //                        case '|':
-        //                        case '}':
-        //                        case '~':
-        //                            text += token.Text[0];
-        //                            return true;
-        //                    }
+            return TryMakeText(ref reader);
+        }
 
-        //                    return false;
-        //            }
+        /// <summary>
+        /// Try to make an "Atom" from the tokens.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the atom was made, false if not.</returns>
+        /// <remarks><![CDATA[1*atext]]></remarks>
+        public bool TryMakeAtom(ref TokenReader reader)
+        {
+            var count = 0;
 
-        //            return false;
-        //        }
+            while (reader.TryMake(TryMakeAtext))
+            {
+                count++;
+            }
 
-        //        /// <summary>
-        //        /// Try to make a quoted pair from the tokens.
-        //        /// </summary>
-        //        /// <param name="text">The text that was made.</param>
-        //        /// <returns>true if the quoted pair was made, false if not.</returns>
-        //        /// <remarks><![CDATA[%d92 %d32-126]]></remarks>
-        //        public bool TryMakeQuotedPairSmtp(out string text)
-        //        {
-        //            text = null;
+            return count >= 1;
+        }
 
-        //            if (Enumerator.Take() != Tokens.BackSlash)
-        //            {
-        //                return false;
-        //            }
+        /// <summary>
+        /// Try to make an "Atext" from the tokens.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the atext was made, false if not.</returns>
+        /// <remarks><![CDATA[atext]]></remarks>
+        public bool TryMakeAtext(ref TokenReader reader)
+        {
+            switch (reader.Peek().Kind)
+            {
+                case TokenKind.Text:
+                    return TryMakeText(ref reader);
 
-        //            text += Enumerator.Take().Text;
+                case TokenKind.Number:
+                    return TryMakeNumber(ref reader);
 
-        //            return true;
-        //        }
+                default:
+                    var token = reader.Take();
+                    switch ((char)token.Text[0])
+                    {
+                        case '!':
+                        case '#':
+                        case '%':
+                        case '&':
+                        case '\'':
+                        case '*':
+                        case '-':
+                        case '/':
+                        case '?':
+                        case '_':
+                        case '{':
+                        case '}':
+                        case '$':
+                        case '+':
+                        case '=':
+                        case '^':
+                        case '`':
+                        case '|':
+                        case '~':
+                            return true;
+                    }
+                    break;
+            }
 
-        //        /// <summary>
-        //        /// Try to make an "Atom" from the tokens.
-        //        /// </summary>
-        //        /// <param name="atom">The atom that was made, or undefined if it was not made.</param>
-        //        /// <returns>true if the atom was made, false if not.</returns>
-        //        /// <remarks><![CDATA[1*atext]]></remarks>
-        //        public bool TryMakeAtom(out string atom)
-        //        {
-        //            atom = null;
-
-        //            while (TryMake(TryMakeAtext, out string atext))
-        //            {
-        //                atom += atext;
-        //            }
-
-        //            return atom != null;
-        //        }
-
-        //        /// <summary>
-        //        /// Try to make an "Atext" from the tokens.
-        //        /// </summary>
-        //        /// <param name="atext">The atext that was made, or undefined if it was not made.</param>
-        //        /// <returns>true if the atext was made, false if not.</returns>
-        //        /// <remarks><![CDATA[atext]]></remarks>
-        //        public bool TryMakeAtext(out string atext)
-        //        {
-        //            atext = null;
-
-        //            var token = Enumerator.Take();
-        //            switch (token.Kind)
-        //            {
-        //                case TokenKind.Text:
-        //                case TokenKind.Number:
-        //                    atext = token.Text;
-        //                    return true;
-
-        //                case TokenKind.Other:
-        //                    switch (token.Text[0])
-        //                    {
-        //                        case '!':
-        //                        case '#':
-        //                        case '%':
-        //                        case '&':
-        //                        case '\'':
-        //                        case '*':
-        //                        case '-':
-        //                        case '/':
-        //                        case '?':
-        //                        case '_':
-        //                        case '{':
-        //                        case '}':
-        //                        case '$':
-        //                        case '+':
-        //                        case '=':
-        //                        case '^':
-        //                        case '`':
-        //                        case '|':
-        //                        case '~':
-        //                            atext += token.Text[0];
-        //                            return true;
-        //                    }
-
-        //                    break;
-        //            }
-
-        //            return false;
-        //        }
+            return false;
+        }
 
         //        /// <summary>
         //        /// Try to make an Mail-Parameters from the tokens.

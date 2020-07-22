@@ -17,8 +17,8 @@ namespace SampleApp
 
             //SimpleExample.Run();
 
-            //var text = new ReadOnlySequence<byte>(Encoding.ASCII.GetBytes("EHLO abc-1-def.mail.com"));
-            var text = new ReadOnlySequence<byte>(Encoding.ASCII.GetBytes("EHLO [127.0.0.1]"));
+            ////var text = new ReadOnlySequence<byte>(Encoding.ASCII.GetBytes("EHLO abc-1-def.mail.com"));
+            var text = new ReadOnlySequence<byte>(Encoding.ASCII.GetBytes("MAIL FROM:<from@sample.com>"));
 
             var reader = new TokenReader(text);
             //while (reader.Peek() != default)
@@ -29,7 +29,9 @@ namespace SampleApp
             //}
 
             var parser = new SmtpParser(new SmtpServerOptionsBuilder().Build());
-            Console.WriteLine(parser.TryMakeEhlo(ref reader, out var command, out var errorResponse));
+            //Console.WriteLine(parser.TryMakeEhlo(ref reader, out var command, out var errorResponse));
+            //Console.WriteLine("Command={0} ErrorResponse={1}", command, errorResponse);
+            Console.WriteLine(parser.TryMakeMail(ref reader, out var command, out var errorResponse));
             Console.WriteLine("Command={0} ErrorResponse={1}", command, errorResponse);
         }
     }

@@ -10,46 +10,81 @@
         /// <summary>
         /// A text.
         /// </summary>
-        Text = 1,
+        Text,
 
         /// <summary>
         /// A number.
         /// </summary>
-        Number = 2,
+        Number,
 
         /// <summary>
         /// A single space character.
         /// </summary>
-        Space = 3,
+        Space,
 
         /// <summary>
         /// -
         /// </summary>
-        Hyphen = 4,
+        Hyphen,
         
         /// <summary>
         /// .
         /// </summary>
-        Period = 5,
+        Period,
 
         /// <summary>
         /// [
         /// </summary>
-        LeftBracket = 6,
+        LeftBracket,
 
         /// <summary>
         /// ]
         /// </summary>
-        RightBracket = 7,
+        RightBracket,
 
         /// <summary>
         /// :
         /// </summary>
-        Colon = 8,
+        Colon,
+
+        /// <summary>
+        /// >
+        /// </summary>
+        GreaterThan,
+
+        /// <summary>
+        /// <
+        /// </summary>
+        LessThan = 10,
+
+        /// <summary>
+        /// ,
+        /// </summary>
+        Comma,
+
+        /// <summary>
+        /// @
+        /// </summary>
+        At,
+
+        /// <summary>
+        /// "
+        /// </summary>
+        Quote,
+
+        /// <summary>
+        /// =
+        /// </summary>
+        Equal,
+
+        /// <summary>
+        /// \
+        /// </summary>
+        BackSlash,
 
         /// <summary>
         /// Unknown.
         /// </summary>
-        Other = 99,
+        Other,
     }
 }
