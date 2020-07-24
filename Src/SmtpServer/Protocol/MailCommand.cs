@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.IO;
@@ -39,45 +38,43 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            throw new NotImplementedException("TODO: might need to check for Authentication here in place of the SmtpStateMachine?");
+            context.Transaction.Reset();
+            context.Transaction.Parameters = Parameters;
 
-            //context.Transaction.Reset();
-            //context.Transaction.Parameters = Parameters;
+            // check if a size has been defined
+            var size = GetMessageSize();
 
-            //// check if a size has been defined
-            //var size = GetMessageSize();
+            // check against the server supplied maximum
+            if (Options.MaxMessageSize > 0 && size > Options.MaxMessageSize)
+            {
+                await context.Pipe.Output.WriteReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ConfigureAwait(false);
+                return false;
+            }
 
-            //// check against the server supplied maximum
-            //if (Options.MaxMessageSize > 0 && size > Options.MaxMessageSize)
-            //{
-            //    await context.Pipe.Output.WriteReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ConfigureAwait(false);
-            //    return false;
-            //}
+            using (var container = new DisposableContainer<IMailboxFilter>(Options.MailboxFilterFactory.CreateInstance(context)))
+            {
+                switch (await container.Instance.CanAcceptFromAsync(context, Address, size, cancellationToken).ConfigureAwait(false))
+                {
+                    case MailboxFilterResult.Yes:
+                        context.Transaction.From = Address;
+                        await context.Pipe.Output.WriteReplyAsync(SmtpResponse.Ok, cancellationToken).ConfigureAwait(false);
+                        return true;
 
-            //using (var container = new DisposableContainer<IMailboxFilter>(Options.MailboxFilterFactory.CreateInstance(context)))
-            //{
-            //    switch (await container.Instance.CanAcceptFromAsync(context, Address, size, cancellationToken).ConfigureAwait(false))
-            //    {
-            //        case MailboxFilterResult.Yes:
-            //            context.Transaction.From = Address;
-            //            await context.Pipe.Output.WriteReplyAsync(SmtpResponse.Ok, cancellationToken).ConfigureAwait(false);
-            //            return true;
+                    case MailboxFilterResult.NoTemporarily:
+                        await context.Pipe.Output.WriteReplyAsync(SmtpResponse.MailboxUnavailable, cancellationToken).ConfigureAwait(false);
+                        return false;
 
-            //        case MailboxFilterResult.NoTemporarily:
-            //            await context.Pipe.Output.WriteReplyAsync(SmtpResponse.MailboxUnavailable, cancellationToken).ConfigureAwait(false);
-            //            return false;
+                    case MailboxFilterResult.NoPermanently:
+                        await context.Pipe.Output.WriteReplyAsync(SmtpResponse.MailboxNameNotAllowed, cancellationToken).ConfigureAwait(false);
+                        return false;
 
-            //        case MailboxFilterResult.NoPermanently:
-            //            await context.Pipe.Output.WriteReplyAsync(SmtpResponse.MailboxNameNotAllowed, cancellationToken).ConfigureAwait(false);
-            //            return false;
+                    case MailboxFilterResult.SizeLimitExceeded:
+                        await context.Pipe.Output.WriteReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ConfigureAwait(false);
+                        return false;
+                }
+            }
 
-            //        case MailboxFilterResult.SizeLimitExceeded:
-            //            await context.Pipe.Output.WriteReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ConfigureAwait(false);
-            //            return false;
-            //    }
-            //}
-
-            //throw new SmtpResponseException(SmtpResponse.TransactionFailed);
+            throw new SmtpResponseException(SmtpResponse.TransactionFailed);
         }
 
         /// <summary>

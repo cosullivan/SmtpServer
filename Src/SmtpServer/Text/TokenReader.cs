@@ -8,8 +8,29 @@ namespace SmtpServer.Text
         /// <summary>
         /// Delegate for the TryMake function.
         /// </summary>
+        /// <param name="reader">The token reader to use for the operation.</param>
         /// <returns>true if the make operation was a success, false if not.</returns>
         public delegate bool TryMakeDelegate(ref TokenReader reader);
+
+        /// <summary>
+        /// Delegate for the TryMake function to allow for "out" parameters.
+        /// </summary>
+        /// <typeparam name="TOut">The type of the out parameter.</typeparam>
+        /// <param name="reader">The token reader to use for the operation.</param>
+        /// <param name="value">The out parameter that was found during the make operation.</param>
+        /// <returns>true if the make operation found a parameter, false if not.</returns>
+        public delegate bool TryMakeDelegate<TOut>(ref TokenReader reader, out TOut value);
+
+        /// <summary>
+        /// Delegate for the TryMake function to allow for "out" parameters.
+        /// </summary>
+        /// <typeparam name="TOut1">The type of the first out parameter.</typeparam>
+        /// <typeparam name="TOut2">The type of the second out parameter.</typeparam>
+        /// <param name="reader">The token reader to use for the operation.</param>
+        /// <param name="value1">The first out parameter that was found during the make operation.</param>
+        /// <param name="value2">The second out parameter that was found during the make operation.</param>
+        /// <returns>true if the make operation found a parameter, false if not.</returns>
+        public delegate bool TryMakeDelegate<TOut1, TOut2>(ref TokenReader reader, out TOut1 value1, out TOut2 value2);
 
         readonly ReadOnlySequence<byte> _buffer;
         Token _peek;
@@ -76,6 +97,55 @@ namespace SmtpServer.Text
                 }
 
                 buffer = _buffer.Slice(index, _spanIndex - index);
+                return true;
+            }
+
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Try to make a callback in a transactional way.
+        /// </summary>
+        /// <param name="delegate">The callback to perform the match.</param>
+        /// <param name="found">The parameter that was returned from the matching function.</param>
+        /// <returns>true if the match could be made, false if not.</returns>
+        public bool TryMake<TOut>(TryMakeDelegate<TOut> @delegate, out TOut found)
+        {
+            if (_buffer.IsSingleSegment)
+            {
+                var index = _spanIndex;
+
+                if (@delegate(ref this, out found) == false)
+                {
+                    _spanIndex = index;
+                    return false;
+                }
+
+                return true;
+            }
+
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Try to make a callback in a transactional way.
+        /// </summary>
+        /// <param name="delegate">The callback to perform the match.</param>
+        /// <param name="value1">The first out parameter that was found during the make operation.</param>
+        /// <param name="value2">The second out parameter that was found during the make operation.</param>
+        /// <returns>true if the match could be made, false if not.</returns>
+        public bool TryMake<TOut1, TOut2>(TryMakeDelegate<TOut1, TOut2> @delegate, out TOut1 value1, out TOut2 value2)
+        {
+            if (_buffer.IsSingleSegment)
+            {
+                var index = _spanIndex;
+
+                if (@delegate(ref this, out value1, out value2) == false)
+                {
+                    _spanIndex = index;
+                    return false;
+                }
+
                 return true;
             }
 
