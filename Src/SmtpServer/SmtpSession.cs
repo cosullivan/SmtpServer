@@ -127,9 +127,13 @@ namespace SmtpServer
                 return await context.Pipe.Input.ReadLineAsync(
                     buffer =>
                     {
+#if DEBUG
                         Console.WriteLine(StringUtil.Create(buffer));
+#endif
 
                         var parser = new SmtpParser(context.ServerOptions);
+
+                        HERE: probably should have a ICommandFactory to actually create the command so that the parser doenst need the options?
 
                         if (parser.TryMake(ref buffer, out var command, out var errorResponse) == false)
                         {

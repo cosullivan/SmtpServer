@@ -38,12 +38,11 @@ namespace SmtpServer.Protocol
 
             try
             {
-                using (var container = new DisposableContainer<IMessageStore>(Options.MessageStoreFactory.CreateInstance(context)))
-                {
-                    var response = await container.Instance.SaveAsync(context, context.Transaction, cancellationToken).ConfigureAwait(false);
+                using var container = new DisposableContainer<IMessageStore>(Options.MessageStoreFactory.CreateInstance(context));
+                
+                var response = await container.Instance.SaveAsync(context, context.Transaction, cancellationToken).ConfigureAwait(false);
 
-                    await context.Pipe.Output.WriteReplyAsync(response, cancellationToken).ConfigureAwait(false);
-                }
+                await context.Pipe.Output.WriteReplyAsync(response, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception)
             {

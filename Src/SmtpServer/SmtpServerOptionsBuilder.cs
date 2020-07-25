@@ -4,6 +4,7 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using SmtpServer.Authentication;
 using SmtpServer.Net;
+using SmtpServer.Protocol;
 using SmtpServer.Storage;
 
 namespace SmtpServer
@@ -164,6 +165,30 @@ namespace SmtpServer
         }
 
         /// <summary>
+        /// Sets the SMTP command factory.
+        /// </summary>
+        /// <param name="value">The SMTP command factory.</param>
+        /// <returns>A OptionsBuilder to continue building on.</returns>
+        public SmtpServerOptionsBuilder SmtpCommandFactory(ISmtpCommandFactory value)
+        {
+            _setters.Add(options => options.SmtpCommandFactory = value ?? new SmtpCommandFactory(null));
+
+            return this;
+        }
+
+        ///// <summary>
+        ///// Sets the SMTP command factory.
+        ///// </summary>
+        ///// <param name="value">The SMTP command factory.</param>
+        ///// <returns>A OptionsBuilder to continue building on.</returns>
+        //public SmtpServerOptionsBuilder SmtpCommandFactory(Func<ISmtpServerOptions, ISmtpCommandFactory> func)
+        //{
+        //    _setters.Add(options => options.SmtpCommandFactory = value ?? new SmtpCommandFactory(null));
+
+        //    return this;
+        //}
+
+        /// <summary>
         /// Sets the maximum message size.
         /// </summary>
         /// <param name="value">The maximum message size to allow.</param>
@@ -305,6 +330,12 @@ namespace SmtpServer
             /// Gets the user authenticator factory to use.
             /// </summary>
             public IUserAuthenticatorFactory UserAuthenticatorFactory { get; set; }
+
+            /// <summary>
+            /// The factory to create the underlying SMTP commands.
+            /// </summary>
+            /// <remarks>This is designed to allow extension by more advanced use cased.</remarks>
+            public ISmtpCommandFactory SmtpCommandFactory { get; set; }
 
             /// <summary>
             /// The supported SSL protocols.

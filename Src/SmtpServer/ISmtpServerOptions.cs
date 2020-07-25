@@ -4,6 +4,7 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using SmtpServer.Authentication;
 using SmtpServer.Net;
+using SmtpServer.Protocol;
 using SmtpServer.Storage;
 
 namespace SmtpServer
@@ -59,6 +60,12 @@ namespace SmtpServer
         /// Gets the user authenticator factory to use.
         /// </summary>
         IUserAuthenticatorFactory UserAuthenticatorFactory { get; }
+
+        /// <summary>
+        /// The factory to create the underlying SMTP commands.
+        /// </summary>
+        /// <remarks>This is designed to allow extension by more advanced use cased.</remarks>
+        ISmtpCommandFactory SmtpCommandFactory { get; }
 
         /// <summary>
         /// The supported SSL protocols.

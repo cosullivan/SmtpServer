@@ -27,7 +27,9 @@ namespace SmtpServer.Protocol
         public bool TryMake(ref ReadOnlySequence<byte> buffer, out SmtpCommand command, out SmtpResponse errorResponse)
         {
             return TryMake(buffer, TryMakeEhlo, out command, out errorResponse)
-                || TryMake(buffer, TryMakeMail, out command, out errorResponse);
+                || TryMake(buffer, TryMakeMail, out command, out errorResponse)
+                || TryMake(buffer, TryMakeRcpt, out command, out errorResponse)
+                || TryMake(buffer, TryMakeData, out command, out errorResponse);
 
             static bool TryMake(ReadOnlySequence<byte> buffer, TryMakeDelegate tryMakeDelegate, out SmtpCommand command, out SmtpResponse errorResponse)
             {
@@ -179,6 +181,153 @@ namespace SmtpServer.Protocol
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Make a RCTP command from the given reader.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <param name="command">The RCTP command that is defined within the token enumerator.</param>
+        /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
+        /// <returns>Returns true if a command could be made, false if not.</returns>
+        public bool TryMakeRcpt(ref TokenReader reader, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            command = null;
+            errorResponse = null;
+
+            if (TryMakeRcpt(ref reader) == false)
+            {
+                return false;
+            }
+            
+            reader.Skip(TokenKind.Space);
+
+            if (TryMakeTo(ref reader) == false)
+            {
+                return false;
+            }
+
+            if (reader.Take().Kind != TokenKind.Colon)
+            {
+                errorResponse = new SmtpResponse(SmtpReplyCode.SyntaxError, "missing the TO:");
+                return false;
+            }
+
+            // according to the spec, whitespace isnt allowed here anyway
+            reader.Skip(TokenKind.Space);
+
+            if (TryMakePath(ref reader, out var mailbox) == false)
+            {
+                errorResponse = SmtpResponse.SyntaxError;
+                return false;
+            }
+
+            // TODO: support optional service extension parameters here
+
+            command = new RcptCommand(_options, mailbox);
+            return true;
+        }
+
+        /// <summary>
+        /// Try to make the RCPT text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the RCPT text sequence could be made, false if not.</returns>
+        public bool TryMakeRcpt(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[4];
+                command[0] = 'R';
+                command[1] = 'C';
+                command[2] = 'P';
+                command[3] = 'T';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Try to make the TO text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the TO text sequence could be made, false if not.</returns>
+        public bool TryMakeTo(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[2];
+                command[0] = 'T';
+                command[1] = 'O';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Make a DATA command from the given enumerator.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <param name="command">The DATA command that is defined within the token enumerator.</param>
+        /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
+        /// <returns>Returns true if a command could be made, false if not.</returns>
+        public bool TryMakeData(ref TokenReader reader, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            command = null;
+            errorResponse = null;
+
+            if (reader.TryMake(TryMakeData) == false)
+            {
+                return false;
+            }
+
+            reader.Skip(TokenKind.Space);
+
+            if (reader.TryMake(TryMakeEnd) == false)
+            {
+                errorResponse = SmtpResponse.SyntaxError;
+                return false;
+            }
+
+            command = new DataCommand(_options);
+            return true;
+        }
+
+        /// <summary>
+        /// Try to make the DATA text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the DATA text sequence could be made, false if not.</returns>
+        public bool TryMakeData(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[4];
+                command[0] = 'D';
+                command[1] = 'A';
+                command[2] = 'T';
+                command[3] = 'A';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Try to make the end of sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the end was made, false if not.</returns>
+        public bool TryMakeEnd(ref TokenReader reader)
+        {
+            reader.Skip(TokenKind.Space);
+
+            return reader.Take() == default;
         }
 
         /// <summary>
