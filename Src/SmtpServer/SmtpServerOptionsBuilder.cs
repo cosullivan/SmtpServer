@@ -36,6 +36,9 @@ namespace SmtpServer
 
             _setters.ForEach(setter => setter(serverOptions));
 
+            // TODO: make this extensible
+            serverOptions.SmtpCommandFactory = new SmtpCommandFactory(serverOptions);
+
             return serverOptions;
         }
 
@@ -164,26 +167,26 @@ namespace SmtpServer
             return this;
         }
 
-        /// <summary>
-        /// Sets the SMTP command factory.
-        /// </summary>
-        /// <param name="value">The SMTP command factory.</param>
-        /// <returns>A OptionsBuilder to continue building on.</returns>
-        public SmtpServerOptionsBuilder SmtpCommandFactory(ISmtpCommandFactory value)
-        {
-            _setters.Add(options => options.SmtpCommandFactory = value ?? new SmtpCommandFactory(null));
-
-            return this;
-        }
-
         ///// <summary>
         ///// Sets the SMTP command factory.
         ///// </summary>
         ///// <param name="value">The SMTP command factory.</param>
         ///// <returns>A OptionsBuilder to continue building on.</returns>
-        //public SmtpServerOptionsBuilder SmtpCommandFactory(Func<ISmtpServerOptions, ISmtpCommandFactory> func)
+        //public SmtpServerOptionsBuilder SmtpCommandFactory(ISmtpCommandFactory value)
         //{
-        //    _setters.Add(options => options.SmtpCommandFactory = value ?? new SmtpCommandFactory(null));
+        //    _setters.Add(options => options.SmtpCommandFactory = value ?? new SmtpCommandFactory(options));
+
+        //    return this;
+        //}
+
+        ///// <summary>
+        ///// Sets the SMTP command factory.
+        ///// </summary>
+        ///// <param name="valueFactory">The factory to create the value.</param>
+        ///// <returns>A OptionsBuilder to continue building on.</returns>
+        //public SmtpServerOptionsBuilder SmtpCommandFactory(Func<ISmtpServerOptions, ISmtpCommandFactory> valueFactory)
+        //{
+        //    _setters.Add(options => options.SmtpCommandFactory = valueFactory(options) ?? new SmtpCommandFactory(options));
 
         //    return this;
         //}

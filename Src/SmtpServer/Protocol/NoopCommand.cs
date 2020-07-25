@@ -11,8 +11,7 @@ namespace SmtpServer.Protocol
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="options">The server options.</param>
-        internal NoopCommand(ISmtpServerOptions options) : base(Command, options) { }
+        internal NoopCommand() : base(Command) { }
 
         /// <summary>
         /// Execute the command.

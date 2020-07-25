@@ -32,5 +32,23 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <returns>The DATA command.</returns>
         SmtpCommand CreateData();
+
+        /// <summary>
+        /// Create a QUIT command.
+        /// </summary>
+        /// <returns>The QUIT command.</returns>
+        SmtpCommand CreateQuit();
+
+        /// <summary>
+        /// Create a NOOP command.
+        /// </summary>
+        /// <returns>The NOOP command.</returns>
+        SmtpCommand CreateNoop();
+
+        /// <summary>
+        /// Create a RSET command.
+        /// </summary>
+        /// <returns>The RSET command.</returns>
+        SmtpCommand CreateRset();
     }
 }

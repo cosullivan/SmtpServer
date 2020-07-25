@@ -207,7 +207,7 @@ namespace SmtpServer
                 
                 lock (_sessionsLock)
                 {
-                    tasks = _sessions.Select(session => session.Task).ToList();
+                    tasks = _sessions.Select(session => session.CompletionTask).ToList();
                 }
                 
                 return Task.WhenAll(tasks);

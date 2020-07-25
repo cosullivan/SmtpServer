@@ -10,11 +10,11 @@ namespace SmtpServer.Protocol
     {
         delegate bool TryMakeDelegate(ref TokenReader reader, out SmtpCommand command, out SmtpResponse errorResponse);
 
-        readonly ISmtpServerOptions _options;
+        readonly ISmtpCommandFactory _smtpCommandFactory;
 
-        public SmtpParser(ISmtpServerOptions options)
+        public SmtpParser(ISmtpCommandFactory smtpCommandFactory)
         {
-            _options = options;
+            _smtpCommandFactory = smtpCommandFactory;
         }
 
         /// <summary>
@@ -29,7 +29,10 @@ namespace SmtpServer.Protocol
             return TryMake(buffer, TryMakeEhlo, out command, out errorResponse)
                 || TryMake(buffer, TryMakeMail, out command, out errorResponse)
                 || TryMake(buffer, TryMakeRcpt, out command, out errorResponse)
-                || TryMake(buffer, TryMakeData, out command, out errorResponse);
+                || TryMake(buffer, TryMakeData, out command, out errorResponse)
+                || TryMake(buffer, TryMakeQuit, out command, out errorResponse)
+                || TryMake(buffer, TryMakeRset, out command, out errorResponse)
+                || TryMake(buffer, TryMakeNoop, out command, out errorResponse);
 
             static bool TryMake(ReadOnlySequence<byte> buffer, TryMakeDelegate tryMakeDelegate, out SmtpCommand command, out SmtpResponse errorResponse)
             {
@@ -60,13 +63,13 @@ namespace SmtpServer.Protocol
 
             if (reader.TryMake(TryMakeDomain, out var domain))
             {
-                command = new EhloCommand(_options, StringUtil.Create(domain));
+                command = _smtpCommandFactory.CreateEhlo(StringUtil.Create(domain));
                 return true;
             }
 
             if (reader.TryMake(TryMakeAddressLiteral, out var address))
             {
-                command = new EhloCommand(_options, StringUtil.Create(address));
+                command = _smtpCommandFactory.CreateEhlo(StringUtil.Create(address));
                 return true;
             }
 
@@ -137,7 +140,7 @@ namespace SmtpServer.Protocol
                 parameters = new Dictionary<string, string>();
             }
 
-            command = new MailCommand(_options, mailbox, parameters);
+            command = _smtpCommandFactory.CreateMail(mailbox, parameters);
             return true;
         }
 
@@ -224,7 +227,7 @@ namespace SmtpServer.Protocol
 
             // TODO: support optional service extension parameters here
 
-            command = new RcptCommand(_options, mailbox);
+            command = _smtpCommandFactory.CreateRcpt(mailbox);
             return true;
         }
 
@@ -293,7 +296,7 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            command = new DataCommand(_options);
+            command = _smtpCommandFactory.CreateData();
             return true;
         }
 
@@ -311,6 +314,150 @@ namespace SmtpServer.Protocol
                 command[1] = 'A';
                 command[2] = 'T';
                 command[3] = 'A';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Make a QUIT command.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <param name="command">The QUIT command that is defined within the token enumerator.</param>
+        /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
+        /// <returns>Returns true if a command could be made, false if not.</returns>
+        public bool TryMakeQuit(ref TokenReader reader, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            command = null;
+            errorResponse = null;
+
+            if (reader.TryMake(TryMakeQuit) == false)
+            {
+                return false;
+            }
+
+            if (TryMakeEnd(ref reader) == false)
+            {
+                errorResponse = SmtpResponse.SyntaxError;
+                return false;
+            }
+
+            command = _smtpCommandFactory.CreateQuit();
+            return true;
+        }
+
+        /// <summary>
+        /// Try to make the QUIT text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the QUIT text sequence could be made, false if not.</returns>
+        public bool TryMakeQuit(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[4];
+                command[0] = 'Q';
+                command[1] = 'U';
+                command[2] = 'I';
+                command[3] = 'T';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Make a NOOP command.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <param name="command">The NOOP command that is defined within the token enumerator.</param>
+        /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
+        /// <returns>Returns true if a command could be made, false if not.</returns>
+        public bool TryMakeNoop(ref TokenReader reader, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            command = null;
+            errorResponse = null;
+
+            if (reader.TryMake(TryMakeNoop) == false)
+            {
+                return false;
+            }
+
+            if (TryMakeEnd(ref reader) == false)
+            {
+                errorResponse = SmtpResponse.SyntaxError;
+                return false;
+            }
+
+            command = _smtpCommandFactory.CreateNoop();
+            return true;
+        }
+
+        /// <summary>
+        /// Try to make the NOOP text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the NOOP text sequence could be made, false if not.</returns>
+        public bool TryMakeNoop(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[4];
+                command[0] = 'N';
+                command[1] = 'O';
+                command[2] = 'O';
+                command[3] = 'P';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Make a RSET command.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <param name="command">The RSET command that is defined within the token enumerator.</param>
+        /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
+        /// <returns>Returns true if a command could be made, false if not.</returns>
+        public bool TryMakeRset(ref TokenReader reader, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            command = null;
+            errorResponse = null;
+
+            if (reader.TryMake(TryMakeRset) == false)
+            {
+                return false;
+            }
+
+            if (TryMakeEnd(ref reader) == false)
+            {
+                errorResponse = SmtpResponse.SyntaxError;
+                return false;
+            }
+
+            command = _smtpCommandFactory.CreateRset();
+            return true;
+        }
+
+        /// <summary>
+        /// Try to make the RSET text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the RSET text sequence could be made, false if not.</returns>
+        public bool TryMakeRset(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[4];
+                command[0] = 'R';
+                command[1] = 'S';
+                command[2] = 'E';
+                command[3] = 'T';
 
                 return text.CaseInsensitiveStringEquals(ref command);
             }

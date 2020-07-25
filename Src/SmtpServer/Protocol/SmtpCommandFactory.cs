@@ -21,7 +21,41 @@ namespace SmtpServer.Protocol
         /// <returns>The EHLO command.</returns>
         public virtual SmtpCommand CreateEhlo(string domainOrAddress)
         {
-            return new EhloCommand(Options, domainOrAddress);
+            var greeting = $"{Options.ServerName} Hello {domainOrAddress}, haven't we met before?";
+
+            return new EhloCommand(domainOrAddress, greeting, GetExtensions);
+
+            IEnumerable<string> GetExtensions(ISessionContext context)
+            {
+                yield return "PIPELINING";
+                yield return "8BITMIME";
+                yield return "SMTPUTF8";
+
+                if (context.Pipe.IsSecure == false && Options.ServerCertificate != null)
+                {
+                    yield return "STARTTLS";
+                }
+
+                if (Options.MaxMessageSize > 0)
+                {
+                    yield return $"SIZE {Options.MaxMessageSize}";
+                }
+
+                if (IsPlainLoginAllowed(context))
+                {
+                    yield return "AUTH PLAIN LOGIN";
+                }
+            }
+
+            bool IsPlainLoginAllowed(ISessionContext context)
+            {
+                if (Options.UserAuthenticatorFactory == null)
+                {
+                    return false;
+                }
+
+                return context.Pipe.IsSecure || context.EndpointDefinition.AllowUnsecureAuthentication;
+            }
         }
 
         /// <summary>
@@ -32,7 +66,7 @@ namespace SmtpServer.Protocol
         /// <returns>The MAIL command.</returns>
         public virtual SmtpCommand CreateMail(IMailbox address, IReadOnlyDictionary<string, string> parameters)
         {
-            return new MailCommand(Options, address, parameters);
+            return new MailCommand(address, parameters, Options.MailboxFilterFactory, Options.MaxMessageSize);
         }
 
         /// <summary>
@@ -42,7 +76,7 @@ namespace SmtpServer.Protocol
         /// <returns>The RCPT command.</returns>
         public virtual SmtpCommand CreateRcpt(IMailbox address)
         {
-            return new RcptCommand(Options, address);
+            return new RcptCommand(address, Options.MailboxFilterFactory);
         }
 
         /// <summary>
@@ -51,7 +85,34 @@ namespace SmtpServer.Protocol
         /// <returns>The DATA command.</returns>
         public virtual SmtpCommand CreateData()
         {
-            return new DataCommand(Options);
+            return new DataCommand(Options.MessageStoreFactory);
+        }
+
+        /// <summary>
+        /// Create a QUIT command.
+        /// </summary>
+        /// <returns>The QUITcommand.</returns>
+        public virtual SmtpCommand CreateQuit()
+        {
+            return new QuitCommand();
+        }
+
+        /// <summary>
+        /// Create a NOOP command.
+        /// </summary>
+        /// <returns>The NOOP command.</returns>
+        public virtual SmtpCommand CreateNoop()
+        {
+            return new NoopCommand();
+        }
+
+        /// <summary>
+        /// Create a RSET command.
+        /// </summary>
+        /// <returns>The RSET command.</returns>
+        public virtual SmtpCommand CreateRset()
+        {
+            return new RsetCommand();
         }
 
         /// <summary>

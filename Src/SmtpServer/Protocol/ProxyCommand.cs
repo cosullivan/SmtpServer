@@ -16,7 +16,12 @@ namespace SmtpServer.Protocol
 
         public const string Command = "PROXY";
 
-        public ProxyCommand(ISmtpServerOptions options, IPEndPoint sourceEndpoint = null, IPEndPoint destinationEndpoint = null) : base(Command, options)
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="sourceEndpoint">The source endpoint.</param>
+        /// <param name="destinationEndpoint">The destination endpoint.</param>
+        public ProxyCommand(IPEndPoint sourceEndpoint = null, IPEndPoint destinationEndpoint = null) : base(Command)
         {
             SourceEndpoint = sourceEndpoint;
             DestinationEndpoint = destinationEndpoint;
@@ -32,8 +37,14 @@ namespace SmtpServer.Protocol
             return Task.FromResult(false);
         }
 
+        /// <summary>
+        /// The source endpoint.
+        /// </summary>
         public IPEndPoint SourceEndpoint { get; }
 
+        /// <summary>
+        /// The destination endpoint.
+        /// </summary>
         public IPEndPoint DestinationEndpoint { get; }
     }
 }

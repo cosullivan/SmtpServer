@@ -11,14 +11,18 @@ namespace SmtpServer.Protocol
     {
         public const string Command = "RCPT";
 
+        readonly IMailboxFilterFactory _mailboxFilterFactory;
+
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="options">The server options.</param>
         /// <param name="address">The address.</param>
-        internal RcptCommand(ISmtpServerOptions options, IMailbox address) : base(Command, options)
+        /// <param name="mailboxFilterFactory">The mailbox filter factory used for creating instances of mailbox filters.</param>
+        internal RcptCommand(IMailbox address, IMailboxFilterFactory mailboxFilterFactory) : base(Command)
         {
             Address = address;
+
+            _mailboxFilterFactory = mailboxFilterFactory;
         }
 
         /// <summary>
@@ -30,7 +34,7 @@ namespace SmtpServer.Protocol
         /// if the current state is to be maintained.</returns>
         internal override async Task<bool> ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            using (var container = new DisposableContainer<IMailboxFilter>(Options.MailboxFilterFactory.CreateInstance(context)))
+            using (var container = new DisposableContainer<IMailboxFilter>(_mailboxFilterFactory.CreateInstance(context)))
             {
                 switch (await container.Instance.CanDeliverToAsync(context, Address, context.Transaction.From, cancellationToken).ConfigureAwait(false))
                 {

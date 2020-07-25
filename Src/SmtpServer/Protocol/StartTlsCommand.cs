@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using SmtpServer.IO;
 
 namespace SmtpServer.Protocol
 {
@@ -12,8 +11,7 @@ namespace SmtpServer.Protocol
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="options">The server options.</param>
-        internal StartTlsCommand(ISmtpServerOptions options) : base(Command, options) { }
+        internal StartTlsCommand() : base(Command) { }
 
         /// <summary>
         /// Execute the command.

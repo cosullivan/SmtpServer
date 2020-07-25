@@ -16,11 +16,6 @@ namespace SmtpServer
         IList<IMailbox> To { get; }
 
         /// <summary>
-        /// Gets the message that was read.
-        /// </summary>
-        IMessage Message { get; set; }
-
-        /// <summary>
         /// The list of parameters that were supplied by the client.
         /// </summary>
         IReadOnlyDictionary<string, string> Parameters { get; }

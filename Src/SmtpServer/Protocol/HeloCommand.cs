@@ -11,9 +11,8 @@ namespace SmtpServer.Protocol
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="options">The server options.</param>
         /// <param name="domainOrAddress">The domain name.</param>
-        internal HeloCommand(ISmtpServerOptions options, string domainOrAddress) : base(Command, options)
+        internal HeloCommand(string domainOrAddress) : base(Command)
         {
             DomainOrAddress = domainOrAddress;
         }

@@ -7,14 +7,6 @@ namespace SmtpServer
     internal sealed class SmtpMessageTransaction : IMessageTransaction
     {
         /// <summary>
-        /// Constructor.
-        /// </summary>
-        public SmtpMessageTransaction()
-        {
-            Reset();
-        }
-
-        /// <summary>
         /// Reset the current transaction.
         /// </summary>
         public void Reset()
@@ -32,16 +24,11 @@ namespace SmtpServer
         /// <summary>
         /// Gets or sets the collection of mailboxes that the message is to be delivered to.
         /// </summary>
-        public IList<IMailbox> To { get; set; }
-
-        /// <summary>
-        /// The message that was read for this transaction.
-        /// </summary>
-        public IMessage Message { get; set; }
+        public IList<IMailbox> To { get; set; } = new Collection<IMailbox>();
 
         /// <summary>
         /// The list of parameters that were supplied by the client.
         /// </summary>
-        public IReadOnlyDictionary<string, string> Parameters { get; set; }
+        public IReadOnlyDictionary<string, string> Parameters { get; set; } = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>());
     }
 }

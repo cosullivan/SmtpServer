@@ -30,12 +30,12 @@ namespace SmtpServer.Mail
                 throw new ArgumentNullException(nameof(mailbox));
             }
 
-            if (String.IsNullOrWhiteSpace(mailbox.User) && String.IsNullOrWhiteSpace(mailbox.Host))
+            if (string.IsNullOrWhiteSpace(mailbox.User) && string.IsNullOrWhiteSpace(mailbox.Host))
             {
                 return null;
             }
 
-            return String.Format(CultureInfo.InvariantCulture, "{0}@{1}", mailbox.User, mailbox.Host);
+            return string.Format(CultureInfo.InvariantCulture, "{0}@{1}", mailbox.User, mailbox.Host);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,14 +11,21 @@ namespace SmtpServer.Protocol
     {
         public const string Command = "EHLO";
 
+        readonly string _greeting;
+        readonly Func<ISessionContext, IEnumerable<string>> _extensionsFactory;
+
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="options">The server options.</param>
         /// <param name="domainOrAddress">The domain name or address literal.</param>
-        internal EhloCommand(ISmtpServerOptions options, string domainOrAddress) : base(Command, options)
+        /// <param name="greeting">The greeting text.</param>
+        /// <param name="extensionsFactory">The factory method that returns the list of available extensions for the current session.</param>
+        internal EhloCommand(string domainOrAddress, string greeting, Func<ISessionContext, IEnumerable<string>> extensionsFactory) : base(Command)
         {
             DomainOrAddress = domainOrAddress;
+
+            _greeting = greeting;
+            _extensionsFactory = extensionsFactory;
         }
 
         /// <summary>
@@ -29,9 +37,7 @@ namespace SmtpServer.Protocol
         /// if the current state is to be maintained.</returns>
         internal override async Task<bool> ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            var greeting = $"{Options.ServerName} Hello {DomainOrAddress}, haven't we met before?";
-            
-            var output = new[] { greeting }.Union(GetExtensions(context)).ToArray();
+            var output = new[] { _greeting }.Union(_extensionsFactory(context)).ToArray();
 
             for (var i = 0; i < output.Length - 1; i++)
             {
@@ -43,48 +49,6 @@ namespace SmtpServer.Protocol
             await context.Pipe.Output.FlushAsync(cancellationToken).ConfigureAwait(false);
 
             return true;
-        }
-
-        /// <summary>
-        /// Gets the list of extensions.
-        /// </summary>
-        /// <param name="context">The session context the is currently operating.</param>
-        /// <returns>The list of extensions that are allowed for the session.</returns>
-        IEnumerable<string> GetExtensions(ISessionContext context)
-        {
-            yield return "PIPELINING";
-            yield return "8BITMIME";
-            yield return "SMTPUTF8";
-
-            if (context.Pipe.IsSecure == false && Options.ServerCertificate != null)
-            {
-                yield return "STARTTLS";
-            }
-
-            if (Options.MaxMessageSize > 0)
-            {
-                yield return $"SIZE {Options.MaxMessageSize}";
-            }
-
-            if (IsPlainLoginAllowed(context))
-            {
-                yield return "AUTH PLAIN LOGIN";
-            }
-        }
-
-        /// <summary>
-        /// Returns a value indicating whether or not plain login is allowed.
-        /// </summary>
-        /// <param name="context">The current session context.</param>
-        /// <returns>true if plain login is allowed for the session, false if not.</returns>
-        bool IsPlainLoginAllowed(ISessionContext context)
-        {
-            if (Options.UserAuthenticatorFactory == null)
-            {
-                return false;
-            }
-
-            return context.Pipe.IsSecure || context.EndpointDefinition.AllowUnsecureAuthentication;
         }
 
         /// <summary>

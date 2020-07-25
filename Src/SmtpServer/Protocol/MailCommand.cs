@@ -11,16 +11,24 @@ namespace SmtpServer.Protocol
     {
         public const string Command = "MAIL";
 
+        readonly IMailboxFilterFactory _mailboxFilterFactory;
+        readonly int _maxMessageSize;
+
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="options">The server options.</param>
         /// <param name="address">The address.</param>
         /// <param name="parameters">The list of extended (ESMTP) parameters.</param>
-        internal MailCommand(ISmtpServerOptions options, IMailbox address, IReadOnlyDictionary<string, string> parameters) : base(Command, options)
+        /// <param name="mailboxFilterFactory">The Mailbox Filter factory to create Mailbox filters.</param>
+        /// <param name="maxMessageSize">The maximum allowed message size.</param>
+        internal MailCommand(IMailbox address, IReadOnlyDictionary<string, string> parameters, IMailboxFilterFactory mailboxFilterFactory, int maxMessageSize) : base(Command)
         {
             Address = address;
             Parameters = parameters;
+
+            _mailboxFilterFactory = mailboxFilterFactory;
+            _maxMessageSize = maxMessageSize;
         }
 
         /// <summary>
@@ -45,13 +53,13 @@ namespace SmtpServer.Protocol
             var size = GetMessageSize();
 
             // check against the server supplied maximum
-            if (Options.MaxMessageSize > 0 && size > Options.MaxMessageSize)
+            if (_maxMessageSize > 0 && size > _maxMessageSize)
             {
                 await context.Pipe.Output.WriteReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ConfigureAwait(false);
                 return false;
             }
 
-            using (var container = new DisposableContainer<IMailboxFilter>(Options.MailboxFilterFactory.CreateInstance(context)))
+            using (var container = new DisposableContainer<IMailboxFilter>(_mailboxFilterFactory.CreateInstance(context)))
             {
                 switch (await container.Instance.CanAcceptFromAsync(context, Address, size, cancellationToken).ConfigureAwait(false))
                 {

@@ -2,8 +2,8 @@
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.IO;
-using SmtpServer.Mail;
 using SmtpServer.Storage;
+using SmtpServer.Text;
 
 namespace SmtpServer.Protocol
 {
@@ -11,11 +11,16 @@ namespace SmtpServer.Protocol
     {
         public const string Command = "DATA";
 
+        readonly IMessageStoreFactory _messageStoreFactory;
+
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="options">The server options.</param>
-        internal DataCommand(ISmtpServerOptions options) : base(Command, options) { }
+        /// <param name="messageStoreFactory">The message store factory to use when creating the message stores.</param>
+        internal DataCommand(IMessageStoreFactory messageStoreFactory) : base(Command)
+        {
+            _messageStoreFactory = messageStoreFactory;
+        }
 
         /// <summary>
         /// Execute the command.
@@ -34,14 +39,24 @@ namespace SmtpServer.Protocol
 
             await context.Pipe.Output.WriteReplyAsync(new SmtpResponse(SmtpReplyCode.StartMailInput, "end with <CRLF>.<CRLF>"), cancellationToken).ConfigureAwait(false);
 
-            context.Transaction.Message = await ReadMessageAsync(context, cancellationToken).ConfigureAwait(false);
-
             try
             {
-                using var container = new DisposableContainer<IMessageStore>(Options.MessageStoreFactory.CreateInstance(context));
-                
-                var response = await container.Instance.SaveAsync(context, context.Transaction, cancellationToken).ConfigureAwait(false);
+                using var container = new DisposableContainer<IMessageStore>(_messageStoreFactory.CreateInstance(context));
 
+                SmtpResponse response = null;
+
+                await context.Pipe.Input.ReadDotBlockAsync(
+                    async buffer =>
+                    {
+#if DEBUG
+                        Console.WriteLine(StringUtil.Create(buffer));
+#endif 
+
+                        // ReSharper disable once AccessToDisposedClosure
+                        response = await container.Instance.SaveAsync(context, context.Transaction, buffer, cancellationToken).ConfigureAwait(false);
+                    }, 
+                    cancellationToken).ConfigureAwait(false);
+                    
                 await context.Pipe.Output.WriteReplyAsync(response, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception)
@@ -50,21 +65,6 @@ namespace SmtpServer.Protocol
             }
 
             return true;
-        }
-
-        /// <summary>
-        /// Receive the message content.
-        /// </summary>
-        /// <param name="context">The SMTP session context to receive the message within.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task which asynchronously performs the operation.</returns>
-        Task<IMessage> ReadMessageAsync(SmtpSessionContext context, CancellationToken cancellationToken)
-        {
-            //var serializer = new MessageSerializerFactory().CreateInstance();
-
-            //return serializer.DeserializeAsync(context.NetworkPipe, cancellationToken);
-
-            throw new NotImplementedException();
         }
     }
 }

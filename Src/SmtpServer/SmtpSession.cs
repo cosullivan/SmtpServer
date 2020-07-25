@@ -124,25 +124,26 @@ namespace SmtpServer
 
             try
             {
-                return await context.Pipe.Input.ReadLineAsync(
+                SmtpCommand command = null;
+
+                await context.Pipe.Input.ReadLineAsync(
                     buffer =>
                     {
 #if DEBUG
                         Console.WriteLine(StringUtil.Create(buffer));
 #endif
+                        var parser = new SmtpParser(context.ServerOptions.SmtpCommandFactory);
 
-                        var parser = new SmtpParser(context.ServerOptions);
-
-                        HERE: probably should have a ICommandFactory to actually create the command so that the parser doenst need the options?
-
-                        if (parser.TryMake(ref buffer, out var command, out var errorResponse) == false)
+                        if (parser.TryMake(ref buffer, out command, out var errorResponse) == false)
                         {
                             throw new SmtpResponseException(errorResponse);
                         }
 
-                        return command;
+                        return Task.CompletedTask;
                     },
                     cancellationTokenSource.Token).ConfigureAwait(false);
+
+                return command;
             }
             catch (OperationCanceledException)
             {
@@ -204,6 +205,6 @@ namespace SmtpServer
         /// <summary>
         /// Returns the completion task.
         /// </summary>
-        internal Task<bool> Task => _taskCompletionSource.Task;
+        internal Task<bool> CompletionTask => _taskCompletionSource.Task;
     }
 }
