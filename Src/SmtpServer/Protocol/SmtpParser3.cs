@@ -27,12 +27,16 @@ namespace SmtpServer.Protocol
         public bool TryMake(ref ReadOnlySequence<byte> buffer, out SmtpCommand command, out SmtpResponse errorResponse)
         {
             return TryMake(buffer, TryMakeEhlo, out command, out errorResponse)
+                || TryMake(buffer, TryMakeHelo, out command, out errorResponse)
                 || TryMake(buffer, TryMakeMail, out command, out errorResponse)
                 || TryMake(buffer, TryMakeRcpt, out command, out errorResponse)
                 || TryMake(buffer, TryMakeData, out command, out errorResponse)
                 || TryMake(buffer, TryMakeQuit, out command, out errorResponse)
                 || TryMake(buffer, TryMakeRset, out command, out errorResponse)
-                || TryMake(buffer, TryMakeNoop, out command, out errorResponse);
+                || TryMake(buffer, TryMakeNoop, out command, out errorResponse)
+                || TryMake(buffer, TryMakeStartTls, out command, out errorResponse)
+                || TryMake(buffer, TryMakeAuth, out command, out errorResponse)
+                || TryMake(buffer, TryMakeProxy, out command, out errorResponse);
 
             static bool TryMake(ReadOnlySequence<byte> buffer, TryMakeDelegate tryMakeDelegate, out SmtpCommand command, out SmtpResponse errorResponse)
             {
@@ -40,6 +44,65 @@ namespace SmtpServer.Protocol
 
                 return tryMakeDelegate(ref reader, out command, out errorResponse);
             }
+        }
+
+        /// <summary>
+        /// Make a HELO command from the given enumerator.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <param name="command">The HELO command that is defined within the token enumerator.</param>
+        /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
+        /// <returns>Returns true if a command could be made, false if not.</returns>
+        public bool TryMakeHelo(ref TokenReader reader, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            command = null;
+            errorResponse = null;
+
+            if (TryMakeHelo(ref reader) == false)
+            {
+                return false;
+            }
+
+            reader.Skip(TokenKind.Space);
+
+            if (reader.TryMake(TryMakeDomain, out var domain))
+            {
+                command = _smtpCommandFactory.CreateHelo(StringUtil.Create(domain));
+                return true;
+            }
+
+            // according to RFC5321 the HELO command should only accept the Domain
+            // and not the address literal, however some mail clients will send the
+            // address literal and there is no harm in accepting it
+            if (reader.TryMake(TryMakeAddressLiteral, out var address))
+            {
+                command = _smtpCommandFactory.CreateHelo(StringUtil.Create(address));
+                return true;
+            }
+
+            errorResponse = SmtpResponse.SyntaxError;
+            return false;
+        }
+
+        /// <summary>
+        /// Try to make the HELO text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the HELO text sequence  could be made, false if not.</returns>
+        public bool TryMakeHelo(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[4];
+                command[0] = 'H';
+                command[1] = 'E';
+                command[2] = 'L';
+                command[3] = 'O';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -434,6 +497,8 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
+            reader.Skip(TokenKind.Space);
+
             if (TryMakeEnd(ref reader) == false)
             {
                 errorResponse = SmtpResponse.SyntaxError;
@@ -458,6 +523,191 @@ namespace SmtpServer.Protocol
                 command[1] = 'S';
                 command[2] = 'E';
                 command[3] = 'T';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Make an STARTTLS command from the given enumerator.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <param name="command">The STARTTLS command that is defined within the token enumerator.</param>
+        /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
+        /// <returns>Returns true if a command could be made, false if not.</returns>
+        public bool TryMakeStartTls(ref TokenReader reader, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            command = null;
+            errorResponse = null;
+
+            if (reader.TryMake(TryMakeStartTls) == false)
+            {
+                return false;
+            }
+
+            reader.Skip(TokenKind.Space);
+
+            if (TryMakeEnd(ref reader) == false)
+            {
+                errorResponse = SmtpResponse.SyntaxError;
+                return false;
+            }
+
+            command = _smtpCommandFactory.CreateStartTls();
+            return true;
+        }
+
+        /// <summary>
+        /// Try to make the STARTTLS text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the STARTTLS text sequence could be made, false if not.</returns>
+        public bool TryMakeStartTls(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[8];
+                command[0] = 'S';
+                command[1] = 'T';
+                command[2] = 'A';
+                command[3] = 'R';
+                command[4] = 'T';
+                command[5] = 'T';
+                command[6] = 'L';
+                command[7] = 'S';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Make an AUTH command from the given enumerator.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <param name="command">The AUTH command that is defined within the token enumerator.</param>
+        /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
+        /// <returns>Returns true if a command could be made, false if not.</returns>
+        public bool TryMakeAuth(ref TokenReader reader, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            command = null;
+            errorResponse = null;
+
+            if (reader.TryMake(TryMakeAuth) == false)
+            {
+                return false;
+            }
+
+            reader.Skip(TokenKind.Space);
+
+            //if (Enum.TryParse(Enumerator.Take().Text, true, out AuthenticationMethod method) == false)
+            //{
+            //    _options.Logger.LogVerbose("AUTH command requires a valid method (PLAIN or LOGIN)");
+
+            //    errorResponse = SmtpResponse.SyntaxError;
+            //    return false;
+            //}
+
+            //Enumerator.Take();
+
+            //string parameter = null;
+            //if (TryMake(TryMakeEnd) == false && TryMakeBase64(out parameter) == false)
+            //{
+            //    _options.Logger.LogVerbose("AUTH parameter must be a Base64 encoded string");
+
+            //    errorResponse = SmtpResponse.SyntaxError;
+            //    return false;
+            //}
+
+            //command = new AuthCommand(_options, method, parameter);
+            //return true;
+
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Try to make the AUTH text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the AUTH text sequence could be made, false if not.</returns>
+        public bool TryMakeAuth(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[4];
+                command[0] = 'A';
+                command[1] = 'U';
+                command[2] = 'T';
+                command[3] = 'H';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Support proxy protocol version 1 header for use with HAProxy.
+        /// Documented at http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <param name="command">The PROXY command that is defined within the token enumerator.</param>
+        /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
+        /// <returns>Returns true if a command could be made, false if not.</returns>
+        public bool TryMakeProxy(ref TokenReader reader, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            // ABNF
+            // proxy            = "PROXY" space ( unknown-proxy | tcp4-proxy | tcp6-proxy )
+            // unknown-proxy    = "UNKNOWN"
+            // tcp4-proxy       = "TCP4" space ipv4-address-literal space ipv4-address-literal space ip-port-number space ip-port-number   
+            // tcp6-proxy       = "TCP6" space ipv6-address-literal space ipv6-address-literal space ip-port-number space ip-port-number
+            // space            = " "
+            // ip-port          = wnum
+            // wnum             = 1*5DIGIT ; in the range of 0-65535
+
+            command = null;
+            errorResponse = null;
+
+            if (reader.TryMake(TryMakeProxy) == false)
+            {
+                return false;
+            }
+
+            reader.Skip(TokenKind.Space);
+
+            //if (TryMake(TryMakeUnknownProxy, out command))
+            //{
+            //    return true;
+            //}
+
+            //if (TryMake(TryMakeTcp4Proxy, out command))
+            //{
+            //    return true;
+            //}
+
+            //return TryMakeTcp6Proxy(out command);
+
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Try to make the PROXY text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the PROXY text sequence could be made, false if not.</returns>
+        public bool TryMakeProxy(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[4];
+                command[0] = 'P';
+                command[1] = 'R';
+                command[2] = 'O';
+                command[3] = 'X';
+                command[4] = 'Y';
 
                 return text.CaseInsensitiveStringEquals(ref command);
             }

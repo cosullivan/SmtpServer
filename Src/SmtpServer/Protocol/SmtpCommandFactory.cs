@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Net;
 using SmtpServer.Mail;
 
 namespace SmtpServer.Protocol
@@ -15,7 +17,17 @@ namespace SmtpServer.Protocol
         }
 
         /// <summary>
-        /// Create an EHLO command.
+        /// Create a HELO command.
+        /// </summary>
+        /// <param name="domainOrAddress">The domain name or address literal.</param>
+        /// <returns>The HELO command.</returns>
+        public virtual SmtpCommand CreateHelo(string domainOrAddress)
+        {
+            return new HeloCommand(domainOrAddress);
+        }
+
+        /// <summary>
+        /// Create a EHLO command.
         /// </summary>
         /// <param name="domainOrAddress">The domain name or address literal.</param>
         /// <returns>The EHLO command.</returns>
@@ -72,7 +84,7 @@ namespace SmtpServer.Protocol
         /// <summary>
         /// Create a RCPT command.
         /// </summary>
-        /// <param name="address">the address that the mail is to..</param>
+        /// <param name="address">The address that the mail is to.</param>
         /// <returns>The RCPT command.</returns>
         public virtual SmtpCommand CreateRcpt(IMailbox address)
         {
@@ -113,6 +125,38 @@ namespace SmtpServer.Protocol
         public virtual SmtpCommand CreateRset()
         {
             return new RsetCommand();
+        }
+
+        /// <summary>
+        /// Create a STARTTLS command.
+        /// </summary>
+        /// <returns>The STARTTLS command.</returns>
+        public virtual SmtpCommand CreateStartTls()
+        {
+            return new StartTlsCommand(Options.ServerCertificate, Options.SupportedSslProtocols);
+        }
+
+        /// <summary>
+        /// Create a AUTH command.
+        /// </summary>
+        /// <param name="method">The authentication method.</param>
+        /// <param name="parameter">The authentication parameter.</param>
+        /// <returns>The AUTH command.</returns>
+        public SmtpCommand CreateAuth(AuthenticationMethod method, string parameter)
+        {
+            //return new AuthCommand()
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Create a PROXY command.
+        /// </summary>
+        /// <param name="sourceEndpoint">The source endpoint.</param>
+        /// <param name="destinationEndpoint">The destination endpoint.</param>
+        /// <returns>The PROXY command.</returns>
+        public virtual SmtpCommand CreateProxy(IPEndPoint sourceEndpoint, IPEndPoint destinationEndpoint)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>

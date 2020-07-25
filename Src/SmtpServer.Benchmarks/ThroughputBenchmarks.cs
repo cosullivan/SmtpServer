@@ -8,6 +8,7 @@ using SmtpClient = MailKit.Net.Smtp.SmtpClient;
 
 namespace SmtpServer.Benchmarks
 {
+    [MemoryDiagnoser]
     public class ThroughputBenchmarks
     {
         readonly SmtpServer _smtpServer = new SmtpServer(
@@ -45,10 +46,10 @@ namespace SmtpServer.Benchmarks
             _smtpClient.NoOp();
         }
 
-        [Benchmark]
-        public void Send()
-        {
-            _smtpClient.Send(_message);
-        }
+        //[Benchmark]
+        //public void Send()
+        //{
+        //    _smtpClient.Send(_message);
+        //}
     }
 }

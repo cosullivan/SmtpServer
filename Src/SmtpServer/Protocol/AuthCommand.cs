@@ -11,6 +11,7 @@ namespace SmtpServer.Protocol
 {
     public class AuthCommand : SmtpCommand
     {
+        readonly IUserAuthenticatorFactory _userAuthenticatorFactory;
         public const string Command = "AUTH";
 
         string _user;
@@ -19,13 +20,15 @@ namespace SmtpServer.Protocol
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="options">The server options.</param>
         /// <param name="method">The authentication method.</param>
         /// <param name="parameter">The authentication parameter.</param>
-        internal AuthCommand(ISmtpServerOptions options, AuthenticationMethod method, string parameter) : base(Command)
+        /// <param name="userAuthenticatorFactory">The factory to create per session instances of the user authenticator.</param>
+        internal AuthCommand(AuthenticationMethod method, string parameter, IUserAuthenticatorFactory userAuthenticatorFactory) : base(Command)
         {
             Method = method;
             Parameter = parameter;
+
+            _userAuthenticatorFactory = userAuthenticatorFactory;
         }
 
         /// <summary>
