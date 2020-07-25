@@ -44,10 +44,10 @@ namespace SmtpServer.Benchmarks
             _smtpClient.NoOp();
         }
 
-        [Benchmark]
-        public void Send()
-        {
-            _smtpClient.Send(_message);
-        }
+        //[Benchmark]
+        //public void Send()
+        //{
+        //    _smtpClient.Send(_message);
+        //}
     }
 }

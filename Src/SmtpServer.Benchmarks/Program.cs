@@ -13,10 +13,7 @@ namespace SmtpServer.Benchmarks
             //        .Create(DefaultConfig.Instance)
             //        .With(ConfigOptions.DisableOptimizationsValidator));
 
-            var summary = BenchmarkRunner.Run<ThroughputBenchmarks>(
-                ManualConfig
-                    .Create(DefaultConfig.Instance)
-                    .With(ConfigOptions.DisableOptimizationsValidator));
+            var summary = BenchmarkRunner.Run<ThroughputBenchmarks>();
 
             //var summary = BenchmarkRunner.Run<SmtpParserBenchmarks>();
             //var summary = BenchmarkRunner.Run<TokenizerBenchmarks>();
