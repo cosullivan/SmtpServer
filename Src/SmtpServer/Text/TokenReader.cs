@@ -268,7 +268,13 @@ namespace SmtpServer.Text
                     return new Token(TokenKind.Equal, ReadOne());
 
                 case { } ch when ch == '\\':
-                    return new Token(TokenKind.BackSlash, ReadOne());
+                    return new Token(TokenKind.Backslash, ReadOne());
+
+                case { } ch when ch == '/':
+                    return new Token(TokenKind.Slash, ReadOne());
+
+                case { } ch when ch == '+':
+                    return new Token(TokenKind.Plus, ReadOne());
             }
 
             return new Token(TokenKind.Other, ReadOne());

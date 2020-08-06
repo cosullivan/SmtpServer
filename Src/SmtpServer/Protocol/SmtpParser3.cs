@@ -603,29 +603,51 @@ namespace SmtpServer.Protocol
 
             reader.Skip(TokenKind.Space);
 
-            //if (Enum.TryParse(Enumerator.Take().Text, true, out AuthenticationMethod method) == false)
-            //{
-            //    _options.Logger.LogVerbose("AUTH command requires a valid method (PLAIN or LOGIN)");
+            if (TryMakeAuthenticationMethod(ref reader, out var authenticationMethod) == false)
+            {
+                return false;
+            }
 
-            //    errorResponse = SmtpResponse.SyntaxError;
-            //    return false;
-            //}
+            reader.Take();
 
-            //Enumerator.Take();
+            if (reader.TryMake(TryMakeEnd))
+            {
+                command = _smtpCommandFactory.CreateAuth(authenticationMethod, null);
+                return true;
+            }
 
-            //string parameter = null;
-            //if (TryMake(TryMakeEnd) == false && TryMakeBase64(out parameter) == false)
-            //{
-            //    _options.Logger.LogVerbose("AUTH parameter must be a Base64 encoded string");
+            if (reader.TryMake(TryMakeBase64, out var base64) == false)
+            {
+                command = _smtpCommandFactory.CreateAuth(authenticationMethod, StringUtil.Create(base64));
+                return true;
+            }
 
-            //    errorResponse = SmtpResponse.SyntaxError;
-            //    return false;
-            //}
+            errorResponse = SmtpResponse.SyntaxError;
+            return false;
+        }
 
-            //command = new AuthCommand(_options, method, parameter);
-            //return true;
+        /// <summary>
+        /// Try to make the Authentication method.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <param name="authenticationMethod">The authentication method that was made.</param>
+        /// <returns>true if the authentication method could be made, false if not.</returns>
+        public bool TryMakeAuthenticationMethod(ref TokenReader reader, out AuthenticationMethod authenticationMethod)
+        {
+            if (reader.TryMake(TryMakeLoginText))
+            {
+                authenticationMethod = AuthenticationMethod.Login;
+                return true;
+            }
 
-            throw new NotImplementedException();
+            if (reader.TryMake(TryMakePlainText))
+            {
+                authenticationMethod = AuthenticationMethod.Plain;
+                return true;
+            }
+
+            authenticationMethod = default;
+            return false;
         }
 
         /// <summary>
@@ -642,6 +664,50 @@ namespace SmtpServer.Protocol
                 command[1] = 'U';
                 command[2] = 'T';
                 command[3] = 'H';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Try to make the LOGIN text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the LOGIN text sequence could be made, false if not.</returns>
+        public bool TryMakeLoginText(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[4];
+                command[0] = 'L';
+                command[1] = 'O';
+                command[2] = 'G';
+                command[3] = 'I';
+                command[4] = 'N';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Try to make the PLAIN text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the PLAIN text sequence could be made, false if not.</returns>
+        public bool TryMakePlainText(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[4];
+                command[0] = 'P';
+                command[1] = 'L';
+                command[2] = 'A';
+                command[3] = 'I';
+                command[4] = 'N';
 
                 return text.CaseInsensitiveStringEquals(ref command);
             }
@@ -1455,7 +1521,7 @@ namespace SmtpServer.Protocol
         /// <remarks><![CDATA[%d92 %d32-126]]></remarks>
         public bool TryMakeQuotedPairSmtp(ref TokenReader reader)
         {
-            if (reader.Take().Kind != TokenKind.BackSlash)
+            if (reader.Take().Kind != TokenKind.Backslash)
             {
                 return false;
             }
@@ -1651,98 +1717,71 @@ namespace SmtpServer.Protocol
             }
         }
 
-        //        /// <summary>
-        //        /// Try to make a base64 encoded string.
-        //        /// </summary>
-        //        /// <param name="base64">The base64 encoded string that were found.</param>
-        //        /// <returns>true if the base64 encoded string can be made, false if not.</returns>
-        //        /// <remarks><![CDATA[ALPHA / DIGIT / "+" / "/"]]></remarks>
-        //        public bool TryMakeBase64(out string base64)
-        //        {
-        //            if (TryMakeBase64Text(out base64) == false)
-        //            {
-        //                return false;
-        //            }
+        /// <summary>
+        /// Try to make a base64 encoded string.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the base64 encoded string can be made, false if not.</returns>
+        /// <remarks><![CDATA[ALPHA / DIGIT / "+" / "/"]]></remarks>
+        public bool TryMakeBase64(ref TokenReader reader)
+        {
+            if (TryMakeBase64Text(ref reader) == false)
+            {
+                return false;
+            }
 
-        //            if (Enumerator.Peek() == Tokens.Equal)
-        //            {
-        //                base64 += Enumerator.Take().Text;
-        //            }
+            if (reader.Peek().Kind == TokenKind.Equal)
+            {
+                reader.Take();
+            }
 
-        //            if (Enumerator.Peek() == Tokens.Equal)
-        //            {
-        //                base64 += Enumerator.Take().Text;
-        //            }
+            if (reader.Peek().Kind == TokenKind.Equal)
+            {
+                reader.Take();
+            }
+            
+            return true;
+        }
 
-        //            // because the TryMakeBase64Chars method matches tokens, each TextValue token could make
-        //            // up several Base64 encoded "bytes" so we ensure that we have a length divisible by 4
-        //            return base64 != null
-        //                && base64.Length % 4 == 0
-        //                && new[] {TokenKind.None, TokenKind.Space, TokenKind.NewLine}.Contains(Enumerator.Peek().Kind);
-        //        }
+        /// <summary>
+        /// Try to make a base64 encoded string.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the base64 encoded string can be made, false if not.</returns>
+        /// <remarks><![CDATA[ALPHA / DIGIT / "+" / "/"]]></remarks>
+        public bool TryMakeBase64Text(ref TokenReader reader)
+        {
+            var count = 0;
 
-        //        /// <summary>
-        //        /// Try to make a base64 encoded string.
-        //        /// </summary>
-        //        /// <param name="base64">The base64 encoded string that were found.</param>
-        //        /// <returns>true if the base64 encoded string can be made, false if not.</returns>
-        //        /// <remarks><![CDATA[ALPHA / DIGIT / "+" / "/"]]></remarks>
-        //        bool TryMakeBase64Text(out string base64)
-        //        {
-        //            base64 = null;
+            while (reader.TryMake(TryMakeBase64Chars))
+            {
+                count++;
+            }
 
-        //            while (TryMake(TryMakeBase64Chars, out string base64Chars))
-        //            {
-        //                base64 += base64Chars;
-        //            }
+            return count > 0;
+        }
 
-        //            return true;
-        //        }
+        /// <summary>
+        /// Try to make the allowable characters in a base64 encoded string.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the base64-chars can be made, false if not.</returns>
+        /// <remarks><![CDATA[ALPHA / DIGIT / "+" / "/"]]></remarks>
+        public bool TryMakeBase64Chars(ref TokenReader reader)
+        {
+            var token = reader.Take();
+            
+            switch (token.Kind)
+            {
+                case TokenKind.Text:
+                case TokenKind.Number:
+                case TokenKind.Slash:
+                case TokenKind.Plus:
+                    return true;
+            }
 
-        //        /// <summary>
-        //        /// Try to make the allowable characters in a base64 encoded string.
-        //        /// </summary>
-        //        /// <param name="base64Chars">The base64 characters that were found.</param>
-        //        /// <returns>true if the base64-chars can be made, false if not.</returns>
-        //        /// <remarks><![CDATA[ALPHA / DIGIT / "+" / "/"]]></remarks>
-        //        bool TryMakeBase64Chars(out string base64Chars)
-        //        {
-        //            base64Chars = null;
-
-        //            var token = Enumerator.Take();
-        //            switch (token.Kind)
-        //            {
-        //                case TokenKind.Text:
-        //                case TokenKind.Number:
-        //                    base64Chars = token.Text;
-        //                    return true;
-
-        //                case TokenKind.Other:
-        //                    switch (token.Text[0])
-        //                    {
-        //                        case '/':
-        //                        case '+':
-        //                            base64Chars = token.Text;
-        //                            return true;
-        //                    }
-
-        //                    break;
-        //            }
-
-        //            return false;
-        //        }
-
-        //        /// <summary>
-        //        /// Attempt to make the end of the line.
-        //        /// </summary>
-        //        /// <returns>true if the end of the line could be made, false if not.</returns>
-        //        bool TryMakeEnd()
-        //        {
-        //            Enumerator.Skip(TokenKind.Space);
-
-        //            return Enumerator.Take() == Token.None;
-        //        }
-
+            return false;
+        }
 
         /// <summary>
         /// Try to make a text sequence.

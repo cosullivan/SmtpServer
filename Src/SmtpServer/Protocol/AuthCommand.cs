@@ -40,7 +40,7 @@ namespace SmtpServer.Protocol
         /// if the current state is to be maintained.</returns>
         internal override async Task<bool> ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            //context.Authentication = AuthenticationContext.Unauthenticated;
+            context.Authentication = AuthenticationContext.Unauthenticated;
 
             //switch (Method)
             //{
@@ -153,7 +153,7 @@ namespace SmtpServer.Protocol
 
         //        _user = await ReadBase64EncodedLineAsync(context.NetworkPipe, cancellationToken).ConfigureAwait(false);
         //    }
-          
+
         //    await context.NetworkPipe.ReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, "UGFzc3dvcmQ6"), cancellationToken).ConfigureAwait(false);
 
         //    _password = await ReadBase64EncodedLineAsync(context.NetworkPipe, cancellationToken).ConfigureAwait(false);
@@ -171,8 +171,8 @@ namespace SmtpServer.Protocol
         //{
         //    var text = await pipe.ReadLineAsync(Encoding.ASCII, cancellationToken).ConfigureAwait(false);
 
-        //    return text == null 
-        //        ? String.Empty 
+        //    return text == null
+        //        ? String.Empty
         //        : Encoding.UTF8.GetString(Convert.FromBase64String(text));
         //}
 

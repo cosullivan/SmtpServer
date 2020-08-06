@@ -78,9 +78,19 @@
         Equal,
 
         /// <summary>
+        /// /
+        /// </summary>
+        Slash,
+
+        /// <summary>
         /// \
         /// </summary>
-        BackSlash,
+        Backslash,
+
+        /// <summary>
+        /// +
+        /// </summary>
+        Plus,
 
         /// <summary>
         /// Unknown.

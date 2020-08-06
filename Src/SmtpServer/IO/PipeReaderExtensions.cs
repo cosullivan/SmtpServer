@@ -65,10 +65,11 @@ namespace SmtpServer.IO
             }
 
             var read = await reader.ReadAsync(cancellationToken);
+            var head = read.Buffer.Start;
 
             while (read.IsCanceled == false && read.IsCompleted == false && read.Buffer.IsEmpty == false)
             {
-                if (read.Buffer.TryFind(sequence, out var head, out var tail))
+                if (read.Buffer.TryFind(sequence, ref head, out var tail))
                 {
                     await func(read.Buffer.Slice(read.Buffer.Start, head));
 
@@ -107,7 +108,7 @@ namespace SmtpServer.IO
         /// <param name="func">The action to process the buffer.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The value that was read from the buffer.</returns>
-        internal static ValueTask ReadDotBlockAsync(this PipeReader reader, Func<ReadOnlySequence<byte>, Task> func, CancellationToken cancellationToken)
+        internal static async ValueTask ReadDotBlockAsync(this PipeReader reader, Func<ReadOnlySequence<byte>, Task> func, CancellationToken cancellationToken)
         {
             if (reader == null)
             {
@@ -116,7 +117,14 @@ namespace SmtpServer.IO
 
             // TODO: need to perform the Unstuffing of the Dot block
 
-            return ReadUntilAsync(reader, DotBlock, func, cancellationToken);
+            try
+            {
+                await ReadUntilAsync(reader, DotBlock, func, cancellationToken);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
         }
     }
 }

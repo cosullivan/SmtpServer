@@ -150,10 +150,8 @@ namespace SmtpServer
 
             if (sessionContext.EndpointDefinition.IsSecure && _options.ServerCertificate != null)
             {
-                //await sessionContext.NetworkClient.Stream.UpgradeAsync(_options.ServerCertificate, _options.SupportedSslProtocols, cancellationToken).ConfigureAwait(false);
-                //cancellationToken.ThrowIfCancellationRequested();
-
-                throw new NotImplementedException("TODO");
+                await sessionContext.Pipe.UpgradeAsync(_options.ServerCertificate, _options.SupportedSslProtocols, cancellationToken).ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
             }
 
             _sessions.Run(sessionContext, cancellationToken);

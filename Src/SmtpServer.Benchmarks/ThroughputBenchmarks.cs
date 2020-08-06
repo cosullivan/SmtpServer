@@ -40,16 +40,16 @@ namespace SmtpServer.Benchmarks
             return _smtpServer.ShutdownTask;
         }
 
-        [Benchmark]
-        public void NoOp()
-        {
-            _smtpClient.NoOp();
-        }
-
         //[Benchmark]
-        //public void Send()
+        //public void NoOp()
         //{
-        //    _smtpClient.Send(_message);
+        //    _smtpClient.NoOp();
         //}
+
+        [Benchmark]
+        public void Send()
+        {
+            _smtpClient.Send(_message);
+        }
     }
 }
