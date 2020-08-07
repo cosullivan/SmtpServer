@@ -91,11 +91,11 @@ namespace SmtpServer.Tests
         }
 
         [Theory]
-        [InlineData("EHLO abc-1-def.mail.com")]
-        [InlineData("EHLO 192.168.1.200")]
-        [InlineData("EHLO [192.168.1.200]")]
-        [InlineData("EHLO [IPv6:ABCD:EF01:2345:6789:ABCD:EF01:2345:6789]")]
-        public void CanMakeEhlo(string input)
+        [InlineData("EHLO abc-1-def.mail.com", "abc-1-def.mail.com")]
+        [InlineData("EHLO 192.168.1.200", "192.168.1.200")]
+        [InlineData("EHLO [192.168.1.200]", "192.168.1.200")]
+        [InlineData("EHLO [IPv6:ABCD:EF01:2345:6789:ABCD:EF01:2345:6789]", "IPv6:ABCD:EF01:2345:6789:ABCD:EF01:2345:6789")]
+        public void CanMakeEhlo(string input, string domainOrAddress)
         {
             // arrange
             var reader = CreateReader(input);
@@ -103,24 +103,10 @@ namespace SmtpServer.Tests
             // act
             var result = Parser.TryMakeEhlo(ref reader, out var command, out var errorResponse);
 
-            var ipOrDomainPart = input.Substring(5);
-
-            if (ipOrDomainPart.EndsWith("]"))
-            {
-                if (ipOrDomainPart.StartsWith("[IPv6:", StringComparison.OrdinalIgnoreCase))
-                {
-                    ipOrDomainPart = ipOrDomainPart.Substring(6, ipOrDomainPart.Length - 7);
-                }
-                else
-                {
-                    ipOrDomainPart = ipOrDomainPart.Substring(1, ipOrDomainPart.Length - 2);
-                }
-            }
-
             // assert
             Assert.True(result);
             Assert.True(command is EhloCommand);
-            Assert.Equal(ipOrDomainPart, ((EhloCommand)command).DomainOrAddress);
+            Assert.Equal(domainOrAddress, ((EhloCommand)command).DomainOrAddress);
         }
 
         [Fact]
@@ -156,20 +142,13 @@ namespace SmtpServer.Tests
         }
 
         [Theory]
-        [InlineData("cain.osullivan@gmail.com", "cain.osullivan", "gmail.com")]
-        [InlineData(@"""Abc@def""@example.com", "Abc@def", "example.com")]
-        [InlineData("pelé@example.com", "pelé", "example.com", "SMTPUTF8")]
-        public void CanMakeMail(string email, string user, string host, string extension = null)
+        [InlineData("MAIL FROM:<cain.osullivan@gmail.com>", "cain.osullivan", "gmail.com")]
+        [InlineData(@"MAIL FROM:<""Abc@def""@example.com>", "Abc@def", "example.com")]
+        [InlineData("MAIL FROM:<pelé@example.com> SMTPUTF8", "pelé", "example.com", "SMTPUTF8")]
+        public void CanMakeMail(string input, string user, string host, string extension = null)
         {
             // arrange
-            var mailTo = $"MAIL FROM:<{email}>";
-
-            if (!string.IsNullOrWhiteSpace(extension))
-            {
-                mailTo += $" {extension}";
-            }
-
-            var reader = CreateReader(mailTo);
+            var reader = CreateReader(input);
 
             // act
             var result = Parser.TryMakeMail(ref reader, out var command, out var errorResponse);
@@ -180,9 +159,8 @@ namespace SmtpServer.Tests
             Assert.Equal(user, ((MailCommand)command).Address.User);
             Assert.Equal(host, ((MailCommand)command).Address.Host);
 
-            if (!string.IsNullOrWhiteSpace(extension))
+            if (extension != null)
             {
-                // verify the extension was put in the parameters
                 Assert.True(((MailCommand)command).Parameters.ContainsKey(extension));
             }
         }
@@ -237,13 +215,13 @@ namespace SmtpServer.Tests
         }
 
         [Theory]
-        [InlineData("cain.osullivan@gmail.com", "cain.osullivan", "gmail.com")]
-        [InlineData(@"""Abc@def""@example.com", "Abc@def", "example.com")]
-        [InlineData("pelé@example.com", "pelé", "example.com")]
-        public void CanMakeRcpt(string email, string user, string host)
+        [InlineData("RCPT TO:<cain.osullivan@gmail.com>", "cain.osullivan", "gmail.com")]
+        [InlineData(@"RCPT TO:<""Abc@def""@example.com>", "Abc@def", "example.com")]
+        [InlineData("RCPT TO:<pelé@example.com>", "pelé", "example.com")]
+        public void CanMakeRcpt(string input, string user, string host)
         {
             // arrange
-            var reader = CreateReader($"RCPT TO:<{email}>");
+            var reader = CreateReader(input);
 
             // act
             var result = Parser.TryMakeRcpt(ref reader, out var command, out var errorResponse);
@@ -517,7 +495,7 @@ namespace SmtpServer.Tests
 
             // assert
             Assert.True(made);
-            Assert.Equal("127.0.0.1", StringUtil.Create(address));
+            Assert.Equal("[ 127.0.0.1 ]", StringUtil.Create(address));
         }
 
         [Fact]
@@ -644,19 +622,12 @@ namespace SmtpServer.Tests
         }
 
         [Theory]
-        [InlineData("ABCD:EF01:2345:6789:ABCD:EF01:2345:6789")]
-        [InlineData("2001:DB8::8:800:200C:417A")]
-        [InlineData("FF01::101")]
-        [InlineData("::1")]
-        [InlineData("::")]
-        [InlineData("0:0:0:0:0:0:13.1.68.3")]
-        [InlineData("0:0:0:0:0:FFFF:129.144.52.38")]
-        [InlineData("::13.1.68.3")]
-        [InlineData("::FFFF:129.144.52.38")]
+        [InlineData("IPv6:ABCD:EF01:2345:6789:ABCD:EF01:2345:6789")]
+        [InlineData("IPv6:::1")]
         public void CanMakeIPv6AddressLiteral(string input)
         {
             // arrange
-            var reader = CreateReader("IPv6:" + input);
+            var reader = CreateReader(input);
 
             // act
             var result = reader.TryMake(Parser.TryMakeIPv6AddressLiteral, out var address);
@@ -666,6 +637,29 @@ namespace SmtpServer.Tests
             Assert.Equal(input, StringUtil.Create(address));
         }
 
+        [Theory]
+        [InlineData("ABCD:EF01:2345:6789:ABCD:EF01:2345:6789")]
+        [InlineData("2001:DB8::8:800:200C:417A")]
+        [InlineData("FF01::101")]
+        [InlineData("::1")]
+        [InlineData("::")]
+        [InlineData("0:0:0:0:0:0:13.1.68.3")]
+        [InlineData("0:0:0:0:0:FFFF:129.144.52.38")]
+        [InlineData("::13.1.68.3")]
+        [InlineData("::FFFF:129.144.52.38")]
+        public void CanMakeIPv6Address(string input)
+        {
+            // arrange
+            var reader = CreateReader(input);
+
+            // act
+            var result = reader.TryMake(Parser.TryMakeIPv6Address, out var address);
+
+            // assert
+            Assert.True(result);
+            Assert.Equal(input, StringUtil.Create(address));
+        }
+        
         [Theory]
         [InlineData("ABCD:EF01:2345:6789:ABCD:EF01:2345")]
         [InlineData("ABCD:EF01:ZZZZ:6789:ABCD:EF01:2345:6789")]

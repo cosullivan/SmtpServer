@@ -13,13 +13,18 @@ namespace SmtpServer.Text
 
         internal static unsafe string Create(ReadOnlySequence<byte> sequence, Encoding encoding)
         {
+            if (sequence.Length == 0)
+            {
+                return null;
+            }
+
             if (sequence.IsSingleSegment)
             {
                 var span = sequence.First.Span;
 
                 fixed (byte* ptr = span)
                 {
-                    return Encoding.ASCII.GetString(ptr, span.Length);
+                    return encoding.GetString(ptr, span.Length);
                 }
             }
             else
@@ -40,7 +45,7 @@ namespace SmtpServer.Text
 
                 fixed (byte* ptr = buffer)
                 {
-                    return Encoding.ASCII.GetString(ptr, buffer.Length);
+                    return encoding.GetString(ptr, buffer.Length);
                 }
             }
         }

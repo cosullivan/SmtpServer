@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Text;
 using SmtpServer.Mail;
 using SmtpServer.Text;
 
@@ -132,6 +133,9 @@ namespace SmtpServer.Protocol
 
             if (reader.TryMake(TryMakeAddressLiteral, out var address))
             {
+                // remove the brackets
+                address = address.Slice(1, address.Length - 2);
+
                 command = _smtpCommandFactory.CreateEhlo(StringUtil.Create(address));
                 return true;
             }
@@ -935,13 +939,13 @@ namespace SmtpServer.Protocol
 
             if (reader.TryMake(TryMakeDomain, out var domain))
             {
-                mailbox = new Mailbox(StringUtil.Create(localpart), StringUtil.Create(domain));
+                mailbox = new Mailbox(StringUtil.Create(localpart, Encoding.UTF8), StringUtil.Create(domain));
                 return true;
             }
 
             if (reader.TryMake(TryMakeAddressLiteral, out var address))
             {
-                mailbox = new Mailbox(StringUtil.Create(localpart), StringUtil.Create(address));
+                mailbox = new Mailbox(StringUtil.Create(localpart, Encoding.UTF8), StringUtil.Create(address));
                 return true;
             }
 
@@ -1076,6 +1080,11 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
+            if (reader.Take().Kind != TokenKind.Colon)
+            {
+                return false;
+            }
+
             return TryMakeIPv6Address(ref reader);
         }
 
@@ -1140,7 +1149,7 @@ namespace SmtpServer.Protocol
                 || reader.TryMake(TryMakeIPv6AddressRule9);
         }
 
-        public bool TryMakeIPv6AddressRule1(ref TokenReader reader)
+        bool TryMakeIPv6AddressRule1(ref TokenReader reader)
         {
             // 6( h16 ":" ) ls32
             return TryMakeIPv6HexPostamble(ref reader, 6);
