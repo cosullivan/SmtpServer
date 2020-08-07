@@ -17,7 +17,6 @@ namespace SmtpServer.Protocol
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="options">The server options.</param>
         /// <param name="address">The address.</param>
         /// <param name="parameters">The list of extended (ESMTP) parameters.</param>
         /// <param name="mailboxFilterFactory">The Mailbox Filter factory to create Mailbox filters.</param>

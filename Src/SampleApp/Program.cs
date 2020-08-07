@@ -25,7 +25,7 @@ namespace SampleApp
             //    .Append(ToByteArray("pqrstu"))
             //    .Append(ToByteArray("vwxyz"));
 
-            //var sequence = new ReadOnlySequence<byte>(start, 0, end, end.Memory.Length); ;
+            //var sequence = new ReadOnlySequence<byte>(start, 0, end, end.Memory.Length);
 
             //Span<byte> pattern = stackalloc byte[3];
             //pattern[0] = (byte)'s';
@@ -43,7 +43,6 @@ namespace SampleApp
             //    Console.WriteLine(StringUtil.Create(found));
             //}
 
-            HERE: fix DotStuffing
             SimpleExample.Run();
 
             //////var text = new ReadOnlySequence<byte>(Encoding.ASCII.GetBytes("EHLO abc-1-def.mail.com"));

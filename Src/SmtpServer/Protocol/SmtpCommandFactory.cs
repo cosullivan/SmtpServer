@@ -23,7 +23,9 @@ namespace SmtpServer.Protocol
         /// <returns>The HELO command.</returns>
         public virtual SmtpCommand CreateHelo(string domainOrAddress)
         {
-            return new HeloCommand(domainOrAddress);
+            var greeting = $"{Options.ServerName} Hello {domainOrAddress}, haven't we met before?";
+
+            return new HeloCommand(domainOrAddress, greeting);
         }
 
         /// <summary>

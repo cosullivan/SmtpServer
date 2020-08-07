@@ -1,25 +1,31 @@
 ﻿using System;
 using System.Buffers;
+using System.Text;
 
 namespace SmtpServer.Text
 {
     internal static class StringUtil
     {
-        internal static unsafe string Create(ReadOnlySequence<byte> sequence)
+        internal static string Create(ReadOnlySequence<byte> sequence)
         {
-            Span<char> buffer = stackalloc char[(int)sequence.Length];
+            return Create(sequence, Encoding.ASCII);
+        }
 
+        internal static unsafe string Create(ReadOnlySequence<byte> sequence, Encoding encoding)
+        {
             if (sequence.IsSingleSegment)
             {
                 var span = sequence.First.Span;
 
-                for (var i = 0; i < span.Length; i++)
+                fixed (byte* ptr = span)
                 {
-                    buffer[i] = (char)span[i];
+                    return Encoding.ASCII.GetString(ptr, span.Length);
                 }
             }
             else
             {
+                Span<byte> buffer = stackalloc byte[(int)sequence.Length];
+
                 var i = 0;
                 var position = sequence.GetPosition(0);
 
@@ -28,14 +34,14 @@ namespace SmtpServer.Text
                     var span = memory.Span;
                     for (var j = 0; j < span.Length; i++, j++)
                     {
-                        buffer[i] = (char)span[j];
+                        buffer[i] = span[j];
                     }
                 }
-            }
 
-            fixed (char* ptr = buffer)
-            {
-                return new string(ptr);
+                fixed (byte* ptr = buffer)
+                {
+                    return Encoding.ASCII.GetString(ptr, buffer.Length);
+                }
             }
         }
     }

@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Buffers;
 using System.IO.Pipelines;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using SmtpServer.Text;
 
 namespace SmtpServer.IO
 {
@@ -11,43 +13,7 @@ namespace SmtpServer.IO
         // ReSharper disable once InconsistentNaming
         static readonly byte[] CRLF = { 13, 10 };
         static readonly byte[] DotBlock = { 13, 10, 46, 13, 10 };
-
-        ///// <summary>
-        ///// Read from the reader until the sequence is found.
-        ///// </summary>
-        ///// <typeparam name="T">The element type of the return value.</typeparam>
-        ///// <param name="reader">The reader to read from.</param>
-        ///// <param name="sequence">The sequence to find to terminate the read operation.</param>
-        ///// <param name="func">The function to convert the buffer that was read into the output.</param>
-        ///// <param name="cancellationToken">The cancellation token.</param>
-        ///// <returns>The value that was read from the buffer.</returns>
-        //static async ValueTask<T> ReadUntilAsync<T>(PipeReader reader, byte[] sequence, Func<ReadOnlySequence<byte>, T> func, CancellationToken cancellationToken)
-        //{
-        //    if (reader == null)
-        //    {
-        //        throw new ArgumentNullException(nameof(reader));
-        //    }
-
-        //    var read = await reader.ReadAsync(cancellationToken);
-
-        //    while (read.IsCanceled == false && read.IsCompleted == false && read.Buffer.IsEmpty == false)
-        //    {
-        //        if (read.Buffer.TryFind(sequence, out var head, out var tail))
-        //        {
-        //            var result = func(read.Buffer.Slice(read.Buffer.Start, head));
-
-        //            reader.AdvanceTo(tail);
-
-        //            return result;
-        //        }
-
-        //        reader.AdvanceTo(read.Buffer.Start, read.Buffer.End);
-
-        //        read = await reader.ReadAsync(cancellationToken);
-        //    }
-
-        //    return default;
-        //}
+        static readonly byte[] DotBlockStuffing = { 13, 10, 46, 46 };
 
         /// <summary>
         /// Read from the reader until the sequence is found.
@@ -105,6 +71,50 @@ namespace SmtpServer.IO
         /// Reads a line from the reader.
         /// </summary>
         /// <param name="reader">The reader to read from.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>A task that can be used to wait on the operation on complete.</returns>
+        internal static ValueTask<string> ReadLineAsync(this PipeReader reader, CancellationToken cancellationToken)
+        {
+            if (reader == null)
+            {
+                throw new ArgumentNullException(nameof(reader));
+            }
+
+            return reader.ReadLineAsync(Encoding.ASCII, cancellationToken);
+        }
+
+        /// <summary>
+        /// Reads a line from the reader.
+        /// </summary>
+        /// <param name="reader">The reader to read from.</param>
+        /// <param name="encoding">The encoding to use when converting the input.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>A task that can be used to wait on the operation on complete.</returns>
+        internal static async ValueTask<string> ReadLineAsync(this PipeReader reader, Encoding encoding, CancellationToken cancellationToken)
+        {
+            if (reader == null)
+            {
+                throw new ArgumentNullException(nameof(reader));
+            }
+
+            var text = string.Empty;
+
+            await reader.ReadLineAsync(
+                buffer =>
+                {
+                    text = StringUtil.Create(buffer, encoding);
+
+                    return Task.CompletedTask;
+                },
+                cancellationToken);
+
+            return text;
+        }
+
+        /// <summary>
+        /// Reads a line from the reader.
+        /// </summary>
+        /// <param name="reader">The reader to read from.</param>
         /// <param name="func">The action to process the buffer.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The value that was read from the buffer.</returns>
@@ -115,15 +125,35 @@ namespace SmtpServer.IO
                 throw new ArgumentNullException(nameof(reader));
             }
 
-            // TODO: need to perform the Unstuffing of the Dot block
+            await ReadUntilAsync(
+                reader, 
+                DotBlock, 
+                buffer =>
+                {
+                    buffer = Unstuff(buffer);
 
-            try
+                    return func(buffer);
+                }, 
+                cancellationToken);
+
+            static ReadOnlySequence<byte> Unstuff(ReadOnlySequence<byte> buffer)
             {
-                await ReadUntilAsync(reader, DotBlock, func, cancellationToken);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
+                var head = buffer.GetPosition(0);
+                var start = head;
+
+                var segment = new ByteArraySegment(new ReadOnlyMemory<byte>());
+
+                while (buffer.TryFind(DotBlockStuffing, ref head, out var tail))
+                {
+                    var slice = buffer.Slice(start, head);
+
+                    segment.Append(ref slice);
+
+                    start = tail;
+                    head = tail;
+                }
+                
+                return buffer;
             }
         }
     }

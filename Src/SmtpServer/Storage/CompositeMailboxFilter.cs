@@ -54,7 +54,7 @@ namespace SmtpServer.Storage
             ISessionContext context, 
             IMailbox to, 
             IMailbox @from,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (_filters == null || _filters.Any() == false)
             {
