@@ -19,10 +19,12 @@ namespace SmtpServer.Tests
                 throw new ArgumentNullException(nameof(messageTransaction));
             }
 
-            var textMessage = (ITextMessage)messageTransaction.Message;
-            textMessage.Content.Position = 0;
+            //var textMessage = (ITextMessage)messageTransaction.Message;
+            //textMessage.Content.Position = 0;
 
-            return MimeKit.MimeMessage.Load(textMessage.Content).Subject;
+            //return MimeKit.MimeMessage.Load(textMessage.Content).Subject;
+
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -38,12 +40,14 @@ namespace SmtpServer.Tests
                 throw new ArgumentNullException(nameof(messageTransaction));
             }
 
-            var textMessage = (ITextMessage) messageTransaction.Message;
-            textMessage.Content.Position = 0;
+            //var textMessage = (ITextMessage) messageTransaction.Message;
+            //textMessage.Content.Position = 0;
 
-            var message = MimeKit.MimeMessage.Load(textMessage.Content);
+            //var message = MimeKit.MimeMessage.Load(textMessage.Content);
 
-            return ((TextPart) message.Body).GetText(charset).TrimEnd('\n', '\r');
+            //return ((TextPart) message.Body).GetText(charset).TrimEnd('\n', '\r');
+
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -58,29 +62,11 @@ namespace SmtpServer.Tests
                 throw new ArgumentNullException(nameof(messageTransaction));
             }
 
-            var textMessage = (ITextMessage)messageTransaction.Message;
+            //var textMessage = (ITextMessage)messageTransaction.Message;
 
-            return textMessage.Mime();
-        }
+            //return textMessage.Mime();
 
-        /// <summary>
-        /// Return the MIME content of the text message.
-        /// </summary>
-        /// <param name="textMessage">The text message to return the MIME content for.</param>
-        /// <returns>The MIME content of the text message.</returns>
-        public static string Mime(this ITextMessage textMessage)
-        {
-            if (textMessage == null)
-            {
-                throw new ArgumentNullException(nameof(textMessage));
-            }
-
-            textMessage.Content.Position = 0;
-
-            using (var reader = new StreamReader(textMessage.Content))
-            {
-                return reader.ReadToEnd();
-            }
+            throw new NotImplementedException();
         }
     }
 }

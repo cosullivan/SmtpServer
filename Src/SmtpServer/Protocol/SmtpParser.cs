@@ -616,7 +616,7 @@ namespace SmtpServer.Protocol
                 return true;
             }
 
-            if (reader.TryMake(TryMakeBase64, out var base64) == false)
+            if (reader.TryMake(TryMakeBase64, out var base64))
             {
                 command = _smtpCommandFactory.CreateAuth(authenticationMethod, StringUtil.Create(base64));
                 return true;
@@ -680,7 +680,7 @@ namespace SmtpServer.Protocol
         {
             if (reader.TryMake(TryMakeText, out var text))
             {
-                Span<char> command = stackalloc char[4];
+                Span<char> command = stackalloc char[5];
                 command[0] = 'L';
                 command[1] = 'O';
                 command[2] = 'G';
@@ -702,7 +702,7 @@ namespace SmtpServer.Protocol
         {
             if (reader.TryMake(TryMakeText, out var text))
             {
-                Span<char> command = stackalloc char[4];
+                Span<char> command = stackalloc char[5];
                 command[0] = 'P';
                 command[1] = 'L';
                 command[2] = 'A';
@@ -1555,8 +1555,13 @@ namespace SmtpServer.Protocol
         /// <remarks><![CDATA[atext]]></remarks>
         public bool TryMakeAtext(ref TokenReader reader)
         {
-            switch (reader.Peek().Kind)
+            var peek = reader.Peek();
+
+            switch (peek.Kind)
             {
+                case TokenKind.None:
+                    return false;
+
                 case TokenKind.Text:
                     return TryMakeText(ref reader);
 

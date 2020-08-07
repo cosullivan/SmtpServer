@@ -67,6 +67,8 @@ namespace SmtpServer.Text
                 if (@delegate(ref this) == false)
                 {
                     _spanIndex = index;
+                    _hasPeeked = false;
+
                     return false;
                 }
 
@@ -93,6 +95,8 @@ namespace SmtpServer.Text
                 if (@delegate(ref this) == false)
                 {
                     _spanIndex = index;
+                    _hasPeeked = false;
+
                     return false;
                 }
 
@@ -118,6 +122,8 @@ namespace SmtpServer.Text
                 if (@delegate(ref this, out found) == false)
                 {
                     _spanIndex = index;
+                    _hasPeeked = false;
+
                     return false;
                 }
 
@@ -143,6 +149,8 @@ namespace SmtpServer.Text
                 if (@delegate(ref this, out value1, out value2) == false)
                 {
                     _spanIndex = index;
+                    _hasPeeked = false;
+
                     return false;
                 }
 

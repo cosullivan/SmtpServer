@@ -146,8 +146,7 @@ namespace SmtpServer.Protocol
         /// <returns>The AUTH command.</returns>
         public SmtpCommand CreateAuth(AuthenticationMethod method, string parameter)
         {
-            //return new AuthCommand()
-            throw new NotImplementedException();
+            return new AuthCommand(method, parameter, Options.UserAuthenticatorFactory);
         }
 
         /// <summary>
