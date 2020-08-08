@@ -57,7 +57,7 @@ namespace SmtpServer.IO
         /// <param name="func">The action to process the buffer.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task that can be used to wait on the operation on complete.</returns>
-        internal static ValueTask ReadLineAsync(this PipeReader reader, Func<ReadOnlySequence<byte>, Task> func, CancellationToken cancellationToken)
+        internal static ValueTask ReadLineAsync(this PipeReader reader, Func<ReadOnlySequence<byte>, Task> func, CancellationToken cancellationToken = default)
         {
             if (reader == null)
             {
@@ -73,7 +73,7 @@ namespace SmtpServer.IO
         /// <param name="reader">The reader to read from.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task that can be used to wait on the operation on complete.</returns>
-        internal static ValueTask<string> ReadLineAsync(this PipeReader reader, CancellationToken cancellationToken)
+        internal static ValueTask<string> ReadLineAsync(this PipeReader reader, CancellationToken cancellationToken = default)
         {
             if (reader == null)
             {
@@ -90,7 +90,7 @@ namespace SmtpServer.IO
         /// <param name="encoding">The encoding to use when converting the input.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task that can be used to wait on the operation on complete.</returns>
-        internal static async ValueTask<string> ReadLineAsync(this PipeReader reader, Encoding encoding, CancellationToken cancellationToken)
+        internal static async ValueTask<string> ReadLineAsync(this PipeReader reader, Encoding encoding, CancellationToken cancellationToken = default)
         {
             if (reader == null)
             {
@@ -118,7 +118,7 @@ namespace SmtpServer.IO
         /// <param name="func">The action to process the buffer.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The value that was read from the buffer.</returns>
-        internal static async ValueTask ReadDotBlockAsync(this PipeReader reader, Func<ReadOnlySequence<byte>, Task> func, CancellationToken cancellationToken)
+        internal static async ValueTask ReadDotBlockAsync(this PipeReader reader, Func<ReadOnlySequence<byte>, Task> func, CancellationToken cancellationToken = default)
         {
             if (reader == null)
             {
@@ -140,21 +140,48 @@ namespace SmtpServer.IO
             {
                 var head = buffer.GetPosition(0);
                 var start = head;
-
-                var segment = new ByteArraySegment(new ReadOnlyMemory<byte>());
-
+                
+                var segments = new ByteArraySegmentList();
+                
                 while (buffer.TryFind(DotBlockStuffing, ref head, out var tail))
                 {
-                    var slice = buffer.Slice(start, head);
+                    var slice = buffer.Slice(start, buffer.GetPosition(3, head));
 
-                    segment.Append(ref slice);
+                    segments.Append(ref slice);
 
                     start = tail;
                     head = tail;
                 }
-                
-                return buffer;
+
+                var remaining = buffer.Slice(start);
+                segments.Append(ref remaining);
+
+                return new ReadOnlySequence<byte>(segments.Start, 0, segments.End, segments.End.Memory.Length);
             }
+
+            //static ReadOnlySequence<byte> Unstuff(ReadOnlySequence<byte> buffer)
+            //{
+            //    var head = buffer.GetPosition(0);
+            //    var start = head;
+
+            //    var startSegment = new ByteArraySegment(new ReadOnlyMemory<byte>());
+            //    var segment = startSegment;
+
+            //    while (buffer.TryFind(DotBlockStuffing, ref head, out var tail))
+            //    {
+            //        var slice = buffer.Slice(start, buffer.GetPosition(3, head));
+
+            //        segment = segment.Append(ref slice);
+
+            //        start = tail;
+            //        head = tail;
+            //    }
+
+            //    var remaining = buffer.Slice(start);
+            //    segment = segment.Append(ref remaining);
+
+            //    return new ReadOnlySequence<byte>(startSegment, 0, segment, segment.Memory.Length);
+            //}
         }
     }
 }
