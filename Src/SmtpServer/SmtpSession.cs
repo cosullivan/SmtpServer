@@ -102,6 +102,8 @@ namespace SmtpServer
                 catch (SmtpResponseException responseException) when (responseException.IsQuitRequested)
                 {
                     await context.Pipe.Output.WriteReplyAsync(responseException.Response, cancellationToken).ConfigureAwait(false);
+
+                    context.IsQuitRequested = true;
                 }
                 catch (SmtpResponseException responseException)
                 {
@@ -130,7 +132,8 @@ namespace SmtpServer
                     buffer =>
                     {
 #if DEBUG
-                        Console.WriteLine(StringUtil.Create(buffer));
+                        var text = StringUtil.Create(buffer);
+                        Console.WriteLine(text);
 #endif
                         var parser = new SmtpParser(context.ServerOptions.SmtpCommandFactory);
 
@@ -179,11 +182,15 @@ namespace SmtpServer
         /// <param name="context">The execution context to operate on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which asynchronously performs the execution.</returns>
-        static Task<bool> ExecuteAsync(SmtpCommand command, SmtpSessionContext context, CancellationToken cancellationToken)
+        static async Task<bool> ExecuteAsync(SmtpCommand command, SmtpSessionContext context, CancellationToken cancellationToken)
         {
             context.RaiseCommandExecuting(command);
 
-            return command.ExecuteAsync(context, cancellationToken);
+            var result = await command.ExecuteAsync(context, cancellationToken);
+
+            context.RaiseCommandExecuted(command);
+
+            return result;
         }
 
         /// <summary>

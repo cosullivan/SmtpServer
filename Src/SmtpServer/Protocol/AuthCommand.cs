@@ -170,7 +170,7 @@ namespace SmtpServer.Protocol
         {
             var text = await reader.ReadLineAsync(cancellationToken);
 
-            return Encoding.UTF8.GetString(Convert.FromBase64String(text));
+            return text == null ? string.Empty : Encoding.UTF8.GetString(Convert.FromBase64String(text));
         }
 
         /// <summary>

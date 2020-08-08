@@ -50,7 +50,7 @@ namespace SampleApp.Examples
             e.Context.CommandExecuting += OnCommandExecuting;
         }
 
-        static void OnCommandExecuting(object sender, SmtpCommandExecutingEventArgs e)
+        static void OnCommandExecuting(object sender, SmtpCommandEventArgs e)
         {
             ((List<SmtpCommand>)e.Context.Properties["Commands"]).Add(e.Command);
         }

@@ -10,7 +10,12 @@ namespace SmtpServer
         /// <summary>
         /// Fired when a command is about to execute.
         /// </summary>
-        public event EventHandler<SmtpCommandExecutingEventArgs> CommandExecuting;
+        public event EventHandler<SmtpCommandEventArgs> CommandExecuting;
+
+        /// <summary>
+        /// Fired when a command has finished executing.
+        /// </summary>
+        public event EventHandler<SmtpCommandEventArgs> CommandExecuted;
 
         /// <summary>
         /// Fired when the session has been authenticated.
@@ -36,7 +41,16 @@ namespace SmtpServer
         /// <param name="command">The command that is executing.</param>
         internal void RaiseCommandExecuting(SmtpCommand command)
         {
-            CommandExecuting?.Invoke(this, new SmtpCommandExecutingEventArgs(this, command));
+            CommandExecuting?.Invoke(this, new SmtpCommandEventArgs(this, command));
+        }
+
+        /// <summary>
+        /// Raise the command executed event.
+        /// </summary>
+        /// <param name="command">The command that was executed.</param>
+        internal void RaiseCommandExecuted(SmtpCommand command)
+        {
+            CommandExecuted?.Invoke(this, new SmtpCommandEventArgs(this, command));
         }
 
         /// <summary>

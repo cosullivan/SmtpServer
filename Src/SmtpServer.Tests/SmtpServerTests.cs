@@ -40,9 +40,9 @@ namespace SmtpServer.Tests
 
                 // assert
                 Assert.Single(MessageStore.Messages);
-                Assert.Equal("test1@test.com", MessageStore.Messages[0].From.AsAddress());
-                Assert.Equal(1, MessageStore.Messages[0].To.Count);
-                Assert.Equal("test2@test.com", MessageStore.Messages[0].To[0].AsAddress());
+                Assert.Equal("test1@test.com", MessageStore.Messages[0].Transaction.From.AsAddress());
+                Assert.Equal(1, MessageStore.Messages[0].Transaction.To.Count);
+                Assert.Equal("test2@test.com", MessageStore.Messages[0].Transaction.To[0].AsAddress());
             }
         }
 
@@ -58,7 +58,7 @@ namespace SmtpServer.Tests
 
                 // assert
                 Assert.Single(MessageStore.Messages);
-                Assert.Equal(text, MessageStore.Messages[0].Subject());
+                Assert.Equal(text, MessageStore.Messages[0].MimeMessage.Subject);
                 Assert.Equal(text, MessageStore.Messages[0].Text(charset));
             }
         }
@@ -128,11 +128,11 @@ namespace SmtpServer.Tests
 
                 // assert
                 Assert.Single(MessageStore.Messages);
-                Assert.Equal("test1@test.com", MessageStore.Messages[0].From.AsAddress());
-                Assert.Equal(3, MessageStore.Messages[0].To.Count);
-                Assert.Equal("test2@test.com", MessageStore.Messages[0].To[0].AsAddress());
-                Assert.Equal("test3@test.com", MessageStore.Messages[0].To[1].AsAddress());
-                Assert.Equal("test4@test.com", MessageStore.Messages[0].To[2].AsAddress());
+                Assert.Equal("test1@test.com", MessageStore.Messages[0].Transaction.From.AsAddress());
+                Assert.Equal(3, MessageStore.Messages[0].Transaction.To.Count);
+                Assert.Equal("test2@test.com", MessageStore.Messages[0].Transaction.To[0].AsAddress());
+                Assert.Equal("test3@test.com", MessageStore.Messages[0].Transaction.To[1].AsAddress());
+                Assert.Equal("test4@test.com", MessageStore.Messages[0].Transaction.To[2].AsAddress());
             }
         }
 
@@ -188,13 +188,12 @@ namespace SmtpServer.Tests
 
             using (CreateServer(options => options.MailboxFilter(mailboxFilter)))
             {
-                using (var client = MailClient.Client())
-                {
-                    Assert.Throws<SmtpProtocolException>(() => client.Send(MailClient.Message()));
+                using var client = MailClient.Client();
 
-                    // no longer connected to this is invalid
-                    Assert.ThrowsAny<Exception>(() => client.NoOp());
-                }
+                Assert.Throws<ServiceNotAuthenticatedException>(() => client.Send(MailClient.Message()));
+
+                // no longer connected to this is invalid
+                Assert.ThrowsAny<Exception>(() => client.NoOp());
             }
         }
 
@@ -251,20 +250,23 @@ namespace SmtpServer.Tests
 
             using (var disposable = CreateServer(options => options.Certificate(CreateCertificate())))
             {
-                ISessionContext sessionContext = null;
+                var isSecure = false;
                 var sessionCreatedHandler = new EventHandler<SessionEventArgs>(
                     delegate (object sender, SessionEventArgs args)
                     {
-                        sessionContext = args.Context;
+                        args.Context.CommandExecuted += (_, commandArgs) =>
+                        {
+                            isSecure = commandArgs.Context.Pipe.IsSecure;
+                        };
                     });
 
                 disposable.Server.SessionCreated += sessionCreatedHandler;
-
+                
                 MailClient.Send();
 
                 disposable.Server.SessionCreated -= sessionCreatedHandler;
-
-                Assert.True(sessionContext.Pipe.IsSecure);
+                
+                Assert.True(isSecure);
             }
 
             ServicePointManager.ServerCertificateValidationCallback = null;
@@ -286,11 +288,16 @@ namespace SmtpServer.Tests
                 endpoint =>
                     endpoint.AllowUnsecureAuthentication(true)))
             {
+                var isSecure = false;
                 ISessionContext sessionContext = null;
                 var sessionCreatedHandler = new EventHandler<SessionEventArgs>(
                     delegate (object sender, SessionEventArgs args)
                     {
                         sessionContext = args.Context;
+                        sessionContext.CommandExecuted += (_, commandArgs) =>
+                        {
+                            isSecure = commandArgs.Context.Pipe.IsSecure;
+                        };
                     });
 
                 disposable.Server.SessionCreated += sessionCreatedHandler;
@@ -299,7 +306,7 @@ namespace SmtpServer.Tests
 
                 disposable.Server.SessionCreated -= sessionCreatedHandler;
 
-                Assert.True(sessionContext.Pipe.IsSecure);
+                Assert.True(isSecure);
                 Assert.True(sessionContext.Authentication.IsAuthenticated);
             }
 

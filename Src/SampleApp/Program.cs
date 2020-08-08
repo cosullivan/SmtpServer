@@ -45,7 +45,7 @@ namespace SampleApp
 
             //var text = new ReadOnlySequence<byte>(Encoding.ASCII.GetBytes(@"""Abc\@def""@example.com"));
             
-            SimpleExample.Run();
+            //SimpleExample.Run();
 
             //////var text = new ReadOnlySequence<byte>(Encoding.ASCII.GetBytes("EHLO abc-1-def.mail.com"));
             ////var text = new ReadOnlySequence<byte>(Encoding.ASCII.GetBytes("MAIL FROM:<from@sample.com>"));

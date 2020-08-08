@@ -38,7 +38,7 @@ namespace SampleApp.Examples
             e.Context.CommandExecuting += OnCommandExecuting;
         }
 
-        static void OnCommandExecuting(object sender, SmtpCommandExecutingEventArgs e)
+        static void OnCommandExecuting(object sender, SmtpCommandEventArgs e)
         {
             new TracingSmtpCommandVisitor(Console.Out).Visit(e.Command);
         }

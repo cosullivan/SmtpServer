@@ -9,7 +9,12 @@ namespace SmtpServer
         /// <summary>
         /// Fired when a command is about to execute.
         /// </summary>
-        event EventHandler<SmtpCommandExecutingEventArgs> CommandExecuting;
+        event EventHandler<SmtpCommandEventArgs> CommandExecuting;
+
+        /// <summary>
+        /// Fired when a command has finished executing.
+        /// </summary>
+        event EventHandler<SmtpCommandEventArgs> CommandExecuted;
 
         /// <summary>
         /// Fired when the session has been authenticated.

@@ -37,9 +37,14 @@ namespace SmtpServer.IO
             {
                 if (read.Buffer.TryFind(sequence, ref head, out var tail))
                 {
-                    await func(read.Buffer.Slice(read.Buffer.Start, head));
-
-                    reader.AdvanceTo(tail);
+                    try
+                    {
+                        await func(read.Buffer.Slice(read.Buffer.Start, head));
+                    }
+                    finally
+                    {
+                        reader.AdvanceTo(tail);
+                    }
 
                     return;
                 }
@@ -158,30 +163,6 @@ namespace SmtpServer.IO
 
                 return new ReadOnlySequence<byte>(segments.Start, 0, segments.End, segments.End.Memory.Length);
             }
-
-            //static ReadOnlySequence<byte> Unstuff(ReadOnlySequence<byte> buffer)
-            //{
-            //    var head = buffer.GetPosition(0);
-            //    var start = head;
-
-            //    var startSegment = new ByteArraySegment(new ReadOnlyMemory<byte>());
-            //    var segment = startSegment;
-
-            //    while (buffer.TryFind(DotBlockStuffing, ref head, out var tail))
-            //    {
-            //        var slice = buffer.Slice(start, buffer.GetPosition(3, head));
-
-            //        segment = segment.Append(ref slice);
-
-            //        start = tail;
-            //        head = tail;
-            //    }
-
-            //    var remaining = buffer.Slice(start);
-            //    segment = segment.Append(ref remaining);
-
-            //    return new ReadOnlySequence<byte>(startSegment, 0, segment, segment.Memory.Length);
-            //}
         }
     }
 }
