@@ -157,7 +157,7 @@ namespace SmtpServer.Protocol
         /// <returns>The PROXY command.</returns>
         public virtual SmtpCommand CreateProxy(IPEndPoint sourceEndpoint, IPEndPoint destinationEndpoint)
         {
-            throw new NotImplementedException();
+            return new ProxyCommand(sourceEndpoint, destinationEndpoint);
         }
 
         /// <summary>

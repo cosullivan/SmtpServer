@@ -536,20 +536,6 @@ namespace SmtpServer.Tests
             Assert.Equal(input, StringUtil.Create(base64));
         }
 
-        //[Fact]
-        //public void CanMakeIpVersion()
-        //{
-        //    // arrange
-        //    var reader = CreateReader("IPv6:");
-
-        //    // act
-        //    var result = reader.TryMake(Parser.TryMakeIpVersion, out var version);
-
-        //    // assert
-        //    Assert.True(result);
-        //    Assert.Equal(6, version);
-        //}
-
         [Theory]
         [InlineData("0")]
         [InlineData("A9")]

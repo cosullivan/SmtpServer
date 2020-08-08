@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using SmtpServer.Mail;
 using SmtpServer.Text;
 
@@ -59,7 +61,7 @@ namespace SmtpServer.Protocol
             command = null;
             errorResponse = null;
 
-            if (TryMakeHelo(ref reader) == false)
+            if (TryMakeHeloLiteral(ref reader) == false)
             {
                 return false;
             }
@@ -90,7 +92,7 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the HELO text sequence  could be made, false if not.</returns>
-        public bool TryMakeHelo(ref TokenReader reader)
+        public bool TryMakeHeloLiteral(ref TokenReader reader)
         {
             if (reader.TryMake(TryMakeText, out var text))
             {
@@ -118,7 +120,7 @@ namespace SmtpServer.Protocol
             command = null;
             errorResponse = null;
 
-            if (TryMakeEhlo(ref reader) == false)
+            if (TryMakeEhloLiteral(ref reader) == false)
             {
                 return false;
             }
@@ -149,7 +151,7 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the EHLO text sequence  could be made, false if not.</returns>
-        public bool TryMakeEhlo(ref TokenReader reader)
+        public bool TryMakeEhloLiteral(ref TokenReader reader)
         {
             if (reader.TryMake(TryMakeText, out var text))
             {
@@ -265,14 +267,14 @@ namespace SmtpServer.Protocol
             command = null;
             errorResponse = null;
 
-            if (TryMakeRcpt(ref reader) == false)
+            if (TryMakeRcptLiteral(ref reader) == false)
             {
                 return false;
             }
             
             reader.Skip(TokenKind.Space);
 
-            if (TryMakeTo(ref reader) == false)
+            if (TryMakeToLiteral(ref reader) == false)
             {
                 return false;
             }
@@ -303,7 +305,7 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the RCPT text sequence could be made, false if not.</returns>
-        public bool TryMakeRcpt(ref TokenReader reader)
+        public bool TryMakeRcptLiteral(ref TokenReader reader)
         {
             if (reader.TryMake(TryMakeText, out var text))
             {
@@ -324,7 +326,7 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the TO text sequence could be made, false if not.</returns>
-        public bool TryMakeTo(ref TokenReader reader)
+        public bool TryMakeToLiteral(ref TokenReader reader)
         {
             if (reader.TryMake(TryMakeText, out var text))
             {
@@ -350,7 +352,7 @@ namespace SmtpServer.Protocol
             command = null;
             errorResponse = null;
 
-            if (reader.TryMake(TryMakeData) == false)
+            if (reader.TryMake(TryMakeDataLiteral) == false)
             {
                 return false;
             }
@@ -372,7 +374,7 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the DATA text sequence could be made, false if not.</returns>
-        public bool TryMakeData(ref TokenReader reader)
+        public bool TryMakeDataLiteral(ref TokenReader reader)
         {
             if (reader.TryMake(TryMakeText, out var text))
             {
@@ -400,7 +402,7 @@ namespace SmtpServer.Protocol
             command = null;
             errorResponse = null;
 
-            if (reader.TryMake(TryMakeQuit) == false)
+            if (reader.TryMake(TryMakeQuitLiteral) == false)
             {
                 return false;
             }
@@ -420,7 +422,7 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the QUIT text sequence could be made, false if not.</returns>
-        public bool TryMakeQuit(ref TokenReader reader)
+        public bool TryMakeQuitLiteral(ref TokenReader reader)
         {
             if (reader.TryMake(TryMakeText, out var text))
             {
@@ -448,7 +450,7 @@ namespace SmtpServer.Protocol
             command = null;
             errorResponse = null;
 
-            if (reader.TryMake(TryMakeNoop) == false)
+            if (reader.TryMake(TryMakeNoopLiteral) == false)
             {
                 return false;
             }
@@ -468,7 +470,7 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the NOOP text sequence could be made, false if not.</returns>
-        public bool TryMakeNoop(ref TokenReader reader)
+        public bool TryMakeNoopLiteral(ref TokenReader reader)
         {
             if (reader.TryMake(TryMakeText, out var text))
             {
@@ -496,7 +498,7 @@ namespace SmtpServer.Protocol
             command = null;
             errorResponse = null;
 
-            if (reader.TryMake(TryMakeRset) == false)
+            if (reader.TryMake(TryMakeRsetLiteral) == false)
             {
                 return false;
             }
@@ -518,7 +520,7 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the RSET text sequence could be made, false if not.</returns>
-        public bool TryMakeRset(ref TokenReader reader)
+        public bool TryMakeRsetLiteral(ref TokenReader reader)
         {
             if (reader.TryMake(TryMakeText, out var text))
             {
@@ -546,7 +548,7 @@ namespace SmtpServer.Protocol
             command = null;
             errorResponse = null;
 
-            if (reader.TryMake(TryMakeStartTls) == false)
+            if (reader.TryMake(TryMakeStartTlsLiteral) == false)
             {
                 return false;
             }
@@ -568,7 +570,7 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the STARTTLS text sequence could be made, false if not.</returns>
-        public bool TryMakeStartTls(ref TokenReader reader)
+        public bool TryMakeStartTlsLiteral(ref TokenReader reader)
         {
             if (reader.TryMake(TryMakeText, out var text))
             {
@@ -600,7 +602,7 @@ namespace SmtpServer.Protocol
             command = null;
             errorResponse = null;
 
-            if (reader.TryMake(TryMakeAuth) == false)
+            if (reader.TryMake(TryMakeAuthLiteral) == false)
             {
                 return false;
             }
@@ -638,13 +640,13 @@ namespace SmtpServer.Protocol
         /// <returns>true if the authentication method could be made, false if not.</returns>
         public bool TryMakeAuthenticationMethod(ref TokenReader reader, out AuthenticationMethod authenticationMethod)
         {
-            if (reader.TryMake(TryMakeLoginText))
+            if (reader.TryMake(TryMakeLoginLiteral))
             {
                 authenticationMethod = AuthenticationMethod.Login;
                 return true;
             }
 
-            if (reader.TryMake(TryMakePlainText))
+            if (reader.TryMake(TryMakePlainLiteral))
             {
                 authenticationMethod = AuthenticationMethod.Plain;
                 return true;
@@ -659,7 +661,7 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the AUTH text sequence could be made, false if not.</returns>
-        public bool TryMakeAuth(ref TokenReader reader)
+        public bool TryMakeAuthLiteral(ref TokenReader reader)
         {
             if (reader.TryMake(TryMakeText, out var text))
             {
@@ -680,7 +682,7 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the LOGIN text sequence could be made, false if not.</returns>
-        public bool TryMakeLoginText(ref TokenReader reader)
+        public bool TryMakeLoginLiteral(ref TokenReader reader)
         {
             if (reader.TryMake(TryMakeText, out var text))
             {
@@ -702,7 +704,7 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the PLAIN text sequence could be made, false if not.</returns>
-        public bool TryMakePlainText(ref TokenReader reader)
+        public bool TryMakePlainLiteral(ref TokenReader reader)
         {
             if (reader.TryMake(TryMakeText, out var text))
             {
@@ -741,26 +743,25 @@ namespace SmtpServer.Protocol
             command = null;
             errorResponse = null;
 
-            if (reader.TryMake(TryMakeProxy) == false)
+            if (reader.TryMake(TryMakeProxyLiteral) == false)
             {
                 return false;
             }
 
             reader.Skip(TokenKind.Space);
 
-            //if (TryMake(TryMakeUnknownProxy, out command))
-            //{
-            //    return true;
-            //}
+            if (reader.TryMake(TryMakeUnknownLiteral))
+            {
+                command = _smtpCommandFactory.CreateProxy();
+                return true;
+            }
 
-            //if (TryMake(TryMakeTcp4Proxy, out command))
-            //{
-            //    return true;
-            //}
+            if (reader.TryMake(TryMakeTcp4Proxy, out command))
+            {
+                return true;
+            }
 
-            //return TryMakeTcp6Proxy(out command);
-
-            throw new NotImplementedException();
+            return TryMakeTcp6Proxy(ref reader, out command);
         }
 
         /// <summary>
@@ -768,16 +769,156 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the PROXY text sequence could be made, false if not.</returns>
-        public bool TryMakeProxy(ref TokenReader reader)
+        public bool TryMakeProxyLiteral(ref TokenReader reader)
         {
             if (reader.TryMake(TryMakeText, out var text))
             {
-                Span<char> command = stackalloc char[4];
+                Span<char> command = stackalloc char[5];
                 command[0] = 'P';
                 command[1] = 'R';
                 command[2] = 'O';
                 command[3] = 'X';
                 command[4] = 'Y';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Attempt to make the Unknown Proxy command.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the command was made, false if not.</returns>
+        bool TryMakeUnknownLiteral(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[7];
+                command[0] = 'U';
+                command[1] = 'N';
+                command[2] = 'K';
+                command[3] = 'N';
+                command[4] = 'O';
+                command[5] = 'W';
+                command[6] = 'N';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Attempt to make a TCP4 Proxy command.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <param name="command">The command that was made.</param>
+        /// <returns>true if the command was made, false if not.</returns>
+        public bool TryMakeTcp4Proxy(ref TokenReader reader, out SmtpCommand command)
+        {
+            command = null;
+
+            if (TryMakeTcpLiteral(ref reader) == false)
+            {
+                return false;
+            }
+
+            var token = reader.Take();
+            if (token.Kind != TokenKind.Number && token.Text[0] != '4')
+            {
+                return false;
+            }
+
+            return TryMakeProxyAddresses(ref reader, TryMakeIPv4AddressLiteral, out command);
+        }
+
+        /// <summary>
+        /// Attempt to make a TCP6 Proxy command.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <param name="command">The command that was made.</param>
+        /// <returns>true if the command was made, false if not.</returns>
+        public bool TryMakeTcp6Proxy(ref TokenReader reader, out SmtpCommand command)
+        {
+            command = null;
+
+            if (TryMakeTcpLiteral(ref reader) == false)
+            {
+                return false;
+            }
+
+            var token = reader.Take();
+            if (token.Kind != TokenKind.Number && token.Text[0] != '6')
+            {
+                return false;
+            }
+
+            return TryMakeProxyAddresses(ref reader, TryMakeIPv6Address, out command);
+        }
+
+        /// <summary>
+        /// Attempt to make the proxy address sequences.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <param name="tryMakeDelegate">The delegate to match the address.</param>
+        /// <param name="command">The command that was made.</param>
+        /// <returns>true if the command was made, false if not.</returns>
+        bool TryMakeProxyAddresses(ref TokenReader reader, TokenReader.TryMakeDelegate tryMakeDelegate, out SmtpCommand command)
+        {
+            command = null;
+
+            reader.Skip(TokenKind.Space);
+
+            if (reader.TryMake(tryMakeDelegate, out var sourceAddress) == false)
+            {
+                return false;
+            }
+
+            reader.Skip(TokenKind.Space);
+
+            if (reader.TryMake(tryMakeDelegate, out var destinationAddress) == false)
+            {
+                return false;
+            }
+
+            reader.Skip(TokenKind.Space);
+
+            if (reader.TryMake(TryMakeWnum, out var sourcePort) == false)
+            {
+                return false;
+            }
+
+            reader.Skip(TokenKind.Space);
+
+            if (reader.TryMake(TryMakeWnum, out var destinationPort) == false)
+            {
+                return false;
+            }
+
+            command = _smtpCommandFactory.CreateProxy(CreateEndpoint(sourceAddress, sourcePort), CreateEndpoint(destinationAddress, destinationPort));
+            return true;
+
+            static IPEndPoint CreateEndpoint(ReadOnlySequence<byte> address, ReadOnlySequence<byte> port)
+            {
+                return new IPEndPoint(IPAddress.Parse(StringUtil.Create(address)), int.Parse(StringUtil.Create(port)));
+            }
+        }
+
+        /// <summary>
+        /// Try to make the Tcp text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the TCP text sequence could be made, false if not.</returns>
+        public bool TryMakeTcpLiteral(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[3];
+                command[0] = 'T';
+                command[1] = 'C';
+                command[2] = 'P';
 
                 return text.CaseInsensitiveStringEquals(ref command);
             }
@@ -939,17 +1080,24 @@ namespace SmtpServer.Protocol
 
             if (reader.TryMake(TryMakeDomain, out var domain))
             {
-                mailbox = new Mailbox(StringUtil.Create(localpart, Encoding.UTF8), StringUtil.Create(domain));
+                mailbox = CreateMailbox(localpart, domain);
                 return true;
             }
 
             if (reader.TryMake(TryMakeAddressLiteral, out var address))
             {
-                mailbox = new Mailbox(StringUtil.Create(localpart, Encoding.UTF8), StringUtil.Create(address));
+                mailbox = CreateMailbox(localpart, address);
                 return true;
             }
 
             return false;
+
+            static Mailbox CreateMailbox(ReadOnlySequence<byte> localpart, ReadOnlySequence<byte> domainOrAddress)
+            {
+                var user = Regex.Unescape(StringUtil.Create(localpart, Encoding.UTF8).Trim('"'));
+                
+                return new Mailbox(user, StringUtil.Create(domainOrAddress));
+            }
         }
 
         /// <summary>
@@ -1065,6 +1213,22 @@ namespace SmtpServer.Protocol
             }
 
             return int.TryParse(StringUtil.Create(number), out var snum) && snum >= 0 && snum <= 255;
+        }
+
+        /// <summary>
+        /// Try to make a Wnum (number in the range of 0-65535).
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the snum was made, false if not.</returns>
+        /// <remarks><![CDATA[ 1*5DIGIT ]]></remarks>
+        public bool TryMakeWnum(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeNumber, out var number) == false)
+            {
+                return false;
+            }
+
+            return int.TryParse(StringUtil.Create(number), out var wnum) && wnum >= 0 && wnum <= 65535;
         }
 
         /// <summary>
@@ -1455,7 +1619,7 @@ namespace SmtpServer.Protocol
         /// <remarks><![CDATA[qtextSMTP / quoted-pairSMTP]]></remarks>
         public bool TryMakeQContentSmtp(ref TokenReader reader)
         {
-            if (TryMakeQTextSmtp(ref reader))
+            if (reader.TryMake(TryMakeQTextSmtp))
             {
                 return true;
             }
@@ -1471,6 +1635,11 @@ namespace SmtpServer.Protocol
         /// <remarks><![CDATA[%d32-33 / %d35-91 / %d93-126]]></remarks>
         public bool TryMakeQTextSmtp(ref TokenReader reader)
         {
+            if (reader.Peek().Kind == TokenKind.None)
+            {
+                return false;
+            }
+
             switch (reader.Peek().Kind)
             {
                 case TokenKind.Text:
@@ -1535,7 +1704,9 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            return TryMakeText(ref reader);
+            var token = reader.Take();
+
+            return token.Text.Length > 0 && token.Text[0] >= 32 && token.Text[0] <= 126;
         }
 
         /// <summary>

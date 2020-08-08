@@ -43,21 +43,26 @@ namespace SampleApp
             //    Console.WriteLine(StringUtil.Create(found));
             //}
 
-            SimpleExample.Run();
+            var text = new ReadOnlySequence<byte>(Encoding.ASCII.GetBytes(@"""Abc\@def""@example.com"));
+            
+            //SimpleExample.Run();
 
             //////var text = new ReadOnlySequence<byte>(Encoding.ASCII.GetBytes("EHLO abc-1-def.mail.com"));
             ////var text = new ReadOnlySequence<byte>(Encoding.ASCII.GetBytes("MAIL FROM:<from@sample.com>"));
             //var text = new ReadOnlySequence<byte>(Encoding.ASCII.GetBytes("from@sample.com"));
 
-            //var reader = new TokenReader(text);
-            ////while (reader.Peek() != default)
-            ////{
-            ////    var token = reader.Take();
+            var reader = new TokenReader(text);
+            //while (reader.Peek() != default)
+            //{
+            //    var token = reader.Take();
 
-            ////    Console.WriteLine("[{0}] {1}", token.Kind, Encoding.ASCII.GetString(token.Text));
-            ////}
+            //    Console.WriteLine("[{0}] {1}", token.Kind, Encoding.ASCII.GetString(token.Text));
+            //}
 
-            //var parser = new SmtpParser(new SmtpServerOptionsBuilder().Build());
+            var parser = new SmtpParser(new SmtpCommandFactory(new SmtpServerOptionsBuilder().Build()));
+            Console.WriteLine(reader.TryMake(parser.TryMakeMailbox, out IMailbox mailbox));
+            Console.WriteLine(mailbox.AsAddress());
+
             ////Console.WriteLine(parser.TryMakeEhlo(ref reader, out var command, out var errorResponse));
             ////Console.WriteLine("Command={0} ErrorResponse={1}", command, errorResponse);
             ////Console.WriteLine(parser.TryMakeMail(ref reader, out var command, out var errorResponse));
