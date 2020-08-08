@@ -171,12 +171,11 @@ namespace SmtpServer.Tests
 
             using (CreateServer(options => options.MailboxFilter(mailboxFilter)))
             {
-                using (var client = MailClient.Client())
-                {
-                    Assert.Throws<ServiceNotAuthenticatedException>(() => client.Send(MailClient.Message()));
+                using var client = MailClient.Client();
 
-                    client.NoOp();
-                }
+                Assert.Throws<ServiceNotAuthenticatedException>(() => client.Send(MailClient.Message()));
+
+                client.NoOp();
             }
         }
 

@@ -159,6 +159,17 @@ namespace SmtpServer.Text
         }
 
         /// <summary>
+        /// Returns the Text selection as a string.
+        /// </summary>
+        /// <returns>The string that was created from the selection.</returns>
+        public string ToText()
+        {
+            var text = Text;
+
+            return StringUtil.Create(ref text);
+        }
+
+        /// <summary>
         /// Gets the token kind.
         /// </summary>
         public TokenKind Kind { get; }

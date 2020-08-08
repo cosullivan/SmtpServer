@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Transactions;
 
 namespace SmtpServer.Text
 {
@@ -46,8 +47,8 @@ namespace SmtpServer.Text
         public TokenReader(ReadOnlySequence<byte> buffer)
         {
             _buffer = buffer;
-            _spanPosition = buffer.GetPosition(0);
-            _span = buffer.First.Span;
+            _spanPosition = _buffer.GetPosition(0);
+            _span = default;
             _spanIndex = 0;
             _peek = default;
             _hasPeeked = false;
@@ -60,22 +61,22 @@ namespace SmtpServer.Text
         /// <returns>true if the match could be made, false if not.</returns>
         public bool TryMake(TryMakeDelegate @delegate)
         {
-            if (_buffer.IsSingleSegment)
+            var span = _span;
+            var spanIndex = _spanIndex;
+            var spanPosition = _spanPosition;
+
+            if (@delegate(ref this) == false)
             {
-                var index = _spanIndex;
+                _span = span;
+                _spanIndex = spanIndex;
+                _spanPosition = spanPosition;
 
-                if (@delegate(ref this) == false)
-                {
-                    _spanIndex = index;
-                    _hasPeeked = false;
+                _hasPeeked = false;
 
-                    return false;
-                }
-
-                return true;
+                return false;
             }
 
-            throw new NotImplementedException();
+            return true;
         }
 
         /// <summary>
@@ -88,23 +89,23 @@ namespace SmtpServer.Text
         {
             buffer = default;
 
-            if (_buffer.IsSingleSegment)
+            var span = _span;
+            var spanIndex = _spanIndex;
+            var spanPosition = _spanPosition;
+
+            if (@delegate(ref this) == false)
             {
-                var index = _spanIndex;
+                _span = span;
+                _spanIndex = spanIndex;
+                _spanPosition = spanPosition;
 
-                if (@delegate(ref this) == false)
-                {
-                    _spanIndex = index;
-                    _hasPeeked = false;
+                _hasPeeked = false;
 
-                    return false;
-                }
-
-                buffer = _buffer.Slice(index, _spanIndex - index);
-                return true;
+                return false;
             }
 
-            throw new NotImplementedException();
+            buffer = _buffer.Slice(spanIndex, _spanIndex - spanIndex);
+            return true;
         }
 
         /// <summary>
@@ -115,22 +116,22 @@ namespace SmtpServer.Text
         /// <returns>true if the match could be made, false if not.</returns>
         public bool TryMake<TOut>(TryMakeDelegate<TOut> @delegate, out TOut found)
         {
-            if (_buffer.IsSingleSegment)
+            var span = _span;
+            var spanIndex = _spanIndex;
+            var spanPosition = _spanPosition;
+
+            if (@delegate(ref this, out found) == false)
             {
-                var index = _spanIndex;
+                _span = span;
+                _spanIndex = spanIndex;
+                _spanPosition = spanPosition;
 
-                if (@delegate(ref this, out found) == false)
-                {
-                    _spanIndex = index;
-                    _hasPeeked = false;
+                _hasPeeked = false;
 
-                    return false;
-                }
-
-                return true;
+                return false;
             }
 
-            throw new NotImplementedException();
+            return true;
         }
 
         /// <summary>
@@ -294,29 +295,18 @@ namespace SmtpServer.Text
         /// <returns>true if the reader could be moved to the next span, false if not.</returns>
         bool MoveToNextSpan()
         {
-            if (_buffer.IsSingleSegment)
+            while (_buffer.TryGet(ref _spanPosition, out var memory))
             {
-                return false;
+                _span = memory.Span;
+                _spanIndex = 0;
+
+                if (_span.Length > 0)
+                {
+                    return true;
+                }
             }
 
-            throw new NotImplementedException();
-
-            ////var position = _buffer.GetPosition(_currentSpan.Length, _currentSpanPosition);
-            //var position = _currentSpanPosition;
-            //while (_buffer.TryGet(ref position, out var memory, advance: true))
-            //{
-            //    _currentSpanPosition = position;
-
-            //    if (memory.Length > 0)
-            //    {
-            //        _currentSpan = memory.Span;
-            //        _currentSpanIndex = 0;
-
-            //        return true;
-            //    }
-            //}
-
-            //return false;
+            return false;
         }
 
         /// <summary>

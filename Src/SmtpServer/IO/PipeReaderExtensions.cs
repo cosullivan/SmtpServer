@@ -161,7 +161,7 @@ namespace SmtpServer.IO
                 var remaining = buffer.Slice(start);
                 segments.Append(ref remaining);
 
-                return new ReadOnlySequence<byte>(segments.Start, 0, segments.End, segments.End.Memory.Length);
+                return segments.Build();
             }
         }
     }
