@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using SmtpServer.ComponentModel;
 using SmtpServer.Net;
 
 namespace SmtpServer
@@ -30,6 +31,8 @@ namespace SmtpServer
         public event EventHandler<SessionEventArgs> SessionCancelled;
 
         readonly ISmtpServerOptions _options;
+        readonly IServiceProvider _serviceProvider;
+        readonly IEndpointListenerFactory _endpointListenerFactory;
         readonly SessionManager _sessions;
         readonly CancellationTokenSource _shutdownTokenSource = new CancellationTokenSource();
         readonly TaskCompletionSource<bool> _shutdownTask = new TaskCompletionSource<bool>();
@@ -38,10 +41,13 @@ namespace SmtpServer
         /// Constructor.
         /// </summary>
         /// <param name="options">The SMTP server options.</param>
-        public SmtpServer(ISmtpServerOptions options)
+        /// <param name="serviceProvider">The service provider instance.</param>
+        public SmtpServer(ISmtpServerOptions options, IServiceProvider serviceProvider)
         {
             _options = options;
+            _serviceProvider = serviceProvider;
             _sessions = new SessionManager(this);
+            _endpointListenerFactory = serviceProvider.GetServiceOrDefault(EndpointListenerFactory.Default);
         }
 
         /// <summary>
@@ -112,28 +118,27 @@ namespace SmtpServer
         /// <returns>A task which performs the operation.</returns>
         async Task ListenAsync(IEndpointDefinition endpointDefinition, CancellationToken cancellationToken)
         {
-            using (var endpointListener = _options.EndpointListenerFactory.CreateListener(endpointDefinition))
-            {
-                while (_shutdownTokenSource.Token.IsCancellationRequested == false && cancellationToken.IsCancellationRequested == false)
-                {
-                    var sessionContext = new SmtpSessionContext(_options, endpointDefinition);
+            using var endpointListener = _endpointListenerFactory.CreateListener(endpointDefinition);
 
-                    try
-                    {
-                        await ListenAsync(sessionContext, endpointListener, cancellationToken);
+            while (_shutdownTokenSource.Token.IsCancellationRequested == false && cancellationToken.IsCancellationRequested == false)
+            {
+                var sessionContext = new SmtpSessionContext(_serviceProvider, _options, endpointDefinition);
+
+                try
+                {
+                    await ListenAsync(sessionContext, endpointListener, cancellationToken);
+                }
+                catch (OperationCanceledException) when (_shutdownTokenSource.Token.IsCancellationRequested == false)
+                {
+                    if (sessionContext.Pipe != null)
+                    { 
+                        OnSessionCancelled(new SessionEventArgs(sessionContext));
                     }
-                    catch (OperationCanceledException) when (_shutdownTokenSource.Token.IsCancellationRequested == false)
-                    {
-                        if (sessionContext.Pipe != null)
-                        { 
-                            OnSessionCancelled(new SessionEventArgs(sessionContext));
-                        }
-                    }
-                    catch (OperationCanceledException) { }
-                    catch (Exception ex)
-                    {
-                        OnSessionFaulted(new SessionFaultedEventArgs(sessionContext, ex));
-                    }
+                }
+                catch (OperationCanceledException) { }
+                catch (Exception ex)
+                {
+                    OnSessionFaulted(new SessionFaultedEventArgs(sessionContext, ex));
                 }
             }
         }

@@ -1,19 +1,35 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Net;
+using SmtpServer.Authentication;
 using SmtpServer.Mail;
+using SmtpServer.Storage;
 
 namespace SmtpServer.Protocol
 {
     public class SmtpCommandFactory : ISmtpCommandFactory
     {
+        readonly ISmtpServerOptions _options;
+        readonly IUserAuthenticatorFactory _userAuthenticatorFactory;
+        readonly IMailboxFilterFactory _mailboxFilterFactory;
+        readonly IMessageStoreFactory _messageStoreFactory;
+
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="options">The options that the server was configured to run with.</param>
-        public SmtpCommandFactory(ISmtpServerOptions options)
+        /// <param name="userAuthenticatorFactory">The user authenticator factory.</param>
+        /// <param name="mailboxFilterFactory">The mailbox filter factory.</param>
+        /// <param name="messageStoreFactory">The message store factory.</param>
+        public SmtpCommandFactory(
+            ISmtpServerOptions options, 
+            IUserAuthenticatorFactory userAuthenticatorFactory,
+            IMailboxFilterFactory mailboxFilterFactory,
+            IMessageStoreFactory messageStoreFactory)
         {
-            Options = options;
+            _options = options;
+            _userAuthenticatorFactory = userAuthenticatorFactory;
+            _mailboxFilterFactory = mailboxFilterFactory;
+            _messageStoreFactory = messageStoreFactory;
         }
 
         /// <summary>
@@ -23,7 +39,7 @@ namespace SmtpServer.Protocol
         /// <returns>The HELO command.</returns>
         public virtual SmtpCommand CreateHelo(string domainOrAddress)
         {
-            var greeting = $"{Options.ServerName} Hello {domainOrAddress}, haven't we met before?";
+            var greeting = $"{_options.ServerName} Hello {domainOrAddress}, haven't we met before?";
 
             return new HeloCommand(domainOrAddress, greeting);
         }
@@ -35,7 +51,7 @@ namespace SmtpServer.Protocol
         /// <returns>The EHLO command.</returns>
         public virtual SmtpCommand CreateEhlo(string domainOrAddress)
         {
-            var greeting = $"{Options.ServerName} Hello {domainOrAddress}, haven't we met before?";
+            var greeting = $"{_options.ServerName} Hello {domainOrAddress}, haven't we met before?";
 
             return new EhloCommand(domainOrAddress, greeting, GetExtensions);
 
@@ -45,14 +61,14 @@ namespace SmtpServer.Protocol
                 yield return "8BITMIME";
                 yield return "SMTPUTF8";
 
-                if (context.Pipe.IsSecure == false && Options.ServerCertificate != null)
+                if (context.Pipe.IsSecure == false && _options.ServerCertificate != null)
                 {
                     yield return "STARTTLS";
                 }
 
-                if (Options.MaxMessageSize > 0)
+                if (_options.MaxMessageSize > 0)
                 {
-                    yield return $"SIZE {Options.MaxMessageSize}";
+                    yield return $"SIZE {_options.MaxMessageSize}";
                 }
 
                 if (IsPlainLoginAllowed(context))
@@ -63,7 +79,7 @@ namespace SmtpServer.Protocol
 
             bool IsPlainLoginAllowed(ISessionContext context)
             {
-                if (Options.UserAuthenticatorFactory == null)
+                if (_userAuthenticatorFactory != null)
                 {
                     return false;
                 }
@@ -80,7 +96,7 @@ namespace SmtpServer.Protocol
         /// <returns>The MAIL command.</returns>
         public virtual SmtpCommand CreateMail(IMailbox address, IReadOnlyDictionary<string, string> parameters)
         {
-            return new MailCommand(address, parameters, Options.MailboxFilterFactory, Options.MaxMessageSize);
+            return new MailCommand(address, parameters, _mailboxFilterFactory, _options.MaxMessageSize);
         }
 
         /// <summary>
@@ -90,7 +106,7 @@ namespace SmtpServer.Protocol
         /// <returns>The RCPT command.</returns>
         public virtual SmtpCommand CreateRcpt(IMailbox address)
         {
-            return new RcptCommand(address, Options.MailboxFilterFactory);
+            return new RcptCommand(address, _mailboxFilterFactory);
         }
 
         /// <summary>
@@ -99,7 +115,7 @@ namespace SmtpServer.Protocol
         /// <returns>The DATA command.</returns>
         public virtual SmtpCommand CreateData()
         {
-            return new DataCommand(Options.MessageStoreFactory);
+            return new DataCommand(_messageStoreFactory);
         }
 
         /// <summary>
@@ -135,7 +151,7 @@ namespace SmtpServer.Protocol
         /// <returns>The STARTTLS command.</returns>
         public virtual SmtpCommand CreateStartTls()
         {
-            return new StartTlsCommand(Options.ServerCertificate, Options.SupportedSslProtocols);
+            return new StartTlsCommand(_options.ServerCertificate, _options.SupportedSslProtocols);
         }
 
         /// <summary>
@@ -146,7 +162,7 @@ namespace SmtpServer.Protocol
         /// <returns>The AUTH command.</returns>
         public SmtpCommand CreateAuth(AuthenticationMethod method, string parameter)
         {
-            return new AuthCommand(method, parameter, Options.UserAuthenticatorFactory);
+            return new AuthCommand(method, parameter, _userAuthenticatorFactory);
         }
 
         /// <summary>
@@ -159,10 +175,5 @@ namespace SmtpServer.Protocol
         {
             return new ProxyCommand(sourceEndpoint, destinationEndpoint);
         }
-
-        /// <summary>
-        /// The options that the server was configured to run with.
-        /// </summary>
-        protected ISmtpServerOptions Options { get; }
     }
 }

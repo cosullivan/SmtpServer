@@ -22,6 +22,11 @@ namespace SmtpServer
         event EventHandler<EventArgs> SessionAuthenticated;
 
         /// <summary>
+        /// The service provider instance. 
+        /// </summary>
+        IServiceProvider ServiceProvider { get; }
+
+        /// <summary>
         /// Gets the options that the server was created with.
         /// </summary>
         ISmtpServerOptions ServerOptions { get; }

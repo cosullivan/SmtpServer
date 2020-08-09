@@ -3,8 +3,10 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Net;
 using System.Text;
+using SmtpServer.Authentication;
 using SmtpServer.Mail;
 using SmtpServer.Protocol;
+using SmtpServer.Storage;
 using SmtpServer.Text;
 using Xunit;
 
@@ -23,9 +25,13 @@ namespace SmtpServer.Tests
         {
             get
             {
-                var options = new SmtpServerOptionsBuilder().Logger(new NullLogger()).Build();
+                var options = new SmtpServerOptionsBuilder().Build();
 
-                return new SmtpParser(new SmtpCommandFactory(options));
+                return new SmtpParser(new SmtpCommandFactory(
+                    options, 
+                    DoNothingUserAuthenticator.Instance,
+                    DoNothingMailboxFilter.Instance,
+                    DoNothingMessageStore.Instance));
             }
         }
 

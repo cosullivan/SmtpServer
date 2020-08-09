@@ -1,7 +1,9 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using MailKit.Net.Smtp;
 using MimeKit;
 using SmtpServer;
+using SmtpServer.ComponentModel;
 
 namespace SampleApp.Examples
 {
@@ -16,7 +18,7 @@ namespace SampleApp.Examples
                 .Port(9025)
                 .Build();
 
-            var server = new SmtpServer.SmtpServer(options);
+            var server = new SmtpServer.SmtpServer(options, ServiceProvider.Instance);
             var serverTask = server.StartAsync(cancellationTokenSource.Token);
 
             //SampleMailClient.Send(); 

@@ -2,10 +2,6 @@
 using System.Collections.Generic;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
-using SmtpServer.Authentication;
-using SmtpServer.Net;
-using SmtpServer.Protocol;
-using SmtpServer.Storage;
 
 namespace SmtpServer
 {
@@ -22,22 +18,14 @@ namespace SmtpServer
             var serverOptions = new SmtpServerOptions
             {
                 Endpoints = new List<IEndpointDefinition>(),
-                EndpointListenerFactory = new EndpointListenerFactory(),
-                MessageStoreFactory = DoNothingMessageStore.Instance,
-                MailboxFilterFactory = DoNothingMailboxFilter.Instance,
-                UserAuthenticatorFactory = DoNothingUserAuthenticator.Instance,
                 MaxRetryCount = 5,
                 MaxAuthenticationAttempts = 3,
                 SupportedSslProtocols = SslProtocols.Tls12,
                 NetworkBufferSize = 128,
-                CommandWaitTimeout = TimeSpan.FromMinutes(5),
-                Logger = new NullLogger(),
+                CommandWaitTimeout = TimeSpan.FromMinutes(5)
             };
 
             _setters.ForEach(setter => setter(serverOptions));
-
-            // TODO: make this extensible
-            serverOptions.SmtpCommandFactory = new SmtpCommandFactory(serverOptions);
 
             return serverOptions;
         }
@@ -120,78 +108,6 @@ namespace SmtpServer
         }
 
         /// <summary>
-        /// Adds an Endpoint Listener Factory instance.
-        /// </summary>
-        /// <param name="value">The TCP listener factory instance to use.</param>
-        /// <returns>A OptionsBuilder to continue building on.</returns>
-        public SmtpServerOptionsBuilder EndpointListenerFactory(IEndpointListenerFactory value)
-        {
-            _setters.Add(options => options.EndpointListenerFactory = value ?? new EndpointListenerFactory());
-
-            return this;
-        }
-
-        /// <summary>
-        /// Adds a message store factory.
-        /// </summary>
-        /// <param name="value">The message store factory to use.</param>
-        /// <returns>A OptionsBuilder to continue building on.</returns>
-        public SmtpServerOptionsBuilder MessageStore(IMessageStoreFactory value)
-        {
-            _setters.Add(options => options.MessageStoreFactory = value ?? DoNothingMessageStore.Instance);
-
-            return this;
-        }
-
-        /// <summary>
-        /// Adds a mailbox filter factory.
-        /// </summary>
-        /// <param name="value">The mailbox filter factory to add.</param>
-        /// <returns>A OptionsBuilder to continue building on.</returns>
-        public SmtpServerOptionsBuilder MailboxFilter(IMailboxFilterFactory value)
-        {
-            _setters.Add(options => options.MailboxFilterFactory = value ?? DoNothingMailboxFilter.Instance);
-
-            return this;
-        }
-
-        /// <summary>
-        /// Sets the user aAuthenticator factory.
-        /// </summary>
-        /// <param name="value">The user authenticator factory.</param>
-        /// <returns>A OptionsBuilder to continue building on.</returns>
-        public SmtpServerOptionsBuilder UserAuthenticator(IUserAuthenticatorFactory value)
-        {
-            _setters.Add(options => options.UserAuthenticatorFactory = value ?? DoNothingUserAuthenticator.Instance);
-
-            return this;
-        }
-
-        ///// <summary>
-        ///// Sets the SMTP command factory.
-        ///// </summary>
-        ///// <param name="value">The SMTP command factory.</param>
-        ///// <returns>A OptionsBuilder to continue building on.</returns>
-        //public SmtpServerOptionsBuilder SmtpCommandFactory(ISmtpCommandFactory value)
-        //{
-        //    _setters.Add(options => options.SmtpCommandFactory = value ?? new SmtpCommandFactory(options));
-
-        //    return this;
-        //}
-
-        ///// <summary>
-        ///// Sets the SMTP command factory.
-        ///// </summary>
-        ///// <param name="valueFactory">The factory to create the value.</param>
-        ///// <returns>A OptionsBuilder to continue building on.</returns>
-        //public SmtpServerOptionsBuilder SmtpCommandFactory(Func<ISmtpServerOptions, ISmtpCommandFactory> valueFactory)
-        //{
-        //    _setters.Add(options => options.SmtpCommandFactory = valueFactory(options) ?? new SmtpCommandFactory(options));
-
-        //    return this;
-        //}
-
-        /// <summary>
         /// Sets the maximum message size.
         /// </summary>
         /// <param name="value">The maximum message size to allow.</param>
@@ -263,18 +179,6 @@ namespace SmtpServer
             return this;
         }
 
-        /// <summary>
-        /// Sets the logger instance.
-        /// </summary>
-        /// <param name="value">The logger instance.</param>
-        /// <returns>A OptionsBuilder to continue building on.</returns>
-        public SmtpServerOptionsBuilder Logger(ILogger value)
-        {
-            _setters.Add(options => options.Logger = value);
-
-            return this;
-        }
-
         #region SmtpServerOptions
 
         class SmtpServerOptions : ISmtpServerOptions
@@ -315,32 +219,6 @@ namespace SmtpServer
             IReadOnlyList<IEndpointDefinition> ISmtpServerOptions.Endpoints => Endpoints;
 
             /// <summary>
-            /// Gets the endpoint listener factory.
-            /// </summary>
-            public IEndpointListenerFactory EndpointListenerFactory { get; set; }
-
-            /// <summary>
-            /// Gets the message store factory to use.
-            /// </summary>
-            public IMessageStoreFactory MessageStoreFactory { get; set; }
-
-            /// <summary>
-            /// Gets the mailbox filter factory to use.
-            /// </summary>
-            public IMailboxFilterFactory MailboxFilterFactory { get; set; }
-
-            /// <summary>
-            /// Gets the user authenticator factory to use.
-            /// </summary>
-            public IUserAuthenticatorFactory UserAuthenticatorFactory { get; set; }
-
-            /// <summary>
-            /// The factory to create the underlying SMTP commands.
-            /// </summary>
-            /// <remarks>This is designed to allow extension by more advanced use cased.</remarks>
-            public ISmtpCommandFactory SmtpCommandFactory { get; set; }
-
-            /// <summary>
             /// The supported SSL protocols.
             /// </summary>
             public SslProtocols SupportedSslProtocols { get; set; }
@@ -354,11 +232,6 @@ namespace SmtpServer
             /// The size of the buffer that is read from each call to the underlying network client.
             /// </summary>
             public int NetworkBufferSize { get; set; }
-
-            /// <summary>
-            /// The logger instance to use.
-            /// </summary>
-            public ILogger Logger { get; set; }
         }
 
         #endregion

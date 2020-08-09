@@ -7,6 +7,9 @@ using SmtpServer.IO;
 using SmtpServer.Text;
 using System.IO.Pipelines;
 using SmtpServer.StateMachine;
+using SmtpServer.ComponentModel;
+using SmtpServer.Authentication;
+using SmtpServer.Storage;
 
 namespace SmtpServer
 {
@@ -14,6 +17,7 @@ namespace SmtpServer
     {
         readonly SmtpStateMachine _stateMachine;
         readonly SmtpSessionContext _context;
+        readonly ISmtpCommandFactory _commandFactory;
         TaskCompletionSource<bool> _taskCompletionSource;
 
         /// <summary>
@@ -24,6 +28,13 @@ namespace SmtpServer
         {
             _context = context;
             _stateMachine = new SmtpStateMachine(_context);
+
+            _commandFactory = context.ServiceProvider.GetService<ISmtpCommandFactory>(() => 
+                new SmtpCommandFactory(
+                    context.ServerOptions,
+                    context.ServiceProvider.GetServiceOrDefault(DoNothingUserAuthenticator.Instance),
+                    context.ServiceProvider.GetServiceOrDefault(DoNothingMailboxFilter.Instance),
+                    context.ServiceProvider.GetServiceOrDefault(DoNothingMessageStore.Instance)));
         }
 
         /// <summary>
@@ -118,7 +129,7 @@ namespace SmtpServer
             }
         }
 
-        static async ValueTask<SmtpCommand> ReadCommandAsync(ISessionContext context, CancellationToken cancellationToken)
+        async ValueTask<SmtpCommand> ReadCommandAsync(ISessionContext context, CancellationToken cancellationToken)
         {
             var timeout = new CancellationTokenSource(context.ServerOptions.CommandWaitTimeout);
 
@@ -132,10 +143,9 @@ namespace SmtpServer
                     buffer =>
                     {
 #if DEBUG
-                        var text = StringUtil.Create(buffer);
-                        Console.WriteLine(text);
+                        Console.WriteLine(StringUtil.Create(buffer));
 #endif
-                        var parser = new SmtpParser(context.ServerOptions.SmtpCommandFactory);
+                        var parser = new SmtpParser(_commandFactory);
 
                         if (parser.TryMake(ref buffer, out command, out var errorResponse) == false)
                         {

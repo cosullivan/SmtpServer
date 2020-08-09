@@ -25,10 +25,12 @@ namespace SmtpServer
         /// <summary>
         /// Constructor.
         /// </summary>
+        /// <param name="serviceProvider">The service provider instance.</param>
         /// <param name="options">The server options.</param>
         /// <param name="endpointDefinition">The endpoint definition.</param>
-        internal SmtpSessionContext(ISmtpServerOptions options, IEndpointDefinition endpointDefinition)
+        internal SmtpSessionContext(IServiceProvider serviceProvider, ISmtpServerOptions options, IEndpointDefinition endpointDefinition)
         {
+            ServiceProvider = serviceProvider;
             ServerOptions = options;
             EndpointDefinition = endpointDefinition;
             Transaction = new SmtpMessageTransaction();
@@ -60,6 +62,11 @@ namespace SmtpServer
         {
             SessionAuthenticated?.Invoke(this, EventArgs.Empty);
         }
+
+        /// <summary>
+        /// The service provider instance. 
+        /// </summary>
+        public IServiceProvider ServiceProvider { get; }
 
         /// <summary>
         /// Gets the options that the server was created with.
