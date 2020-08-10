@@ -41,7 +41,7 @@ namespace SmtpServer
         /// Constructor.
         /// </summary>
         /// <param name="options">The SMTP server options.</param>
-        /// <param name="serviceProvider">The service provider instance.</param>
+        /// <param name="serviceProvider">The service provider to use when resolving services.</param>
         public SmtpServer(ISmtpServerOptions options, IServiceProvider serviceProvider)
         {
             _options = options;

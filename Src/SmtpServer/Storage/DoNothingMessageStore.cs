@@ -7,7 +7,7 @@ namespace SmtpServer.Storage
 {
     internal sealed class DoNothingMessageStore : MessageStore
     {
-        internal static readonly DoNothingMessageStore Instance = new DoNothingMessageStore();
+        internal static readonly IMessageStoreFactory Default = new DoNothingMessageStore();
 
         /// <summary>
         /// Save the given message to the underlying storage system.

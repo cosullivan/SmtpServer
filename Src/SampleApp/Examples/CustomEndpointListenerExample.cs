@@ -1,128 +1,155 @@
-﻿//using System;
-//using System.IO;
-//using System.Security.Authentication;
-//using System.Security.Cryptography.X509Certificates;
-//using System.Text;
-//using System.Threading;
-//using System.Threading.Tasks;
-//using SmtpServer;
-//using SmtpServer.IO;
-//using SmtpServer.Net;
+﻿using System;
+using System.IO;
+using System.IO.Pipelines;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
+using System.Threading;
+using System.Threading.Tasks;
+using SmtpServer;
+using SmtpServer.ComponentModel;
+using SmtpServer.IO;
+using SmtpServer.Net;
+using SmtpServer.Text;
 
-//namespace SampleApp.Examples
-//{
-//    public static class CustomEndpointListenerExample
-//    {
-//        public static void Run()
-//        {
-//            var cancellationTokenSource = new CancellationTokenSource();
+namespace SampleApp.Examples
+{
+    public static class CustomEndpointListenerExample
+    {
+        public static void Run()
+        {
+            var cancellationTokenSource = new CancellationTokenSource();
 
-//            var options = new SmtpServerOptionsBuilder()
-//                .ServerName("SmtpServer SampleApp")
-//                .Certificate(CreateCertificate())
-//                .Endpoint(builder =>
-//                    builder
-//                        .Port(9025, true)
-//                        .AllowUnsecureAuthentication(false))
-//                .EndpointListenerFactory(new CustomEndpointListenerFactory())
-//                .Build();
+            var options = new SmtpServerOptionsBuilder()
+                .ServerName("SmtpServer SampleApp")
+                .Certificate(CreateCertificate())
+                .Endpoint(builder =>
+                    builder
+                        .Port(9025, true)
+                        .AllowUnsecureAuthentication(false))
+                .Build();
 
-//            var server = new SmtpServer.SmtpServer(options);
+            var serviceProvider = new ServiceProvider();
+            serviceProvider.Add(new CustomEndpointListenerFactory());
 
-//            var serverTask = server.StartAsync(cancellationTokenSource.Token);
+            var server = new SmtpServer.SmtpServer(options, serviceProvider);
 
-//            SampleMailClient.Send(useSsl: true);
+            var serverTask = server.StartAsync(cancellationTokenSource.Token);
 
-//            cancellationTokenSource.Cancel();
-//            serverTask.WaitWithoutException();
-//        }
+            SampleMailClient.Send(useSsl: true);
 
-//        public sealed class CustomEndpointListenerFactory : EndpointListenerFactory
-//        {
-//            public override IEndpointListener CreateListener(IEndpointDefinition endpointDefinition)
-//            {
-//                return new CustomEndpointListener(base.CreateListener(endpointDefinition));
-//            }
-//        }
+            cancellationTokenSource.Cancel();
+            serverTask.WaitWithoutException();
+        }
 
-//        public sealed class CustomEndpointListener : IEndpointListener
-//        {
-//            readonly IEndpointListener _endpointListener;
+        public sealed class CustomEndpointListenerFactory : EndpointListenerFactory
+        {
+            public override IEndpointListener CreateListener(IEndpointDefinition endpointDefinition)
+            {
+                return new CustomEndpointListener(base.CreateListener(endpointDefinition));
+            }
+        }
 
-//            public CustomEndpointListener(IEndpointListener endpointListener)
-//            {
-//                _endpointListener = endpointListener;
-//            }
+        public sealed class CustomEndpointListener : IEndpointListener
+        {
+            readonly IEndpointListener _endpointListener;
 
-//            public void Dispose()
-//            {
-//                _endpointListener.Dispose();
-//            }
+            public CustomEndpointListener(IEndpointListener endpointListener)
+            {
+                _endpointListener = endpointListener;
+            }
 
-//            public Task<ISecurableDuplexPipe> GetPipeAsync(ISessionContext context, CancellationToken cancellationToken)
-//            {
-//                //    var pipe = await _endpointListener.GetPipeAsync(context, cancellationToken);
+            public void Dispose()
+            {
+                _endpointListener.Dispose();
+            }
 
-//                //    return new CustomDuplexPipe(pipe);
+            public async Task<ISecurableDuplexPipe> GetPipeAsync(ISessionContext context, CancellationToken cancellationToken)
+            {
+                var pipe = await _endpointListener.GetPipeAsync(context, cancellationToken);
 
-//                throw new NotImplementedException();
-//            }
-//        }
+                return new CustomSecurableDuplexPipe(pipe);
+            }
+        }
 
-//        public sealed class CustomNetworkStream : INetworkStream
-//        {
-//            readonly INetworkStream _innerStream;
+        public sealed class CustomSecurableDuplexPipe : ISecurableDuplexPipe
+        {
+            readonly ISecurableDuplexPipe _securableDuplexPipe;
 
-//            public CustomNetworkStream(INetworkStream innerStream)
-//            {
-//                _innerStream = innerStream;
-//            }
+            public CustomSecurableDuplexPipe(ISecurableDuplexPipe securableDuplexPipe)
+            {
+                _securableDuplexPipe = securableDuplexPipe;
+            }
 
-//            public void Dispose()
-//            {
-//                _innerStream.Dispose();
-//            }
+            public Task UpgradeAsync(X509Certificate certificate, SslProtocols protocols, CancellationToken cancellationToken = default)
+            {
+                return _securableDuplexPipe.UpgradeAsync(certificate, protocols, cancellationToken);
+            }
 
-//            public Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-//            {
-//                Console.WriteLine(Encoding.ASCII.GetString(buffer, offset, count));
+            public void Dispose()
+            {
+                _securableDuplexPipe.Dispose();
+            }
 
-//                return _innerStream.WriteAsync(buffer, offset, count, cancellationToken);
-//            }
+            public PipeReader Input => new LoggingPipeReader(_securableDuplexPipe.Input);
 
-//            public async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-//            {
-//                var bytesRead = await _innerStream.ReadAsync(buffer, offset, count, cancellationToken);
+            public PipeWriter Output => _securableDuplexPipe.Output;
 
-//                Console.WriteLine(Encoding.ASCII.GetString(buffer, offset, count));
+            public bool IsSecure => _securableDuplexPipe.IsSecure;
+        }
 
-//                return bytesRead;
-//            }
+        public sealed class LoggingPipeReader : PipeReader
+        {
+            readonly PipeReader _delegate;
 
-//            public Task FlushAsync(CancellationToken cancellationToken = default)
-//            {
-//                return _innerStream.FlushAsync(cancellationToken);
-//            }
+            public LoggingPipeReader(PipeReader @delegate)
+            {
+                _delegate = @delegate;
+            }
 
-//            public Task UpgradeAsync(X509Certificate certificate, SslProtocols protocols, CancellationToken cancellationToken = default)
-//            {
-//                Console.WriteLine("Upgrading the stream to SSL");
+            public override void AdvanceTo(SequencePosition consumed)
+            {
+                _delegate.AdvanceTo(consumed);
+            }
 
-//                return _innerStream.UpgradeAsync(certificate, protocols, cancellationToken);
-//            }
+            public override void AdvanceTo(SequencePosition consumed, SequencePosition examined)
+            {
+                _delegate.AdvanceTo(consumed, examined);
+            }
 
-//            public bool IsSecure => _innerStream.IsSecure;
-//        }
+            public override void CancelPendingRead()
+            {
+                _delegate.CancelPendingRead();
+            }
 
-//        static X509Certificate2 CreateCertificate()
-//        {
-//            // to create an X509Certificate for testing you need to run MAKECERT.EXE and then PVK2PFX.EXE
-//            // http://www.digitallycreated.net/Blog/38/using-makecert-to-create-certificates-for-development
+            public override void Complete(Exception exception = null)
+            {
+                _delegate.Complete(exception);
+            }
 
-//            var certificate = File.ReadAllBytes(@"C:\Users\cain\Dropbox\Documents\Cain\Programming\SmtpServer\SmtpServer.pfx");
-//            var password = File.ReadAllText(@"C:\Users\cain\Dropbox\Documents\Cain\Programming\SmtpServer\SmtpServerPassword.txt");
+            public override async ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken = default(CancellationToken))
+            {
+                var readResult = await _delegate.ReadAsync(cancellationToken);
 
-//            return new X509Certificate2(certificate, password);
-//        }
-//    }
-//}
+                Console.WriteLine(">>> {0}", StringUtil.Create(readResult.Buffer));
+
+                return readResult;
+            }
+
+            public override bool TryRead(out ReadResult result)
+            {
+                return _delegate.TryRead(out result);
+            }
+        }
+
+        static X509Certificate2 CreateCertificate()
+        {
+            // to create an X509Certificate for testing you need to run MAKECERT.EXE and then PVK2PFX.EXE
+            // http://www.digitallycreated.net/Blog/38/using-makecert-to-create-certificates-for-development
+
+            var certificate = File.ReadAllBytes(@"C:\Users\cain\Dropbox\Documents\Cain\Programming\SmtpServer\SmtpServer.pfx");
+            var password = File.ReadAllText(@"C:\Users\cain\Dropbox\Documents\Cain\Programming\SmtpServer\SmtpServerPassword.txt");
+
+            return new X509Certificate2(certificate, password);
+        }
+    }
+}

@@ -29,9 +29,9 @@ namespace SmtpServer.Tests
 
                 return new SmtpParser(new SmtpCommandFactory(
                     options, 
-                    DoNothingUserAuthenticator.Instance,
-                    DoNothingMailboxFilter.Instance,
-                    DoNothingMessageStore.Instance));
+                    DoNothingUserAuthenticator.Default,
+                    DoNothingMailboxFilter.Default,
+                    DoNothingMessageStore.Default));
             }
         }
 

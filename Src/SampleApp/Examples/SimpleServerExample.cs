@@ -18,7 +18,7 @@ namespace SampleApp.Examples
                 .CommandWaitTimeout(TimeSpan.FromSeconds(100))
                 .Build();
 
-            var server = new SmtpServer.SmtpServer(options, ServiceProvider.Instance);
+            var server = new SmtpServer.SmtpServer(options, ServiceProvider.Default);
             server.SessionCreated += OnSessionCreated;
 
             var serverTask = server.StartAsync(cancellationTokenSource.Token);

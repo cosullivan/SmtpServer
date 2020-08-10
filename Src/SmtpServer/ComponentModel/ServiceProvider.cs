@@ -2,17 +2,28 @@
 using SmtpServer.Protocol;
 using SmtpServer.Storage;
 using System;
+using SmtpServer.Net;
 
 namespace SmtpServer.ComponentModel
 {
     public sealed class ServiceProvider : IServiceProvider
     {
-        internal static readonly IServiceProvider Instance = new ServiceProvider();
+        internal static readonly IServiceProvider Default = new ServiceProvider();
 
+        IEndpointListenerFactory _endpointListenerFactory;
         IUserAuthenticatorFactory _userAuthenticatorFactory;
         ISmtpCommandFactory _smtpCommandFactory;
         IMailboxFilterFactory _mailboxFilterFactory;
         IMessageStoreFactory _messageStoreFactory;
+
+        /// <summary>
+        /// Add an instance of the endpoint listener factory.
+        /// </summary>
+        /// <param name="endpointListenerFactory">The endpoint listener factory.</param>
+        public void Add(IEndpointListenerFactory endpointListenerFactory)
+        {
+            _endpointListenerFactory = endpointListenerFactory;
+        }
 
         /// <summary>
         /// Add an instance of the user authenticator factory.
@@ -57,6 +68,11 @@ namespace SmtpServer.ComponentModel
         /// <returns>A service object of type <paramref name="serviceType">serviceType</paramref>.   -or-  null if there is no service object of type <paramref name="serviceType">serviceType</paramref>.</returns>
         public object GetService(Type serviceType)
         {
+            if (serviceType == typeof(IEndpointListenerFactory))
+            {
+                return _endpointListenerFactory;
+            }
+
             if (serviceType == typeof(IUserAuthenticatorFactory))
             {
                 return _userAuthenticatorFactory;

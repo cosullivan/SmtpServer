@@ -1,95 +1,98 @@
-﻿//using System;
-//using System.Collections.Generic;
-//using System.Threading;
-//using System.Threading.Tasks;
-//using SmtpServer;
-//using SmtpServer.Authentication;
-//using SmtpServer.Protocol;
-//using SmtpServer.Tracing;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using SmtpServer;
+using SmtpServer.Authentication;
+using SmtpServer.ComponentModel;
+using SmtpServer.Protocol;
+using SmtpServer.Tracing;
 
-//namespace SampleApp.Examples
-//{
-//    public static class SessionContextExample
-//    {
-//        static CancellationTokenSource _cancellationTokenSource;
+namespace SampleApp.Examples
+{
+    public static class SessionContextExample
+    {
+        static CancellationTokenSource _cancellationTokenSource;
 
-//        public static void Run()
-//        {
-//            _cancellationTokenSource = new CancellationTokenSource();
+        public static void Run()
+        {
+            _cancellationTokenSource = new CancellationTokenSource();
 
-//            var options = new SmtpServerOptionsBuilder()
-//                .ServerName("SmtpServer SampleApp")
-//                .UserAuthenticator(new AuthenticationHandler())
-//                .Endpoint(builder =>
-//                    builder
-//                        .AllowUnsecureAuthentication()
-//                        .AuthenticationRequired()
-//                        .Port(9025))
-//                .Build();
+            var options = new SmtpServerOptionsBuilder()
+                .ServerName("SmtpServer SampleApp")
+                .Endpoint(builder =>
+                    builder
+                        .AllowUnsecureAuthentication()
+                        .AuthenticationRequired()
+                        .Port(9025))
+                .Build();
 
-//            var server = new SmtpServer.SmtpServer(options);
+            var serviceProvider = new ServiceProvider();
+            serviceProvider.Add(new AuthenticationHandler());
 
-//            server.SessionCreated += OnSessionCreated;
-//            server.SessionCompleted += OnSessionCompleted;
+            var server = new SmtpServer.SmtpServer(options, serviceProvider);
 
-//            var serverTask = server.StartAsync(_cancellationTokenSource.Token);
+            server.SessionCreated += OnSessionCreated;
+            server.SessionCompleted += OnSessionCompleted;
 
-//            SampleMailClient.Send(user: "cain", password: "o'sullivan", count: 5);
+            var serverTask = server.StartAsync(_cancellationTokenSource.Token);
 
-//            serverTask.WaitWithoutException();
-//        }
+            SampleMailClient.Send(user: "cain", password: "o'sullivan", count: 5);
 
-//        static void OnSessionCreated(object sender, SessionEventArgs e)
-//        {
-//            // the session context contains a Properties dictionary 
-//            // which can be used to custom session context
+            serverTask.WaitWithoutException();
+        }
 
-//            e.Context.Properties["Start"] = DateTimeOffset.Now;
-//            e.Context.Properties["Commands"] = new List<SmtpCommand>();
+        static void OnSessionCreated(object sender, SessionEventArgs e)
+        {
+            // the session context contains a Properties dictionary 
+            // which can be used to custom session context
 
-//            e.Context.CommandExecuting += OnCommandExecuting;
-//        }
+            e.Context.Properties["Start"] = DateTimeOffset.Now;
+            e.Context.Properties["Commands"] = new List<SmtpCommand>();
 
-//        static void OnCommandExecuting(object sender, SmtpCommandEventArgs e)
-//        {
-//            ((List<SmtpCommand>)e.Context.Properties["Commands"]).Add(e.Command);
-//        }
+            e.Context.CommandExecuting += OnCommandExecuting;
+        }
 
-//        static void OnSessionCompleted(object sender, SessionEventArgs e)
-//        {
-//            e.Context.CommandExecuting -= OnCommandExecuting;
+        static void OnCommandExecuting(object sender, SmtpCommandEventArgs e)
+        {
+            ((List<SmtpCommand>)e.Context.Properties["Commands"]).Add(e.Command);
+        }
 
-//            Console.WriteLine("The session started at {0}.", e.Context.Properties["Start"]);
-//            Console.WriteLine();
+        static void OnSessionCompleted(object sender, SessionEventArgs e)
+        {
+            e.Context.CommandExecuting -= OnCommandExecuting;
 
-//            Console.WriteLine("The user that authenticated was {0}", e.Context.Properties["User"]);
-//            Console.WriteLine();
+            Console.WriteLine("The session started at {0}.", e.Context.Properties["Start"]);
+            Console.WriteLine();
 
-//            Console.WriteLine("The following commands were executed during the session;");
-//            Console.WriteLine();
+            Console.WriteLine("The user that authenticated was {0}", e.Context.Properties["User"]);
+            Console.WriteLine();
 
-//            var writer = new TracingSmtpCommandVisitor(Console.Out);
+            Console.WriteLine("The following commands were executed during the session;");
+            Console.WriteLine();
 
-//            foreach (var command in (List<SmtpCommand>) e.Context.Properties["Commands"])
-//            {
-//                writer.Visit(command);
-//            }
+            var writer = new TracingSmtpCommandVisitor(Console.Out);
 
-//            _cancellationTokenSource.Cancel();
-//        }
+            foreach (var command in (List<SmtpCommand>)e.Context.Properties["Commands"])
+            {
+                writer.Visit(command);
+            }
 
-//        public class AuthenticationHandler : UserAuthenticator
-//        {
-//            public override Task<bool> AuthenticateAsync(
-//                ISessionContext context,
-//                string user,
-//                string password,
-//                CancellationToken cancellationToken)
-//            {
-//                context.Properties["User"] = user;
+            _cancellationTokenSource.Cancel();
+        }
 
-//                return Task.FromResult(true);
-//            }
-//        }
-//    }
-//}
+        public class AuthenticationHandler : UserAuthenticator
+        {
+            public override Task<bool> AuthenticateAsync(
+                ISessionContext context,
+                string user,
+                string password,
+                CancellationToken cancellationToken)
+            {
+                context.Properties["User"] = user;
+
+                return Task.FromResult(true);
+            }
+        }
+    }
+}

@@ -20,7 +20,7 @@ namespace SampleApp.Examples
                 .Port(9025)
                 .Build();
 
-            var server = new SmtpServer.SmtpServer(options, ServiceProvider.Instance);
+            var server = new SmtpServer.SmtpServer(options, ServiceProvider.Default);
 
             server.SessionCreated += OnSessionCreated;
             server.SessionCompleted += OnSessionCompleted;

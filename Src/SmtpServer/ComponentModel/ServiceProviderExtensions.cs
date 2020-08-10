@@ -22,7 +22,7 @@ namespace SmtpServer.ComponentModel
                 throw new ArgumentNullException(nameof(serviceProvider));
             }
 
-            return serviceProvider.GetService(typeof(ISmtpCommandFactory)) as TService ?? @default;
+            return serviceProvider.GetService(typeof(TService)) as TService ?? @default;
         }
     }
 }

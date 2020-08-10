@@ -1,7 +1,4 @@
-﻿using System;
-using System.Threading;
-using MailKit.Net.Smtp;
-using MimeKit;
+﻿using System.Threading;
 using SmtpServer;
 using SmtpServer.ComponentModel;
 
@@ -18,17 +15,10 @@ namespace SampleApp.Examples
                 .Port(9025)
                 .Build();
 
-            var server = new SmtpServer.SmtpServer(options, ServiceProvider.Instance);
+            var server = new SmtpServer.SmtpServer(options, ServiceProvider.Default);
             var serverTask = server.StartAsync(cancellationTokenSource.Token);
 
-            //SampleMailClient.Send(); 
-
-            var message = MimeMessage.Load(typeof(Program).Assembly.GetManifestResourceStream("SampleApp.Examples.Test.eml"));
-
-            using var client = new SmtpClient();
-
-            client.Connect("localhost", 9025, false);
-            client.Send(message);
+            SampleMailClient.Send(); 
 
             cancellationTokenSource.Cancel();
             serverTask.WaitWithoutException();

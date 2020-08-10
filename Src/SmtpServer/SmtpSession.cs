@@ -32,9 +32,9 @@ namespace SmtpServer
             _commandFactory = context.ServiceProvider.GetService<ISmtpCommandFactory>(() => 
                 new SmtpCommandFactory(
                     context.ServerOptions,
-                    context.ServiceProvider.GetServiceOrDefault(DoNothingUserAuthenticator.Instance),
-                    context.ServiceProvider.GetServiceOrDefault(DoNothingMailboxFilter.Instance),
-                    context.ServiceProvider.GetServiceOrDefault(DoNothingMessageStore.Instance)));
+                    context.ServiceProvider.GetServiceOrDefault(DoNothingUserAuthenticator.Default),
+                    context.ServiceProvider.GetServiceOrDefault(DoNothingMailboxFilter.Default),
+                    context.ServiceProvider.GetServiceOrDefault(DoNothingMessageStore.Default)));
         }
 
         /// <summary>

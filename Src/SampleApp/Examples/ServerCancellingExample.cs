@@ -1,62 +1,65 @@
-﻿//using System;
-//using System.Threading;
-//using System.Threading.Tasks;
-//using SmtpServer;
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
+using SmtpServer;
+using SmtpServer.ComponentModel;
 
-//namespace SampleApp.Examples
-//{
-//    public static class ServerCancellingExample
-//    {
-//        public static void Run()
-//        {
-//            var cancellationTokenSource = new CancellationTokenSource();
+namespace SampleApp.Examples
+{
+    public static class ServerCancellingExample
+    {
+        public static void Run()
+        {
+            var cancellationTokenSource = new CancellationTokenSource();
 
-//            var options = new SmtpServerOptionsBuilder()
-//                .ServerName("SmtpServer SampleApp")
-//                .Port(9025)
-//                .MailboxFilter(new SampleMailboxFilter(TimeSpan.FromSeconds(5)))
-//                .Build();
+            var options = new SmtpServerOptionsBuilder()
+                .ServerName("SmtpServer SampleApp")
+                .Port(9025)
+                .Build();
 
-//            var server = new SmtpServer.SmtpServer(options);
-//            server.SessionCreated += OnSessionCreated;
-//            server.SessionCompleted += OnSessionCompleted;
-//            server.SessionFaulted += OnSessionFaulted;
-//            server.SessionCancelled += OnSessionCancelled;
+            var serviceProvider = new ServiceProvider();
+            serviceProvider.Add(new SampleMailboxFilter(TimeSpan.FromSeconds(5)));
 
-//            var serverTask = server.StartAsync(cancellationTokenSource.Token);
+            var server = new SmtpServer.SmtpServer(options, serviceProvider);
+            server.SessionCreated += OnSessionCreated;
+            server.SessionCompleted += OnSessionCompleted;
+            server.SessionFaulted += OnSessionFaulted;
+            server.SessionCancelled += OnSessionCancelled;
 
-//            // ReSharper disable once MethodSupportsCancellation
-//            Task.Run(() => SampleMailClient.Send());
+            var serverTask = server.StartAsync(cancellationTokenSource.Token);
 
-//            Console.WriteLine("Press any key to cancel the server.");
-//            Console.ReadKey();
+            // ReSharper disable once MethodSupportsCancellation
+            Task.Run(() => SampleMailClient.Send());
 
-//            Console.WriteLine("Forcibily cancelling the server and any active sessions");
+            Console.WriteLine("Press any key to cancel the server.");
+            Console.ReadKey();
 
-//            cancellationTokenSource.Cancel();
-//            serverTask.WaitWithoutException();
+            Console.WriteLine("Forcibily cancelling the server and any active sessions");
 
-//            Console.WriteLine("The server has been cancelled.");
-//        }
+            cancellationTokenSource.Cancel();
+            serverTask.WaitWithoutException();
 
-//        static void OnSessionCreated(object sender, SessionEventArgs e)
-//        {
-//            Console.WriteLine("Session Created.");
-//        }
+            Console.WriteLine("The server has been cancelled.");
+        }
 
-//        static void OnSessionCompleted(object sender, SessionEventArgs e)
-//        {
-//            Console.WriteLine("Session Completed");
-//        }
+        static void OnSessionCreated(object sender, SessionEventArgs e)
+        {
+            Console.WriteLine("Session Created.");
+        }
 
-//        static void OnSessionFaulted(object sender, SessionFaultedEventArgs e)
-//        {
-//            Console.WriteLine("Session Faulted: {0}", e.Exception);
-//        }
+        static void OnSessionCompleted(object sender, SessionEventArgs e)
+        {
+            Console.WriteLine("Session Completed");
+        }
 
-//        static void OnSessionCancelled(object sender, SessionEventArgs e)
-//        {
-//            Console.WriteLine("Session Cancelled");
-//        }
-//    }
-//}
+        static void OnSessionFaulted(object sender, SessionFaultedEventArgs e)
+        {
+            Console.WriteLine("Session Faulted: {0}", e.Exception);
+        }
+
+        static void OnSessionCancelled(object sender, SessionEventArgs e)
+        {
+            Console.WriteLine("Session Cancelled");
+        }
+    }
+}

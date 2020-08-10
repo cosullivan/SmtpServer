@@ -2,6 +2,6 @@
 {
     internal sealed class DoNothingMailboxFilter : MailboxFilter
     {
-        internal static readonly DoNothingMailboxFilter Instance = new DoNothingMailboxFilter();
+        internal static readonly IMailboxFilterFactory Default = new DoNothingMailboxFilter();
     }
 }
