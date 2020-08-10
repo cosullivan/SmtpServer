@@ -18,9 +18,9 @@ namespace SmtpServer.Storage
         /// </summary>
         public void Dispose()
         {
-            if (Instance is IDisposable)
+            if (Instance is IDisposable disposable)
             {
-                ((IDisposable)Instance).Dispose();
+                disposable.Dispose();
             }
         }
 

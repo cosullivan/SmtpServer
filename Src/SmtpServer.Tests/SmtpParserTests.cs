@@ -1,7 +1,12 @@
 ﻿using System;
+using System.Buffers;
+using System.Collections.Generic;
 using System.Net;
 using System.Text;
+using SmtpServer.Authentication;
+using SmtpServer.Mail;
 using SmtpServer.Protocol;
+using SmtpServer.Storage;
 using SmtpServer.Text;
 using Xunit;
 
@@ -9,23 +14,35 @@ namespace SmtpServer.Tests
 {
     public class SmtpParserTests
     {
-        static SmtpParser CreateParser(string text)
+        static TokenReader CreateReader(string text)
         {
-            var segment = new ArraySegment<byte>(Encoding.UTF8.GetBytes(text));
+            var buffer = Encoding.UTF8.GetBytes(text);
 
-            var options = new SmtpServerOptionsBuilder().Logger(new NullLogger()).Build();
+            return new TokenReader(new ReadOnlySequence<byte>(buffer, 0, buffer.Length));
+        }
 
-            return new SmtpParser(options, new TokenEnumerator(new ByteArrayTokenReader(new [] { segment })));
+        static SmtpParser Parser
+        {
+            get
+            {
+                var options = new SmtpServerOptionsBuilder().Build();
+
+                return new SmtpParser(new SmtpCommandFactory(
+                    options, 
+                    DoNothingUserAuthenticator.Default,
+                    DoNothingMailboxFilter.Default,
+                    DoNothingMessageStore.Default));
+            }
         }
 
         [Fact]
         public void CanMakeQuit()
         {
             // arrange
-            var parser = CreateParser("QUIT");
+            var reader = CreateReader("QUIT");
 
             // act
-            var result = parser.TryMakeQuit(out SmtpCommand command, out SmtpResponse errorResponse);
+            var result = Parser.TryMakeQuit(ref reader, out var command, out var errorResponse);
 
             // assert
             Assert.True(result);
@@ -36,10 +53,10 @@ namespace SmtpServer.Tests
         public void CanMakeNoop()
         {
             // arrange
-            var parser = CreateParser("NOOP");
+            var reader = CreateReader("NOOP");
 
             // act
-            var result = parser.TryMakeNoop(out var command, out var errorResponse);
+            var result = Parser.TryMakeNoop(ref reader, out var command, out var errorResponse);
 
             // assert
             Assert.True(result);
@@ -50,10 +67,10 @@ namespace SmtpServer.Tests
         public void CanMakeHelo()
         {
             // arrange
-            var parser = CreateParser("HELO abc-1-def.mail.com");
+            var reader = CreateReader("HELO abc-1-def.mail.com");
 
             // act
-            var result = parser.TryMakeHelo(out var command, out var errorResponse);
+            var result = Parser.TryMakeHelo(ref reader, out var command, out var errorResponse);
 
             // assert
             Assert.True(result);
@@ -68,10 +85,10 @@ namespace SmtpServer.Tests
         public void CanNotMakeHelo(string input)
         {
             // arrange
-            var parser = CreateParser(input);
+            var reader = CreateReader(input);
 
             // act
-            var result = parser.TryMakeHelo(out var command, out var errorResponse);
+            var result = Parser.TryMakeHelo(ref reader, out var command, out var errorResponse);
 
             // assert
             Assert.False(result);
@@ -80,46 +97,32 @@ namespace SmtpServer.Tests
         }
 
         [Theory]
-        [InlineData("EHLO abc-1-def.mail.com")]
-        [InlineData("EHLO 192.168.1.200")]
-        [InlineData("EHLO [192.168.1.200]")]
-        [InlineData("EHLO [IPv6:ABCD:EF01:2345:6789:ABCD:EF01:2345:6789]")]
-        public void CanMakeEhlo(string input)
+        [InlineData("EHLO abc-1-def.mail.com", "abc-1-def.mail.com")]
+        [InlineData("EHLO 192.168.1.200", "192.168.1.200")]
+        [InlineData("EHLO [192.168.1.200]", "192.168.1.200")]
+        [InlineData("EHLO [IPv6:ABCD:EF01:2345:6789:ABCD:EF01:2345:6789]", "IPv6:ABCD:EF01:2345:6789:ABCD:EF01:2345:6789")]
+        public void CanMakeEhlo(string input, string domainOrAddress)
         {
             // arrange
-            var parser = CreateParser(input);
+            var reader = CreateReader(input);
 
             // act
-            var result = parser.TryMakeEhlo(out var command, out var errorResponse);
-
-            var ipOrDomainPart = input.Substring(5);
-
-            if (ipOrDomainPart.EndsWith("]"))
-            {
-                if (ipOrDomainPart.StartsWith("[IPv6:", StringComparison.OrdinalIgnoreCase))
-                {
-                    ipOrDomainPart = ipOrDomainPart.Substring(6, ipOrDomainPart.Length - 7);
-                }
-                else
-                {
-                    ipOrDomainPart = ipOrDomainPart.Substring(1, ipOrDomainPart.Length - 2);
-                }
-            }
+            var result = Parser.TryMakeEhlo(ref reader, out var command, out var errorResponse);
 
             // assert
             Assert.True(result);
             Assert.True(command is EhloCommand);
-            Assert.Equal(ipOrDomainPart, ((EhloCommand)command).DomainOrAddress);
+            Assert.Equal(domainOrAddress, ((EhloCommand)command).DomainOrAddress);
         }
 
         [Fact]
         public void CanMakeAuthPlain()
         {
             // arrange
-            var parser = CreateParser("AUTH PLAIN Y2Fpbi5vc3VsbGl2YW5AZ21haWwuY29t");
+            var reader = CreateReader("AUTH PLAIN Y2Fpbi5vc3VsbGl2YW5AZ21haWwuY29t");
 
             // act
-            var result = parser.TryMakeAuth(out var command, out var errorResponse);
+            var result = Parser.TryMakeAuth(ref reader, out var command, out var errorResponse);
 
             // assert
             Assert.True(result);
@@ -132,10 +135,10 @@ namespace SmtpServer.Tests
         public void CanMakeAuthLogin()
         {
             // arrange
-            var parser = CreateParser("AUTH LOGIN Y2Fpbi5vc3VsbGl2YW5AZ21haWwuY29t");
+            var reader = CreateReader("AUTH LOGIN Y2Fpbi5vc3VsbGl2YW5AZ21haWwuY29t");
 
             // act
-            var result = parser.TryMakeAuth(out var command, out var errorResponse);
+            var result = Parser.TryMakeAuth(ref reader, out var command, out var errorResponse);
 
             // assert
             Assert.True(result);
@@ -145,23 +148,16 @@ namespace SmtpServer.Tests
         }
 
         [Theory]
-        [InlineData("cain.osullivan@gmail.com", "cain.osullivan", "gmail.com")]
-        [InlineData(@"""Abc@def""@example.com", "Abc@def", "example.com")]
-        [InlineData("pelé@example.com", "pelé", "example.com", "SMTPUTF8")]
-        public void CanMakeMail(string email, string user, string host, string extension = null)
+        [InlineData("MAIL FROM:<cain.osullivan@gmail.com>", "cain.osullivan", "gmail.com")]
+        [InlineData(@"MAIL FROM:<""Abc@def""@example.com>", "Abc@def", "example.com")]
+        [InlineData("MAIL FROM:<pelé@example.com> SMTPUTF8", "pelé", "example.com", "SMTPUTF8")]
+        public void CanMakeMail(string input, string user, string host, string extension = null)
         {
             // arrange
-            var mailTo = $"MAIL FROM:<{email}>";
-
-            if (!string.IsNullOrWhiteSpace(extension))
-            {
-                mailTo += $" {extension}";
-            }
-
-            var parser = CreateParser(mailTo);
+            var reader = CreateReader(input);
 
             // act
-            var result = parser.TryMakeMail(out var command, out var errorResponse);
+            var result = Parser.TryMakeMail(ref reader, out var command, out var errorResponse);
 
             // assert
             Assert.True(result);
@@ -169,9 +165,8 @@ namespace SmtpServer.Tests
             Assert.Equal(user, ((MailCommand)command).Address.User);
             Assert.Equal(host, ((MailCommand)command).Address.Host);
 
-            if (!string.IsNullOrWhiteSpace(extension))
+            if (extension != null)
             {
-                // verify the extension was put in the parameters
                 Assert.True(((MailCommand)command).Parameters.ContainsKey(extension));
             }
         }
@@ -180,27 +175,27 @@ namespace SmtpServer.Tests
         public void CanMakeMailWithNoAddress()
         {
             // arrange
-            var parser = CreateParser("MAIL FROM:<>");
+            var reader = CreateReader("MAIL FROM:<>");
 
             // act
-            var result = parser.TryMakeMail(out var command, out var errorResponse);
+            var result = Parser.TryMakeMail(ref reader, out var command, out var errorResponse);
 
             // assert
             Assert.True(result);
             Assert.True(command is MailCommand);
             Assert.NotNull(((MailCommand)command).Address);
-            Assert.Equal(String.Empty, ((MailCommand)command).Address.Host);
-            Assert.Equal(String.Empty, ((MailCommand)command).Address.User);
+            Assert.Equal(string.Empty, ((MailCommand)command).Address.Host);
+            Assert.Equal(string.Empty, ((MailCommand)command).Address.User);
         }
 
         [Fact]
         public void CanMakeMailWithBlankAddress()
         {
             // arrange
-            var parser = CreateParser("MAIL FROM:<   >");
+            var reader = CreateReader("MAIL FROM:<   >");
 
             // act
-            var result = parser.TryMakeMail(out var command, out var errorResponse);
+            var result = Parser.TryMakeMail(ref reader, out var command, out var errorResponse);
 
             // assert
             Assert.True(result);
@@ -215,10 +210,10 @@ namespace SmtpServer.Tests
         public void CanNotMakeMail(string input)
         {
             // arrange
-            var parser = CreateParser(input);
+            var reader = CreateReader(input);
 
             // act
-            var result = parser.TryMakeMail(out var command, out var errorResponse);
+            var result = Parser.TryMakeMail(ref reader, out var command, out var errorResponse);
 
             // assert
             Assert.False(result);
@@ -226,16 +221,16 @@ namespace SmtpServer.Tests
         }
 
         [Theory]
-        [InlineData("cain.osullivan@gmail.com", "cain.osullivan", "gmail.com")]
-        [InlineData(@"""Abc@def""@example.com", "Abc@def", "example.com")]
-        [InlineData("pelé@example.com", "pelé", "example.com")]
-        public void CanMakeRcpt(string email, string user, string host)
+        [InlineData("RCPT TO:<cain.osullivan@gmail.com>", "cain.osullivan", "gmail.com")]
+        [InlineData(@"RCPT TO:<""Abc@def""@example.com>", "Abc@def", "example.com")]
+        [InlineData("RCPT TO:<pelé@example.com>", "pelé", "example.com")]
+        public void CanMakeRcpt(string input, string user, string host)
         {
             // arrange
-            var parser = CreateParser($"RCPT TO:<{email}>");
+            var reader = CreateReader(input);
 
             // act
-            var result = parser.TryMakeRcpt(out var command, out var errorResponse);
+            var result = Parser.TryMakeRcpt(ref reader, out var command, out var errorResponse);
 
             // assert
             Assert.True(result);
@@ -248,10 +243,10 @@ namespace SmtpServer.Tests
         public void CanMakeProxyUnknown()
         {
             // arrange
-            var parser = CreateParser("PROXY UNKNOWN");
+            var reader = CreateReader("PROXY UNKNOWN");
 
             // act
-            var result = parser.TryMakeProxy(out var command, out var errorResponse);
+            var result = Parser.TryMakeProxy(ref reader, out var command, out var errorResponse);
 
             // assert
             Assert.True(result);
@@ -264,10 +259,10 @@ namespace SmtpServer.Tests
         public void CanMakeProxyTcp4()
         {
             // arrange
-            var parser = CreateParser("PROXY TCP4 192.168.1.1 192.168.1.2 1234 16789");
+            var reader = CreateReader("PROXY TCP4 192.168.1.1 192.168.1.2 1234 16789");
 
             // act
-            var result = parser.TryMakeProxy(out var command, out var errorResponse);
+            var result = Parser.TryMakeProxy(ref reader, out var command, out var errorResponse);
 
             // assert
             Assert.True(result);
@@ -282,10 +277,10 @@ namespace SmtpServer.Tests
         public void CanMakeProxyTcp6()
         {
             // arrange
-            var parser = CreateParser("PROXY TCP6 2001:1234:abcd::0001 3456:2e76:66d8:f84:abcd:abef:ffff:1234 1234 16789");
+            var reader = CreateReader("PROXY TCP6 2001:1234:abcd::0001 3456:2e76:66d8:f84:abcd:abef:ffff:1234 1234 16789");
 
             // act
-            var result = parser.TryMakeProxy(out var command, out var errorResponse);
+            var result = Parser.TryMakeProxy(ref reader, out var command, out var errorResponse);
 
             // assert
             Assert.True(result);
@@ -300,100 +295,102 @@ namespace SmtpServer.Tests
         public void CanMakeAtom()
         {
             // arrange
-            var parser = CreateParser("hello");
+            var reader = CreateReader("hello");
 
             // act
-            var made = parser.TryMakeAtom(out var atom);
+            var made = reader.TryMake(Parser.TryMakeAtom, out var atom);
 
             // assert
             Assert.True(made);
-            Assert.Equal("hello", atom);
+            Assert.Equal("hello", StringUtil.Create(atom));
         }
 
         [Fact]
         public void CanMakeDotString()
         {
             // arrange
-            var parser = CreateParser("abc.def.hij");
+            var reader = CreateReader("abc.def.hij");
 
             // act
-            var made = parser.TryMakeDotString(out var dotString);
+            var made = reader.TryMake(Parser.TryMakeDotString, out var dotString);
 
             // assert
             Assert.True(made);
-            Assert.Equal("abc.def.hij", dotString);
+            Assert.Equal("abc.def.hij", StringUtil.Create(dotString));
         }
 
         [Fact]
         public void CanMakeLocalPart()
         {
             // arrange
-            var parser = CreateParser("abc");
+            var reader = CreateReader("abc");
 
             // act
-            var made = parser.TryMakeLocalPart(out var localPart);
+            var made = reader.TryMake(Parser.TryMakeLocalPart, out var localPart);
 
             // assert
             Assert.True(made);
-            Assert.Equal("abc", localPart);
+            Assert.Equal("abc", StringUtil.Create(localPart));
         }
 
         [Fact]
         public void CanMakeTextOrNumber()
         {
             // arrange
+            var reader1 = CreateReader("abc");
+            var reader2 = CreateReader("123");
 
             // act
-            var made1 = CreateParser("abc").TryMakeTextOrNumber(out var textOrNumber1);
-            var made2 = CreateParser("123").TryMakeTextOrNumber(out var textOrNumber2);
+            var made1 = reader1.TryMake(Parser.TryMakeTextOrNumber, out var textOrNumber1);
+            var made2 = reader2.TryMake(Parser.TryMakeTextOrNumber, out var textOrNumber2);
 
             // assert
             Assert.True(made1);
-            Assert.Equal("abc", textOrNumber1);
+            Assert.Equal("abc", StringUtil.Create(textOrNumber1));
             Assert.True(made2);
-            Assert.Equal("123", textOrNumber2);
+            Assert.Equal("123", StringUtil.Create(textOrNumber2));
         }
 
         [Fact]
         public void CanMakeTextOrNumberOrHyphenString()
         {
             // arrange
-            var parser = CreateParser("a1-b2");
+            var reader = CreateReader("a1-b2");
 
             // act
-            var made1 = parser.TryMakeTextOrNumberOrHyphenString(out var textOrNumberOrHyphen1);
+            var made1 = reader.TryMake(Parser.TryMakeTextOrNumberOrHyphenString, out var textOrNumberOrHyphen1);
 
             // assert
             Assert.True(made1);
-            Assert.Equal("a1-b2", textOrNumberOrHyphen1);
+            Assert.Equal("a1-b2", StringUtil.Create(textOrNumberOrHyphen1));
         }
 
         [Fact]
         public void CanMakeSubdomain()
         {
             // arrange
-            var parser = CreateParser("a-1-b-2");
+            var reader = CreateReader("a-1-b-2");
 
             // act
-            var made = parser.TryMakeSubdomain(out var subdomain);
+            var made = reader.TryMake(Parser.TryMakeSubdomain, out var subdomain);
 
             // assert
             Assert.True(made);
-            Assert.Equal("a-1-b-2", subdomain);
+            Assert.Equal("a-1-b-2", StringUtil.Create(subdomain));
         }
 
         [Fact]
         public void CanMakeDomain()
         {
             // arrange
-            var parser = CreateParser("123.abc.com");
+            var reader = CreateReader("123.abc.com");
 
             // act
-            var made = parser.TryMakeDomain(out var domain);
+            var made = reader.TryMake(Parser.TryMakeDomain, out var domain);
 
             // assert
             Assert.True(made);
-            Assert.Equal("123.abc.com", domain);
+            Assert.Equal("123.abc.com", StringUtil.Create(domain));
         }
 
         [Theory]
@@ -409,10 +406,10 @@ namespace SmtpServer.Tests
         public void CanMakeMailbox(string email, string user, string host)
         {
             // arrange
-            var parser = CreateParser(email);
+            var reader = CreateReader(email);
 
             // act
-            var made = parser.TryMakeMailbox(out var mailbox);
+            var made = reader.TryMake(Parser.TryMakeMailbox, out IMailbox mailbox);
 
             // assert
             Assert.True(made);
@@ -424,10 +421,10 @@ namespace SmtpServer.Tests
         public void CanMakePlusAddressMailBox()
         {
             // arrange
-            var parser = CreateParser("cain.osullivan+plus@gmail.com");
+            var reader = CreateReader("cain.osullivan+plus@gmail.com");
 
             // act
-            var made = parser.TryMakeMailbox(out var mailbox);
+            var made = reader.TryMake(Parser.TryMakeMailbox, out IMailbox mailbox);
 
             // assert
             Assert.True(made);
@@ -439,38 +436,38 @@ namespace SmtpServer.Tests
         public void CanMakeAtDomain()
         {
             // arrange
-            var parser = CreateParser("@gmail.com");
+            var reader = CreateReader("@gmail.com");
 
             // act
-            var made = parser.TryMakeAtDomain(out var atDomain);
+            var made = reader.TryMake(Parser.TryMakeAtDomain, out var atDomain);
 
             // assert
             Assert.True(made);
-            Assert.Equal("@gmail.com", atDomain);
+            Assert.Equal("@gmail.com", StringUtil.Create(atDomain));
         }
 
         [Fact]
         public void CanMakeAtDomainList()
         {
             // arrange
-            var parser = CreateParser("@gmail.com,@hotmail.com");
+            var reader = CreateReader("@gmail.com,@hotmail.com");
 
             // act
-            var made = parser.TryMakeAtDomainList(out var atDomainList);
+            var made = reader.TryMake(Parser.TryMakeAtDomainList, out var atDomainList);
 
             // assert
             Assert.True(made);
-            Assert.Equal("@gmail.com,@hotmail.com", atDomainList);
+            Assert.Equal("@gmail.com,@hotmail.com", StringUtil.Create(atDomainList));
         }
 
         [Fact]
         public void CanMakePath()
         {
             // path
-            var parser = CreateParser("<@gmail.com,@hotmail.com:cain.osullivan@gmail.com>");
+            var reader = CreateReader("<@gmail.com,@hotmail.com:cain.osullivan@gmail.com>");
 
             // act
-            var made = parser.TryMakePath(out var mailbox);
+            var made = reader.TryMake(Parser.TryMakePath, out IMailbox mailbox);
 
             // assert
             Assert.True(made);
@@ -482,10 +479,10 @@ namespace SmtpServer.Tests
         public void CanMakeReversePath()
         {
             // path
-            var parser = CreateParser("<@gmail.com,@hotmail.com:cain.osullivan@gmail.com>");
+            var reader = CreateReader("<@gmail.com,@hotmail.com:cain.osullivan@gmail.com>");
 
             // act
-            var made = parser.TryMakePath(out var mailbox);
+            var made = reader.TryMake(Parser.TryMakePath, out IMailbox mailbox);
 
             // assert
             Assert.True(made);
@@ -497,24 +494,24 @@ namespace SmtpServer.Tests
         public void CanMakeAddressLiteral()
         {
             // arrange
-            var parser = CreateParser("[ 127.0.0.1 ]");
+            var reader = CreateReader("[ 127.0.0.1 ]");
 
             // act
-            var made = parser.TryMakeAddressLiteral(out var address);
+            var made = reader.TryMake(Parser.TryMakeAddressLiteral, out var address);
 
             // assert
             Assert.True(made);
-            Assert.Equal("127.0.0.1", address);
+            Assert.Equal("[ 127.0.0.1 ]", StringUtil.Create(address));
         }
 
         [Fact]
         public void CanMakeMailParameters()
         {
             // arrange
-            var parser = CreateParser("SIZE=123 ABC=DEF ABCDE ZZZ=123");
+            var reader = CreateReader("SIZE=123 ABC=DEF ABCDE ZZZ=123");
 
             // act
-            var made = parser.TryMakeMailParameters(out var parameters);
+            var made = reader.TryMake(Parser.TryMakeMailParameters, out IReadOnlyDictionary<string, string> parameters);
 
             // assert
             Assert.True(made);
@@ -535,28 +532,14 @@ namespace SmtpServer.Tests
         public void CanMakeBase64(string input)
         {
             // arrange
-            var parser = CreateParser(input);
+            var reader = CreateReader(input);
 
             // act
-            var made = parser.TryMakeBase64(out string base64);
+            var made = reader.TryMake(Parser.TryMakeBase64, out var base64);
 
             // assert
             Assert.True(made);
-            Assert.Equal(input, base64);
-        }
-
-        [Fact]
-        public void CanMakeIpVersion()
-        {
-            // arrange
-            var parser = CreateParser("IPv6:");
-
-            // act
-            var result = parser.TryMakeIpVersion(out var version);
-
-            // assert
-            Assert.True(result);
-            Assert.Equal(6, version);
+            Assert.Equal(input, StringUtil.Create(base64));
         }
 
         [Theory]
@@ -572,14 +555,14 @@ namespace SmtpServer.Tests
         public void CanMake16BitHexNumber(string input)
         {
             // arrange
-            var parser = CreateParser(input);
+            var reader = CreateReader(input);
 
             // act
-            var result = parser.TryMake16BitHex(out var hexNumber);
+            var result = reader.TryMake(Parser.TryMake16BitHex, out var hexNumber);
 
             // assert
             Assert.True(result);
-            Assert.Equal(input, hexNumber);
+            Assert.Equal(input, StringUtil.Create(hexNumber));
         }
 
         [Theory]
@@ -589,10 +572,10 @@ namespace SmtpServer.Tests
         public void CanNotMake16BitHex(string input)
         {
             // arrange
-            var parser = CreateParser(input);
+            var reader = CreateReader(input);
 
             // act
-            var result = parser.TryMake16BitHex(out var hex);
+            var result = reader.TryMake(Parser.TryMake16BitHex, out _);
 
             // assert
             Assert.False(result);
@@ -603,14 +586,14 @@ namespace SmtpServer.Tests
         public void CanMakeIPv4AddressLiteral(string input)
         {
             // arrange
-            var parser = CreateParser(input);
+            var reader = CreateReader(input);
 
             // act
-            var made = parser.TryMakeIPv4AddressLiteral(out var address);
+            var made = reader.TryMake(Parser.TryMakeIPv4AddressLiteral, out var address);
 
             // assert
             Assert.True(made);
-            Assert.Equal(input, address);
+            Assert.Equal(input, StringUtil.Create(address));
         }
 
         [Theory]
@@ -621,13 +604,29 @@ namespace SmtpServer.Tests
         public void CanNotMakeIPv4AddressLiteral(string input)
         {
             // arrange
-            var parser = CreateParser(input);
+            var reader = CreateReader(input);
 
             // act
-            var made = parser.TryMakeIPv4AddressLiteral(out var address);
+            var made = reader.TryMake(Parser.TryMakeIPv4AddressLiteral, out _);
 
             // assert
             Assert.False(made);
+        }
+
+        [Theory]
+        [InlineData("IPv6:ABCD:EF01:2345:6789:ABCD:EF01:2345:6789")]
+        [InlineData("IPv6:::1")]
+        public void CanMakeIPv6AddressLiteral(string input)
+        {
+            // arrange
+            var reader = CreateReader(input);
+
+            // act
+            var result = reader.TryMake(Parser.TryMakeIPv6AddressLiteral, out var address);
+
+            // assert
+            Assert.True(result);
+            Assert.Equal(input, StringUtil.Create(address));
         }
 
         [Theory]
@@ -640,29 +639,29 @@ namespace SmtpServer.Tests
         [InlineData("0:0:0:0:0:FFFF:129.144.52.38")]
         [InlineData("::13.1.68.3")]
         [InlineData("::FFFF:129.144.52.38")]
-        public void CanMakeIPv6AddressLiteral(string input)
+        public void CanMakeIPv6Address(string input)
         {
             // arrange
-            var parser = CreateParser("IPv6:" + input);
+            var reader = CreateReader(input);
 
             // act
-            var result = parser.TryMakeIPv6AddressLiteral(out var address);
+            var result = reader.TryMake(Parser.TryMakeIPv6Address, out var address);
 
             // assert
             Assert.True(result);
-            Assert.Equal(input, address);
+            Assert.Equal(input, StringUtil.Create(address));
         }
-
+        
         [Theory]
         [InlineData("ABCD:EF01:2345:6789:ABCD:EF01:2345")]
         [InlineData("ABCD:EF01:ZZZZ:6789:ABCD:EF01:2345:6789")]
         public void CanNotMakeIPv6AddressLiteral(string input)
         {
             // arrange
-            var parser = CreateParser("IPv6:" + input);
+            var reader = CreateReader("IPv6:" + input);
 
             // act
-            var result = parser.TryMakeIPv6AddressLiteral(out var address);
+            var result = reader.TryMake(Parser.TryMakeIPv6AddressLiteral, out _);
 
             // assert
             Assert.False(result);

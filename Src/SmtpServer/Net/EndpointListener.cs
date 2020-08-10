@@ -1,9 +1,9 @@
 ﻿using System;
+using System.IO;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.IO;
-using NetworkStream = SmtpServer.IO.NetworkStream;
 
 namespace SmtpServer.Net
 {
@@ -30,12 +30,12 @@ namespace SmtpServer.Net
         }
 
         /// <summary>
-        /// Returns a stream from the endpoint.
+        /// Returns a securable pipe to the endpoint.
         /// </summary>
-        /// <param name="context">The session context that the stream is being received for.</param>
+        /// <param name="context">The session context that the pipe is being created for.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The stream from the endpoint.</returns>
-        public async Task<INetworkStream> GetStreamAsync(ISessionContext context, CancellationToken cancellationToken)
+        /// <returns>The securable pipe from the endpoint.</returns>
+        public async Task<ISecurableDuplexPipe> GetPipeAsync(ISessionContext context, CancellationToken cancellationToken)
         {
             var tcpClient = await _tcpListener.AcceptTcpClientAsync().WithCancellation(cancellationToken).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
@@ -46,7 +46,7 @@ namespace SmtpServer.Net
             var stream = tcpClient.GetStream();
             stream.ReadTimeout = (int)_endpointDefinition.ReadTimeout.TotalMilliseconds;
 
-            return new NetworkStream(stream, () =>
+            return new SecurableDuplexPipe(stream, () =>
             {
                 tcpClient.Close();
                 tcpClient.Dispose();

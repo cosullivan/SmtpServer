@@ -5,6 +5,7 @@ using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using SmtpServer;
+using SmtpServer.ComponentModel;
 using SmtpServer.Tracing;
 
 namespace SampleApp.Examples
@@ -21,14 +22,16 @@ namespace SampleApp.Examples
             var options = new SmtpServerOptionsBuilder()
                 .ServerName("SmtpServer SampleApp")
                 .Certificate(CreateCertificate())
-                .Endpoint(builder => 
+                .Endpoint(builder =>
                     builder
                         .Port(9025, true)
                         .AllowUnsecureAuthentication(false))
-                .UserAuthenticator(new SampleUserAuthenticator())
                 .Build();
 
-            var server = new SmtpServer.SmtpServer(options);
+            var serviceProvider = new ServiceProvider();
+            serviceProvider.Add(new SampleUserAuthenticator());
+
+            var server = new SmtpServer.SmtpServer(options, serviceProvider);
             server.SessionCreated += OnSessionCreated;
 
             var serverTask = server.StartAsync(cancellationTokenSource.Token);
@@ -46,7 +49,7 @@ namespace SampleApp.Examples
             e.Context.CommandExecuting += OnCommandExecuting;
         }
 
-        static void OnCommandExecuting(object sender, SmtpCommandExecutingEventArgs e)
+        static void OnCommandExecuting(object sender, SmtpCommandEventArgs e)
         {
             Console.WriteLine("Command Executing.");
 

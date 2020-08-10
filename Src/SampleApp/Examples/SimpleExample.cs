@@ -1,5 +1,6 @@
 ﻿using System.Threading;
 using SmtpServer;
+using SmtpServer.ComponentModel;
 
 namespace SampleApp.Examples
 {
@@ -14,7 +15,7 @@ namespace SampleApp.Examples
                 .Port(9025)
                 .Build();
 
-            var server = new SmtpServer.SmtpServer(options);
+            var server = new SmtpServer.SmtpServer(options, ServiceProvider.Default);
             var serverTask = server.StartAsync(cancellationTokenSource.Token);
 
             SampleMailClient.Send(); 

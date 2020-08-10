@@ -1,8 +1,11 @@
-﻿using BenchmarkDotNet.Attributes;
+﻿using System.Net.Mail;
+using BenchmarkDotNet.Attributes;
 using MailKit.Net.Smtp;
 using System.Threading;
 using System.Threading.Tasks;
 using MimeKit;
+using SmtpServer.ComponentModel;
+using SmtpClient = MailKit.Net.Smtp.SmtpClient;
 
 namespace SmtpServer.Benchmarks
 {
@@ -12,7 +15,8 @@ namespace SmtpServer.Benchmarks
         readonly SmtpServer _smtpServer = new SmtpServer(
             new SmtpServerOptionsBuilder()
                 .Port(9025, false)
-                .Build());
+                .Build(),
+            ServiceProvider.Default);
 
         readonly CancellationTokenSource _smtpServerCancellationTokenSource = new CancellationTokenSource();
 

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Net;
 using SmtpServer.IO;
 using SmtpServer.Protocol;
 
@@ -11,7 +10,12 @@ namespace SmtpServer
         /// <summary>
         /// Fired when a command is about to execute.
         /// </summary>
-        public event EventHandler<SmtpCommandExecutingEventArgs> CommandExecuting;
+        public event EventHandler<SmtpCommandEventArgs> CommandExecuting;
+
+        /// <summary>
+        /// Fired when a command has finished executing.
+        /// </summary>
+        public event EventHandler<SmtpCommandEventArgs> CommandExecuted;
 
         /// <summary>
         /// Fired when the session has been authenticated.
@@ -21,10 +25,12 @@ namespace SmtpServer
         /// <summary>
         /// Constructor.
         /// </summary>
+        /// <param name="serviceProvider">The service provider instance.</param>
         /// <param name="options">The server options.</param>
         /// <param name="endpointDefinition">The endpoint definition.</param>
-        internal SmtpSessionContext(ISmtpServerOptions options, IEndpointDefinition endpointDefinition)
+        internal SmtpSessionContext(IServiceProvider serviceProvider, ISmtpServerOptions options, IEndpointDefinition endpointDefinition)
         {
+            ServiceProvider = serviceProvider;
             ServerOptions = options;
             EndpointDefinition = endpointDefinition;
             Transaction = new SmtpMessageTransaction();
@@ -37,7 +43,16 @@ namespace SmtpServer
         /// <param name="command">The command that is executing.</param>
         internal void RaiseCommandExecuting(SmtpCommand command)
         {
-            CommandExecuting?.Invoke(this, new SmtpCommandExecutingEventArgs(this, command));
+            CommandExecuting?.Invoke(this, new SmtpCommandEventArgs(this, command));
+        }
+
+        /// <summary>
+        /// Raise the command executed event.
+        /// </summary>
+        /// <param name="command">The command that was executed.</param>
+        internal void RaiseCommandExecuted(SmtpCommand command)
+        {
+            CommandExecuted?.Invoke(this, new SmtpCommandEventArgs(this, command));
         }
 
         /// <summary>
@@ -47,6 +62,11 @@ namespace SmtpServer
         {
             SessionAuthenticated?.Invoke(this, EventArgs.Empty);
         }
+
+        /// <summary>
+        /// The service provider instance. 
+        /// </summary>
+        public IServiceProvider ServiceProvider { get; }
 
         /// <summary>
         /// Gets the options that the server was created with.
@@ -59,9 +79,9 @@ namespace SmtpServer
         public IEndpointDefinition EndpointDefinition { get; }
 
         /// <summary>
-        /// Gets the text stream to read from and write to.
+        /// Gets the pipeline to read from and write to.
         /// </summary>
-        public INetworkClient NetworkClient { get; internal set; }
+        public ISecurableDuplexPipe Pipe { get; internal set; }
 
         /// <summary>
         /// Gets the current transaction.
@@ -87,7 +107,5 @@ namespace SmtpServer
         /// Returns a set of propeties for the current session.
         /// </summary>
         public IDictionary<string, object> Properties { get; }
-
-     
     }
 }

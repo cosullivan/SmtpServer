@@ -17,30 +17,29 @@ namespace SampleApp
         {
             var message = new MimeMessage();
 
-            message.From.Add(new MailboxAddress(from ?? "from@sample.com"));
-            message.To.Add(new MailboxAddress(to ?? "to@sample.com"));
+            message.From.Add(MailboxAddress.Parse(from ?? "from@sample.com"));
+            message.To.Add(MailboxAddress.Parse(to ?? "to@sample.com"));
             message.Subject = subject ?? "Hello";
             message.Body = body ?? new TextPart("plain")
             {
                 Text = "Hello World"
             };
 
-            using (var client = new SmtpClient())
+            using var client = new SmtpClient();
+
+            client.Connect("localhost", 9025, useSsl);
+
+            if (user != null && password != null)
             {
-                client.Connect("localhost", 9025, useSsl);
-
-                if (user != null && password != null)
-                {
-                    client.Authenticate(user, password);
-                }
-
-                while (count-- > 0)
-                {
-                    client.Send(message);
-                }
-
-                client.Disconnect(true);
+                client.Authenticate(user, password);
             }
+
+            while (count-- > 0)
+            {
+                client.Send(message);
+            }
+
+            client.Disconnect(true);
         }
     }
 }

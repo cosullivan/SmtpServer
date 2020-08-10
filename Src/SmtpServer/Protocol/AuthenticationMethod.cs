@@ -3,6 +3,7 @@
     public enum AuthenticationMethod
     {
         Login,
+
         Plain
     }
 }

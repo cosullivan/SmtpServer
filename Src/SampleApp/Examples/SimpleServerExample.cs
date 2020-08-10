@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using SmtpServer;
+using SmtpServer.ComponentModel;
 using SmtpServer.Tracing;
 
 namespace SampleApp.Examples
@@ -17,7 +18,7 @@ namespace SampleApp.Examples
                 .CommandWaitTimeout(TimeSpan.FromSeconds(100))
                 .Build();
 
-            var server = new SmtpServer.SmtpServer(options);
+            var server = new SmtpServer.SmtpServer(options, ServiceProvider.Default);
             server.SessionCreated += OnSessionCreated;
 
             var serverTask = server.StartAsync(cancellationTokenSource.Token);
@@ -36,7 +37,7 @@ namespace SampleApp.Examples
             e.Context.CommandExecuting += OnCommandExecuting;
         }
 
-        static void OnCommandExecuting(object sender, SmtpCommandExecutingEventArgs e)
+        static void OnCommandExecuting(object sender, SmtpCommandEventArgs e)
         {
             Console.WriteLine("Command Executing.");
 

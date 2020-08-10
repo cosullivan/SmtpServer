@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO.Pipelines;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -13,19 +14,22 @@ namespace SmtpServer.Protocol
     {
         public const string Command = "AUTH";
 
+        readonly IUserAuthenticatorFactory _userAuthenticatorFactory;
         string _user;
         string _password;
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="options">The server options.</param>
         /// <param name="method">The authentication method.</param>
         /// <param name="parameter">The authentication parameter.</param>
-        internal AuthCommand(ISmtpServerOptions options, AuthenticationMethod method, string parameter) : base(options)
+        /// <param name="userAuthenticatorFactory">The factory to create per session instances of the user authenticator.</param>
+        internal AuthCommand(AuthenticationMethod method, string parameter, IUserAuthenticatorFactory userAuthenticatorFactory) : base(Command)
         {
             Method = method;
             Parameter = parameter;
+
+            _userAuthenticatorFactory = userAuthenticatorFactory;
         }
 
         /// <summary>
@@ -44,7 +48,7 @@ namespace SmtpServer.Protocol
                 case AuthenticationMethod.Plain:
                     if (await TryPlainAsync(context, cancellationToken).ConfigureAwait(false) == false)
                     {
-                        await context.NetworkClient.ReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ConfigureAwait(false);
+                        await context.Pipe.Output.WriteReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ConfigureAwait(false);
                         return false;
                     }
                     break;
@@ -52,20 +56,20 @@ namespace SmtpServer.Protocol
                 case AuthenticationMethod.Login:
                     if (await TryLoginAsync(context, cancellationToken).ConfigureAwait(false) == false)
                     {
-                        await context.NetworkClient.ReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ConfigureAwait(false);
+                        await context.Pipe.Output.WriteReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ConfigureAwait(false);
                         return false;
                     }
                     break;
             }
 
-            using (var container = new DisposableContainer<IUserAuthenticator>(Options.UserAuthenticatorFactory.CreateInstance(context)))
+            using (var container = new DisposableContainer<IUserAuthenticator>(_userAuthenticatorFactory.CreateInstance(context)))
             {
                 if (await container.Instance.AuthenticateAsync(context, _user, _password, cancellationToken).ConfigureAwait(false) == false)
                 {
                     var remaining = context.ServerOptions.MaxAuthenticationAttempts - ++context.AuthenticationAttempts;
                     var response = new SmtpResponse(SmtpReplyCode.AuthenticationFailed, $"authentication failed, {remaining} attempt(s) remaining.");
 
-                    await context.NetworkClient.ReplyAsync(response, cancellationToken).ConfigureAwait(false);
+                    await context.Pipe.Output.WriteReplyAsync(response, cancellationToken).ConfigureAwait(false);
 
                     if (remaining <= 0)
                     {
@@ -76,7 +80,7 @@ namespace SmtpServer.Protocol
                 }
             }
 
-            await context.NetworkClient.ReplyAsync(SmtpResponse.AuthenticationSuccessful, cancellationToken).ConfigureAwait(false);
+            await context.Pipe.Output.WriteReplyAsync(SmtpResponse.AuthenticationSuccessful, cancellationToken).ConfigureAwait(false);
 
             context.Authentication = new AuthenticationContext(_user);
             context.RaiseSessionAuthenticated();
@@ -90,20 +94,20 @@ namespace SmtpServer.Protocol
         /// <param name="context">The execution context to operate on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>true if the PLAIN login sequence worked, false if not.</returns>
-        async Task<bool> TryPlainAsync(SmtpSessionContext context, CancellationToken cancellationToken)
+        async Task<bool> TryPlainAsync(ISessionContext context, CancellationToken cancellationToken)
         {
             var authentication = Parameter;
 
-            if (String.IsNullOrWhiteSpace(authentication))
-            { 
-                await context.NetworkClient.ReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, " "), cancellationToken).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(authentication))
+            {
+                await context.Pipe.Output.WriteReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, " "), cancellationToken).ConfigureAwait(false);
 
-                authentication = await context.NetworkClient.ReadLineAsync(Encoding.ASCII, cancellationToken).ConfigureAwait(false);
+                authentication = await context.Pipe.Input.ReadLineAsync(Encoding.ASCII, cancellationToken).ConfigureAwait(false);
             }
 
             if (TryExtractFromBase64(authentication) == false)
             {
-                await context.NetworkClient.ReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ConfigureAwait(false);
+                await context.Pipe.Output.WriteReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ConfigureAwait(false);
                 return false;
             }
 
@@ -136,22 +140,22 @@ namespace SmtpServer.Protocol
         /// <param name="context">The execution context to operate on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>true if the LOGIN login sequence worked, false if not.</returns>
-        async Task<bool> TryLoginAsync(SmtpSessionContext context, CancellationToken cancellationToken)
+        async Task<bool> TryLoginAsync(ISessionContext context, CancellationToken cancellationToken)
         {
-            if (String.IsNullOrWhiteSpace(Parameter) == false)
+            if (string.IsNullOrWhiteSpace(Parameter) == false)
             {
                 _user = Encoding.UTF8.GetString(Convert.FromBase64String(Parameter));
             }
             else
             {
-                await context.NetworkClient.ReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, "VXNlcm5hbWU6"), cancellationToken).ConfigureAwait(false);
+                await context.Pipe.Output.WriteReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, "VXNlcm5hbWU6"), cancellationToken).ConfigureAwait(false);
 
-                _user = await ReadBase64EncodedLineAsync(context.NetworkClient, cancellationToken).ConfigureAwait(false);
+                _user = await ReadBase64EncodedLineAsync(context.Pipe.Input, cancellationToken).ConfigureAwait(false);
             }
-          
-            await context.NetworkClient.ReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, "UGFzc3dvcmQ6"), cancellationToken).ConfigureAwait(false);
 
-            _password = await ReadBase64EncodedLineAsync(context.NetworkClient, cancellationToken).ConfigureAwait(false);
+            await context.Pipe.Output.WriteReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, "UGFzc3dvcmQ6"), cancellationToken).ConfigureAwait(false);
+
+            _password = await ReadBase64EncodedLineAsync(context.Pipe.Input, cancellationToken).ConfigureAwait(false);
 
             return true;
         }
@@ -159,16 +163,14 @@ namespace SmtpServer.Protocol
         /// <summary>
         /// Read a Base64 encoded line.
         /// </summary>
-        /// <param name="client">The client to read from.</param>
+        /// <param name="reader">The pipe to read from.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The decoded Base64 string.</returns>
-        async Task<string> ReadBase64EncodedLineAsync(INetworkClient client, CancellationToken cancellationToken)
+        static async Task<string> ReadBase64EncodedLineAsync(PipeReader reader, CancellationToken cancellationToken)
         {
-            var text = await client.ReadLineAsync(Encoding.ASCII, cancellationToken).ConfigureAwait(false);
+            var text = await reader.ReadLineAsync(cancellationToken);
 
-            return text == null 
-                ? String.Empty 
-                : Encoding.UTF8.GetString(Convert.FromBase64String(text));
+            return text == null ? string.Empty : Encoding.UTF8.GetString(Convert.FromBase64String(text));
         }
 
         /// <summary>

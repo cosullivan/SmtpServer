@@ -18,17 +18,17 @@ namespace SmtpServer.Tests
         {
             var message = new MimeMessage();
 
-            message.From.Add(new MailboxAddress(from ?? "from@sample.com"));
-            message.To.Add(new MailboxAddress(to ?? "to@sample.com"));
+            message.From.Add(MailboxAddress.Parse(from ?? "from@sample.com"));
+            message.To.Add(MailboxAddress.Parse(to ?? "to@sample.com"));
 
             if (cc != null)
             {
-                message.Cc.Add(new MailboxAddress(cc));
+                message.Cc.Add(MailboxAddress.Parse(cc));
             }
 
             if (bcc != null)
             {
-                message.Bcc.Add(new MailboxAddress(bcc));
+                message.Bcc.Add(MailboxAddress.Parse(bcc));
             }
 
             message.Subject = subject ?? "Hello";
@@ -63,20 +63,19 @@ namespace SmtpServer.Tests
             string user = null,
             string password = null)
         {
-            message = message ?? Message();
+            message ??= Message();
 
-            using (var client = Client())
+            using var client = Client();
+
+            if (user != null && password != null)
             {
-                if (user != null && password != null)
-                {
-                    client.Authenticate(user, password);
-                }
-
-                client.NoOp();
-
-                client.Send(message);
-                client.Disconnect(true);
+                client.Authenticate(user, password);
             }
+
+            client.NoOp();
+
+            client.Send(message);
+            client.Disconnect(true);
         }
     }
 }

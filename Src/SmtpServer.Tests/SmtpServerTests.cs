@@ -7,11 +7,11 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using MailKit;
-using MailKit.Net.Smtp;
 using SmtpServer.Mail;
 using SmtpServer.Tests.Mocks;
 using Xunit;
 using SmtpServer.Authentication;
+using SmtpServer.ComponentModel;
 using SmtpServer.Net;
 using SmtpServer.Protocol;
 using SmtpServer.Storage;
@@ -40,9 +40,9 @@ namespace SmtpServer.Tests
 
                 // assert
                 Assert.Single(MessageStore.Messages);
-                Assert.Equal("test1@test.com", MessageStore.Messages[0].From.AsAddress());
-                Assert.Equal(1, MessageStore.Messages[0].To.Count);
-                Assert.Equal("test2@test.com", MessageStore.Messages[0].To[0].AsAddress());
+                Assert.Equal("test1@test.com", MessageStore.Messages[0].Transaction.From.AsAddress());
+                Assert.Equal(1, MessageStore.Messages[0].Transaction.To.Count);
+                Assert.Equal("test2@test.com", MessageStore.Messages[0].Transaction.To[0].AsAddress());
             }
         }
 
@@ -58,7 +58,7 @@ namespace SmtpServer.Tests
 
                 // assert
                 Assert.Single(MessageStore.Messages);
-                Assert.Equal(text, MessageStore.Messages[0].Subject());
+                Assert.Equal(text, MessageStore.Messages[0].MimeMessage.Subject);
                 Assert.Equal(text, MessageStore.Messages[0].Text(charset));
             }
         }
@@ -77,7 +77,7 @@ namespace SmtpServer.Tests
                 return true;
             });
 
-            using (CreateServer(server => server.UserAuthenticator(userAuthenticator), endpoint => endpoint.AllowUnsecureAuthentication()))
+            using (CreateServer(endpoint => endpoint.AllowUnsecureAuthentication(), services => services.Add(userAuthenticator)))
             {
                 // act
                 MailClient.Send(user: "user", password: "password");
@@ -106,7 +106,7 @@ namespace SmtpServer.Tests
                 return false;
             });
 
-            using (CreateServer(server => server.UserAuthenticator(userAuthenticator), endpoint => endpoint.AllowUnsecureAuthentication()))
+            using (CreateServer(endpoint => endpoint.AllowUnsecureAuthentication(), services => services.Add(userAuthenticator)))
             {
                 // act and assert
                 Assert.Throws<MailKit.Security.AuthenticationException>(() => MailClient.Send(user: user, password: password));
@@ -128,11 +128,11 @@ namespace SmtpServer.Tests
 
                 // assert
                 Assert.Single(MessageStore.Messages);
-                Assert.Equal("test1@test.com", MessageStore.Messages[0].From.AsAddress());
-                Assert.Equal(3, MessageStore.Messages[0].To.Count);
-                Assert.Equal("test2@test.com", MessageStore.Messages[0].To[0].AsAddress());
-                Assert.Equal("test3@test.com", MessageStore.Messages[0].To[1].AsAddress());
-                Assert.Equal("test4@test.com", MessageStore.Messages[0].To[2].AsAddress());
+                Assert.Equal("test1@test.com", MessageStore.Messages[0].Transaction.From.AsAddress());
+                Assert.Equal(3, MessageStore.Messages[0].Transaction.To.Count);
+                Assert.Equal("test2@test.com", MessageStore.Messages[0].Transaction.To[0].AsAddress());
+                Assert.Equal("test3@test.com", MessageStore.Messages[0].Transaction.To[1].AsAddress());
+                Assert.Equal("test4@test.com", MessageStore.Messages[0].Transaction.To[2].AsAddress());
             }
         }
 
@@ -169,14 +169,13 @@ namespace SmtpServer.Tests
 #pragma warning restore 162
             });
 
-            using (CreateServer(options => options.MailboxFilter(mailboxFilter)))
+            using (CreateServer(services => services.Add(mailboxFilter)))
             {
-                using (var client = MailClient.Client())
-                {
-                    Assert.Throws<ServiceNotAuthenticatedException>(() => client.Send(MailClient.Message()));
+                using var client = MailClient.Client();
 
-                    client.NoOp();
-                }
+                Assert.Throws<ServiceNotAuthenticatedException>(() => client.Send(MailClient.Message()));
+
+                client.NoOp();
             }
         }
 
@@ -186,15 +185,14 @@ namespace SmtpServer.Tests
             // arrange
             var mailboxFilter = new DelegatingMailboxFilter(@from => throw new SmtpResponseException(SmtpResponse.AuthenticationRequired, true));
 
-            using (CreateServer(options => options.MailboxFilter(mailboxFilter)))
+            using (CreateServer(services => services.Add(mailboxFilter)))
             {
-                using (var client = MailClient.Client())
-                {
-                    Assert.Throws<SmtpProtocolException>(() => client.Send(MailClient.Message()));
+                using var client = MailClient.Client();
 
-                    // no longer connected to this is invalid
-                    Assert.ThrowsAny<Exception>(() => client.NoOp());
-                }
+                Assert.Throws<ServiceNotAuthenticatedException>(() => client.Send(MailClient.Message()));
+
+                // no longer connected to this is invalid
+                Assert.ThrowsAny<Exception>(() => client.NoOp());
             }
         }
 
@@ -203,7 +201,7 @@ namespace SmtpServer.Tests
         {
             var userAuthenticator = new DelegatingUserAuthenticator((user, password) => true);
 
-            using (CreateServer(server => server.UserAuthenticator(userAuthenticator), endpoint => endpoint.AllowUnsecureAuthentication().AuthenticationRequired()))
+            using (CreateServer(endpoint => endpoint.AllowUnsecureAuthentication().AuthenticationRequired(), services => services.Add(userAuthenticator)))
             {
                 MailClient.Send(user: "user", password: "password");
             }
@@ -214,7 +212,7 @@ namespace SmtpServer.Tests
         {
             var userAuthenticator = new DelegatingUserAuthenticator((user, password) => true);
 
-            using (CreateServer(server => server.UserAuthenticator(userAuthenticator), endpoint => endpoint.AllowUnsecureAuthentication().AuthenticationRequired()))
+            using (CreateServer(endpoint => endpoint.AllowUnsecureAuthentication().AuthenticationRequired(), services => services.Add(userAuthenticator)))
             {
                 Assert.Throws<ServiceNotAuthenticatedException>(() => MailClient.Send());
             }
@@ -238,7 +236,7 @@ namespace SmtpServer.Tests
 
                 disposable.Server.SessionCreated -= sessionCreatedHandler;
 
-                Assert.False(sessionContext.NetworkClient.Stream.IsSecure);
+                Assert.False(sessionContext.Pipe.IsSecure);
             }
 
             ServicePointManager.ServerCertificateValidationCallback = null;
@@ -251,20 +249,23 @@ namespace SmtpServer.Tests
 
             using (var disposable = CreateServer(options => options.Certificate(CreateCertificate())))
             {
-                ISessionContext sessionContext = null;
+                var isSecure = false;
                 var sessionCreatedHandler = new EventHandler<SessionEventArgs>(
-                    delegate(object sender, SessionEventArgs args)
+                    delegate (object sender, SessionEventArgs args)
                     {
-                        sessionContext = args.Context;
+                        args.Context.CommandExecuted += (_, commandArgs) =>
+                        {
+                            isSecure = commandArgs.Context.Pipe.IsSecure;
+                        };
                     });
 
                 disposable.Server.SessionCreated += sessionCreatedHandler;
-
+                
                 MailClient.Send();
 
                 disposable.Server.SessionCreated -= sessionCreatedHandler;
-
-                Assert.True(sessionContext.NetworkClient.Stream.IsSecure);
+                
+                Assert.True(isSecure);
             }
 
             ServicePointManager.ServerCertificateValidationCallback = null;
@@ -278,19 +279,20 @@ namespace SmtpServer.Tests
             ServicePointManager.ServerCertificateValidationCallback = IgnoreCertificateValidationFailureForTestingOnly;
 
             using (var disposable = CreateServer(
-                server => 
-                    server
-                        .UserAuthenticator(userAuthenticator)
-                        .Certificate(CreateCertificate())
-                        .SupportedSslProtocols(SslProtocols.Tls12),
-                endpoint => 
-                    endpoint.AllowUnsecureAuthentication(true)))
+                server => server.Certificate(CreateCertificate()).SupportedSslProtocols(SslProtocols.Tls12),
+                endpoint => endpoint.AllowUnsecureAuthentication(true),
+                services => services.Add(userAuthenticator)))
             {
+                var isSecure = false;
                 ISessionContext sessionContext = null;
                 var sessionCreatedHandler = new EventHandler<SessionEventArgs>(
                     delegate (object sender, SessionEventArgs args)
                     {
                         sessionContext = args.Context;
+                        sessionContext.CommandExecuted += (_, commandArgs) =>
+                        {
+                            isSecure = commandArgs.Context.Pipe.IsSecure;
+                        };
                     });
 
                 disposable.Server.SessionCreated += sessionCreatedHandler;
@@ -299,7 +301,7 @@ namespace SmtpServer.Tests
 
                 disposable.Server.SessionCreated -= sessionCreatedHandler;
 
-                Assert.True(sessionContext.NetworkClient.Stream.IsSecure);
+                Assert.True(isSecure);
                 Assert.True(sessionContext.Authentication.IsAuthenticated);
             }
 
@@ -317,7 +319,7 @@ namespace SmtpServer.Tests
             endpointListenerFactory.EndpointStarted += (sender, e) => { started = true; };
             endpointListenerFactory.EndpointStopped += (sender, e) => { stopped = true; };
 
-            using (CreateServer(server => server.EndpointListenerFactory(endpointListenerFactory)))
+            using (CreateServer(services => services.Add(endpointListenerFactory)))
             {
                 MailClient.Send();
             }
@@ -355,7 +357,28 @@ namespace SmtpServer.Tests
         /// <returns>A disposable instance which will close and release the server instance.</returns>
         SmtpServerDisposable CreateServer(Action<SmtpServerOptionsBuilder> serverConfiguration)
         {
-            return CreateServer(serverConfiguration, endpointConfiguration => { });
+            return CreateServer(serverConfiguration, endpointConfiguration => { }, services => { });
+        }
+
+        /// <summary>
+        /// Create a running instance of a server.
+        /// </summary>
+        /// <param name="endpointConfiguration">The configuration to apply to the endpoint.</param>
+        /// <param name="serviceConfiguration">The configuration to apply to the services.</param>
+        /// <returns>A disposable instance which will close and release the server instance.</returns>
+        SmtpServerDisposable CreateServer(Action<EndpointDefinitionBuilder> endpointConfiguration, Action<ServiceProvider> serviceConfiguration)
+        {
+            return CreateServer(server => { }, endpointConfiguration, serviceConfiguration);
+        }
+
+        /// <summary>
+        /// Create a running instance of a server.
+        /// </summary>
+        /// <param name="serviceConfiguration">The configuration to apply to the services.</param>
+        /// <returns>A disposable instance which will close and release the server instance.</returns>
+        SmtpServerDisposable CreateServer(Action<ServiceProvider> serviceConfiguration)
+        {
+            return CreateServer(server => { }, endpoint => { }, serviceConfiguration);
         }
 
         /// <summary>
@@ -363,10 +386,12 @@ namespace SmtpServer.Tests
         /// </summary>
         /// <param name="serverConfiguration">The configuration to apply to run the server.</param>
         /// <param name="endpointConfiguration">The configuration to apply to the endpoint.</param>
+        /// <param name="serviceConfiguration">The configuration to apply to the services.</param>
         /// <returns>A disposable instance which will close and release the server instance.</returns>
         SmtpServerDisposable CreateServer(
-            Action<SmtpServerOptionsBuilder> serverConfiguration, 
-            Action<EndpointDefinitionBuilder> endpointConfiguration)
+            Action<SmtpServerOptionsBuilder> serverConfiguration,
+            Action<EndpointDefinitionBuilder> endpointConfiguration,
+            Action<ServiceProvider> serviceConfiguration)
         {
             var options = new SmtpServerOptionsBuilder()
                 .ServerName("localhost")
@@ -375,12 +400,15 @@ namespace SmtpServer.Tests
                     {
                         endpointBuilder.Port(9025);
                         endpointConfiguration(endpointBuilder);
-                    })
-                .MessageStore(MessageStore);
+                    });
 
             serverConfiguration(options);
 
-            var server = new SmtpServer(options.Build());
+            var serviceProvider = new ServiceProvider();
+            serviceProvider.Add(MessageStore);
+            serviceConfiguration?.Invoke(serviceProvider);
+
+            var server = new SmtpServer(options.Build(), serviceProvider);
             var smtpServerTask = server.StartAsync(CancellationTokenSource.Token);
 
             return new SmtpServerDisposable(server, () =>
@@ -397,7 +425,7 @@ namespace SmtpServer.Tests
                 }
             });
         }
-        
+
         /// <summary>
         /// The message store that is being used to store the messages by default.
         /// </summary>

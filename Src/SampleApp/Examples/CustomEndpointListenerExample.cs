@@ -1,13 +1,15 @@
 ﻿using System;
 using System.IO;
+using System.IO.Pipelines;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer;
+using SmtpServer.ComponentModel;
 using SmtpServer.IO;
 using SmtpServer.Net;
+using SmtpServer.Text;
 
 namespace SampleApp.Examples
 {
@@ -24,10 +26,12 @@ namespace SampleApp.Examples
                     builder
                         .Port(9025, true)
                         .AllowUnsecureAuthentication(false))
-                .EndpointListenerFactory(new CustomEndpointListenerFactory())
                 .Build();
 
-            var server = new SmtpServer.SmtpServer(options);
+            var serviceProvider = new ServiceProvider();
+            serviceProvider.Add(new CustomEndpointListenerFactory());
+
+            var server = new SmtpServer.SmtpServer(options, serviceProvider);
 
             var serverTask = server.StartAsync(cancellationTokenSource.Token);
 
@@ -59,57 +63,82 @@ namespace SampleApp.Examples
                 _endpointListener.Dispose();
             }
 
-            public async Task<INetworkStream> GetStreamAsync(ISessionContext context, CancellationToken cancellationToken)
+            public async Task<ISecurableDuplexPipe> GetPipeAsync(ISessionContext context, CancellationToken cancellationToken)
             {
-                var stream = await _endpointListener.GetStreamAsync(context, cancellationToken);
+                var pipe = await _endpointListener.GetPipeAsync(context, cancellationToken);
 
-                return new CustomNetworkStream(stream);
+                return new CustomSecurableDuplexPipe(pipe);
             }
         }
 
-        public sealed class CustomNetworkStream : INetworkStream
+        public sealed class CustomSecurableDuplexPipe : ISecurableDuplexPipe
         {
-            readonly INetworkStream _innerStream;
+            readonly ISecurableDuplexPipe _securableDuplexPipe;
 
-            public CustomNetworkStream(INetworkStream innerStream)
+            public CustomSecurableDuplexPipe(ISecurableDuplexPipe securableDuplexPipe)
             {
-                _innerStream = innerStream;
-            }
-
-            public void Dispose()
-            {
-                _innerStream.Dispose();
-            }
-
-            public Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-            {
-                Console.WriteLine(Encoding.ASCII.GetString(buffer, offset, count));
-
-                return _innerStream.WriteAsync(buffer, offset, count, cancellationToken);
-            }
-
-            public async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-            {
-                var bytesRead = await _innerStream.ReadAsync(buffer, offset, count, cancellationToken);
-
-                Console.WriteLine(Encoding.ASCII.GetString(buffer, offset, count));
-
-                return bytesRead;
-            }
-
-            public Task FlushAsync(CancellationToken cancellationToken = default)
-            {
-                return _innerStream.FlushAsync(cancellationToken);
+                _securableDuplexPipe = securableDuplexPipe;
             }
 
             public Task UpgradeAsync(X509Certificate certificate, SslProtocols protocols, CancellationToken cancellationToken = default)
             {
-                Console.WriteLine("Upgrading the stream to SSL");
-
-                return _innerStream.UpgradeAsync(certificate, protocols, cancellationToken);
+                return _securableDuplexPipe.UpgradeAsync(certificate, protocols, cancellationToken);
             }
 
-            public bool IsSecure => _innerStream.IsSecure;
+            public void Dispose()
+            {
+                _securableDuplexPipe.Dispose();
+            }
+
+            public PipeReader Input => new LoggingPipeReader(_securableDuplexPipe.Input);
+
+            public PipeWriter Output => _securableDuplexPipe.Output;
+
+            public bool IsSecure => _securableDuplexPipe.IsSecure;
+        }
+
+        public sealed class LoggingPipeReader : PipeReader
+        {
+            readonly PipeReader _delegate;
+
+            public LoggingPipeReader(PipeReader @delegate)
+            {
+                _delegate = @delegate;
+            }
+
+            public override void AdvanceTo(SequencePosition consumed)
+            {
+                _delegate.AdvanceTo(consumed);
+            }
+
+            public override void AdvanceTo(SequencePosition consumed, SequencePosition examined)
+            {
+                _delegate.AdvanceTo(consumed, examined);
+            }
+
+            public override void CancelPendingRead()
+            {
+                _delegate.CancelPendingRead();
+            }
+
+            public override void Complete(Exception exception = null)
+            {
+                _delegate.Complete(exception);
+            }
+
+            public override async ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken = default(CancellationToken))
+            {
+                var readResult = await _delegate.ReadAsync(cancellationToken);
+
+                Console.WriteLine(">>> {0}", StringUtil.Create(readResult.Buffer));
+
+                return readResult;
+            }
+
+            public override bool TryRead(out ReadResult result)
+            {
+                return _delegate.TryRead(out result);
+            }
         }
 
         static X509Certificate2 CreateCertificate()

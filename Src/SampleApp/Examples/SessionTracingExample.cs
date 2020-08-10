@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using SmtpServer;
+using SmtpServer.ComponentModel;
 using SmtpServer.Net;
 using SmtpServer.Tracing;
 
@@ -19,7 +20,7 @@ namespace SampleApp.Examples
                 .Port(9025)
                 .Build();
 
-            var server = new SmtpServer.SmtpServer(options);
+            var server = new SmtpServer.SmtpServer(options, ServiceProvider.Default);
 
             server.SessionCreated += OnSessionCreated;
             server.SessionCompleted += OnSessionCompleted;
@@ -36,10 +37,18 @@ namespace SampleApp.Examples
             Console.WriteLine("SessionCreated: {0}", e.Context.Properties[EndpointListener.RemoteEndPointKey]);
 
             e.Context.CommandExecuting += OnCommandExecuting;
+            e.Context.CommandExecuted += OnCommandExecuted;
         }
 
-        static void OnCommandExecuting(object sender, SmtpCommandExecutingEventArgs e)
+        static void OnCommandExecuting(object sender, SmtpCommandEventArgs e)
         {
+            Console.WriteLine("Command Executing");
+            new TracingSmtpCommandVisitor(Console.Out).Visit(e.Command);
+        }
+
+        static void OnCommandExecuted(object sender, SmtpCommandEventArgs e)
+        {
+            Console.WriteLine("Command Executed");
             new TracingSmtpCommandVisitor(Console.Out).Visit(e.Command);
         }
 
@@ -48,6 +57,7 @@ namespace SampleApp.Examples
             Console.WriteLine("SessionCompleted: {0}", e.Context.Properties[EndpointListener.RemoteEndPointKey]);
 
             e.Context.CommandExecuting -= OnCommandExecuting;
+            e.Context.CommandExecuted -= OnCommandExecuted;
 
             _cancellationTokenSource.Cancel();
         }

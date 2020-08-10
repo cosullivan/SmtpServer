@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 
 namespace SmtpServer.Protocol
@@ -9,15 +8,10 @@ namespace SmtpServer.Protocol
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="options">The server options.</param>
-        protected SmtpCommand(ISmtpServerOptions options)
+        /// <param name="name">The name of the command.</param>
+        protected SmtpCommand(string name)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
-            Options = options;
+            Name = name;
         }
 
         /// <summary>
@@ -30,8 +24,8 @@ namespace SmtpServer.Protocol
         internal abstract Task<bool> ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken);
 
         /// <summary>
-        /// The options that the command can utilise.
+        /// The name of the command.
         /// </summary>
-        protected ISmtpServerOptions Options { get; }
+        public string Name { get; }
     }
 }

@@ -1,17 +1,28 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Net;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using SampleApp.Examples;
+using SmtpServer.IO;
+using SmtpServer.Text;
 
 namespace SampleApp
 {
     class Program
     {
-        static async Task Main(string[] args)
+        static void Main(string[] args)
         {
-            //CustomEndpointListenerExample.Run();
+            ServicePointManager.ServerCertificateValidationCallback = IgnoreCertificateValidationFailureForTestingOnly;
 
-            //ServicePointManager.ServerCertificateValidationCallback = SmtpServerTests.IgnoreCertificateValidationFailureForTestingOnly;
+            //SimpleExample.Run();
+            //SimpleServerExample.Run();
+            CustomEndpointListenerExample.Run();
+        }
 
-            ServerShutdownExample.Run();
+        static bool IgnoreCertificateValidationFailureForTestingOnly(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        {
+            return true;
         }
     }
 }

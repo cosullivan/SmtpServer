@@ -5,7 +5,7 @@ namespace SmtpServer.Authentication
 {
     internal sealed class DoNothingUserAuthenticator : UserAuthenticator
     {
-        internal static readonly DoNothingUserAuthenticator Instance = new DoNothingUserAuthenticator();
+        internal static readonly IUserAuthenticatorFactory Default = new DoNothingUserAuthenticator();
 
         /// <summary>
         /// Authenticate a user account.

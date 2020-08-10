@@ -9,12 +9,22 @@ namespace SmtpServer
         /// <summary>
         /// Fired when a command is about to execute.
         /// </summary>
-        event EventHandler<SmtpCommandExecutingEventArgs> CommandExecuting;
+        event EventHandler<SmtpCommandEventArgs> CommandExecuting;
+
+        /// <summary>
+        /// Fired when a command has finished executing.
+        /// </summary>
+        event EventHandler<SmtpCommandEventArgs> CommandExecuted;
 
         /// <summary>
         /// Fired when the session has been authenticated.
         /// </summary>
         event EventHandler<EventArgs> SessionAuthenticated;
+
+        /// <summary>
+        /// The service provider instance. 
+        /// </summary>
+        IServiceProvider ServiceProvider { get; }
 
         /// <summary>
         /// Gets the options that the server was created with.
@@ -27,9 +37,9 @@ namespace SmtpServer
         IEndpointDefinition EndpointDefinition { get; }
 
         /// <summary>
-        /// Gets the text stream to read from and write to.
+        /// Gets the pipeline to read from and write to.
         /// </summary>
-        INetworkClient NetworkClient { get; }
+        ISecurableDuplexPipe Pipe { get; }
 
         /// <summary>
         /// Returns the authentication context.

@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer;
 using SmtpServer.Authentication;
+using SmtpServer.ComponentModel;
 using SmtpServer.Protocol;
 using SmtpServer.Tracing;
 
@@ -19,7 +20,6 @@ namespace SampleApp.Examples
 
             var options = new SmtpServerOptionsBuilder()
                 .ServerName("SmtpServer SampleApp")
-                .UserAuthenticator(new AuthenticationHandler())
                 .Endpoint(builder =>
                     builder
                         .AllowUnsecureAuthentication()
@@ -27,7 +27,10 @@ namespace SampleApp.Examples
                         .Port(9025))
                 .Build();
 
-            var server = new SmtpServer.SmtpServer(options);
+            var serviceProvider = new ServiceProvider();
+            serviceProvider.Add(new AuthenticationHandler());
+
+            var server = new SmtpServer.SmtpServer(options, serviceProvider);
 
             server.SessionCreated += OnSessionCreated;
             server.SessionCompleted += OnSessionCompleted;
@@ -50,7 +53,7 @@ namespace SampleApp.Examples
             e.Context.CommandExecuting += OnCommandExecuting;
         }
 
-        static void OnCommandExecuting(object sender, SmtpCommandExecutingEventArgs e)
+        static void OnCommandExecuting(object sender, SmtpCommandEventArgs e)
         {
             ((List<SmtpCommand>)e.Context.Properties["Commands"]).Add(e.Command);
         }
@@ -70,7 +73,7 @@ namespace SampleApp.Examples
 
             var writer = new TracingSmtpCommandVisitor(Console.Out);
 
-            foreach (var command in (List<SmtpCommand>) e.Context.Properties["Commands"])
+            foreach (var command in (List<SmtpCommand>)e.Context.Properties["Commands"])
             {
                 writer.Visit(command);
             }

@@ -1,4 +1,6 @@
-﻿using System.Threading;
+﻿using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.IO;
 
@@ -8,11 +10,17 @@ namespace SmtpServer.Protocol
     {
         public const string Command = "STARTTLS";
 
+        readonly X509Certificate _certificate;
+        readonly SslProtocols _sslProtocols;
+
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="options">The server options.</param>
-        internal StartTlsCommand(ISmtpServerOptions options) : base(options) { }
+        internal StartTlsCommand(X509Certificate certificate, SslProtocols sslProtocols) : base(Command)
+        {
+            _certificate = certificate;
+            _sslProtocols = sslProtocols;
+        }
 
         /// <summary>
         /// Execute the command.
@@ -23,8 +31,9 @@ namespace SmtpServer.Protocol
         /// if the current state is to be maintained.</returns>
         internal override async Task<bool> ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            await context.NetworkClient.ReplyAsync(SmtpResponse.ServiceReady, cancellationToken).ConfigureAwait(false);
-            await context.NetworkClient.Stream.UpgradeAsync(Options.ServerCertificate, Options.SupportedSslProtocols, cancellationToken).ConfigureAwait(false);
+            await context.Pipe.Output.WriteReplyAsync(SmtpResponse.ServiceReady, cancellationToken).ConfigureAwait(false);
+
+            await context.Pipe.UpgradeAsync(_certificate, _sslProtocols, cancellationToken).ConfigureAwait(false);
 
             return true;
         }

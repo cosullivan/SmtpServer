@@ -1,6 +1,6 @@
-﻿namespace SmtpServer.Protocol
+﻿namespace SmtpServer.StateMachine
 {
-    internal enum SmtpState
+    internal enum SmtpStateId
     {
         None = 0,
         Initialized = 1,

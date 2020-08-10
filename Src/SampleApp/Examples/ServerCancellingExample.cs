@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer;
+using SmtpServer.ComponentModel;
 
 namespace SampleApp.Examples
 {
@@ -14,10 +15,12 @@ namespace SampleApp.Examples
             var options = new SmtpServerOptionsBuilder()
                 .ServerName("SmtpServer SampleApp")
                 .Port(9025)
-                .MailboxFilter(new SampleMailboxFilter(TimeSpan.FromSeconds(5)))
                 .Build();
 
-            var server = new SmtpServer.SmtpServer(options);
+            var serviceProvider = new ServiceProvider();
+            serviceProvider.Add(new SampleMailboxFilter(TimeSpan.FromSeconds(5)));
+
+            var server = new SmtpServer.SmtpServer(options, serviceProvider);
             server.SessionCreated += OnSessionCreated;
             server.SessionCompleted += OnSessionCompleted;
             server.SessionFaulted += OnSessionFaulted;

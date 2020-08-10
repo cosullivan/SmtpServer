@@ -1,169 +1,85 @@
-using System;
+﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
 using System.Net;
+using System.Text;
+using System.Text.RegularExpressions;
 using SmtpServer.Mail;
 using SmtpServer.Text;
 
 namespace SmtpServer.Protocol
 {
-    /// <remarks>
-    /// This class is responsible for parsing the SMTP command arguments according to the ANBF described in
-    /// the RFC http://tools.ietf.org/html/rfc5321#section-4.1.2
-    /// </remarks>
-    public class SmtpParser : TokenParser
+    public sealed class SmtpParser
     {
-        #region Tokens
+        delegate bool TryMakeDelegate(ref TokenReader reader, out SmtpCommand command, out SmtpResponse errorResponse);
 
-        static class Tokens
+        readonly ISmtpCommandFactory _smtpCommandFactory;
+
+        public SmtpParser(ISmtpCommandFactory smtpCommandFactory)
         {
-            // ReSharper disable InconsistentNaming
-            internal static readonly Token Hyphen = Token.Create('-');
-            internal static readonly Token Colon = Token.Create(':');
-            internal static readonly Token LessThan = Token.Create('<');
-            internal static readonly Token GreaterThan = Token.Create('>');
-            internal static readonly Token Comma = Token.Create(',');
-            internal static readonly Token At = Token.Create('@');
-            internal static readonly Token Period = Token.Create('.');
-            internal static readonly Token LeftBracket = Token.Create('[');
-            internal static readonly Token RightBracket = Token.Create(']');
-            internal static readonly Token Quote = Token.Create('"');
-            internal static readonly Token Equal = Token.Create('=');
-            internal static readonly Token BackSlash = Token.Create('\\');
-
-            internal static class Text
-            {
-                internal static readonly Token From = Token.Create("FROM");
-                internal static readonly Token To = Token.Create("TO");
-                internal static readonly Token IpVersionTag = Token.Create("IPv");
-                internal static readonly Token Unknown = Token.Create("UNKNOWN");
-                internal static readonly Token Tcp = Token.Create("TCP");
-            }
-
-            internal static class Numbers
-            {
-                internal static readonly Token Four = Token.Create(TokenKind.Number, "4");
-                internal static readonly Token Six = Token.Create(TokenKind.Number, "6");
-            }
-            // ReSharper restore InconsistentNaming
-        }
-
-        #endregion
-
-        readonly ISmtpServerOptions _options;
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="options">The SMTP server options.</param>
-        /// <param name="enumerator">The token enumerator to handle the incoming tokens.</param>
-        public SmtpParser(ISmtpServerOptions options, ITokenEnumerator enumerator) : base(enumerator)
-        {
-            _options = options;
+            _smtpCommandFactory = smtpCommandFactory;
         }
 
         /// <summary>
-        /// Make a QUIT command.
+        /// Make a command from the buffer.
         /// </summary>
-        /// <param name="command">The QUIT command that is defined within the token enumerator.</param>
+        /// <param name="buffer">The buffer to read the command from.</param>
+        /// <param name="command">The command that is defined within the token reader.</param>
         /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
         /// <returns>Returns true if a command could be made, false if not.</returns>
-        public bool TryMakeQuit(out SmtpCommand command, out SmtpResponse errorResponse)
+        public bool TryMake(ref ReadOnlySequence<byte> buffer, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            command = null;
-            errorResponse = null;
+            return TryMake(buffer, TryMakeEhlo, out command, out errorResponse)
+                || TryMake(buffer, TryMakeHelo, out command, out errorResponse)
+                || TryMake(buffer, TryMakeMail, out command, out errorResponse)
+                || TryMake(buffer, TryMakeRcpt, out command, out errorResponse)
+                || TryMake(buffer, TryMakeData, out command, out errorResponse)
+                || TryMake(buffer, TryMakeQuit, out command, out errorResponse)
+                || TryMake(buffer, TryMakeRset, out command, out errorResponse)
+                || TryMake(buffer, TryMakeNoop, out command, out errorResponse)
+                || TryMake(buffer, TryMakeStartTls, out command, out errorResponse)
+                || TryMake(buffer, TryMakeAuth, out command, out errorResponse)
+                || TryMake(buffer, TryMakeProxy, out command, out errorResponse);
 
-            Enumerator.Take();
-
-            if (TryMakeEnd() == false)
+            static bool TryMake(ReadOnlySequence<byte> buffer, TryMakeDelegate tryMakeDelegate, out SmtpCommand command, out SmtpResponse errorResponse)
             {
-                _options.Logger.LogVerbose("QUIT command can not have parameters.");
+                var reader = new TokenReader(buffer);
 
-                errorResponse = SmtpResponse.SyntaxError;
-                return false;
+                return tryMakeDelegate(ref reader, out command, out errorResponse);
             }
-
-            command = new QuitCommand(_options);
-            return true;
-        }
-
-        /// <summary>
-        /// Make an NOOP command from the given enumerator.
-        /// </summary>
-        /// <param name="command">The NOOP command that is defined within the token enumerator.</param>
-        /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
-        /// <returns>Returns true if a command could be made, false if not.</returns>
-        public bool TryMakeNoop(out SmtpCommand command, out SmtpResponse errorResponse)
-        {
-            command = null;
-            errorResponse = null;
-
-            Enumerator.Take();
-
-            if (TryMakeEnd() == false)
-            {
-                _options.Logger.LogVerbose("NOOP command can not have parameters.");
-
-                errorResponse = SmtpResponse.SyntaxError;
-                return false;
-            }
-
-            command = new NoopCommand(_options);
-            return true;
-        }
-
-        /// <summary>
-        /// Make an RSET command from the given enumerator.
-        /// </summary>
-        /// <param name="command">The RSET command that is defined within the token enumerator.</param>
-        /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
-        /// <returns>Returns true if a command could be made, false if not.</returns>
-        public bool TryMakeRset(out SmtpCommand command, out SmtpResponse errorResponse)
-        {
-            command = null;
-            errorResponse = null;
-
-            Enumerator.Take();
-
-            if (TryMakeEnd() == false)
-            {
-                _options.Logger.LogVerbose("RSET command can not have parameters.");
-
-                errorResponse = SmtpResponse.SyntaxError;
-                return false;
-            }
-
-            command = new RsetCommand(_options);
-            return true;
         }
 
         /// <summary>
         /// Make a HELO command from the given enumerator.
         /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
         /// <param name="command">The HELO command that is defined within the token enumerator.</param>
         /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
         /// <returns>Returns true if a command could be made, false if not.</returns>
-        public bool TryMakeHelo(out SmtpCommand command, out SmtpResponse errorResponse)
+        public bool TryMakeHelo(ref TokenReader reader, out SmtpCommand command, out SmtpResponse errorResponse)
         {
             command = null;
             errorResponse = null;
 
-            Enumerator.Take();
-            Enumerator.Skip(TokenKind.Space);
-
-            if (TryMakeDomain(out var domain))
+            if (TryMakeHeloLiteral(ref reader) == false)
             {
-                command = new HeloCommand(_options, domain);
+                return false;
+            }
+
+            reader.Skip(TokenKind.Space);
+
+            if (reader.TryMake(TryMakeDomain, out var domain))
+            {
+                command = _smtpCommandFactory.CreateHelo(StringUtil.Create(domain));
                 return true;
             }
 
             // according to RFC5321 the HELO command should only accept the Domain
             // and not the address literal, however some mail clients will send the
             // address literal and there is no harm in accepting it
-            if (TryMakeAddressLiteral(out var address))
+            if (reader.TryMake(TryMakeAddressLiteral, out var address))
             {
-                command = new HeloCommand(_options, address);
+                command = _smtpCommandFactory.CreateHelo(StringUtil.Create(address));
                 return true;
             }
 
@@ -172,123 +88,648 @@ namespace SmtpServer.Protocol
         }
 
         /// <summary>
-        /// Make an EHLO command from the given enumerator.
+        /// Try to make the HELO text sequence.
         /// </summary>
-        /// <param name="command">The EHLO command that is defined within the token enumerator.</param>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the HELO text sequence  could be made, false if not.</returns>
+        public bool TryMakeHeloLiteral(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[4];
+                command[0] = 'H';
+                command[1] = 'E';
+                command[2] = 'L';
+                command[3] = 'O';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Make an EHLO command from the given reader.
+        /// </summary>
+        /// <param name="reader">The token reader to parse the command from.</param>
+        /// <param name="command">The EHLO command that is defined within the token reader.</param>
         /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
         /// <returns>Returns true if a command could be made, false if not.</returns>
-        public bool TryMakeEhlo(out SmtpCommand command, out SmtpResponse errorResponse)
+        public bool TryMakeEhlo(ref TokenReader reader, out SmtpCommand command, out SmtpResponse errorResponse)
         {
             command = null;
             errorResponse = null;
 
-            Enumerator.Take();
-            Enumerator.Skip(TokenKind.Space);
-
-            if (TryMakeDomain(out var domain))
+            if (TryMakeEhloLiteral(ref reader) == false)
             {
-                command = new EhloCommand(_options, domain);
+                return false;
+            }
+
+            reader.Skip(TokenKind.Space);
+
+            if (reader.TryMake(TryMakeDomain, out var domain))
+            {
+                command = _smtpCommandFactory.CreateEhlo(StringUtil.Create(domain));
                 return true;
             }
 
-            if (TryMakeAddressLiteral(out var address))
+            if (reader.TryMake(TryMakeAddressLiteral, out var address))
             {
-                command = new EhloCommand(_options, address);
+                // remove the brackets
+                address = address.Slice(1, address.Length - 2);
+
+                command = _smtpCommandFactory.CreateEhlo(StringUtil.Create(address));
                 return true;
             }
 
             errorResponse = SmtpResponse.SyntaxError;
+            return false;
+        }
+
+        /// <summary>
+        /// Try to make the EHLO text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the EHLO text sequence  could be made, false if not.</returns>
+        public bool TryMakeEhloLiteral(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[4];
+                command[0] = 'E';
+                command[1] = 'H';
+                command[2] = 'L';
+                command[3] = 'O';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
             return false;
         }
 
         /// <summary>
         /// Make a MAIL command from the given enumerator.
         /// </summary>
+        /// <param name="reader">The token reader to parse the command from.</param>
         /// <param name="command">The MAIL command that is defined within the token enumerator.</param>
         /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
         /// <returns>Returns true if a command could be made, false if not.</returns>
-        public bool TryMakeMail(out SmtpCommand command, out SmtpResponse errorResponse)
+        public bool TryMakeMail(ref TokenReader reader, out SmtpCommand command, out SmtpResponse errorResponse)
         {
             command = null;
             errorResponse = null;
 
-            Enumerator.Take();
-            Enumerator.Skip(TokenKind.Space);
+            if (TryMakeMail(ref reader) == false)
+            {
+                return false;
+            }
 
-            if (Enumerator.Take() != Tokens.Text.From || Enumerator.Take() != Tokens.Colon)
+            reader.Skip(TokenKind.Space);
+
+            if (TryMakeFrom(ref reader) == false || reader.Take().Kind != TokenKind.Colon)
             {
                 errorResponse = new SmtpResponse(SmtpReplyCode.SyntaxError, "missing the FROM:");
                 return false;
             }
 
             // according to the spec, whitespace isnt allowed here but most servers send it
-            Enumerator.Skip(TokenKind.Space);
+            reader.Skip(TokenKind.Space);
 
-            if (TryMakeReversePath(out var mailbox) == false)
+            if (reader.TryMake(TryMakeReversePath, out IMailbox mailbox) == false)
             {
-                _options.Logger.LogVerbose("Syntax Error (Text={0})", CompleteTokenizedText());
-
                 errorResponse = new SmtpResponse(SmtpReplyCode.SyntaxError);
                 return false;
             }
 
-            Enumerator.Skip(TokenKind.Space);
+            reader.Skip(TokenKind.Space);
 
             // match the optional (ESMTP) parameters
-            if (TryMakeMailParameters(out var parameters) == false)
+            if (reader.TryMake(TryMakeMailParameters, out IReadOnlyDictionary<string, string> parameters) == false)
             {
                 parameters = new Dictionary<string, string>();
             }
 
-            command = new MailCommand(_options, mailbox, parameters);
+            command = _smtpCommandFactory.CreateMail(mailbox, parameters);
             return true;
         }
 
         /// <summary>
-        /// Make a RCTP command from the given enumerator.
+        /// Try to make the MAIL text sequence.
         /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the MAIL text sequence could be made, false if not.</returns>
+        public bool TryMakeMail(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[4];
+                command[0] = 'M';
+                command[1] = 'A';
+                command[2] = 'I';
+                command[3] = 'L';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Try to make the FROM text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the FROM text sequence could be made, false if not.</returns>
+        public bool TryMakeFrom(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[4];
+                command[0] = 'F';
+                command[1] = 'R';
+                command[2] = 'O';
+                command[3] = 'M';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Make a RCTP command from the given reader.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
         /// <param name="command">The RCTP command that is defined within the token enumerator.</param>
         /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
         /// <returns>Returns true if a command could be made, false if not.</returns>
-        public bool TryMakeRcpt(out SmtpCommand command, out SmtpResponse errorResponse)
+        public bool TryMakeRcpt(ref TokenReader reader, out SmtpCommand command, out SmtpResponse errorResponse)
         {
             command = null;
             errorResponse = null;
 
-            Enumerator.Take();
-            Enumerator.Skip(TokenKind.Space);
+            if (TryMakeRcptLiteral(ref reader) == false)
+            {
+                return false;
+            }
+            
+            reader.Skip(TokenKind.Space);
 
-            if (Enumerator.Take() != Tokens.Text.To || Enumerator.Take() != Tokens.Colon)
+            if (TryMakeToLiteral(ref reader) == false)
+            {
+                return false;
+            }
+
+            if (reader.Take().Kind != TokenKind.Colon)
             {
                 errorResponse = new SmtpResponse(SmtpReplyCode.SyntaxError, "missing the TO:");
                 return false;
             }
 
             // according to the spec, whitespace isnt allowed here anyway
-            Enumerator.Skip(TokenKind.Space);
+            reader.Skip(TokenKind.Space);
 
-            if (TryMakePath(out var mailbox) == false)
+            if (TryMakePath(ref reader, out var mailbox) == false)
             {
-                _options.Logger.LogVerbose("Syntax Error (Text={0})", CompleteTokenizedText());
-
                 errorResponse = SmtpResponse.SyntaxError;
                 return false;
             }
 
             // TODO: support optional service extension parameters here
 
-            command = new RcptCommand(_options, mailbox);
+            command = _smtpCommandFactory.CreateRcpt(mailbox);
             return true;
+        }
+
+        /// <summary>
+        /// Try to make the RCPT text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the RCPT text sequence could be made, false if not.</returns>
+        public bool TryMakeRcptLiteral(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[4];
+                command[0] = 'R';
+                command[1] = 'C';
+                command[2] = 'P';
+                command[3] = 'T';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Try to make the TO text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the TO text sequence could be made, false if not.</returns>
+        public bool TryMakeToLiteral(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[2];
+                command[0] = 'T';
+                command[1] = 'O';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Make a DATA command from the given enumerator.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <param name="command">The DATA command that is defined within the token enumerator.</param>
+        /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
+        /// <returns>Returns true if a command could be made, false if not.</returns>
+        public bool TryMakeData(ref TokenReader reader, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            command = null;
+            errorResponse = null;
+
+            if (reader.TryMake(TryMakeDataLiteral) == false)
+            {
+                return false;
+            }
+
+            reader.Skip(TokenKind.Space);
+
+            if (reader.TryMake(TryMakeEnd) == false)
+            {
+                errorResponse = SmtpResponse.SyntaxError;
+                return false;
+            }
+
+            command = _smtpCommandFactory.CreateData();
+            return true;
+        }
+
+        /// <summary>
+        /// Try to make the DATA text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the DATA text sequence could be made, false if not.</returns>
+        public bool TryMakeDataLiteral(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[4];
+                command[0] = 'D';
+                command[1] = 'A';
+                command[2] = 'T';
+                command[3] = 'A';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Make a QUIT command.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <param name="command">The QUIT command that is defined within the token enumerator.</param>
+        /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
+        /// <returns>Returns true if a command could be made, false if not.</returns>
+        public bool TryMakeQuit(ref TokenReader reader, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            command = null;
+            errorResponse = null;
+
+            if (reader.TryMake(TryMakeQuitLiteral) == false)
+            {
+                return false;
+            }
+
+            if (TryMakeEnd(ref reader) == false)
+            {
+                errorResponse = SmtpResponse.SyntaxError;
+                return false;
+            }
+
+            command = _smtpCommandFactory.CreateQuit();
+            return true;
+        }
+
+        /// <summary>
+        /// Try to make the QUIT text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the QUIT text sequence could be made, false if not.</returns>
+        public bool TryMakeQuitLiteral(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[4];
+                command[0] = 'Q';
+                command[1] = 'U';
+                command[2] = 'I';
+                command[3] = 'T';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Make a NOOP command.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <param name="command">The NOOP command that is defined within the token enumerator.</param>
+        /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
+        /// <returns>Returns true if a command could be made, false if not.</returns>
+        public bool TryMakeNoop(ref TokenReader reader, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            command = null;
+            errorResponse = null;
+
+            if (reader.TryMake(TryMakeNoopLiteral) == false)
+            {
+                return false;
+            }
+
+            if (TryMakeEnd(ref reader) == false)
+            {
+                errorResponse = SmtpResponse.SyntaxError;
+                return false;
+            }
+
+            command = _smtpCommandFactory.CreateNoop();
+            return true;
+        }
+
+        /// <summary>
+        /// Try to make the NOOP text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the NOOP text sequence could be made, false if not.</returns>
+        public bool TryMakeNoopLiteral(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[4];
+                command[0] = 'N';
+                command[1] = 'O';
+                command[2] = 'O';
+                command[3] = 'P';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Make a RSET command.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <param name="command">The RSET command that is defined within the token enumerator.</param>
+        /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
+        /// <returns>Returns true if a command could be made, false if not.</returns>
+        public bool TryMakeRset(ref TokenReader reader, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            command = null;
+            errorResponse = null;
+
+            if (reader.TryMake(TryMakeRsetLiteral) == false)
+            {
+                return false;
+            }
+
+            reader.Skip(TokenKind.Space);
+
+            if (TryMakeEnd(ref reader) == false)
+            {
+                errorResponse = SmtpResponse.SyntaxError;
+                return false;
+            }
+
+            command = _smtpCommandFactory.CreateRset();
+            return true;
+        }
+
+        /// <summary>
+        /// Try to make the RSET text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the RSET text sequence could be made, false if not.</returns>
+        public bool TryMakeRsetLiteral(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[4];
+                command[0] = 'R';
+                command[1] = 'S';
+                command[2] = 'E';
+                command[3] = 'T';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Make an STARTTLS command from the given enumerator.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <param name="command">The STARTTLS command that is defined within the token enumerator.</param>
+        /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
+        /// <returns>Returns true if a command could be made, false if not.</returns>
+        public bool TryMakeStartTls(ref TokenReader reader, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            command = null;
+            errorResponse = null;
+
+            if (reader.TryMake(TryMakeStartTlsLiteral) == false)
+            {
+                return false;
+            }
+
+            reader.Skip(TokenKind.Space);
+
+            if (TryMakeEnd(ref reader) == false)
+            {
+                errorResponse = SmtpResponse.SyntaxError;
+                return false;
+            }
+
+            command = _smtpCommandFactory.CreateStartTls();
+            return true;
+        }
+
+        /// <summary>
+        /// Try to make the STARTTLS text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the STARTTLS text sequence could be made, false if not.</returns>
+        public bool TryMakeStartTlsLiteral(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[8];
+                command[0] = 'S';
+                command[1] = 'T';
+                command[2] = 'A';
+                command[3] = 'R';
+                command[4] = 'T';
+                command[5] = 'T';
+                command[6] = 'L';
+                command[7] = 'S';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Make an AUTH command from the given enumerator.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <param name="command">The AUTH command that is defined within the token enumerator.</param>
+        /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
+        /// <returns>Returns true if a command could be made, false if not.</returns>
+        public bool TryMakeAuth(ref TokenReader reader, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            command = null;
+            errorResponse = null;
+
+            if (reader.TryMake(TryMakeAuthLiteral) == false)
+            {
+                return false;
+            }
+
+            reader.Skip(TokenKind.Space);
+
+            if (TryMakeAuthenticationMethod(ref reader, out var authenticationMethod) == false)
+            {
+                return false;
+            }
+
+            reader.Take();
+
+            if (reader.TryMake(TryMakeEnd))
+            {
+                command = _smtpCommandFactory.CreateAuth(authenticationMethod, null);
+                return true;
+            }
+
+            if (reader.TryMake(TryMakeBase64, out var base64))
+            {
+                command = _smtpCommandFactory.CreateAuth(authenticationMethod, StringUtil.Create(base64));
+                return true;
+            }
+
+            errorResponse = SmtpResponse.SyntaxError;
+            return false;
+        }
+
+        /// <summary>
+        /// Try to make the Authentication method.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <param name="authenticationMethod">The authentication method that was made.</param>
+        /// <returns>true if the authentication method could be made, false if not.</returns>
+        public bool TryMakeAuthenticationMethod(ref TokenReader reader, out AuthenticationMethod authenticationMethod)
+        {
+            if (reader.TryMake(TryMakeLoginLiteral))
+            {
+                authenticationMethod = AuthenticationMethod.Login;
+                return true;
+            }
+
+            if (reader.TryMake(TryMakePlainLiteral))
+            {
+                authenticationMethod = AuthenticationMethod.Plain;
+                return true;
+            }
+
+            authenticationMethod = default;
+            return false;
+        }
+
+        /// <summary>
+        /// Try to make the AUTH text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the AUTH text sequence could be made, false if not.</returns>
+        public bool TryMakeAuthLiteral(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[4];
+                command[0] = 'A';
+                command[1] = 'U';
+                command[2] = 'T';
+                command[3] = 'H';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Try to make the LOGIN text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the LOGIN text sequence could be made, false if not.</returns>
+        public bool TryMakeLoginLiteral(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[5];
+                command[0] = 'L';
+                command[1] = 'O';
+                command[2] = 'G';
+                command[3] = 'I';
+                command[4] = 'N';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Try to make the PLAIN text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the PLAIN text sequence could be made, false if not.</returns>
+        public bool TryMakePlainLiteral(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[5];
+                command[0] = 'P';
+                command[1] = 'L';
+                command[2] = 'A';
+                command[3] = 'I';
+                command[4] = 'N';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
         }
 
         /// <summary>
         /// Support proxy protocol version 1 header for use with HAProxy.
         /// Documented at http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
         /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
         /// <param name="command">The PROXY command that is defined within the token enumerator.</param>
         /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
         /// <returns>Returns true if a command could be made, false if not.</returns>
-        public bool TryMakeProxy(out SmtpCommand command, out SmtpResponse errorResponse)
+        public bool TryMakeProxy(ref TokenReader reader, out SmtpCommand command, out SmtpResponse errorResponse)
         {
             // ABNF
             // proxy            = "PROXY" space ( unknown-proxy | tcp4-proxy | tcp6-proxy )
@@ -302,296 +743,299 @@ namespace SmtpServer.Protocol
             command = null;
             errorResponse = null;
 
-            Enumerator.Take();
-            Enumerator.Skip(TokenKind.Space);
+            if (reader.TryMake(TryMakeProxyLiteral) == false)
+            {
+                return false;
+            }
 
-            if (TryMake(TryMakeUnknownProxy, out command))
+            reader.Skip(TokenKind.Space);
+
+            if (reader.TryMake(TryMakeUnknownLiteral))
+            {
+                command = _smtpCommandFactory.CreateProxy();
+                return true;
+            }
+
+            if (reader.TryMake(TryMakeTcp4Proxy, out command))
             {
                 return true;
             }
 
-            if (TryMake(TryMakeTcp4Proxy, out command))
-            {
-                return true;
-            }
-
-            return TryMakeTcp6Proxy(out command);
+            return TryMakeTcp6Proxy(ref reader, out command);
         }
 
         /// <summary>
-        /// Attempt to make the Unknown Proxy command.
+        /// Try to make the PROXY text sequence.
         /// </summary>
-        /// <param name="command">The command that was made.</param>
-        /// <returns>true if the command was made, false if not.</returns>
-        bool TryMakeUnknownProxy(out SmtpCommand command)
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the PROXY text sequence could be made, false if not.</returns>
+        public bool TryMakeProxyLiteral(ref TokenReader reader)
         {
-            command = new ProxyCommand(_options);
-
-            return Enumerator.Take() == Tokens.Text.Unknown;
-        }
-
-        bool TryMakeTcp4Proxy(out SmtpCommand command)
-        {
-            command = null;
-
-            if (Enumerator.Take() != Tokens.Text.Tcp)
+            if (reader.TryMake(TryMakeText, out var text))
             {
-                return false;
-            }
+                Span<char> command = stackalloc char[5];
+                command[0] = 'P';
+                command[1] = 'R';
+                command[2] = 'O';
+                command[3] = 'X';
+                command[4] = 'Y';
 
-            if (Enumerator.Take() != Tokens.Numbers.Four)
-            {
-                return false;
-            }
-
-            return TryMakeProxyAddresses(TryMakeIPv4AddressLiteral, out command);
-        }
-
-        bool TryMakeTcp6Proxy(out SmtpCommand command)
-        {
-            command = null;
-
-            if (Enumerator.Take() != Tokens.Text.Tcp)
-            {
-                return false;
-            }
-
-            if (Enumerator.Take() != Tokens.Numbers.Six)
-            {
-                return false;
-            }
-
-            return TryMakeProxyAddresses(TryMakeIPv6Address, out command);
-        }
-
-        bool TryMakeProxyAddresses(TryMakeDelegate<string> tryMakeAddressDelegate, out SmtpCommand command)
-        {
-            command = null;
-            
-            Enumerator.Skip(TokenKind.Space);
-
-            if (tryMakeAddressDelegate(out var sourceAddress) == false)
-            {
-                return false;
-            }
-
-            Enumerator.Skip(TokenKind.Space);
-
-            if (tryMakeAddressDelegate(out var destinationAddress) == false)
-            {
-                return false;
-            }
-
-            Enumerator.Skip(TokenKind.Space);
-
-            if (TryMakeWnum(out var sourcePort) == false)
-            {
-                return false;
-            }
-
-            Enumerator.Skip(TokenKind.Space);
-
-            if (TryMakeWnum(out var destinationPort) == false)
-            {
-                return false;
-            }
-
-            command = new ProxyCommand(_options, new IPEndPoint(IPAddress.Parse(sourceAddress), sourcePort), new IPEndPoint(IPAddress.Parse(destinationAddress), destinationPort));
-            return true;
-        }
-
-        bool TryMakeWnum(out int wnum)
-        {
-            wnum = default;
-
-            var token = Enumerator.Take();
-
-            if (token.Kind == TokenKind.Number && int.TryParse(token.Text, out wnum))
-            {
-                return wnum >= 0 && wnum <= 65535;
+                return text.CaseInsensitiveStringEquals(ref command);
             }
 
             return false;
         }
 
         /// <summary>
-        /// Make a DATA command from the given enumerator.
+        /// Attempt to make the Unknown Proxy command.
         /// </summary>
-        /// <param name="command">The DATA command that is defined within the token enumerator.</param>
-        /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
-        /// <returns>Returns true if a command could be made, false if not.</returns>
-        public bool TryMakeData(out SmtpCommand command, out SmtpResponse errorResponse)
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the command was made, false if not.</returns>
+        bool TryMakeUnknownLiteral(ref TokenReader reader)
         {
-            command = null;
-            errorResponse = null;
-
-            Enumerator.Take();
-            Enumerator.Skip(TokenKind.Space);
-
-            if (TryMakeEnd() == false)
+            if (reader.TryMake(TryMakeText, out var text))
             {
-                _options.Logger.LogVerbose("DATA command can not have parameters.");
+                Span<char> command = stackalloc char[7];
+                command[0] = 'U';
+                command[1] = 'N';
+                command[2] = 'K';
+                command[3] = 'N';
+                command[4] = 'O';
+                command[5] = 'W';
+                command[6] = 'N';
 
-                errorResponse = SmtpResponse.SyntaxError;
-                return false;
+                return text.CaseInsensitiveStringEquals(ref command);
             }
 
-            command = new DataCommand(_options);
-            return true;
+            return false;
         }
 
         /// <summary>
-        /// Make an STARTTLS command from the given enumerator.
+        /// Attempt to make a TCP4 Proxy command.
         /// </summary>
-        /// <param name="command">The STARTTLS command that is defined within the token enumerator.</param>
-        /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
-        /// <returns>Returns true if a command could be made, false if not.</returns>
-        public bool TryMakeStartTls(out SmtpCommand command, out SmtpResponse errorResponse)
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <param name="command">The command that was made.</param>
+        /// <returns>true if the command was made, false if not.</returns>
+        public bool TryMakeTcp4Proxy(ref TokenReader reader, out SmtpCommand command)
         {
             command = null;
-            errorResponse = null;
 
-            Enumerator.Take();
-            Enumerator.Skip(TokenKind.Space);
-
-            if (TryMakeEnd() == false)
+            if (TryMakeTcpLiteral(ref reader) == false)
             {
-                _options.Logger.LogVerbose("STARTTLS command can not have parameters.");
-
-                errorResponse = SmtpResponse.SyntaxError;
                 return false;
             }
 
-            command = new StartTlsCommand(_options);
-            return true;
+            var token = reader.Take();
+            if (token.Kind != TokenKind.Number && token.Text[0] != '4')
+            {
+                return false;
+            }
+
+            return TryMakeProxyAddresses(ref reader, TryMakeIPv4AddressLiteral, out command);
         }
 
         /// <summary>
-        /// Make an AUTH command from the given enumerator.
+        /// Attempt to make a TCP6 Proxy command.
         /// </summary>
-        /// <param name="command">The AUTH command that is defined within the token enumerator.</param>
-        /// <param name="errorResponse">The error that indicates why the command could not be made.</param>
-        /// <returns>Returns true if a command could be made, false if not.</returns>
-        public bool TryMakeAuth(out SmtpCommand command, out SmtpResponse errorResponse)
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <param name="command">The command that was made.</param>
+        /// <returns>true if the command was made, false if not.</returns>
+        public bool TryMakeTcp6Proxy(ref TokenReader reader, out SmtpCommand command)
         {
             command = null;
-            errorResponse = null;
 
-            Enumerator.Take();
-            Enumerator.Skip(TokenKind.Space);
-
-            if (Enum.TryParse(Enumerator.Take().Text, true, out AuthenticationMethod method) == false)
+            if (TryMakeTcpLiteral(ref reader) == false)
             {
-                _options.Logger.LogVerbose("AUTH command requires a valid method (PLAIN or LOGIN)");
-
-                errorResponse = SmtpResponse.SyntaxError;
                 return false;
             }
 
-            Enumerator.Take();
-
-            string parameter = null;
-            if (TryMake(TryMakeEnd) == false && TryMakeBase64(out parameter) == false)
+            var token = reader.Take();
+            if (token.Kind != TokenKind.Number && token.Text[0] != '6')
             {
-                _options.Logger.LogVerbose("AUTH parameter must be a Base64 encoded string");
-
-                errorResponse = SmtpResponse.SyntaxError;
                 return false;
             }
 
-            command = new AuthCommand(_options, method, parameter);
+            return TryMakeProxyAddresses(ref reader, TryMakeIPv6Address, out command);
+        }
+
+        /// <summary>
+        /// Attempt to make the proxy address sequences.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <param name="tryMakeDelegate">The delegate to match the address.</param>
+        /// <param name="command">The command that was made.</param>
+        /// <returns>true if the command was made, false if not.</returns>
+        bool TryMakeProxyAddresses(ref TokenReader reader, TokenReader.TryMakeDelegate tryMakeDelegate, out SmtpCommand command)
+        {
+            command = null;
+
+            reader.Skip(TokenKind.Space);
+
+            if (reader.TryMake(tryMakeDelegate, out var sourceAddress) == false)
+            {
+                return false;
+            }
+
+            reader.Skip(TokenKind.Space);
+
+            if (reader.TryMake(tryMakeDelegate, out var destinationAddress) == false)
+            {
+                return false;
+            }
+
+            reader.Skip(TokenKind.Space);
+
+            if (reader.TryMake(TryMakeWnum, out var sourcePort) == false)
+            {
+                return false;
+            }
+
+            reader.Skip(TokenKind.Space);
+
+            if (reader.TryMake(TryMakeWnum, out var destinationPort) == false)
+            {
+                return false;
+            }
+
+            command = _smtpCommandFactory.CreateProxy(CreateEndpoint(sourceAddress, sourcePort), CreateEndpoint(destinationAddress, destinationPort));
             return true;
+
+            static IPEndPoint CreateEndpoint(ReadOnlySequence<byte> address, ReadOnlySequence<byte> port)
+            {
+                return new IPEndPoint(IPAddress.Parse(StringUtil.Create(address)), int.Parse(StringUtil.Create(port)));
+            }
+        }
+
+        /// <summary>
+        /// Try to make the Tcp text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the TCP text sequence could be made, false if not.</returns>
+        public bool TryMakeTcpLiteral(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[3];
+                command[0] = 'T';
+                command[1] = 'C';
+                command[2] = 'P';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Try to make the end of sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the end was made, false if not.</returns>
+        public bool TryMakeEnd(ref TokenReader reader)
+        {
+            reader.Skip(TokenKind.Space);
+
+            return reader.Take() == default;
         }
 
         /// <summary>
         /// Try to make a reverse path.
         /// </summary>
-        /// <param name="mailbox">The reverse path that was made, or undefined if it was not made.</param>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <param name="mailbox">The mailbox that was made.</param>
         /// <returns>true if the reverse path was made, false if not.</returns>
         /// <remarks><![CDATA[Path / "<>"]]></remarks>
-        public bool TryMakeReversePath(out IMailbox mailbox)
+        public bool TryMakeReversePath(ref TokenReader reader, out IMailbox mailbox)
         {
-            if (TryMake(TryMakePath, out mailbox))
+            if (reader.TryMake(TryMakePath, out mailbox))
             {
                 return true;
             }
 
-            if (Enumerator.Take() != Tokens.LessThan)
+            if (TryMakeEmptyPath(ref reader))
+            {
+                mailbox = Mailbox.Empty;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Try to make an empty path.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the empty path was made, false if not.</returns>
+        /// <remarks><![CDATA["<>"]]></remarks>
+        public bool TryMakeEmptyPath(ref TokenReader reader)
+        {
+            if (reader.Take().Kind != TokenKind.LessThan)
             {
                 return false;
             }
 
             // not valid according to the spec but some senders do it
-            Enumerator.Skip(TokenKind.Space);
+            reader.Skip(TokenKind.Space);
 
-            if (Enumerator.Take() != Tokens.GreaterThan)
-            {
-                return false;
-            }
-
-            mailbox = Mailbox.Empty;
-
-            return true;
+            return reader.Take().Kind == TokenKind.GreaterThan;
         }
 
         /// <summary>
         /// Try to make a path.
         /// </summary>
-        /// <param name="mailbox">The path that was made, or undefined if it was not made.</param>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <param name="mailbox">The mailbox that was made.</param>
         /// <returns>true if the path was made, false if not.</returns>
         /// <remarks><![CDATA["<" [ A-d-l ":" ] Mailbox ">"]]></remarks>
-        public bool TryMakePath(out IMailbox mailbox)
+        public bool TryMakePath(ref TokenReader reader, out IMailbox mailbox)
         {
-            mailbox = Mailbox.Empty;
+            mailbox = null;
 
-            if (Enumerator.Take() != Tokens.LessThan)
+            if (reader.Take().Kind != TokenKind.LessThan)
             {
                 return false;
             }
 
             // Note, the at-domain-list must be matched, but also must be ignored
             // http://tools.ietf.org/html/rfc5321#appendix-C
-            if (TryMake(TryMakeAtDomainList, out string atDomainList))
+            if (reader.TryMake(TryMakeAtDomainList))
             {
                 // if the @domain list was matched then it needs to be followed by a colon
-                if (Enumerator.Take() != Tokens.Colon)
+                if (reader.Take().Kind != TokenKind.Colon)
                 {
                     return false;
                 }
             }
 
-            if (TryMake(TryMakeMailbox, out mailbox) == false)
+            if (TryMakeMailbox(ref reader, out mailbox) == false)
             {
                 return false;
             }
 
-            return Enumerator.Take() == Tokens.GreaterThan;
+            return reader.Take().Kind == TokenKind.GreaterThan;
         }
 
         /// <summary>
         /// Try to make an @domain list.
         /// </summary>
-        /// <param name="atDomainList">The @domain list that was made, or undefined if it was not made.</param>
+        /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the @domain list was made, false if not.</returns>
         /// <remarks><![CDATA[At-domain *( "," At-domain )]]></remarks>
-        public bool TryMakeAtDomainList(out string atDomainList)
+        public bool TryMakeAtDomainList(ref TokenReader reader)
         {
-            if (TryMake(TryMakeAtDomain, out atDomainList) == false)
+            if (TryMakeAtDomain(ref reader) == false)
             {
                 return false;
             }
 
-            // match the optional list
-            while (Enumerator.Peek() == Tokens.Comma)
+            while (reader.Peek().Kind == TokenKind.Comma)
             {
-                Enumerator.Take();
+                reader.Take();
 
-                if (TryMake(TryMakeAtDomain, out string atDomain) == false)
+                if (TryMakeAtDomain(ref reader) == false)
                 {
                     return false;
                 }
-
-                atDomainList += $",{atDomain}";
             }
 
             return true;
@@ -600,86 +1044,83 @@ namespace SmtpServer.Protocol
         /// <summary>
         /// Try to make an @domain.
         /// </summary>
-        /// <param name="atDomain">The @domain that was made, or undefined if it was not made.</param>
+        /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the @domain was made, false if not.</returns>
         /// <remarks><![CDATA["@" Domain]]></remarks>
-        public bool TryMakeAtDomain(out string atDomain)
+        public bool TryMakeAtDomain(ref TokenReader reader)
         {
-            atDomain = null;
-
-            if (Enumerator.Take() != Tokens.At)
+            if (reader.Take().Kind != TokenKind.At)
             {
                 return false;
             }
 
-            if (TryMake(TryMakeDomain, out string domain) == false)
-            {
-                return false;
-            }
-
-            atDomain = $"@{domain}";
-
-            return true;
+            return TryMakeDomain(ref reader);
         }
 
         /// <summary>
         /// Try to make a mailbox.
         /// </summary>
-        /// <param name="mailbox">The mailbox that was made, or undefined if it was not made.</param>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <param name="mailbox">The mailbox that was made.</param>
         /// <returns>true if the mailbox was made, false if not.</returns>
         /// <remarks><![CDATA[Local-part "@" ( Domain / address-literal )]]></remarks>
-        public bool TryMakeMailbox(out IMailbox mailbox)
+        public bool TryMakeMailbox(ref TokenReader reader, out IMailbox mailbox)
         {
-            mailbox = Mailbox.Empty;
+            mailbox = null;
 
-            if (TryMake(TryMakeLocalPart, out string localpart) == false)
+            if (reader.TryMake(TryMakeLocalPart, out var localpart) == false)
             {
                 return false;
             }
 
-            if (Enumerator.Take() != Tokens.At)
+            if (reader.Take().Kind != TokenKind.At)
             {
                 return false;
             }
 
-            if (TryMake(TryMakeDomain, out string domain))
+            if (reader.TryMake(TryMakeDomain, out var domain))
             {
-                mailbox = new Mailbox(localpart, domain);
+                mailbox = CreateMailbox(localpart, domain);
                 return true;
             }
 
-            if (TryMake(TryMakeAddressLiteral, out string address))
+            if (reader.TryMake(TryMakeAddressLiteral, out var address))
             {
-                mailbox = new Mailbox(localpart, address);
+                mailbox = CreateMailbox(localpart, address);
                 return true;
             }
 
             return false;
+
+            static Mailbox CreateMailbox(ReadOnlySequence<byte> localpart, ReadOnlySequence<byte> domainOrAddress)
+            {
+                var user = Regex.Unescape(StringUtil.Create(localpart, Encoding.UTF8).Trim('"'));
+                
+                return new Mailbox(user, StringUtil.Create(domainOrAddress));
+            }
         }
 
         /// <summary>
         /// Try to make a domain name.
         /// </summary>
-        /// <param name="domain">The domain name that was made, or undefined if it was not made.</param>
+        /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the domain name was made, false if not.</returns>
         /// <remarks><![CDATA[sub-domain *("." sub-domain)]]></remarks>
-        public bool TryMakeDomain(out string domain)
+        public bool TryMakeDomain(ref TokenReader reader)
         {
-            if (TryMake(TryMakeSubdomain, out domain) == false)
+            if (TryMakeSubdomain(ref reader) == false)
             {
                 return false;
             }
 
-            while (Enumerator.Peek() == Tokens.Period)
+            while (reader.Peek().Kind == TokenKind.Period)
             {
-                Enumerator.Take();
+                reader.Take();
 
-                if (TryMake(TryMakeSubdomain, out string subdomain) == false)
+                if (TryMakeSubdomain(ref reader) == false)
                 {
                     return false;
                 }
-
-                domain += string.Concat(".", subdomain);
             }
 
             return true;
@@ -688,22 +1129,18 @@ namespace SmtpServer.Protocol
         /// <summary>
         /// Try to make a subdomain name.
         /// </summary>
-        /// <param name="subdomain">The subdomain name that was made, or undefined if it was not made.</param>
+        /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the subdomain name was made, false if not.</returns>
         /// <remarks><![CDATA[Let-dig [Ldh-str]]]></remarks>
-        public bool TryMakeSubdomain(out string subdomain)
+        public bool TryMakeSubdomain(ref TokenReader reader)
         {
-            if (TryMake(TryMakeTextOrNumber, out subdomain) == false)
+            if (TryMakeTextOrNumber(ref reader) == false)
             {
                 return false;
             }
 
-            if (TryMake(TryMakeTextOrNumberOrHyphenString, out string letterNumberHyphen) == false)
-            {
-                return subdomain != null;
-            }
-
-            subdomain += letterNumberHyphen;
+            // this is optional
+            reader.TryMake(TryMakeTextOrNumberOrHyphenString);
 
             return true;
         }
@@ -711,67 +1148,52 @@ namespace SmtpServer.Protocol
         /// <summary>
         /// Try to make a address.
         /// </summary>
-        /// <param name="address">The address that was made, or undefined if it was not made.</param>
+        /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the address was made, false if not.</returns>
         /// <remarks><![CDATA["[" ( IPv4-address-literal / IPv6-address-literal / General-address-literal ) "]"]]></remarks>
-        public bool TryMakeAddressLiteral(out string address)
+        public bool TryMakeAddressLiteral(ref TokenReader reader)
         {
-            address = null;
-
-            if (Enumerator.Take() != Tokens.LeftBracket)
+            if (reader.Take().Kind != TokenKind.LeftBracket)
             {
                 return false;
             }
 
-            // skip any whitespace
-            Enumerator.Skip(TokenKind.Space);
+            reader.Skip(TokenKind.Space);
 
-            if (TryMake(TryMakeIPv4AddressLiteral, out address) == false && TryMake(TryMakeIPv6AddressLiteral, out address) == false)
+            if (reader.TryMake(TryMakeIPv4AddressLiteral) == false && reader.TryMake(TryMakeIPv6AddressLiteral) == false)
             {
                 return false;
             }
 
-            // skip any whitespace
-            Enumerator.Skip(TokenKind.Space);
+            reader.Skip(TokenKind.Space);
 
-            if (Enumerator.Take() != Tokens.RightBracket)
-            {
-                return false;
-            }
-
-            return address != null;
+            return reader.Take().Kind == TokenKind.RightBracket;
         }
 
         /// <summary>
         /// Try to make an IPv4 address literal.
         /// </summary>
-        /// <param name="address">The address that was made, or undefined if it was not made.</param>
+        /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the address was made, false if not.</returns>
         /// <remarks><![CDATA[ Snum 3("."  Snum) ]]></remarks>
-        public bool TryMakeIPv4AddressLiteral(out string address)
+        public bool TryMakeIPv4AddressLiteral(ref TokenReader reader)
         {
-            address = null;
-
-            if (TryMake(TryMakeSnum, out int snum) == false)
+            if (reader.TryMake(TryMakeSnum) == false)
             {
                 return false;
             }
 
-            address = snum.ToString(CultureInfo.InvariantCulture);
-
             for (var i = 0; i < 3; i++)
             {
-                if (Enumerator.Take() != Tokens.Period)
+                if (reader.Take().Kind != TokenKind.Period)
                 {
                     return false;
                 }
 
-                if (TryMake(TryMakeSnum, out snum) == false)
+                if (reader.TryMake(TryMakeSnum) == false)
                 {
                     return false;
                 }
-
-                address = string.Concat(address, '.', snum);
             }
 
             return true;
@@ -780,434 +1202,386 @@ namespace SmtpServer.Protocol
         /// <summary>
         /// Try to make an Snum (number in the range of 0-255).
         /// </summary>
-        /// <param name="snum">The snum that was made, or undefined if it was not made.</param>
+        /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the snum was made, false if not.</returns>
         /// <remarks><![CDATA[ 1*3DIGIT ]]></remarks>
-        public bool TryMakeSnum(out int snum)
+        public bool TryMakeSnum(ref TokenReader reader)
         {
-            snum = default;
-
-            var token = Enumerator.Take();
-
-            if (token.Kind == TokenKind.Number && int.TryParse(token.Text, out snum))
+            if (reader.TryMake(TryMakeNumber, out var number) == false)
             {
-                return snum >= 0 && snum <= 255;
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Try to make Ip version from ip version tag which is a formatted text IPv[Version]:
-        /// </summary>
-        /// <param name="version">IP version. IPv6 is supported atm.</param>
-        /// <returns>true if ip version tag can be extracted.</returns>
-        public bool TryMakeIpVersion(out int version)
-        {
-            version = default;
-            
-            if (Enumerator.Take() != Tokens.Text.IpVersionTag)
-            { 
                 return false;
             }
 
-            var token = Enumerator.Take();
-
-            if (token.Kind == TokenKind.Number && int.TryParse(token.Text, out var v))
-            {
-                version = v;
-                return Enumerator.Take() == Tokens.Colon;
-            }
-
-            return false;
+            return int.TryParse(StringUtil.Create(number), out var snum) && snum >= 0 && snum <= 255;
         }
 
         /// <summary>
-        /// Try to make 16 bit hex number.
+        /// Try to make a Wnum (number in the range of 0-65535).
         /// </summary>
-        /// <param name="hex">Extracted hex number.</param>
-        /// <returns>true if valid hex number can be extracted.</returns>
-        public bool TryMake16BitHex(out string hex)
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the snum was made, false if not.</returns>
+        /// <remarks><![CDATA[ 1*5DIGIT ]]></remarks>
+        public bool TryMakeWnum(ref TokenReader reader)
         {
-            hex = string.Empty;
-
-            var token = Enumerator.Peek();
-            while ((token.Kind == TokenKind.Text || token.Kind == TokenKind.Number) && hex.Length < 4)
+            if (reader.TryMake(TryMakeNumber, out var number) == false)
             {
-                if (token.Kind == TokenKind.Text && IsHex(token.Text) == false)
-                {
-                    return false;
-                }
-
-                hex = string.Concat(hex, token.Text);
-
-                Enumerator.Take();
-                token = Enumerator.Peek();
+                return false;
             }
 
-            return hex.Length > 0 && hex.Length <= 4;
-
-            bool IsHex(string text)
-            {
-                return text.ToUpperInvariant().All(c => c >= 'A' && c <= 'F');
-            }
+            return int.TryParse(StringUtil.Create(number), out var wnum) && wnum >= 0 && wnum <= 65535;
         }
 
         /// <summary>
         /// Try to extract IPv6 address. https://tools.ietf.org/html/rfc4291 section 2.2 used for specification.
         /// This method expects the address to have the IPv6: prefix.
         /// </summary>
-        /// <param name="address">Extracted Ipv6 address.</param>
+        /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if a valid Ipv6 address can be extracted.</returns>
-        public bool TryMakeIPv6AddressLiteral(out string address)
+        public bool TryMakeIPv6AddressLiteral(ref TokenReader reader)
         {
-            address = null;
-
-            if (TryMake(TryMakeIpVersion, out int ipVersion) == false || ipVersion != 6)
+            if (TryMakeIPv6(ref reader) == false)
             {
                 return false;
             }
 
-            return TryMakeIPv6Address(out address);
+            if (reader.Take().Kind != TokenKind.Colon)
+            {
+                return false;
+            }
+
+            return TryMakeIPv6Address(ref reader);
+        }
+
+        /// <summary>
+        /// Try to make Ip version from ip version tag which is a formatted text IPv[Version]:
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if ip version tag can be extracted.</returns>
+        public bool TryMakeIPv6(ref TokenReader reader)
+        {
+            if (TryMakeIPv(ref reader) == false)
+            {
+                return false;
+            }
+
+            var token = reader.Take();
+
+            if (token.Kind != TokenKind.Number || token.Text.Length > 1)
+            {
+                return false;
+            }
+
+            return token.Text[0] == '6';
+        }
+
+        /// <summary>
+        /// Try to make the IPv text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if IPv text sequence can be made.</returns>
+        public bool TryMakeIPv(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[3];
+                command[0] = 'I';
+                command[1] = 'P';
+                command[2] = 'v';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
         }
 
         /// <summary>
         /// Try to make an IPv6 address.
         /// </summary>
-        /// <param name="address">The address that was made, or undefined if it was not made.</param>
+        /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the address was made, false if not.</returns>
         /// <remarks><![CDATA[  ]]></remarks>
-        public bool TryMakeIPv6Address(out string address)
+        public bool TryMakeIPv6Address(ref TokenReader reader)
         {
-            return TryMake(TryMakeIPv6AddressRule1, out address)
-                || TryMake(TryMakeIPv6AddressRule2, out address)
-                || TryMake(TryMakeIPv6AddressRule3, out address)
-                || TryMake(TryMakeIPv6AddressRule4, out address)
-                || TryMake(TryMakeIPv6AddressRule5, out address)
-                || TryMake(TryMakeIPv6AddressRule6, out address)
-                || TryMake(TryMakeIPv6AddressRule7, out address)
-                || TryMake(TryMakeIPv6AddressRule8, out address)
-                || TryMake(TryMakeIPv6AddressRule9, out address);
+            return reader.TryMake(TryMakeIPv6AddressRule1)
+                || reader.TryMake(TryMakeIPv6AddressRule2)
+                || reader.TryMake(TryMakeIPv6AddressRule3)
+                || reader.TryMake(TryMakeIPv6AddressRule4)
+                || reader.TryMake(TryMakeIPv6AddressRule5)
+                || reader.TryMake(TryMakeIPv6AddressRule6)
+                || reader.TryMake(TryMakeIPv6AddressRule7)
+                || reader.TryMake(TryMakeIPv6AddressRule8)
+                || reader.TryMake(TryMakeIPv6AddressRule9);
         }
 
-        bool TryMakeIPv6AddressRule1(out string address)
+        bool TryMakeIPv6AddressRule1(ref TokenReader reader)
         {
             // 6( h16 ":" ) ls32
-            return TryMakeIPv6HexPostamble(6, out address);
+            return TryMakeIPv6HexPostamble(ref reader, 6);
         }
 
-        bool TryMakeIPv6AddressRule2(out string address)
+        bool TryMakeIPv6AddressRule2(ref TokenReader reader)
         {
-            address = null;
-
             // "::" 5( h16 ":" ) ls32
-            if (Enumerator.Take() != Tokens.Colon || Enumerator.Take() != Tokens.Colon)
+            if (reader.Take().Kind != TokenKind.Colon || reader.Take().Kind != TokenKind.Colon)
             {
                 return false;
             }
 
-            if (TryMakeIPv6HexPostamble(5, out var hexPostamble) == false)
-            {
-                return false;
-            }
-
-            address = "::" + hexPostamble;
-            return true;
+            return TryMakeIPv6HexPostamble(ref reader, 5);
         }
 
-        bool TryMakeIPv6AddressRule3(out string address)
+        bool TryMakeIPv6AddressRule3(ref TokenReader reader)
         {
             // [ h16 ] "::" 4( h16 ":" ) ls32
-            address = null;
-
-            if (TryMakeIPv6HexPreamble(1, out var hexPreamble) == false)
+            if (TryMakeIPv6HexPreamble(ref reader, 1) == false)
             {
                 return false;
             }
 
-            if (TryMakeIPv6HexPostamble(4, out var hexPostamble) == false)
-            {
-                return false;
-            }
-
-            address = hexPreamble + hexPostamble;
-            return true;
+            return TryMakeIPv6HexPostamble(ref reader, 4);
         }
 
-        bool TryMakeIPv6AddressRule4(out string address)
+        bool TryMakeIPv6AddressRule4(ref TokenReader reader)
         {
             // [ *1( h16 ":" ) h16 ] "::" 3( h16 ":" ) ls32
-            address = null;
-
-            if (TryMakeIPv6HexPreamble(2, out var hexPreamble) == false)
+            if (TryMakeIPv6HexPreamble(ref reader, 2) == false)
             {
                 return false;
             }
 
-            if (TryMakeIPv6HexPostamble(3, out var hexPostamble) == false)
-            {
-                return false;
-            }
-
-            address = hexPreamble + hexPostamble;
-            return true;
+            return TryMakeIPv6HexPostamble(ref reader, 3);
         }
 
-        bool TryMakeIPv6AddressRule5(out string address)
+        bool TryMakeIPv6AddressRule5(ref TokenReader reader)
         {
             // [ *2( h16 ":" ) h16 ] "::" 2( h16 ":" ) ls32
-            address = null;
-
-            if (TryMakeIPv6HexPreamble(3, out var hexPreamble) == false)
+            if (TryMakeIPv6HexPreamble(ref reader, 3) == false)
             {
                 return false;
             }
 
-            if (TryMakeIPv6HexPostamble(2, out var hexPostamble) == false)
-            {
-                return false;
-            }
-
-            address = hexPreamble + hexPostamble;
-            return true;
+            return TryMakeIPv6HexPostamble(ref reader, 2);
         }
 
-        bool TryMakeIPv6AddressRule6(out string address)
+        bool TryMakeIPv6AddressRule6(ref TokenReader reader)
         {
             // [ *3( h16 ":" ) h16 ] "::" h16 ":" ls32
-            address = null;
-
-            if (TryMakeIPv6HexPreamble(4, out var hexPreamble) == false)
+            if (TryMakeIPv6HexPreamble(ref reader, 4) == false)
             {
                 return false;
             }
 
-            if (TryMakeIPv6HexPostamble(1, out var hexPostamble) == false)
-            {
-                return false;
-            }
-
-            address = hexPreamble + hexPostamble;
-            return true;
+            return TryMakeIPv6HexPostamble(ref reader, 1);
         }
 
-        bool TryMakeIPv6AddressRule7(out string address)
+        bool TryMakeIPv6AddressRule7(ref TokenReader reader)
         {
             // [ *4( h16 ":" ) h16 ] "::" ls32
-            address = null;
-
-            if (TryMakeIPv6HexPreamble(5, out var hexPreamble) == false)
+            if (TryMakeIPv6HexPreamble(ref reader, 5) == false)
             {
                 return false;
             }
 
-            if (TryMakeIPv6Ls32(out var ls32) == false)
-            {
-                return false;
-            }
-
-            address = hexPreamble + ls32;
-            return true;
+            return TryMakeIPv6Ls32(ref reader);
         }
 
-        bool TryMakeIPv6AddressRule8(out string address)
+        bool TryMakeIPv6AddressRule8(ref TokenReader reader)
         {
             // [ *5( h16 ":" ) h16 ] "::" h16
-            address = null;
-
-            if (TryMakeIPv6HexPreamble(6, out var hexPreamble) == false)
-            {
-                return false;
-            }
-            
-            if (TryMake16BitHex(out var hex) == false)
+            if (TryMakeIPv6HexPreamble(ref reader, 6) == false)
             {
                 return false;
             }
 
-            address = hexPreamble + hex;
-            return true;
+            return TryMake16BitHex(ref reader);
         }
 
-        bool TryMakeIPv6AddressRule9(out string address)
+        bool TryMakeIPv6AddressRule9(ref TokenReader reader)
         {
             // [ *6( h16 ":" ) h16 ] "::"
-            return TryMakeIPv6HexPreamble(7, out address);
+            return TryMakeIPv6HexPreamble(ref reader, 7);
         }
 
-        bool TryMakeIPv6HexPreamble(int maximum, out string hexPreamble)
+        bool TryMakeIPv6HexPreamble(ref TokenReader reader, int maximum)
         {
-            hexPreamble = null;
-
             for (var i = 0; i < maximum; i++)
             {
-                if (TryMake(TryMakeTerminal))
+                if (reader.TryMake(TryMakeTerminal))
                 {
-                    hexPreamble += "::";
                     return true;
                 }
 
                 if (i > 0)
                 {
-                    if (Enumerator.Take() != Tokens.Colon)
+                    if (reader.Take().Kind != TokenKind.Colon)
                     {
                         return false;
                     }
-
-                    hexPreamble += ":";
                 }
 
-                if (TryMake16BitHex(out var hex) == false)
+                if (TryMake16BitHex(ref reader) == false)
                 {
                     return false;
                 }
-
-                hexPreamble += hex;
             }
 
-            hexPreamble += "::";
+            return reader.TryMake(TryMakeTerminal);
 
-            return TryMake(TryMakeTerminal);
-
-            bool TryMakeTerminal()
+            static bool TryMakeTerminal(ref TokenReader reader)
             {
-                return Enumerator.Take() == Tokens.Colon && Enumerator.Take() == Tokens.Colon;
+                return reader.Take().Kind == TokenKind.Colon && reader.Take().Kind == TokenKind.Colon;
             }
         }
 
-        bool TryMakeIPv6HexPostamble(int count, out string hexPostamble)
+        bool TryMakeIPv6HexPostamble(ref TokenReader reader, int count)
         {
-            hexPostamble = null;
-
             while (count-- > 0)
             {
-                if (TryMake16BitHex(out var hex) == false)
+                if (TryMake16BitHex(ref reader) == false)
                 {
                     return false;
                 }
 
-                hexPostamble += hex;
-
-                if (Enumerator.Take() != Tokens.Colon)
+                if (reader.Take().Kind != TokenKind.Colon)
                 {
                     return false;
                 }
-
-                hexPostamble += ":";
             }
 
-            if (TryMakeIPv6Ls32(out var ls32) == false)
-            {
-                return false;
-            }
-
-            hexPostamble += ls32;
-            return true;
+            return TryMakeIPv6Ls32(ref reader);
         }
 
-        bool TryMakeIPv6Ls32(out string address)
+        bool TryMakeIPv6Ls32(ref TokenReader reader)
         {
-            if (TryMake(TryMakeIPv4AddressLiteral, out address))
+            if (reader.TryMake(TryMakeIPv4AddressLiteral))
             {
                 return true;
             }
 
-            if (TryMake16BitHex(out var hex1) == false)
+            if (TryMake16BitHex(ref reader) == false)
             {
                 return false;
             }
 
-            if (Enumerator.Take() != Tokens.Colon)
+            if (reader.Take().Kind != TokenKind.Colon)
             {
                 return false;
             }
 
-            if (TryMake16BitHex(out var hex2) == false)
+            return TryMake16BitHex(ref reader);
+        }
+
+        /// <summary>
+        /// Try to make 16 bit hex number.
+        /// </summary>
+        /// <param name="reader">The token reader to perform the operation on.</param>
+        /// <returns>true if valid hex number can be extracted.</returns>
+        public bool TryMake16BitHex(ref TokenReader reader)
+        {
+            var hexLength = 0L;
+
+            var token = reader.Peek();
+            while ((token.Kind == TokenKind.Text || token.Kind == TokenKind.Number) && hexLength < 4)
             {
-                return false;
+                if (token.Kind == TokenKind.Text && IsHex(ref token) == false)
+                {
+                    return false;
+                }
+
+                hexLength += reader.Take().Text.Length;
+
+                token = reader.Peek();
             }
 
-            address = hex1 + ":" + hex2;
-            return true;
+            return hexLength > 0 && hexLength <= 4;
+
+            static bool IsHex(ref Token token)
+            {
+                var span = token.Text;
+
+                return span.IsHex();
+            }
         }
 
         /// <summary>
         /// Try to make a text/number/hyphen string.
         /// </summary>
-        /// <param name="textOrNumberOrHyphenString">The text, number, or hyphen that was matched, or undefined if it was not matched.</param>
+        /// <param name="reader">The reader to perform the operatio on.</param>
         /// <returns>true if a text, number or hyphen was made, false if not.</returns>
         /// <remarks><![CDATA[*( ALPHA / DIGIT / "-" ) Let-dig]]></remarks>
-        public bool TryMakeTextOrNumberOrHyphenString(out string textOrNumberOrHyphenString)
+        public bool TryMakeTextOrNumberOrHyphenString(ref TokenReader reader)
         {
-            textOrNumberOrHyphenString = null;
+            var token = reader.Peek();
 
-            var token = Enumerator.Peek();
-            while (token.Kind == TokenKind.Text || token.Kind == TokenKind.Number || token == Tokens.Hyphen)
+            if (token.Kind == TokenKind.Text || token.Kind == TokenKind.Number || token.Kind == TokenKind.Hyphen)
             {
-                textOrNumberOrHyphenString += Enumerator.Take().Text;
-
-                token = Enumerator.Peek();
+                reader.Skip(kind => kind == TokenKind.Text || kind == TokenKind.Number || kind == TokenKind.Hyphen);
+                return true;
             }
 
-            // can not end with a hyphen
-            return textOrNumberOrHyphenString != null && token != Tokens.Hyphen;
+            return false;
         }
 
         /// <summary>
         /// Try to make a text or number
         /// </summary>
-        /// <param name="textOrNumber">The text or number that was made, or undefined if it was not made.</param>
+        /// <param name="reader">The reader to perform the operatio on.</param>
         /// <returns>true if the text or number was made, false if not.</returns>
         /// <remarks><![CDATA[ALPHA / DIGIT]]></remarks>
-        public bool TryMakeTextOrNumber(out string textOrNumber)
+        public bool TryMakeTextOrNumber(ref TokenReader reader)
         {
-            var token = Enumerator.Take();
+            var token = reader.Peek();
 
-            textOrNumber = token.Text;
-            
-            return token.Kind == TokenKind.Text || token.Kind == TokenKind.Number;
+            if (token.Kind == TokenKind.Text)
+            {
+                return TryMakeText(ref reader);
+            }
+
+            if (token.Kind == TokenKind.Number)
+            {
+                return TryMakeNumber(ref reader);
+            }
+
+            return false;
         }
 
         /// <summary>
         /// Try to make the local part of the path.
         /// </summary>
-        /// <param name="localPart">The local part that was made, or undefined if it was not made.</param>
+        /// <param name="reader">The reader to perform the operatio on.</param>
         /// <returns>true if the local part was made, false if not.</returns>
         /// <remarks><![CDATA[Dot-string / Quoted-string]]></remarks>
-        public bool TryMakeLocalPart(out string localPart)
+        public bool TryMakeLocalPart(ref TokenReader reader)
         {
-            if (TryMake(TryMakeDotString, out localPart))
+            if (reader.TryMake(TryMakeDotString))
             {
                 return true;
             }
 
-            return TryMakeQuotedString(out localPart);
+            return TryMakeQuotedString(ref reader);
         }
 
         /// <summary>
         /// Try to make a dot-string from the tokens.
         /// </summary>
-        /// <param name="dotString">The dot-string that was made, or undefined if it was not made.</param>
+        /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the dot-string was made, false if not.</returns>
         /// <remarks><![CDATA[Atom *("."  Atom)]]></remarks>
-        public bool TryMakeDotString(out string dotString)
+        public bool TryMakeDotString(ref TokenReader reader)
         {
-            if (TryMake(TryMakeAtom, out dotString) == false)
+            if (TryMakeAtom(ref reader) == false)
             {
                 return false;
             }
 
-            while (Enumerator.Peek() == Tokens.Period)
+            while (reader.Peek().Kind == TokenKind.Period)
             {
-                // skip the punctuation
-                Enumerator.Take();
+                reader.Take();
 
-                if (TryMake(TryMakeAtom, out string atom) == false)
+                if (TryMakeAtom(ref reader) == false)
                 {
-                    return true;
+                    return false;
                 }
-
-                dotString += string.Concat(".", atom);
             }
 
             return true;
@@ -1216,68 +1590,67 @@ namespace SmtpServer.Protocol
         /// <summary>
         /// Try to make a quoted-string from the tokens.
         /// </summary>
-        /// <param name="quotedString">The quoted-string that was made, or undefined if it was not made.</param>
+        /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the quoted-string was made, false if not.</returns>
         /// <remarks><![CDATA[DQUOTE * QcontentSMTP DQUOTE]]></remarks>
-        public bool TryMakeQuotedString(out string quotedString)
+        public bool TryMakeQuotedString(ref TokenReader reader)
         {
-            quotedString = null;
-
-            if (Enumerator.Take() != Tokens.Quote)
+            if (reader.Take().Kind != TokenKind.Quote)
             {
                 return false;
             }
 
-            while (Enumerator.Peek() != Tokens.Quote)
+            while (reader.Peek().Kind != TokenKind.Quote)
             {
-                if (TryMakeQContentSmtp(out var text) == false)
+                if (TryMakeQContentSmtp(ref reader) == false)
                 {
                     return false;
                 }
-
-                quotedString += text;
             }
 
-            return Enumerator.Take() == Tokens.Quote;
+            return reader.Take().Kind == TokenKind.Quote;
         }
 
         /// <summary>
         /// Try to make a QcontentSMTP from the tokens.
         /// </summary>
-        /// <param name="text">The text that was made.</param>
+        /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the quoted content was made, false if not.</returns>
         /// <remarks><![CDATA[qtextSMTP / quoted-pairSMTP]]></remarks>
-        public bool TryMakeQContentSmtp(out string text)
+        public bool TryMakeQContentSmtp(ref TokenReader reader)
         {
-            if (TryMake(TryMakeQTextSmtp, out text))
+            if (reader.TryMake(TryMakeQTextSmtp))
             {
                 return true;
             }
 
-            return TryMakeQuotedPairSmtp(out text);
+            return TryMakeQuotedPairSmtp(ref reader);
         }
 
         /// <summary>
         /// Try to make a QTextSMTP from the tokens.
         /// </summary>
-        /// <param name="text">The text that was made.</param>
+        /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the quoted text was made, false if not.</returns>
         /// <remarks><![CDATA[%d32-33 / %d35-91 / %d93-126]]></remarks>
-        public bool TryMakeQTextSmtp(out string text)
+        public bool TryMakeQTextSmtp(ref TokenReader reader)
         {
-            text = null;
+            if (reader.Peek().Kind == TokenKind.None)
+            {
+                return false;
+            }
 
-            var token = Enumerator.Take();
-            switch (token.Kind)
+            switch (reader.Peek().Kind)
             {
                 case TokenKind.Text:
-                case TokenKind.Number:
-                    text += token.Text;
-                    return true;
+                    return TryMakeText(ref reader);
 
-                case TokenKind.Space:
-                case TokenKind.Other:
-                    switch (token.Text[0])
+                case TokenKind.Number:
+                    return TryMakeNumber(ref reader);
+
+                default:
+                    var token = reader.Take();
+                    switch ((char)token.Text[0])
                     {
                         case ' ':
                         case '!':
@@ -1310,11 +1683,9 @@ namespace SmtpServer.Protocol
                         case '|':
                         case '}':
                         case '~':
-                            text += token.Text[0];
                             return true;
                     }
-
-                    return false;
+                    break;
             }
 
             return false;
@@ -1323,61 +1694,63 @@ namespace SmtpServer.Protocol
         /// <summary>
         /// Try to make a quoted pair from the tokens.
         /// </summary>
-        /// <param name="text">The text that was made.</param>
+        /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the quoted pair was made, false if not.</returns>
         /// <remarks><![CDATA[%d92 %d32-126]]></remarks>
-        public bool TryMakeQuotedPairSmtp(out string text)
+        public bool TryMakeQuotedPairSmtp(ref TokenReader reader)
         {
-            text = null;
-
-            if (Enumerator.Take() != Tokens.BackSlash)
+            if (reader.Take().Kind != TokenKind.Backslash)
             {
                 return false;
             }
 
-            text += Enumerator.Take().Text;
+            var token = reader.Take();
 
-            return true;
+            return token.Text.Length > 0 && token.Text[0] >= 32 && token.Text[0] <= 126;
         }
 
         /// <summary>
         /// Try to make an "Atom" from the tokens.
         /// </summary>
-        /// <param name="atom">The atom that was made, or undefined if it was not made.</param>
+        /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the atom was made, false if not.</returns>
         /// <remarks><![CDATA[1*atext]]></remarks>
-        public bool TryMakeAtom(out string atom)
+        public bool TryMakeAtom(ref TokenReader reader)
         {
-            atom = null;
+            var count = 0;
 
-            while (TryMake(TryMakeAtext, out string atext))
+            while (reader.TryMake(TryMakeAtext))
             {
-                atom += atext;
+                count++;
             }
 
-            return atom != null;
+            return count >= 1;
         }
 
         /// <summary>
         /// Try to make an "Atext" from the tokens.
         /// </summary>
-        /// <param name="atext">The atext that was made, or undefined if it was not made.</param>
+        /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the atext was made, false if not.</returns>
         /// <remarks><![CDATA[atext]]></remarks>
-        public bool TryMakeAtext(out string atext)
+        public bool TryMakeAtext(ref TokenReader reader)
         {
-            atext = null;
+            var peek = reader.Peek();
 
-            var token = Enumerator.Take();
-            switch (token.Kind)
+            switch (peek.Kind)
             {
-                case TokenKind.Text:
-                case TokenKind.Number:
-                    atext = token.Text;
-                    return true;
+                case TokenKind.None:
+                    return false;
 
-                case TokenKind.Other:
-                    switch (token.Text[0])
+                case TokenKind.Text:
+                    return TryMakeText(ref reader);
+
+                case TokenKind.Number:
+                    return TryMakeNumber(ref reader);
+
+                default:
+                    var token = reader.Take();
+                    switch ((char)token.Text[0])
                     {
                         case '!':
                         case '#':
@@ -1398,10 +1771,8 @@ namespace SmtpServer.Protocol
                         case '`':
                         case '|':
                         case '~':
-                            atext += token.Text[0];
                             return true;
                     }
-
                     break;
             }
 
@@ -1411,208 +1782,222 @@ namespace SmtpServer.Protocol
         /// <summary>
         /// Try to make an Mail-Parameters from the tokens.
         /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
         /// <param name="parameters">The mail parameters that were made.</param>
         /// <returns>true if the mail parameters can be made, false if not.</returns>
         /// <remarks><![CDATA[esmtp-param *(SP esmtp-param)]]></remarks>
-        public bool TryMakeMailParameters(out IReadOnlyDictionary<string, string> parameters)
+        public bool TryMakeMailParameters(ref TokenReader reader, out IReadOnlyDictionary<string, string> parameters)
         {
-            var dictionary = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, string> dictionary = null;
 
-            while (Enumerator.Peek().Kind != TokenKind.None)
+            while (reader.Peek() != default)
             {
-                if (TryMake(TryMakeEsmtpParameter, out KeyValuePair<string, string> parameter) == false)
+                if (reader.TryMake(TryMakeEsmtpParameter, out ReadOnlySequence<byte> keyword, out ReadOnlySequence<byte> value) == false)
                 {
                     parameters = null;
                     return false;
                 }
 
-                dictionary.Add(parameter.Key, parameter.Value);
-                Enumerator.Skip(TokenKind.Space);
+                dictionary ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                dictionary.Add(StringUtil.Create(keyword), StringUtil.Create(value));
+
+                reader.Skip(TokenKind.Space);
             }
 
             parameters = dictionary;
-            return parameters.Count > 0;
+            return parameters?.Count > 0;
         }
 
         /// <summary>
         /// Try to make an Esmtp-Parameter from the tokens.
         /// </summary>
-        /// <param name="parameter">The esmtp-parameter that was made.</param>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <param name="keyword">The keyword that was made.</param>
+        /// <param name="value">The value that was made.</param>
         /// <returns>true if the esmtp-parameter can be made, false if not.</returns>
         /// <remarks><![CDATA[esmtp-keyword ["=" esmtp-value]]]></remarks>
-        public bool TryMakeEsmtpParameter(out KeyValuePair<string, string> parameter)
+        public bool TryMakeEsmtpParameter(ref TokenReader reader, out ReadOnlySequence<byte> keyword, out ReadOnlySequence<byte> value)
         {
-            parameter = default;
+            value = default;
 
-            if (TryMake(TryMakeEsmtpKeyword, out string keyword) == false)
+            if (reader.TryMake(TryMakeEsmtpKeyword, out keyword) == false)
             {
                 return false;
             }
 
-            if (Enumerator.Peek().Kind == TokenKind.None || Enumerator.Peek().Kind == TokenKind.Space)
+            if (reader.Peek().Kind == TokenKind.None || reader.Peek().Kind == TokenKind.Space)
             {
-                parameter = new KeyValuePair<string, string>(keyword, null);
                 return true;
             }
 
-            if (Enumerator.Peek() != Tokens.Equal)
+            if (reader.Take().Kind != TokenKind.Equal)
             {
                 return false;
             }
 
-            Enumerator.Take();
-
-            if (TryMake(TryMakeEsmtpValue, out string value) == false)
-            {
-                return false;
-            }
-
-            parameter = new KeyValuePair<string, string>(keyword, value);
-
-            return true;
+            return reader.TryMake(TryMakeEsmtpValue, out value);
         }
 
         /// <summary>
         /// Try to make an Esmtp-Keyword from the tokens.
         /// </summary>
-        /// <param name="keyword">The esmtp-keyword that was made.</param>
+        /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the esmtp-keyword can be made, false if not.</returns>
         /// <remarks><![CDATA[(ALPHA / DIGIT) *(ALPHA / DIGIT / "-")]]></remarks>
-        public bool TryMakeEsmtpKeyword(out string keyword)
+        public bool TryMakeEsmtpKeyword(ref TokenReader reader)
         {
-            keyword = null;
-
-            var token = Enumerator.Peek();
-            while (token.Kind == TokenKind.Text || token.Kind == TokenKind.Number || token == Tokens.Hyphen)
-            {
-                keyword += Enumerator.Take().Text;
-
-                token = Enumerator.Peek();
-            }
-
-            return keyword != null;
-        }
-
-        /// <summary>
-        /// Try to make an Esmtp-Value from the tokens.
-        /// </summary>
-        /// <param name="value">The esmtp-value that was made.</param>
-        /// <returns>true if the esmtp-value can be made, false if not.</returns>
-        /// <remarks><![CDATA[1*(%d33-60 / %d62-127)]]></remarks>
-        public bool TryMakeEsmtpValue(out string value)
-        {
-            value = null;
-
-            var token = Enumerator.Peek();
-            while (token.Text.Length > 0 && token.Text.ToCharArray().All(ch => (ch >= 33 && ch <= 60) || (ch >= 62 && ch <= 127)))
-            {
-                value += Enumerator.Take().Text;
-
-                token = Enumerator.Peek();
-            }
-
-            return value != null;
-        }
-
-        /// <summary>
-        /// Try to make a base64 encoded string.
-        /// </summary>
-        /// <param name="base64">The base64 encoded string that were found.</param>
-        /// <returns>true if the base64 encoded string can be made, false if not.</returns>
-        /// <remarks><![CDATA[ALPHA / DIGIT / "+" / "/"]]></remarks>
-        public bool TryMakeBase64(out string base64)
-        {
-            if (TryMakeBase64Text(out base64) == false)
+            var token = reader.Take();
+            if (token.Kind != TokenKind.Text && token.Kind != TokenKind.Number)
             {
                 return false;
             }
 
-            if (Enumerator.Peek() == Tokens.Equal)
+            token = reader.Peek();
+            while (token.Kind == TokenKind.Text || token.Kind == TokenKind.Number || token.Kind == TokenKind.Hyphen)
             {
-                base64 += Enumerator.Take().Text;
-            }
-
-            if (Enumerator.Peek() == Tokens.Equal)
-            {
-                base64 += Enumerator.Take().Text;
-            }
-
-            // because the TryMakeBase64Chars method matches tokens, each TextValue token could make
-            // up several Base64 encoded "bytes" so we ensure that we have a length divisible by 4
-            return base64 != null
-                && base64.Length % 4 == 0
-                && new[] {TokenKind.None, TokenKind.Space, TokenKind.NewLine}.Contains(Enumerator.Peek().Kind);
-        }
-
-        /// <summary>
-        /// Try to make a base64 encoded string.
-        /// </summary>
-        /// <param name="base64">The base64 encoded string that were found.</param>
-        /// <returns>true if the base64 encoded string can be made, false if not.</returns>
-        /// <remarks><![CDATA[ALPHA / DIGIT / "+" / "/"]]></remarks>
-        bool TryMakeBase64Text(out string base64)
-        {
-            base64 = null;
-
-            while (TryMake(TryMakeBase64Chars, out string base64Chars))
-            {
-                base64 += base64Chars;
+                reader.Take();
+                token = reader.Peek();
             }
 
             return true;
         }
 
         /// <summary>
+        /// Try to make an Esmtp-Value from the tokens.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the esmtp-value can be made, false if not.</returns>
+        /// <remarks><![CDATA[1*(%d33-60 / %d62-127)]]></remarks>
+        public bool TryMakeEsmtpValue(ref TokenReader reader)
+        {
+            var token = reader.Take();
+            if (token.Kind == TokenKind.None || IsValid(ref token) == false)
+            {
+                return false;
+            }
+
+            token = reader.Peek();
+            while (token.Kind != TokenKind.None && IsValid(ref token))
+            {
+                reader.Take();
+
+                token = reader.Peek();
+            }
+
+            return true;
+
+            static bool IsValid(ref Token token)
+            {
+                var span = token.Text;
+
+                for (var i = 0; i < span.Length; i++)
+                {
+                    if ((span[i] < 33 || span[i] > 60) && (span[i] < 62 || span[i] > 127))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Try to make a base64 encoded string.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the base64 encoded string can be made, false if not.</returns>
+        /// <remarks><![CDATA[ALPHA / DIGIT / "+" / "/"]]></remarks>
+        public bool TryMakeBase64(ref TokenReader reader)
+        {
+            if (TryMakeBase64Text(ref reader) == false)
+            {
+                return false;
+            }
+
+            if (reader.Peek().Kind == TokenKind.Equal)
+            {
+                reader.Take();
+            }
+
+            if (reader.Peek().Kind == TokenKind.Equal)
+            {
+                reader.Take();
+            }
+            
+            return true;
+        }
+
+        /// <summary>
+        /// Try to make a base64 encoded string.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the base64 encoded string can be made, false if not.</returns>
+        /// <remarks><![CDATA[ALPHA / DIGIT / "+" / "/"]]></remarks>
+        public bool TryMakeBase64Text(ref TokenReader reader)
+        {
+            var count = 0;
+
+            while (reader.TryMake(TryMakeBase64Chars))
+            {
+                count++;
+            }
+
+            return count > 0;
+        }
+
+        /// <summary>
         /// Try to make the allowable characters in a base64 encoded string.
         /// </summary>
-        /// <param name="base64Chars">The base64 characters that were found.</param>
+        /// <param name="reader">The reader to perform the operation on.</param>
         /// <returns>true if the base64-chars can be made, false if not.</returns>
         /// <remarks><![CDATA[ALPHA / DIGIT / "+" / "/"]]></remarks>
-        bool TryMakeBase64Chars(out string base64Chars)
+        public bool TryMakeBase64Chars(ref TokenReader reader)
         {
-            base64Chars = null;
-
-            var token = Enumerator.Take();
+            var token = reader.Take();
+            
             switch (token.Kind)
             {
                 case TokenKind.Text:
                 case TokenKind.Number:
-                    base64Chars = token.Text;
+                case TokenKind.Slash:
+                case TokenKind.Plus:
                     return true;
-
-                case TokenKind.Other:
-                    switch (token.Text[0])
-                    {
-                        case '/':
-                        case '+':
-                            base64Chars = token.Text;
-                            return true;
-                    }
-
-                    break;
             }
 
             return false;
         }
 
         /// <summary>
-        /// Attempt to make the end of the line.
+        /// Try to make a text sequence.
         /// </summary>
-        /// <returns>true if the end of the line could be made, false if not.</returns>
-        bool TryMakeEnd()
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if a text sequence could be made, false if not.</returns>
+        public bool TryMakeText(ref TokenReader reader)
         {
-            Enumerator.Skip(TokenKind.Space);
+            if (reader.Peek().Kind == TokenKind.Text)
+            {
+                reader.Skip(TokenKind.Text);
+                return true;
+            }
 
-            return Enumerator.Take() == Token.None;
+            return false;
         }
 
         /// <summary>
-        /// Returns the complete tokenized text.
+        /// Try to make a number sequence.
         /// </summary>
-        /// <returns>The complete tokenized text.</returns>
-        string CompleteTokenizedText()
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if a number sequence could be made, false if not.</returns>
+        public bool TryMakeNumber(ref TokenReader reader)
         {
-            return string.Concat(Enumerator.Tokens.Select(token => token.Text));
+            if (reader.Peek().Kind == TokenKind.Number)
+            {
+                reader.Skip(TokenKind.Number);
+                return true;
+            }
+
+            return false;
         }
     }
 }

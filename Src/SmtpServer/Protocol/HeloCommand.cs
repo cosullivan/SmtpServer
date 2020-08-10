@@ -8,14 +8,18 @@ namespace SmtpServer.Protocol
     {
         public const string Command = "HELO";
 
+        readonly string _greeting;
+
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="options">The server options.</param>
         /// <param name="domainOrAddress">The domain name.</param>
-        internal HeloCommand(ISmtpServerOptions options, string domainOrAddress) : base(options)
+        /// <param name="greeting">The greeting text.</param>
+        internal HeloCommand(string domainOrAddress, string greeting) : base(Command)
         {
             DomainOrAddress = domainOrAddress;
+
+            _greeting = greeting;
         }
 
         /// <summary>
@@ -27,9 +31,9 @@ namespace SmtpServer.Protocol
         /// if the current state is to be maintained.</returns>
         internal override async Task<bool> ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            var response = new SmtpResponse(SmtpReplyCode.Ok, $"Hello {DomainOrAddress}, haven't we met before?");
+            var response = new SmtpResponse(SmtpReplyCode.Ok, _greeting);
 
-            await context.NetworkClient.ReplyAsync(response, cancellationToken).ConfigureAwait(false);
+            await context.Pipe.Output.WriteReplyAsync(response, cancellationToken).ConfigureAwait(false);
 
             return true;
         }

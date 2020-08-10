@@ -10,69 +10,69 @@ namespace SmtpServer.Protocol
         /// <param name="command"></param>
         public void Visit(SmtpCommand command)
         {
-            if (command is AuthCommand)
+            if (command is AuthCommand authCommand)
             {
-                Visit((AuthCommand)command);
+                Visit(authCommand);
                 return;
             }
 
-            if (command is DataCommand)
+            if (command is DataCommand dataCommand)
             {
-                Visit((DataCommand)command);
+                Visit(dataCommand);
                 return;
             }
 
-            if (command is HeloCommand)
+            if (command is HeloCommand heloCommand)
             {
-                Visit((HeloCommand)command);
+                Visit(heloCommand);
                 return;
             }
 
-            if (command is EhloCommand)
+            if (command is EhloCommand ehloCommand)
             {
-                Visit((EhloCommand)command);
+                Visit(ehloCommand);
                 return;
             }
 
-            if (command is MailCommand)
+            if (command is MailCommand mailCommand)
             {
-                Visit((MailCommand)command);
+                Visit(mailCommand);
                 return;
             }
 
-            if (command is NoopCommand)
+            if (command is NoopCommand noopCommand)
             {
-                Visit((NoopCommand)command);
+                Visit(noopCommand);
                 return;
             }
 
-            if (command is ProxyCommand)
+            if (command is ProxyCommand proxyCommand)
             {
-                Visit((ProxyCommand)command);
+                Visit(proxyCommand);
                 return;
             }
 
-            if (command is QuitCommand)
+            if (command is QuitCommand quitCommand)
             {
-                Visit((QuitCommand)command);
+                Visit(quitCommand);
                 return;
             }
 
-            if (command is RcptCommand)
+            if (command is RcptCommand rcptCommand)
             {
-                Visit((RcptCommand)command);
+                Visit(rcptCommand);
                 return;
             }
 
-            if (command is RsetCommand)
+            if (command is RsetCommand rsetCommand)
             {
-                Visit((RsetCommand)command);
+                Visit(rsetCommand);
                 return;
             }
 
-            if (command is StartTlsCommand)
+            if (command is StartTlsCommand tlsCommand)
             {
-                Visit((StartTlsCommand)command);
+                Visit(tlsCommand);
                 return;
             }
 
