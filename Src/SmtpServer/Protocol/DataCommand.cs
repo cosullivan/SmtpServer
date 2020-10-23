@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.IO;
 using SmtpServer.Storage;
-using SmtpServer.Text;
 
 namespace SmtpServer.Protocol
 {
@@ -17,7 +16,7 @@ namespace SmtpServer.Protocol
         /// Constructor.
         /// </summary>
         /// <param name="messageStoreFactory">The message store factory to use when creating the message stores.</param>
-        internal DataCommand(IMessageStoreFactory messageStoreFactory) : base(Command)
+        public DataCommand(IMessageStoreFactory messageStoreFactory) : base(Command)
         {
             _messageStoreFactory = messageStoreFactory;
         }
@@ -48,10 +47,6 @@ namespace SmtpServer.Protocol
                 await context.Pipe.Input.ReadDotBlockAsync(
                     async buffer =>
                     {
-#if DEBUG
-                        Console.WriteLine(StringUtil.Create(buffer));
-#endif 
-
                         // ReSharper disable once AccessToDisposedClosure
                         response = await container.Instance.SaveAsync(context, context.Transaction, buffer, cancellationToken).ConfigureAwait(false);
                     }, 

@@ -118,15 +118,21 @@ namespace SmtpServer
         /// <returns>A task which performs the operation.</returns>
         async Task ListenAsync(IEndpointDefinition endpointDefinition, CancellationToken cancellationToken)
         {
+            // The listener can be stopped either by the caller cancelling the CancellationToken used when starting the server, or when calling
+            // the shutdown method. The Shutdown method will stop the listeners and allow any active sessions to finish gracefully.
+            var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_shutdownTokenSource.Token, cancellationToken);
+
             using var endpointListener = _endpointListenerFactory.CreateListener(endpointDefinition);
 
-            while (_shutdownTokenSource.Token.IsCancellationRequested == false && cancellationToken.IsCancellationRequested == false)
+            while (cancellationTokenSource.Token.IsCancellationRequested == false)
             {
+                Console.WriteLine("ListenAsync::{0}", cancellationTokenSource.Token.IsCancellationRequested);
+
                 var sessionContext = new SmtpSessionContext(_serviceProvider, _options, endpointDefinition);
 
                 try
                 {
-                    await ListenAsync(sessionContext, endpointListener, cancellationToken);
+                    await ListenAsync(sessionContext, endpointListener, cancellationTokenSource.Token);
                 }
                 catch (OperationCanceledException) when (_shutdownTokenSource.Token.IsCancellationRequested == false)
                 {
@@ -145,20 +151,16 @@ namespace SmtpServer
 
         async Task ListenAsync(SmtpSessionContext sessionContext, IEndpointListener endpointListener, CancellationToken cancellationToken)
         {
-            // The listener can be stopped either by the caller cancelling the CancellationToken used when starting the server, or when calling
-            // the shutdown method. The Shutdown method will stop the listeners and allow any active sessions to finish gracefully.
-            var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_shutdownTokenSource.Token, cancellationToken);
-
             // wait for a client connection
-            sessionContext.Pipe = await endpointListener.GetPipeAsync(sessionContext, cancellationTokenSource.Token).ConfigureAwait(false);
-            cancellationTokenSource.Token.ThrowIfCancellationRequested();
+            sessionContext.Pipe = await endpointListener.GetPipeAsync(sessionContext, cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
 
             if (sessionContext.EndpointDefinition.IsSecure && _options.ServerCertificate != null)
             {
                 await sessionContext.Pipe.UpgradeAsync(_options.ServerCertificate, _options.SupportedSslProtocols, cancellationToken).ConfigureAwait(false);
                 cancellationToken.ThrowIfCancellationRequested();
             }
-
+            
             _sessions.Run(sessionContext, cancellationToken);
         }
 

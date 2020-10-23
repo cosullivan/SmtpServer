@@ -15,7 +15,7 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="domainOrAddress">The domain name.</param>
         /// <param name="greeting">The greeting text.</param>
-        internal HeloCommand(string domainOrAddress, string greeting) : base(Command)
+        public HeloCommand(string domainOrAddress, string greeting) : base(Command)
         {
             DomainOrAddress = domainOrAddress;
 

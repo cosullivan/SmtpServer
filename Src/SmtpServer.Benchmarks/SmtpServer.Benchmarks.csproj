@@ -6,11 +6,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Test.eml" />
+    <None Remove="Test1.eml" />
+    <None Remove="Test2.eml" />
+    <None Remove="Test3.eml" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Test.eml" />
+    <EmbeddedResource Include="Test1.eml" />
+    <EmbeddedResource Include="Test2.eml" />
+    <EmbeddedResource Include="Test3.eml" />
   </ItemGroup>
 
   <ItemGroup>

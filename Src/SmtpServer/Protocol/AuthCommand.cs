@@ -24,7 +24,7 @@ namespace SmtpServer.Protocol
         /// <param name="method">The authentication method.</param>
         /// <param name="parameter">The authentication parameter.</param>
         /// <param name="userAuthenticatorFactory">The factory to create per session instances of the user authenticator.</param>
-        internal AuthCommand(AuthenticationMethod method, string parameter, IUserAuthenticatorFactory userAuthenticatorFactory) : base(Command)
+        public AuthCommand(AuthenticationMethod method, string parameter, IUserAuthenticatorFactory userAuthenticatorFactory) : base(Command)
         {
             Method = method;
             Parameter = parameter;

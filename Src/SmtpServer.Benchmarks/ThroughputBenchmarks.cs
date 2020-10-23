@@ -22,7 +22,9 @@ namespace SmtpServer.Benchmarks
 
         readonly SmtpClient _smtpClient = new SmtpClient();
 
-        static readonly MimeMessage _message = MimeMessage.Load(typeof(ThroughputBenchmarks).Assembly.GetManifestResourceStream("SmtpServer.Benchmarks.Test.eml"));
+        static readonly MimeMessage Message1 = MimeMessage.Load(typeof(ThroughputBenchmarks).Assembly.GetManifestResourceStream("SmtpServer.Benchmarks.Test1.eml"));
+        static readonly MimeMessage Message2 = MimeMessage.Load(typeof(ThroughputBenchmarks).Assembly.GetManifestResourceStream("SmtpServer.Benchmarks.Test2.eml"));
+        static readonly MimeMessage Message3 = MimeMessage.Load(typeof(ThroughputBenchmarks).Assembly.GetManifestResourceStream("SmtpServer.Benchmarks.Test3.eml"));
 
         [GlobalSetup]
         public void SmtpServerSetup()
@@ -42,16 +44,22 @@ namespace SmtpServer.Benchmarks
             return _smtpServer.ShutdownTask;
         }
 
-        //[Benchmark]
-        //public void NoOp()
-        //{
-        //    _smtpClient.NoOp();
-        //}
+        [Benchmark]
+        public void Send1()
+        {
+            _smtpClient.Send(Message1);
+        }
 
         [Benchmark]
-        public void Send()
+        public void Send2()
         {
-            _smtpClient.Send(_message);
+            _smtpClient.Send(Message2);
+        }
+
+        [Benchmark]
+        public void Send3()
+        {
+            _smtpClient.Send(Message2);
         }
     }
 }
