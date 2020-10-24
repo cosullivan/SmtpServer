@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -33,7 +32,7 @@ namespace SmtpServer
         readonly ISmtpServerOptions _options;
         readonly IServiceProvider _serviceProvider;
         readonly IEndpointListenerFactory _endpointListenerFactory;
-        readonly SessionManager _sessions;
+        readonly SmtpSessionManager _sessions;
         readonly CancellationTokenSource _shutdownTokenSource = new CancellationTokenSource();
         readonly TaskCompletionSource<bool> _shutdownTask = new TaskCompletionSource<bool>();
 
@@ -46,7 +45,7 @@ namespace SmtpServer
         {
             _options = options;
             _serviceProvider = serviceProvider;
-            _sessions = new SessionManager(this);
+            _sessions = new SmtpSessionManager(this);
             _endpointListenerFactory = serviceProvider.GetServiceOrDefault(EndpointListenerFactory.Default);
         }
 
@@ -54,7 +53,7 @@ namespace SmtpServer
         /// Raises the SessionCreated Event.
         /// </summary>
         /// <param name="args">The event data.</param>
-        protected virtual void OnSessionCreated(SessionEventArgs args)
+        protected internal virtual void OnSessionCreated(SessionEventArgs args)
         {
             SessionCreated?.Invoke(this, args);
         }
@@ -63,7 +62,7 @@ namespace SmtpServer
         /// Raises the SessionCompleted Event.
         /// </summary>
         /// <param name="args">The event data.</param>
-        protected virtual void OnSessionCompleted(SessionEventArgs args)
+        protected internal virtual void OnSessionCompleted(SessionEventArgs args)
         {
             SessionCompleted?.Invoke(this, args);
         }
@@ -72,7 +71,7 @@ namespace SmtpServer
         /// Raises the SessionCompleted Event.
         /// </summary>
         /// <param name="args">The event data.</param>
-        protected virtual void OnSessionFaulted(SessionFaultedEventArgs args)
+        protected internal virtual void OnSessionFaulted(SessionFaultedEventArgs args)
         {
             SessionFaulted?.Invoke(this, args);
         }
@@ -81,7 +80,7 @@ namespace SmtpServer
         /// Raises the SessionCancelled Event.
         /// </summary>
         /// <param name="args">The event data.</param>
-        protected virtual void OnSessionCancelled(SessionEventArgs args)
+        protected internal virtual void OnSessionCancelled(SessionEventArgs args)
         {
             SessionCancelled?.Invoke(this, args);
         }
@@ -126,115 +125,23 @@ namespace SmtpServer
 
             while (cancellationTokenSource.Token.IsCancellationRequested == false)
             {
-                Console.WriteLine("ListenAsync::{0}", cancellationTokenSource.Token.IsCancellationRequested);
-
                 var sessionContext = new SmtpSessionContext(_serviceProvider, _options, endpointDefinition);
-
+                
                 try
                 {
-                    await ListenAsync(sessionContext, endpointListener, cancellationTokenSource.Token);
-                }
-                catch (OperationCanceledException) when (_shutdownTokenSource.Token.IsCancellationRequested == false)
-                {
-                    if (sessionContext.Pipe != null)
-                    { 
-                        OnSessionCancelled(new SessionEventArgs(sessionContext));
-                    }
+                    // wait for a client connection
+                    sessionContext.Pipe = await endpointListener.GetPipeAsync(sessionContext, cancellationTokenSource.Token).ConfigureAwait(false);
+                    cancellationTokenSource.Token.ThrowIfCancellationRequested();
+
+                    _sessions.Run(sessionContext, cancellationTokenSource.Token);
                 }
                 catch (OperationCanceledException) { }
-                catch (Exception ex)
-                {
-                    OnSessionFaulted(new SessionFaultedEventArgs(sessionContext, ex));
-                }
             }
-        }
-
-        async Task ListenAsync(SmtpSessionContext sessionContext, IEndpointListener endpointListener, CancellationToken cancellationToken)
-        {
-            // wait for a client connection
-            sessionContext.Pipe = await endpointListener.GetPipeAsync(sessionContext, cancellationToken).ConfigureAwait(false);
-            cancellationToken.ThrowIfCancellationRequested();
-
-            if (sessionContext.EndpointDefinition.IsSecure && _options.ServerCertificate != null)
-            {
-                await sessionContext.Pipe.UpgradeAsync(_options.ServerCertificate, _options.SupportedSslProtocols, cancellationToken).ConfigureAwait(false);
-                cancellationToken.ThrowIfCancellationRequested();
-            }
-            
-            _sessions.Run(sessionContext, cancellationToken);
         }
 
         /// <summary>
         /// The task that completes when the server has shutdown and stopped accepting new sessions.
         /// </summary>
         public Task ShutdownTask => _shutdownTask.Task;
-        
-        #region SessionManager
-
-        class SessionManager
-        {
-            readonly SmtpServer _smtpServer;
-            readonly HashSet<SmtpSession> _sessions = new HashSet<SmtpSession>();
-            readonly object _sessionsLock = new object();
-            
-            public SessionManager(SmtpServer smtpServer)
-            {
-                _smtpServer = smtpServer;
-            }
-
-            public void Run(SmtpSessionContext sessionContext, CancellationToken cancellationToken)
-            {
-                var session = new SmtpSession(sessionContext);
-                Add(session);
-
-                _smtpServer.OnSessionCreated(new SessionEventArgs(sessionContext));
-
-                session.Run(
-                    exception =>
-                    {
-                        Remove(session);
-
-                        sessionContext.Pipe.Dispose();
-
-                        if (exception != null)
-                        {
-                            _smtpServer.OnSessionFaulted(new SessionFaultedEventArgs(sessionContext, exception));
-                        }
-                        
-                        _smtpServer.OnSessionCompleted(new SessionEventArgs(sessionContext));
-                    }, 
-                    cancellationToken);
-            }
-
-            public Task WaitAsync()
-            {
-                IReadOnlyList<Task> tasks;
-                
-                lock (_sessionsLock)
-                {
-                    tasks = _sessions.Select(session => session.CompletionTask).ToList();
-                }
-                
-                return Task.WhenAll(tasks);
-            }
-
-            void Add(SmtpSession session)
-            {
-                lock (_sessionsLock)
-                {
-                    _sessions.Add(session);
-                }
-            }
-
-            void Remove(SmtpSession session)
-            {
-                lock (_sessionsLock)
-                {
-                    _sessions.Remove(session);
-                }
-            }
-        }
-
-        #endregion
     }
 }

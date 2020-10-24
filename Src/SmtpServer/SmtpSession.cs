@@ -4,12 +4,12 @@ using System.Threading.Tasks;
 using SmtpServer.Protocol;
 using System.Reflection;
 using SmtpServer.IO;
-using SmtpServer.Text;
 using System.IO.Pipelines;
 using SmtpServer.StateMachine;
 using SmtpServer.ComponentModel;
 using SmtpServer.Authentication;
 using SmtpServer.Storage;
+using SmtpServer.Text;
 
 namespace SmtpServer
 {
@@ -18,7 +18,6 @@ namespace SmtpServer
         readonly SmtpStateMachine _stateMachine;
         readonly SmtpSessionContext _context;
         readonly ISmtpCommandFactory _commandFactory;
-        TaskCompletionSource<bool> _taskCompletionSource;
 
         /// <summary>
         /// Constructor.
@@ -38,39 +37,11 @@ namespace SmtpServer
         }
 
         /// <summary>
-        /// Executes the session.
-        /// </summary>
-        /// <param name="completedAction">The callback to execute when the session has completed.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        public void Run(Action<Exception> completedAction, CancellationToken cancellationToken)
-        {
-            _taskCompletionSource = new TaskCompletionSource<bool>();
-
-            // ReSharper disable once MethodSupportsCancellation
-            RunAsync(cancellationToken).ContinueWith(
-                task =>
-                {
-                    if (task.Exception != null)
-                    {
-                        completedAction(task.Exception);
-
-                        _taskCompletionSource.SetException(task.Exception);
-                        
-                        return;
-                    }
-
-                    completedAction(null);
-
-                    _taskCompletionSource.SetResult(task.IsCompleted);
-                });
-        }
-
-        /// <summary>
         /// Handles the SMTP session.
         /// </summary>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which performs the operation.</returns>
-        async Task RunAsync(CancellationToken cancellationToken)
+        internal async Task RunAsync(CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -97,6 +68,11 @@ namespace SmtpServer
                 try
                 {
                     var command = await ReadCommandAsync(context, cancellationToken).ConfigureAwait(false);
+
+                    if (command == null)
+                    {
+                        return;
+                    }
 
                     if (_stateMachine.TryAccept(command, out var errorResponse) == false)
                     {
@@ -216,10 +192,5 @@ namespace SmtpServer
             
             return _context.Pipe.Output.FlushAsync(cancellationToken);
         }
-        
-        /// <summary>
-        /// Returns the completion task.
-        /// </summary>
-        internal Task<bool> CompletionTask => _taskCompletionSource.Task;
     }
 }

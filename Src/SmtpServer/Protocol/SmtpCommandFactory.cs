@@ -79,7 +79,7 @@ namespace SmtpServer.Protocol
 
             bool IsPlainLoginAllowed(ISessionContext context)
             {
-                if (_userAuthenticatorFactory != null)
+                if (_userAuthenticatorFactory == null)
                 {
                     return false;
                 }

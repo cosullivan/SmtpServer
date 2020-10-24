@@ -20,7 +20,8 @@ namespace SampleApp
             //SimpleExample.Run();
             //SimpleServerExample.Run();
             //CustomEndpointListenerExample.Run();
-            ServerCancellingExample.Run();
+            //ServerCancellingExample.Run();
+            SessionTracingExample.Run();
 
             //HERE: how can the ReadOnlySequence buffer be included on the IMessageTransaction?
             //Complete Reader??
