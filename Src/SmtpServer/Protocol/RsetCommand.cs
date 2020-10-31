@@ -11,7 +11,7 @@ namespace SmtpServer.Protocol
         /// <summary>
         /// Constructor.
         /// </summary>
-        internal RsetCommand() : base(Command) { }
+        public RsetCommand() : base(Command) { }
 
         /// <summary>
         /// Execute the command.

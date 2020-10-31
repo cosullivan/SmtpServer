@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <PackageReference Include="MailKit" Version="2.8.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.9" />
   </ItemGroup>
 
   <ItemGroup>

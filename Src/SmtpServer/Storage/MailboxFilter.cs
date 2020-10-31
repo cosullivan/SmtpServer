@@ -6,6 +6,10 @@ namespace SmtpServer.Storage
 {
     public abstract class MailboxFilter : IMailboxFilter, IMailboxFilterFactory
     {
+        sealed class DefaultMailboxFilter : MailboxFilter { }
+
+        public static readonly IMailboxFilterFactory Default = new DefaultMailboxFilter();
+
         /// <summary>
         /// Creates an instance of the message box filter.
         /// </summary>

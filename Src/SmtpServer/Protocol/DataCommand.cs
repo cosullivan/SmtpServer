@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using SmtpServer.ComponentModel;
 using SmtpServer.IO;
 using SmtpServer.Storage;
 
@@ -10,16 +11,10 @@ namespace SmtpServer.Protocol
     {
         public const string Command = "DATA";
 
-        readonly IMessageStoreFactory _messageStoreFactory;
-
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="messageStoreFactory">The message store factory to use when creating the message stores.</param>
-        public DataCommand(IMessageStoreFactory messageStoreFactory) : base(Command)
-        {
-            _messageStoreFactory = messageStoreFactory;
-        }
+        public DataCommand() : base(Command) { }
 
         /// <summary>
         /// Execute the command.
@@ -38,9 +33,11 @@ namespace SmtpServer.Protocol
 
             await context.Pipe.Output.WriteReplyAsync(new SmtpResponse(SmtpReplyCode.StartMailInput, "end with <CRLF>.<CRLF>"), cancellationToken).ConfigureAwait(false);
 
+            var messageStoreFactory = context.ServiceProvider.GetServiceOrDefault(MessageStore.Default);
+
             try
             {
-                using var container = new DisposableContainer<IMessageStore>(_messageStoreFactory.CreateInstance(context));
+                using var container = new DisposableContainer<IMessageStore>(messageStoreFactory.CreateInstance(context));
 
                 SmtpResponse response = null;
 

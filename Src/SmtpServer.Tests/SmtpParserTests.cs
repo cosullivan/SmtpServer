@@ -3,10 +3,8 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Net;
 using System.Text;
-using SmtpServer.Authentication;
 using SmtpServer.Mail;
 using SmtpServer.Protocol;
-using SmtpServer.Storage;
 using SmtpServer.Text;
 using Xunit;
 
@@ -21,19 +19,7 @@ namespace SmtpServer.Tests
             return new TokenReader(new ReadOnlySequence<byte>(buffer, 0, buffer.Length));
         }
 
-        static SmtpParser Parser
-        {
-            get
-            {
-                var options = new SmtpServerOptionsBuilder().Build();
-
-                return new SmtpParser(new SmtpCommandFactory(
-                    options, 
-                    DoNothingUserAuthenticator.Default,
-                    DoNothingMailboxFilter.Default,
-                    DoNothingMessageStore.Default));
-            }
-        }
+        static SmtpParser Parser => new SmtpParser(new SmtpCommandFactory());
 
         [Fact]
         public void CanMakeQuit()

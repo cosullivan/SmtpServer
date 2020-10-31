@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using SmtpServer.ComponentModel;
 using SmtpServer.IO;
 using SmtpServer.Mail;
 using SmtpServer.Storage;
@@ -11,18 +12,13 @@ namespace SmtpServer.Protocol
     {
         public const string Command = "RCPT";
 
-        readonly IMailboxFilterFactory _mailboxFilterFactory;
-
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="address">The address.</param>
-        /// <param name="mailboxFilterFactory">The mailbox filter factory used for creating instances of mailbox filters.</param>
-        internal RcptCommand(IMailbox address, IMailboxFilterFactory mailboxFilterFactory) : base(Command)
+        public RcptCommand(IMailbox address) : base(Command)
         {
             Address = address;
-
-            _mailboxFilterFactory = mailboxFilterFactory;
         }
 
         /// <summary>
@@ -34,23 +30,24 @@ namespace SmtpServer.Protocol
         /// if the current state is to be maintained.</returns>
         internal override async Task<bool> ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            using (var container = new DisposableContainer<IMailboxFilter>(_mailboxFilterFactory.CreateInstance(context)))
+            var mailboxFilterFactory = context.ServiceProvider.GetServiceOrDefault(MailboxFilter.Default);
+
+            using var container = new DisposableContainer<IMailboxFilter>(mailboxFilterFactory.CreateInstance(context));
+
+            switch (await container.Instance.CanDeliverToAsync(context, Address, context.Transaction.From, cancellationToken).ConfigureAwait(false))
             {
-                switch (await container.Instance.CanDeliverToAsync(context, Address, context.Transaction.From, cancellationToken).ConfigureAwait(false))
-                {
-                    case MailboxFilterResult.Yes:
-                        context.Transaction.To.Add(Address);
-                        await context.Pipe.Output.WriteReplyAsync(SmtpResponse.Ok, cancellationToken).ConfigureAwait(false);
-                        return true;
+                case MailboxFilterResult.Yes:
+                    context.Transaction.To.Add(Address);
+                    await context.Pipe.Output.WriteReplyAsync(SmtpResponse.Ok, cancellationToken).ConfigureAwait(false);
+                    return true;
 
-                    case MailboxFilterResult.NoTemporarily:
-                        await context.Pipe.Output.WriteReplyAsync(SmtpResponse.MailboxUnavailable, cancellationToken).ConfigureAwait(false);
-                        return false;
+                case MailboxFilterResult.NoTemporarily:
+                    await context.Pipe.Output.WriteReplyAsync(SmtpResponse.MailboxUnavailable, cancellationToken).ConfigureAwait(false);
+                    return false;
 
-                    case MailboxFilterResult.NoPermanently:
-                        await context.Pipe.Output.WriteReplyAsync(SmtpResponse.MailboxNameNotAllowed, cancellationToken).ConfigureAwait(false);
-                        return false;
-                }
+                case MailboxFilterResult.NoPermanently:
+                    await context.Pipe.Output.WriteReplyAsync(SmtpResponse.MailboxNameNotAllowed, cancellationToken).ConfigureAwait(false);
+                    return false;
             }
 
             throw new NotSupportedException("The Acceptance state is not supported.");

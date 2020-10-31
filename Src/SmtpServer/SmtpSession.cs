@@ -7,9 +7,6 @@ using SmtpServer.IO;
 using System.IO.Pipelines;
 using SmtpServer.StateMachine;
 using SmtpServer.ComponentModel;
-using SmtpServer.Authentication;
-using SmtpServer.Storage;
-using SmtpServer.Text;
 
 namespace SmtpServer
 {
@@ -27,13 +24,7 @@ namespace SmtpServer
         {
             _context = context;
             _stateMachine = new SmtpStateMachine(_context);
-
-            _commandFactory = context.ServiceProvider.GetService<ISmtpCommandFactory>(() => 
-                new SmtpCommandFactory(
-                    context.ServerOptions,
-                    context.ServiceProvider.GetServiceOrDefault(DoNothingUserAuthenticator.Default),
-                    context.ServiceProvider.GetServiceOrDefault(DoNothingMailboxFilter.Default),
-                    context.ServiceProvider.GetServiceOrDefault(DoNothingMessageStore.Default)));
+            _commandFactory = context.ServiceProvider.GetServiceOrDefault<ISmtpCommandFactory>(new SmtpCommandFactory());
         }
 
         /// <summary>

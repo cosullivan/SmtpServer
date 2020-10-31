@@ -7,7 +7,7 @@ using SmtpServer.Protocol;
 
 namespace SmtpServer.IO
 {
-    internal static class PipeWriterExtensions
+    public static class PipeWriterExtensions
     {
         /// <summary>
         /// Write a line of text to the pipe.
@@ -53,19 +53,6 @@ namespace SmtpServer.IO
             }
         }
 
-        ///// <summary>
-        ///// Flush the output of the pipe.
-        ///// </summary>
-        ///// <param name="writer">The writer to perform the operation on.</param>
-        ///// <param name="cancellationToken">The cancellation token.</param>
-        ///// <returns>A value indicating whether any more data should be written.</returns>
-        //public static async ValueTask<bool> FlushAsync(this PipeWriter writer, CancellationToken cancellationToken = default)
-        //{
-        //    var flush = await writer.FlushAsync(cancellationToken);
-
-        //    return flush.IsCanceled == false && flush.IsCompleted == false;
-        //}
-
         /// <summary>
         /// Write a reply to the client.
         /// </summary>
@@ -73,7 +60,7 @@ namespace SmtpServer.IO
         /// <param name="response">The response to write.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which performs the operation.</returns>
-        internal static ValueTask<FlushResult> WriteReplyAsync(this PipeWriter writer, SmtpResponse response, CancellationToken cancellationToken)
+        public static ValueTask<FlushResult> WriteReplyAsync(this PipeWriter writer, SmtpResponse response, CancellationToken cancellationToken)
         {
             if (writer == null)
             {

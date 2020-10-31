@@ -1,31 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using SmtpServer.Authentication;
 using SmtpServer.IO;
 
 namespace SmtpServer.Protocol
 {
-    public sealed class EhloCommand : SmtpCommand
+    public class EhloCommand : SmtpCommand
     {
         public const string Command = "EHLO";
-
-        readonly string _greeting;
-        readonly Func<ISessionContext, IEnumerable<string>> _extensionsFactory;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="domainOrAddress">The domain name or address literal.</param>
-        /// <param name="greeting">The greeting text.</param>
-        /// <param name="extensionsFactory">The factory method that returns the list of available extensions for the current session.</param>
-        internal EhloCommand(string domainOrAddress, string greeting, Func<ISessionContext, IEnumerable<string>> extensionsFactory) : base(Command)
+        public EhloCommand(string domainOrAddress) : base(Command)
         {
             DomainOrAddress = domainOrAddress;
-
-            _greeting = greeting;
-            _extensionsFactory = extensionsFactory;
         }
 
         /// <summary>
@@ -37,7 +29,7 @@ namespace SmtpServer.Protocol
         /// if the current state is to be maintained.</returns>
         internal override async Task<bool> ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            var output = new[] { _greeting }.Union(_extensionsFactory(context)).ToArray();
+            var output = new[] { GetGreeting(context) }.Union(GetExtensions(context)).ToArray();
 
             for (var i = 0; i < output.Length - 1; i++)
             {
@@ -51,6 +43,53 @@ namespace SmtpServer.Protocol
             return true;
         }
 
+        /// <summary>
+        /// Returns the greeting to display to the remote host.
+        /// </summary>
+        /// <param name="context">The session context.</param>
+        /// <returns>The greeting text to display to the remote host.</returns>
+        protected virtual string GetGreeting(ISessionContext context)
+        {
+            return $"{context.ServerOptions.ServerName} Hello {DomainOrAddress}, haven't we met before?";
+        }
+
+        /// <summary>
+        /// Returns the list of extensions that are current for the context.
+        /// </summary>
+        /// <param name="context">The session context.</param>
+        /// <returns>The list of extensions that are current for the context.</returns>
+        protected virtual IEnumerable<string> GetExtensions(ISessionContext context)
+        {
+            yield return "PIPELINING";
+            yield return "8BITMIME";
+            yield return "SMTPUTF8";
+
+            if (context.Pipe.IsSecure == false && context.ServerOptions.ServerCertificate != null)
+            {
+                yield return "STARTTLS";
+            }
+
+            if (context.ServerOptions.MaxMessageSize > 0)
+            {
+                yield return $"SIZE {context.ServerOptions.MaxMessageSize}";
+            }
+
+            if (IsPlainLoginAllowed(context))
+            {
+                yield return "AUTH PLAIN LOGIN";
+            }
+
+            static bool IsPlainLoginAllowed(ISessionContext context)
+            {
+                if (context.ServiceProvider.GetService(typeof(IUserAuthenticatorFactory)) == null)
+                {
+                    return false;
+                }
+
+                return context.Pipe.IsSecure || context.EndpointDefinition.AllowUnsecureAuthentication;
+            }
+        }
+        
         /// <summary>
         /// Gets the domain name or address literal.
         /// </summary>

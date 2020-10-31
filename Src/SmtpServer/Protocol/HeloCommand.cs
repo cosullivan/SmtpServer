@@ -4,22 +4,17 @@ using SmtpServer.IO;
 
 namespace SmtpServer.Protocol
 {
-    public sealed class HeloCommand : SmtpCommand
+    public class HeloCommand : SmtpCommand
     {
         public const string Command = "HELO";
-
-        readonly string _greeting;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="domainOrAddress">The domain name.</param>
-        /// <param name="greeting">The greeting text.</param>
-        public HeloCommand(string domainOrAddress, string greeting) : base(Command)
+        public HeloCommand(string domainOrAddress) : base(Command)
         {
             DomainOrAddress = domainOrAddress;
-
-            _greeting = greeting;
         }
 
         /// <summary>
@@ -31,11 +26,21 @@ namespace SmtpServer.Protocol
         /// if the current state is to be maintained.</returns>
         internal override async Task<bool> ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            var response = new SmtpResponse(SmtpReplyCode.Ok, _greeting);
+            var response = new SmtpResponse(SmtpReplyCode.Ok, GetGreeting(context));
 
             await context.Pipe.Output.WriteReplyAsync(response, cancellationToken).ConfigureAwait(false);
 
             return true;
+        }
+
+        /// <summary>
+        /// Returns the greeting to display to the remote host.
+        /// </summary>
+        /// <param name="context">The session context.</param>
+        /// <returns>The greeting text to display to the remote host.</returns>
+        protected virtual string GetGreeting(ISessionContext context)
+        {
+            return $"{context.ServerOptions.ServerName} Hello {DomainOrAddress}, haven't we met before?";
         }
 
         /// <summary>

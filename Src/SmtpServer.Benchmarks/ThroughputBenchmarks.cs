@@ -1,6 +1,4 @@
-﻿using System.Net.Mail;
-using BenchmarkDotNet.Attributes;
-using MailKit.Net.Smtp;
+﻿using BenchmarkDotNet.Attributes;
 using System.Threading;
 using System.Threading.Tasks;
 using MimeKit;
@@ -59,7 +57,7 @@ namespace SmtpServer.Benchmarks
         [Benchmark]
         public void Send3()
         {
-            _smtpClient.Send(Message2);
+            _smtpClient.Send(Message3);
         }
     }
 }

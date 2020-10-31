@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using SmtpServer.ComponentModel;
 using SmtpServer.IO;
 using SmtpServer.Mail;
 using SmtpServer.Storage;
@@ -11,23 +12,15 @@ namespace SmtpServer.Protocol
     {
         public const string Command = "MAIL";
 
-        readonly IMailboxFilterFactory _mailboxFilterFactory;
-        readonly int _maxMessageSize;
-
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="address">The address.</param>
         /// <param name="parameters">The list of extended (ESMTP) parameters.</param>
-        /// <param name="mailboxFilterFactory">The Mailbox Filter factory to create Mailbox filters.</param>
-        /// <param name="maxMessageSize">The maximum allowed message size.</param>
-        internal MailCommand(IMailbox address, IReadOnlyDictionary<string, string> parameters, IMailboxFilterFactory mailboxFilterFactory, int maxMessageSize) : base(Command)
+        public MailCommand(IMailbox address, IReadOnlyDictionary<string, string> parameters) : base(Command)
         {
             Address = address;
             Parameters = parameters;
-
-            _mailboxFilterFactory = mailboxFilterFactory;
-            _maxMessageSize = maxMessageSize;
         }
 
         /// <summary>
@@ -52,33 +45,34 @@ namespace SmtpServer.Protocol
             var size = GetMessageSize();
 
             // check against the server supplied maximum
-            if (_maxMessageSize > 0 && size > _maxMessageSize)
+            if (context.ServerOptions.MaxMessageSize > 0 && size > context.ServerOptions.MaxMessageSize)
             {
                 await context.Pipe.Output.WriteReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ConfigureAwait(false);
                 return false;
             }
 
-            using (var container = new DisposableContainer<IMailboxFilter>(_mailboxFilterFactory.CreateInstance(context)))
+            var mailboxFilterFactory = context.ServiceProvider.GetServiceOrDefault(MailboxFilter.Default);
+
+            using var container = new DisposableContainer<IMailboxFilter>(mailboxFilterFactory.CreateInstance(context));
+
+            switch (await container.Instance.CanAcceptFromAsync(context, Address, size, cancellationToken).ConfigureAwait(false))
             {
-                switch (await container.Instance.CanAcceptFromAsync(context, Address, size, cancellationToken).ConfigureAwait(false))
-                {
-                    case MailboxFilterResult.Yes:
-                        context.Transaction.From = Address;
-                        await context.Pipe.Output.WriteReplyAsync(SmtpResponse.Ok, cancellationToken).ConfigureAwait(false);
-                        return true;
+                case MailboxFilterResult.Yes:
+                    context.Transaction.From = Address;
+                    await context.Pipe.Output.WriteReplyAsync(SmtpResponse.Ok, cancellationToken).ConfigureAwait(false);
+                    return true;
 
-                    case MailboxFilterResult.NoTemporarily:
-                        await context.Pipe.Output.WriteReplyAsync(SmtpResponse.MailboxUnavailable, cancellationToken).ConfigureAwait(false);
-                        return false;
+                case MailboxFilterResult.NoTemporarily:
+                    await context.Pipe.Output.WriteReplyAsync(SmtpResponse.MailboxUnavailable, cancellationToken).ConfigureAwait(false);
+                    return false;
 
-                    case MailboxFilterResult.NoPermanently:
-                        await context.Pipe.Output.WriteReplyAsync(SmtpResponse.MailboxNameNotAllowed, cancellationToken).ConfigureAwait(false);
-                        return false;
+                case MailboxFilterResult.NoPermanently:
+                    await context.Pipe.Output.WriteReplyAsync(SmtpResponse.MailboxNameNotAllowed, cancellationToken).ConfigureAwait(false);
+                    return false;
 
-                    case MailboxFilterResult.SizeLimitExceeded:
-                        await context.Pipe.Output.WriteReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ConfigureAwait(false);
-                        return false;
-                }
+                case MailboxFilterResult.SizeLimitExceeded:
+                    await context.Pipe.Output.WriteReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ConfigureAwait(false);
+                    return false;
             }
 
             throw new SmtpResponseException(SmtpResponse.TransactionFailed);

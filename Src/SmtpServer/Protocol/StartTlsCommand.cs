@@ -1,6 +1,4 @@
-﻿using System.Security.Authentication;
-using System.Security.Cryptography.X509Certificates;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.IO;
 
@@ -10,17 +8,10 @@ namespace SmtpServer.Protocol
     {
         public const string Command = "STARTTLS";
 
-        readonly X509Certificate _certificate;
-        readonly SslProtocols _sslProtocols;
-
         /// <summary>
         /// Constructor.
         /// </summary>
-        internal StartTlsCommand(X509Certificate certificate, SslProtocols sslProtocols) : base(Command)
-        {
-            _certificate = certificate;
-            _sslProtocols = sslProtocols;
-        }
+        public StartTlsCommand() : base(Command) { }
 
         /// <summary>
         /// Execute the command.
@@ -33,7 +24,10 @@ namespace SmtpServer.Protocol
         {
             await context.Pipe.Output.WriteReplyAsync(SmtpResponse.ServiceReady, cancellationToken).ConfigureAwait(false);
 
-            await context.Pipe.UpgradeAsync(_certificate, _sslProtocols, cancellationToken).ConfigureAwait(false);
+            var certificate = context.ServerOptions.ServerCertificate;
+            var protocols = context.ServerOptions.SupportedSslProtocols;
+
+            await context.Pipe.UpgradeAsync(certificate, protocols, cancellationToken).ConfigureAwait(false);
 
             return true;
         }

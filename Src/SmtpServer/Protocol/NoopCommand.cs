@@ -11,7 +11,7 @@ namespace SmtpServer.Protocol
         /// <summary>
         /// Constructor.
         /// </summary>
-        internal NoopCommand() : base(Command) { }
+        public NoopCommand() : base(Command) { }
 
         /// <summary>
         /// Execute the command.

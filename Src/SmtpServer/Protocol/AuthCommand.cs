@@ -5,16 +5,16 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.Authentication;
+using SmtpServer.ComponentModel;
 using SmtpServer.IO;
 using SmtpServer.Storage;
 
 namespace SmtpServer.Protocol
 {
-    public class AuthCommand : SmtpCommand
+    public sealed class AuthCommand : SmtpCommand
     {
         public const string Command = "AUTH";
 
-        readonly IUserAuthenticatorFactory _userAuthenticatorFactory;
         string _user;
         string _password;
 
@@ -23,13 +23,10 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="method">The authentication method.</param>
         /// <param name="parameter">The authentication parameter.</param>
-        /// <param name="userAuthenticatorFactory">The factory to create per session instances of the user authenticator.</param>
-        public AuthCommand(AuthenticationMethod method, string parameter, IUserAuthenticatorFactory userAuthenticatorFactory) : base(Command)
+        public AuthCommand(AuthenticationMethod method, string parameter) : base(Command)
         {
             Method = method;
             Parameter = parameter;
-
-            _userAuthenticatorFactory = userAuthenticatorFactory;
         }
 
         /// <summary>
@@ -62,7 +59,9 @@ namespace SmtpServer.Protocol
                     break;
             }
 
-            using (var container = new DisposableContainer<IUserAuthenticator>(_userAuthenticatorFactory.CreateInstance(context)))
+            var userAuthenticatorFactory = context.ServiceProvider.GetServiceOrDefault(UserAuthenticator.Default);
+
+            using (var container = new DisposableContainer<IUserAuthenticator>(userAuthenticatorFactory.CreateInstance(context)))
             {
                 if (await container.Instance.AuthenticateAsync(context, _user, _password, cancellationToken).ConfigureAwait(false) == false)
                 {

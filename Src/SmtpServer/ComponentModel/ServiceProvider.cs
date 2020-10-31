@@ -8,7 +8,7 @@ namespace SmtpServer.ComponentModel
 {
     public sealed class ServiceProvider : IServiceProvider
     {
-        internal static readonly IServiceProvider Default = new ServiceProvider();
+        public static readonly IServiceProvider Default = new ServiceProvider();
 
         IEndpointListenerFactory _endpointListenerFactory;
         IUserAuthenticatorFactory _userAuthenticatorFactory;

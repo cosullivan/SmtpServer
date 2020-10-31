@@ -5,6 +5,8 @@ namespace SmtpServer.Authentication
 {
     public abstract class UserAuthenticator : IUserAuthenticator, IUserAuthenticatorFactory
     {
+        public static readonly IUserAuthenticatorFactory Default = new DefaultUserAuthenticator();
+
         /// <summary>
         /// Creates an instance of the user authenticator for the given session context.
         /// </summary>
@@ -28,5 +30,25 @@ namespace SmtpServer.Authentication
             string user, 
             string password, 
             CancellationToken cancellationToken);
+
+        sealed class DefaultUserAuthenticator : UserAuthenticator
+        {
+            /// <summary>
+            /// Authenticate a user account.
+            /// </summary>
+            /// <param name="context">The session context.</param>
+            /// <param name="user">The user to authenticate.</param>
+            /// <param name="password">The password of the user.</param>
+            /// <param name="cancellationToken">The cancellation token.</param>
+            /// <returns>true if the user is authenticated, false if not.</returns>
+            public override Task<bool> AuthenticateAsync(
+                ISessionContext context,
+                string user,
+                string password,
+                CancellationToken cancellationToken)
+            {
+                return Task.FromResult(true);
+            }
+        }
     }
 }

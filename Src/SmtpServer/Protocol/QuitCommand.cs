@@ -11,7 +11,7 @@ namespace SmtpServer.Protocol
         /// <summary>
         /// Constructor.
         /// </summary>
-        internal QuitCommand() : base(Command) { }
+        public QuitCommand() : base(Command) { }
 
         /// <summary>
         /// Execute the command.
