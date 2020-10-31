@@ -30,9 +30,9 @@ namespace SmtpServer.Protocol
         /// if the current state is to be maintained.</returns>
         internal override async Task<bool> ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            var mailboxFilterFactory = context.ServiceProvider.GetServiceOrDefault(MailboxFilter.Default);
+            var mailboxFilter = context.ServiceProvider.GetService<IMailboxFilterFactory, IMailboxFilter>(context, MailboxFilter.Default);
 
-            using var container = new DisposableContainer<IMailboxFilter>(mailboxFilterFactory.CreateInstance(context));
+            using var container = new DisposableContainer<IMailboxFilter>(mailboxFilter);
 
             switch (await container.Instance.CanDeliverToAsync(context, Address, context.Transaction.From, cancellationToken).ConfigureAwait(false))
             {

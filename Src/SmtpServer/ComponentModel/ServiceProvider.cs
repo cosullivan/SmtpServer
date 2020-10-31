@@ -15,6 +15,13 @@ namespace SmtpServer.ComponentModel
         ISmtpCommandFactory _smtpCommandFactory;
         IMailboxFilterFactory _mailboxFilterFactory;
         IMessageStoreFactory _messageStoreFactory;
+        
+        public ServiceProvider()
+        {
+            Add(UserAuthenticator.Default);
+            Add(MailboxFilter.Default);
+            Add(MessageStore.Default);
+        }
 
         /// <summary>
         /// Add an instance of the endpoint listener factory.
@@ -32,6 +39,15 @@ namespace SmtpServer.ComponentModel
         public void Add(IUserAuthenticatorFactory userAuthenticatorFactory)
         {
             _userAuthenticatorFactory = userAuthenticatorFactory;
+        }
+
+        /// <summary>
+        /// Add an instance of the user authenticator.
+        /// </summary>
+        /// <param name="userAuthenticator">The user authenticator.</param>
+        public void Add(IUserAuthenticator userAuthenticator)
+        {
+            _userAuthenticatorFactory = new DelegatingUserAuthenticatorFactory(context => userAuthenticator);
         }
 
         /// <summary>
@@ -53,12 +69,30 @@ namespace SmtpServer.ComponentModel
         }
 
         /// <summary>
+        /// Add an instance of the Mailbox Filter.
+        /// </summary>
+        /// <param name="mailboxFilter">The mailbox filter.</param>
+        public void Add(IMailboxFilter mailboxFilter)
+        {
+            _mailboxFilterFactory = new DelegatingMailboxFilterFactory(context => mailboxFilter);
+        }
+
+        /// <summary>
         /// Add an instance of the Message Store Factory.
         /// </summary>
         /// <param name="messageStoreFactory">The message store factory.</param>
         public void Add(IMessageStoreFactory messageStoreFactory)
         {
             _messageStoreFactory = messageStoreFactory;
+        }
+
+        /// <summary>
+        /// Add an instance of the Message Store.
+        /// </summary>
+        /// <param name="messageStore">The message store.</param>
+        public void Add(IMessageStore messageStore)
+        {
+            _messageStoreFactory = new DelegatingMessageStoreFactory(context => messageStore);
         }
 
         /// <summary>

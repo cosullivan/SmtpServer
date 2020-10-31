@@ -33,11 +33,11 @@ namespace SmtpServer.Protocol
 
             await context.Pipe.Output.WriteReplyAsync(new SmtpResponse(SmtpReplyCode.StartMailInput, "end with <CRLF>.<CRLF>"), cancellationToken).ConfigureAwait(false);
 
-            var messageStoreFactory = context.ServiceProvider.GetServiceOrDefault(MessageStore.Default);
+            var messageStore = context.ServiceProvider.GetService<IMessageStoreFactory, IMessageStore>(context, MessageStore.Default);
 
             try
             {
-                using var container = new DisposableContainer<IMessageStore>(messageStoreFactory.CreateInstance(context));
+                using var container = new DisposableContainer<IMessageStore>(messageStore);
 
                 SmtpResponse response = null;
 

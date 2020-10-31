@@ -59,9 +59,9 @@ namespace SmtpServer.Protocol
                     break;
             }
 
-            var userAuthenticatorFactory = context.ServiceProvider.GetServiceOrDefault(UserAuthenticator.Default);
+            var userAuthenticator = context.ServiceProvider.GetService<IUserAuthenticatorFactory, IUserAuthenticator>(context, UserAuthenticator.Default);
 
-            using (var container = new DisposableContainer<IUserAuthenticator>(userAuthenticatorFactory.CreateInstance(context)))
+            using (var container = new DisposableContainer<IUserAuthenticator>(userAuthenticator))
             {
                 if (await container.Instance.AuthenticateAsync(context, _user, _password, cancellationToken).ConfigureAwait(false) == false)
                 {

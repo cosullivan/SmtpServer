@@ -4,21 +4,9 @@ using SmtpServer.Mail;
 
 namespace SmtpServer.Storage
 {
-    public abstract class MailboxFilter : IMailboxFilter, IMailboxFilterFactory
+    public abstract class MailboxFilter : IMailboxFilter
     {
-        sealed class DefaultMailboxFilter : MailboxFilter { }
-
-        public static readonly IMailboxFilterFactory Default = new DefaultMailboxFilter();
-
-        /// <summary>
-        /// Creates an instance of the message box filter.
-        /// </summary>
-        /// <param name="context">The session context.</param>
-        /// <returns>The mailbox filter for the session.</returns>
-        public virtual IMailboxFilter CreateInstance(ISessionContext context)
-        {
-            return this;
-        }
+        public static readonly IMailboxFilter Default = new DefaultMailboxFilter();
 
         /// <summary>
         /// Returns a value indicating whether the given mailbox can be accepted as a sender.
@@ -53,5 +41,7 @@ namespace SmtpServer.Storage
         {
             return Task.FromResult(MailboxFilterResult.Yes);
         }
+
+        sealed class DefaultMailboxFilter : MailboxFilter { }
     }
 }

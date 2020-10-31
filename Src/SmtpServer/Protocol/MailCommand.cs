@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.ComponentModel;
@@ -51,9 +52,9 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
-            var mailboxFilterFactory = context.ServiceProvider.GetServiceOrDefault(MailboxFilter.Default);
+            var mailboxFilter = context.ServiceProvider.GetService<IMailboxFilterFactory, IMailboxFilter>(context, MailboxFilter.Default);
 
-            using var container = new DisposableContainer<IMailboxFilter>(mailboxFilterFactory.CreateInstance(context));
+            using var container = new DisposableContainer<IMailboxFilter>(mailboxFilter);
 
             switch (await container.Instance.CanAcceptFromAsync(context, Address, size, cancellationToken).ConfigureAwait(false))
             {

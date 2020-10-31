@@ -5,19 +5,9 @@ using SmtpServer.Protocol;
 
 namespace SmtpServer.Storage
 {
-    public abstract class MessageStore : IMessageStore, IMessageStoreFactory
+    public abstract class MessageStore : IMessageStore
     {
-        public static readonly IMessageStoreFactory Default = new DefaultMessageStore();
-
-        /// <summary>
-        /// Creates an instance of the message store for the given session context.
-        /// </summary>
-        /// <param name="context">The session context.</param>
-        /// <returns>The message store instance for the session context.</returns>
-        public virtual IMessageStore CreateInstance(ISessionContext context)
-        {
-            return this;
-        }
+        public static readonly IMessageStore Default = new DefaultMessageStore();
 
         /// <summary>
         /// Save the given message to the underlying storage system.

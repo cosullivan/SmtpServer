@@ -7,6 +7,7 @@ using SmtpServer.IO;
 using System.IO.Pipelines;
 using SmtpServer.StateMachine;
 using SmtpServer.ComponentModel;
+using SmtpServer.Text;
 
 namespace SmtpServer
 {
