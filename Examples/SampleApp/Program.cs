@@ -17,13 +17,12 @@ namespace SampleApp
         {
             ServicePointManager.ServerCertificateValidationCallback = IgnoreCertificateValidationFailureForTestingOnly;
 
-            //SimpleExample.Run();
+            SimpleExample.Run();
             //SimpleServerExample.Run();
             //CustomEndpointListenerExample.Run();
             //ServerCancellingExample.Run();
             //SessionTracingExample.Run();
-
-            DependencyInjectionExample.Run();
+            //DependencyInjectionExample.Run();
 
             //var files = Directory.GetFiles(@"C:\Temp\enron_mail_20150507.tar", "*.*", SearchOption.AllDirectories).ToList();
             //Console.WriteLine(files.OrderByDescending(file => new FileInfo(file).Length).First());

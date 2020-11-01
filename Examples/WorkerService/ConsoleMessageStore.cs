@@ -1,17 +1,15 @@
 ﻿using System;
 using System.Buffers;
 using System.IO;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer;
-using SmtpServer.Mail;
 using SmtpServer.Protocol;
 using SmtpServer.Storage;
 
-namespace SampleApp
+namespace WorkerService
 {
-    public class SampleMessageStore : MessageStore
+    public sealed class ConsoleMessageStore : MessageStore
     {
         /// <summary>
         /// Save the given message to the underlying storage system.
@@ -21,16 +19,21 @@ namespace SampleApp
         /// <param name="buffer">The buffer that contains the message content.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A unique identifier that represents this message in the underlying message store.</returns>
-        public override Task<SmtpResponse> SaveAsync(ISessionContext context, IMessageTransaction transaction, ReadOnlySequence<byte> buffer, CancellationToken cancellationToken)
+        public override async Task<SmtpResponse> SaveAsync(ISessionContext context, IMessageTransaction transaction, ReadOnlySequence<byte> buffer, CancellationToken cancellationToken)
         {
-            //var textMessage = (ITextMessage)transaction.Message;
+            await using var stream = new MemoryStream();
+            
+            var position = buffer.GetPosition(0);
+            while (buffer.TryGet(ref position, out var memory))
+            {
+                await stream.WriteAsync(memory, cancellationToken);
+            }
 
-            //using (var reader = new StreamReader(textMessage.Content, Encoding.UTF8))
-            //{
-            //    Console.WriteLine(reader.ReadToEnd());
-            //}
+            stream.Position = 0;
 
-            return Task.FromResult(SmtpResponse.Ok);
+            Console.WriteLine(await new StreamReader(stream).ReadToEndAsync());
+
+            return SmtpResponse.Ok;
         }
     }
 }

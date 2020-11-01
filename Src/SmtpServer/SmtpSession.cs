@@ -7,7 +7,6 @@ using SmtpServer.IO;
 using System.IO.Pipelines;
 using SmtpServer.StateMachine;
 using SmtpServer.ComponentModel;
-using SmtpServer.Text;
 
 namespace SmtpServer
 {
@@ -110,9 +109,6 @@ namespace SmtpServer
                 await context.Pipe.Input.ReadLineAsync(
                     buffer =>
                     {
-#if DEBUG
-                        Console.WriteLine(StringUtil.Create(buffer));
-#endif
                         var parser = new SmtpParser(_commandFactory);
 
                         if (parser.TryMake(ref buffer, out command, out var errorResponse) == false)
