@@ -29,7 +29,7 @@ namespace SmtpServer.IO
             {
                 throw new ArgumentNullException(nameof(reader));
             }
-
+            
             var read = await reader.ReadAsync(cancellationToken);
             var head = read.Buffer.Start;
 

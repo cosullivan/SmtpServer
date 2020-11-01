@@ -545,21 +545,12 @@ namespace SmtpServer.Protocol
         /// <returns>Returns true if a command could be made, false if not.</returns>
         public bool TryMakeStartTls(ref TokenReader reader, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            // ABNF
-            // proxy            = "PROXY" space ( unknown-proxy | tcp4-proxy | tcp6-proxy )
-            // unknown-proxy    = "UNKNOWN"
-            // tcp4-proxy       = "TCP4" space ipv4-address-literal space ipv4-address-literal space ip-port-number space ip-port-number   
-            // tcp6-proxy       = "TCP6" space ipv6-address-literal space ipv6-address-literal space ip-port-number space ip-port-number
-            // space            = " "
-            // ip-port          = wnum
-            // wnum             = 1*5DIGIT ; in the range of 0-65535
-
             command = null;
             errorResponse = null;
 
             if (reader.TryMake(TryMakeStartTlsLiteral) == false)
             {
-                return true;
+                return false;
             }
 
             reader.Skip(TokenKind.Space);

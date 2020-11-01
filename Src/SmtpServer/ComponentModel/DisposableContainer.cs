@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SmtpServer.Storage
+namespace SmtpServer.ComponentModel
 {
     internal sealed class DisposableContainer<TInstance> : IDisposable
     {
