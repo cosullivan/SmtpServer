@@ -95,37 +95,9 @@ namespace SmtpServer.Text
         /// <returns>true if <paramref name="other"/> and this instance are the same type and represent the same value; otherwise, false. </returns>
         public bool Equals(Token other)
         {
-            // TODO: need a faster comaprison implementation
+            // TODO: need a faster comparisson implementation
             return Kind == other.Kind && Text.ToString().Equals(other.Text.ToString(), StringComparison.OrdinalIgnoreCase);
-            //return Kind == other.Kind && Text.Equals(other.Text, StringComparison.OrdinalIgnoreCase);
         }
-
-        ///// <summary>
-        ///// Indicates whether this instance and a specified object are equal.
-        ///// </summary>
-        ///// <param name="obj">Another object to compare to. </param>
-        ///// <returns>true if <paramref name="obj"/> and this instance are the same type and represent the same value; otherwise, false. </returns>
-        //public override bool Equals(object obj)
-        //{
-        //    if (ReferenceEquals(null, obj))
-        //    {
-        //        return false;
-        //    }
-
-        //    return obj is Token && Equals((Token)obj);
-        //}
-
-        ///// <summary>
-        ///// Returns the hash code for this instance.
-        ///// </summary>
-        ///// <returns>A 32-bit signed integer that is the hash code for this instance.</returns>
-        //public override int GetHashCode()
-        //{
-        //    unchecked
-        //    {
-        //        return (Text.GetHashCode() * 397) ^ (int)Kind;
-        //    }
-        //}
 
         /// <summary>
         /// Returns a value indicating the equality of the two objects.
