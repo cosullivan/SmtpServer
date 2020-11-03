@@ -6,6 +6,9 @@ SmtpServer is a simple, but highly functional SMTP server implementation. Writte
 
 SmtpServer is available via [NuGet](https://www.nuget.org/packages/SmtpServer/)
 
+# Whats New?
+See [here](https://github.com/cosullivan/SmtpServer/blob/master/Version8.md) for whats new in Version 8.
+
 # What does it support?
 SmtpServer currently supports the following ESMTP extensions:
 * STARTTLS
@@ -24,7 +27,7 @@ var options = new SmtpServerOptionsBuilder()
     .Port(25, 587)
     .Build();
 
-var smtpServer = new SmtpServer.SmtpServer(options);
+var smtpServer = new SmtpServer.SmtpServer(options, ServiceProvider.Default);
 await smtpServer.StartAsync(CancellationToken.None);
 ```
 
@@ -36,27 +39,37 @@ var options = new SmtpServerOptionsBuilder()
     .Port(25, 587)
     .Port(465, isSecure: true)
     .Certificate(CreateX509Certificate2())
-    .MessageStore(new SampleMessageStore())
-    .MailboxFilter(new SampleMailboxFilter())
-    .UserAuthenticator(new SampleUserAuthenticator())
     .Build();
 
-var smtpServer = new SmtpServer.SmtpServer(options);
+var serviceProvider = new ServiceProvider();
+serviceProvider.Add(new SampleMessageStore());
+serviceProvider.Add(new SampleMailboxFilter());
+serviceProvider.Add(new SampleUserAuthenticator());
+
+var smtpServer = new SmtpServer.SmtpServer(options, serviceProvider);
 await smtpServer.StartAsync(CancellationToken.None);
 ```
 
 ```cs
 public class SampleMessageStore : MessageStore
 {
-    public override Task<SmtpResponse> SaveAsync(ISessionContext context, IMessageTransaction transaction, CancellationToken cancellationToken)
-    {
-        var textMessage = (ITextMessage)transaction.Message;
-        
-        var message = MimeKit.MimeMessage.Load(textMessage.Content);
-        Console.WriteLine(message.TextBody);
-    
-        return Task.FromResult(SmtpResponse.Ok);
-    }
+    public override async Task<SmtpResponse> SaveAsync(ISessionContext context, IMessageTransaction transaction, ReadOnlySequence<byte> buffer, CancellationToken cancellationToken)
+        {
+            await using var stream = new MemoryStream();
+
+            var position = buffer.GetPosition(0);
+            while (buffer.TryGet(ref position, out var memory))
+            {
+                await stream.WriteAsync(memory, cancellationToken);
+            }
+
+            stream.Position = 0;
+
+            var message = await MimeKit.MimeMessage.LoadAsync(stream, cancellationToken);
+            Console.WriteLine(message.TextBody);
+            
+            return SmtpResponse.Ok;
+        }
 }
 ```
 
