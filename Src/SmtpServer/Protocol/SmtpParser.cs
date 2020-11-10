@@ -13,6 +13,8 @@ namespace SmtpServer.Protocol
     {
         delegate bool TryMakeDelegate(ref TokenReader reader, out SmtpCommand command, out SmtpResponse errorResponse);
 
+        static readonly SmtpResponse UnrecognizedCommand = new SmtpResponse(SmtpReplyCode.CommandNotImplemented, "Unrecognized command");
+
         readonly ISmtpCommandFactory _smtpCommandFactory;
 
         public SmtpParser(ISmtpCommandFactory smtpCommandFactory)
@@ -29,24 +31,33 @@ namespace SmtpServer.Protocol
         /// <returns>Returns true if a command could be made, false if not.</returns>
         public bool TryMake(ref ReadOnlySequence<byte> buffer, out SmtpCommand command, out SmtpResponse errorResponse)
         {
-            return TryMake(buffer, TryMakeEhlo, out command, out errorResponse)
-                || TryMake(buffer, TryMakeHelo, out command, out errorResponse)
-                || TryMake(buffer, TryMakeMail, out command, out errorResponse)
-                || TryMake(buffer, TryMakeRcpt, out command, out errorResponse)
-                || TryMake(buffer, TryMakeData, out command, out errorResponse)
-                || TryMake(buffer, TryMakeQuit, out command, out errorResponse)
-                || TryMake(buffer, TryMakeRset, out command, out errorResponse)
-                || TryMake(buffer, TryMakeNoop, out command, out errorResponse)
-                || TryMake(buffer, TryMakeStartTls, out command, out errorResponse)
-                || TryMake(buffer, TryMakeAuth, out command, out errorResponse)
-                || TryMake(buffer, TryMakeProxy, out command, out errorResponse);
+            return Make(buffer, TryMakeEhlo, out command, out errorResponse)
+                || Make(buffer, TryMakeHelo, out command, out errorResponse)
+                || Make(buffer, TryMakeMail, out command, out errorResponse)
+                || Make(buffer, TryMakeRcpt, out command, out errorResponse)
+                || Make(buffer, TryMakeData, out command, out errorResponse)
+                || Make(buffer, TryMakeQuit, out command, out errorResponse)
+                || Make(buffer, TryMakeRset, out command, out errorResponse)
+                || Make(buffer, TryMakeNoop, out command, out errorResponse)
+                || Make(buffer, TryMakeStartTls, out command, out errorResponse)
+                || Make(buffer, TryMakeAuth, out command, out errorResponse)
+                || Make(buffer, TryMakeProxy, out command, out errorResponse)
+                || Make(buffer, MakeUnrecognized, out command, out errorResponse);
 
-            static bool TryMake(ReadOnlySequence<byte> buffer, TryMakeDelegate tryMakeDelegate, out SmtpCommand command, out SmtpResponse errorResponse)
+            static bool Make(ReadOnlySequence<byte> buffer, TryMakeDelegate tryMakeDelegate, out SmtpCommand command, out SmtpResponse errorResponse)
             {
                 var reader = new TokenReader(buffer);
 
                 return tryMakeDelegate(ref reader, out command, out errorResponse);
             }
+        }
+
+        static bool MakeUnrecognized(ref TokenReader reader, out SmtpCommand command, out SmtpResponse errorResponse)
+        {
+            command = null;
+            errorResponse = UnrecognizedCommand;
+
+            return false;
         }
 
         /// <summary>
