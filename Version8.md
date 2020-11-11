@@ -4,7 +4,11 @@ Version 8 contains substantial refactoring to take advantage of [System.IO.Pipel
 In addition to this there are also changes to make service resolution easier via Dependency Injection through utilizing the [IServiceProvider](https://docs.microsoft.com/en-us/dotnet/api/system.iserviceprovider) interface. 
 
 ## Performance
-The throuhput performance and memory allocation of version 7.2 and version 8 were benchmarked using [BenchmarkDotNet](https://www.nuget.org/packages/BenchmarkDotNet/). The benchmark consisted of a single *Send* test which is the result of having a basic SmtpServer configuration and sending a 143kb email that was take from the Enron Corpus dataset.
+The throuhput performance and memory allocation of version 7.2 and version 8 were benchmarked using [BenchmarkDotNet](https://www.nuget.org/packages/BenchmarkDotNet/). 
+
+The benchmark for version 7.2 consisted of a single *Send* test which is the result of having a basic SmtpServer configuration and sending a 143kb email that was take from the Enron Corpus dataset.
+
+The benchmark for version 8.0 consisted of the exact same configuration but using three different sized emails, 1kb, 143kb (the same email as the v7.2 benchmark), and a 1,991kb email.
 
 ### Version 7.2
 
@@ -12,11 +16,25 @@ The throuhput performance and memory allocation of version 7.2 and version 8 wer
 |------- |---------:|----------:|----------:|--------:|--------:|------:|----------:|
 |   Send | 3.885 ms | 0.0760 ms | 0.0781 ms | 93.7500 | 31.2500 |     - | 435.73 KB |
 
-### Version 8
+### Version 8 
 
-| Method |     Mean |     Error |    StdDev |   Gen 0 | Gen 1 | Gen 2 | Allocated |
-|------- |---------:|----------:|----------:|--------:|------:|------:|----------:|
-|   Send | 2.204 ms | 0.0307 ms | 0.0287 ms | 11.7188 |     - |     - |  41.91 KB |
+#### .NET Core 3.1.9
+.NET Core 3.1.9 (CoreCLR 4.700.20.47201, CoreFX 4.700.20.47203), X64 RyuJIT
+
+| Method |        Mean |     Error |    StdDev |    Gen 0 |    Gen 1 | Gen 2 |  Allocated |
+|------- |------------:|----------:|----------:|---------:|---------:|------:|-----------:|
+|  Send1 |    368.2 us |   6.41 us |   5.68 us |   8.7891 |        - |     - |   26.52 KB |
+|  Send2 |  2,131.6 us |  37.74 us |  55.32 us |  11.7188 |        - |     - |   42.66 KB |
+|  Send3 | 27,796.1 us | 337.56 us | 299.24 us | 562.5000 | 218.7500 |     - | 1918.65 KB |
+
+#### .NET Core 5.0.0
+.NET Core 5.0.0 (CoreCLR 5.0.20.51904, CoreFX 5.0.20.51904), X64 RyuJIT
+
+| Method |        Mean |     Error |    StdDev |    Gen 0 |    Gen 1 | Gen 2 |  Allocated |
+|------- |------------:|----------:|----------:|---------:|---------:|------:|-----------:|
+|  Send1 |    334.5 us |   2.00 us |   1.78 us |   8.7891 |        - |     - |   26.41 KB |
+|  Send2 |  1,873.4 us |  20.46 us |  19.14 us |  13.6719 |        - |     - |   42.43 KB |
+|  Send3 | 25,821.3 us | 492.01 us | 436.15 us | 500.0000 | 156.2500 |     - | 1921.11 KB |
 
 ## Breaking Changes
 There are a number of breaking changes from v7.
