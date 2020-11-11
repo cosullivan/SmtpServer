@@ -14,7 +14,7 @@ The benchmark for version 8.0 consisted of the exact same configuration but usin
 
 | Method |     Mean |     Error |    StdDev |   Gen 0 |   Gen 1 | Gen 2 | Allocated |
 |------- |---------:|----------:|----------:|--------:|--------:|------:|----------:|
-|   Send | 3.885 ms | 0.0760 ms | 0.0781 ms | 93.7500 | 31.2500 |     - | 435.73 KB |
+|  143kb | 3.885 ms | 0.0760 ms | 0.0781 ms | 93.7500 | 31.2500 |     - | 435.73 KB |
 
 ### Version 8 
 
@@ -23,18 +23,18 @@ The benchmark for version 8.0 consisted of the exact same configuration but usin
 
 | Method |        Mean |     Error |    StdDev |    Gen 0 |    Gen 1 | Gen 2 |  Allocated |
 |------- |------------:|----------:|----------:|---------:|---------:|------:|-----------:|
-|  Send1 |    368.2 us |   6.41 us |   5.68 us |   8.7891 |        - |     - |   26.52 KB |
-|  Send2 |  2,131.6 us |  37.74 us |  55.32 us |  11.7188 |        - |     - |   42.66 KB |
-|  Send3 | 27,796.1 us | 337.56 us | 299.24 us | 562.5000 | 218.7500 |     - | 1918.65 KB |
+|    1kb |    368.2 us |   6.41 us |   5.68 us |   8.7891 |        - |     - |   26.52 KB |
+|  143kb |  2,131.6 us |  37.74 us |  55.32 us |  11.7188 |        - |     - |   42.66 KB |
+| 1991kb | 27,796.1 us | 337.56 us | 299.24 us | 562.5000 | 218.7500 |     - | 1918.65 KB |
 
 #### .NET Core 5.0.0
 .NET Core 5.0.0 (CoreCLR 5.0.20.51904, CoreFX 5.0.20.51904), X64 RyuJIT
 
 | Method |        Mean |     Error |    StdDev |    Gen 0 |    Gen 1 | Gen 2 |  Allocated |
 |------- |------------:|----------:|----------:|---------:|---------:|------:|-----------:|
-|  Send1 |    334.5 us |   2.00 us |   1.78 us |   8.7891 |        - |     - |   26.41 KB |
-|  Send2 |  1,873.4 us |  20.46 us |  19.14 us |  13.6719 |        - |     - |   42.43 KB |
-|  Send3 | 25,821.3 us | 492.01 us | 436.15 us | 500.0000 | 156.2500 |     - | 1921.11 KB |
+|    1kb |    334.5 us |   2.00 us |   1.78 us |   8.7891 |        - |     - |   26.41 KB |
+|  143kb |  1,873.4 us |  20.46 us |  19.14 us |  13.6719 |        - |     - |   42.43 KB |
+| 1991kb | 25,821.3 us | 492.01 us | 436.15 us | 500.0000 | 156.2500 |     - | 1921.11 KB |
 
 ## Breaking Changes
 There are a number of breaking changes from v7.
