@@ -272,6 +272,35 @@ namespace SmtpServer.Tests
         }
 
         [Fact]
+        public void SecuresTheSessionByDefault()
+        {
+            ServicePointManager.ServerCertificateValidationCallback = IgnoreCertificateValidationFailureForTestingOnly;
+
+            using (var disposable = CreateServer(options => options.Certificate(CreateCertificate()), endpoint => endpoint.IsSecure(true)))
+            {
+                var isSecure = false;
+                var sessionCreatedHandler = new EventHandler<SessionEventArgs>(
+                    delegate (object sender, SessionEventArgs args)
+                    {
+                        args.Context.CommandExecuted += (_, commandArgs) =>
+                        {
+                            isSecure = commandArgs.Context.Pipe.IsSecure;
+                        };
+                    });
+
+                disposable.Server.SessionCreated += sessionCreatedHandler;
+                
+                MailClient.NoOp(MailKit.Security.SecureSocketOptions.SslOnConnect);
+
+                disposable.Server.SessionCreated -= sessionCreatedHandler;
+                
+                Assert.True(isSecure);
+            }
+
+            ServicePointManager.ServerCertificateValidationCallback = null;
+        }
+
+        [Fact]
         public void ServerCanBeSecuredAndAuthenticated()
         {
             var userAuthenticator = new DelegatingUserAuthenticator((user, password) => true);
@@ -347,7 +376,7 @@ namespace SmtpServer.Tests
         /// <returns>A disposable instance which will close and release the server instance.</returns>
         SmtpServerDisposable CreateServer()
         {
-            return CreateServer(options => { }, options => { });
+            return CreateServer(_ => { }, _ => { }, _ => { });
         }
 
         /// <summary>
@@ -358,6 +387,17 @@ namespace SmtpServer.Tests
         SmtpServerDisposable CreateServer(Action<SmtpServerOptionsBuilder> serverConfiguration)
         {
             return CreateServer(serverConfiguration, endpointConfiguration => { }, services => { });
+        }
+
+        /// <summary>
+        /// Create a running instance of a server.
+        /// </summary>
+        /// <param name="serverConfiguration">The configuration to apply to run the server.</param>
+        /// <param name="endpointConfiguration">The configuration to apply to the endpoint.</param>
+        /// <returns>A disposable instance which will close and release the server instance.</returns>
+        SmtpServerDisposable CreateServer(Action<SmtpServerOptionsBuilder> serverConfiguration, Action<EndpointDefinitionBuilder> endpointConfiguration)
+        {
+            return CreateServer(serverConfiguration, endpointConfiguration, services => { });
         }
 
         /// <summary>

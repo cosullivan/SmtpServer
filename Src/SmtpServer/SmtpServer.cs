@@ -133,6 +133,12 @@ namespace SmtpServer
                     sessionContext.Pipe = await endpointListener.GetPipeAsync(sessionContext, cancellationTokenSource.Token).ConfigureAwait(false);
                     cancellationTokenSource.Token.ThrowIfCancellationRequested();
 
+                    if (sessionContext.EndpointDefinition.IsSecure && _options.ServerCertificate != null)
+                    {
+                        await sessionContext.Pipe.UpgradeAsync(_options.ServerCertificate, _options.SupportedSslProtocols, cancellationToken).ConfigureAwait(false);
+                        cancellationToken.ThrowIfCancellationRequested();
+                    }
+
                     _sessions.Run(sessionContext, cancellationTokenSource.Token);
                 }
                 catch (OperationCanceledException) { }

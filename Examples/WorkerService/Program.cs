@@ -32,7 +32,6 @@ namespace WorkerService
                             });
 
                         services.AddHostedService<Worker>();
-
                     });
     }
 }

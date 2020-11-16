@@ -5,7 +5,7 @@
     <LangVersion>8.0</LangVersion>
     <AssemblyName>SmtpServer</AssemblyName>
     <RootNamespace>SmtpServer</RootNamespace>
-    <Version>8.0.2</Version>
+    <Version>8.0.3</Version>
     <Description>.NET SmtpServer</Description>
     <Authors>Cain O'Sullivan</Authors>
     <Company />
@@ -18,7 +18,9 @@
     <AssemblyVersion>8.0.0.0</AssemblyVersion>
     <FileVersion>8.0.0.0</FileVersion>
     <PackageReleaseNotes>Version 8
-https://github.com/cosullivan/SmtpServer/blob/develop/Version8.md</PackageReleaseNotes>
+https://github.com/cosullivan/SmtpServer/blob/develop/Version8.md
+
+Version 8.0.3 Fixed a bug with IsSecure() not working on the Endpoint Definition.</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>

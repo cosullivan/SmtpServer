@@ -1,4 +1,5 @@
 ﻿using MailKit.Net.Smtp;
+using MailKit.Security;
 using MimeKit;
 using MimeKit.Text;
 
@@ -44,7 +45,7 @@ namespace SmtpServer.Tests
             return message;
         }
 
-        public static SmtpClient Client(string host = "localhost", int port = 9025)
+        public static SmtpClient Client(string host = "localhost", int port = 9025, SecureSocketOptions options = SecureSocketOptions.Auto)
         {
             var client = new SmtpClient();
             
@@ -53,7 +54,7 @@ namespace SmtpServer.Tests
 
             };
 
-            client.Connect("localhost", 9025);
+            client.Connect("localhost", 9025, options);
 
             return client;
         }
@@ -72,10 +73,17 @@ namespace SmtpServer.Tests
                 client.Authenticate(user, password);
             }
 
-            client.NoOp();
+            //client.NoOp();
 
             client.Send(message);
             client.Disconnect(true);
+        }
+
+        public static void NoOp(SecureSocketOptions options = SecureSocketOptions.Auto)
+        {
+            using var client = Client(options: options);
+
+            client.NoOp();
         }
     }
 }
