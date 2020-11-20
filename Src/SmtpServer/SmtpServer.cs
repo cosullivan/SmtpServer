@@ -1,8 +1,10 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.ComponentModel;
+using SmtpServer.IO;
 using SmtpServer.Net;
 
 namespace SmtpServer
@@ -130,19 +132,36 @@ namespace SmtpServer
                 try
                 {
                     // wait for a client connection
-                    sessionContext.Pipe = await endpointListener.GetPipeAsync(sessionContext, cancellationTokenSource.Token).ConfigureAwait(false);
-                    cancellationTokenSource.Token.ThrowIfCancellationRequested();
-
-                    if (sessionContext.EndpointDefinition.IsSecure && _options.ServerCertificate != null)
-                    {
-                        await sessionContext.Pipe.UpgradeAsync(_options.ServerCertificate, _options.SupportedSslProtocols, cancellationToken).ConfigureAwait(false);
-                        cancellationToken.ThrowIfCancellationRequested();
-                    }
+                    sessionContext.Pipe = await GetPipeAsync(endpointListener, sessionContext, cancellationTokenSource.Token).ConfigureAwait(false);
 
                     _sessions.Run(sessionContext, cancellationTokenSource.Token);
                 }
                 catch (OperationCanceledException) { }
+                catch (IOException) { }
             }
+        }
+
+        async Task<ISecurableDuplexPipe> GetPipeAsync(IEndpointListener endpointListener, SmtpSessionContext sessionContext, CancellationToken cancellationToken)
+        {
+            var pipe = await endpointListener.GetPipeAsync(sessionContext, cancellationToken).ConfigureAwait(false);
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if (sessionContext.EndpointDefinition.IsSecure && _options.ServerCertificate != null)
+                {
+                    await pipe.UpgradeAsync(_options.ServerCertificate, _options.SupportedSslProtocols, cancellationToken).ConfigureAwait(false);
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
+            }
+            catch
+            {
+                pipe.Dispose();
+
+                throw;
+            }
+
+            return pipe;
         }
 
         /// <summary>
