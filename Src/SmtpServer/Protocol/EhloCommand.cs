@@ -81,7 +81,7 @@ namespace SmtpServer.Protocol
 
             static bool IsPlainLoginAllowed(ISessionContext context)
             {
-                if (context.ServiceProvider.GetService(typeof(IUserAuthenticatorFactory)) == null)
+                if (context.ServiceProvider.GetService(typeof(IUserAuthenticatorFactory)) == null && context.ServiceProvider.GetService(typeof(IUserAuthenticator)) == null)
                 {
                     return false;
                 }

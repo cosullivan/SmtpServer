@@ -23,6 +23,7 @@ namespace SmtpServer.Benchmarks
         static readonly MimeMessage Message1 = MimeMessage.Load(typeof(ThroughputBenchmarks).Assembly.GetManifestResourceStream("SmtpServer.Benchmarks.Test1.eml"));
         static readonly MimeMessage Message2 = MimeMessage.Load(typeof(ThroughputBenchmarks).Assembly.GetManifestResourceStream("SmtpServer.Benchmarks.Test2.eml"));
         static readonly MimeMessage Message3 = MimeMessage.Load(typeof(ThroughputBenchmarks).Assembly.GetManifestResourceStream("SmtpServer.Benchmarks.Test3.eml"));
+        static readonly MimeMessage Message4 = MimeMessage.Load(typeof(ThroughputBenchmarks).Assembly.GetManifestResourceStream("SmtpServer.Benchmarks.Test4.eml"));
 
         [GlobalSetup]
         public void SmtpServerSetup()
@@ -58,6 +59,12 @@ namespace SmtpServer.Benchmarks
         public void Send3()
         {
             _smtpClient.Send(Message3);
+        }
+
+        [Benchmark]
+        public void Send4()
+        {
+            _smtpClient.Send(Message4);
         }
     }
 }

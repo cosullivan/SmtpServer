@@ -28,7 +28,7 @@ namespace SampleApp
         public override async Task<SmtpResponse> SaveAsync(ISessionContext context, IMessageTransaction transaction, ReadOnlySequence<byte> buffer, CancellationToken cancellationToken)
         {
             await using var stream = new MemoryStream();
-            
+
             var position = buffer.GetPosition(0);
             while (buffer.TryGet(ref position, out var memory))
             {
@@ -41,7 +41,7 @@ namespace SampleApp
 
             _writer.WriteLine("Subject={0}", message.Subject);
             _writer.WriteLine("Body={0}", message.Body);
-            
+
             return SmtpResponse.Ok;
         }
     }

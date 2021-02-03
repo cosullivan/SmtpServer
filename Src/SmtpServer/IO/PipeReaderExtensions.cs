@@ -160,7 +160,7 @@ namespace SmtpServer.IO
 
                 var remaining = buffer.Slice(start);
                 segments.Append(ref remaining);
-
+                
                 return segments.Build();
             }
         }

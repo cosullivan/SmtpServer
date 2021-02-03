@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using MimeKit;
 using SampleApp.Examples;
 using SmtpServer.IO;
 using SmtpServer.Text;
@@ -17,13 +18,13 @@ namespace SampleApp
         {
             ServicePointManager.ServerCertificateValidationCallback = IgnoreCertificateValidationFailureForTestingOnly;
 
-            //SimpleExample.Run();
+            SimpleExample.Run();
             //SimpleServerExample.Run();
             //CustomEndpointListenerExample.Run();
             //ServerCancellingExample.Run();
             //SessionTracingExample.Run();
             //DependencyInjectionExample.Run();
-            SecureServerExample.Run();
+            //SecureServerExample.Run();
 
             //var files = Directory.GetFiles(@"C:\Temp\enron_mail_20150507.tar", "*.*", SearchOption.AllDirectories).ToList();
             //Console.WriteLine(files.OrderByDescending(file => new FileInfo(file).Length).First());

@@ -15,6 +15,7 @@ namespace SampleApp
             int count = 1,
             bool useSsl = false)
         {
+            //var message = MimeMessage.Load(@"C:\Dev\Cain\Temp\message.eml");
             var message = new MimeMessage();
 
             message.From.Add(MailboxAddress.Parse(from ?? "from@sample.com"));

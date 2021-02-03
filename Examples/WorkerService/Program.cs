@@ -25,7 +25,7 @@ namespace WorkerService
                             {
                                 var options = new SmtpServerOptionsBuilder()
                                     .ServerName("SMTP Server")
-                                    .Port(25)
+                                    .Port(9025)
                                     .Build();
 
                                 return new SmtpServer.SmtpServer(options, provider.GetRequiredService<IServiceProvider>());

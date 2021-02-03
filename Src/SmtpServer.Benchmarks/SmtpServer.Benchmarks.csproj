@@ -9,12 +9,14 @@
     <None Remove="Test1.eml" />
     <None Remove="Test2.eml" />
     <None Remove="Test3.eml" />
+    <None Remove="Test4.eml" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="Test1.eml" />
     <EmbeddedResource Include="Test2.eml" />
     <EmbeddedResource Include="Test3.eml" />
+    <EmbeddedResource Include="Test4.eml" />
   </ItemGroup>
 
   <ItemGroup>
