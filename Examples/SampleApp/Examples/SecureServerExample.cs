@@ -58,7 +58,7 @@ namespace SampleApp.Examples
 
         static bool IgnoreCertificateValidationFailureForTestingOnly(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
-            return false;
+            return true;
         }
 
         static X509Certificate2 CreateCertificate()
