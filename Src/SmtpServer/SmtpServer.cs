@@ -133,24 +133,28 @@ namespace SmtpServer
                 {
                     // wait for a client connection
                     sessionContext.Pipe = await GetPipeAsync(endpointListener, sessionContext, cancellationTokenSource.Token).ConfigureAwait(false);
-
-                    _sessions.Run(sessionContext, cancellationTokenSource.Token);
                 }
                 catch (OperationCanceledException) { }
-                catch (IOException) { }
+                catch (Exception ex)
+                {
+                    OnSessionFaulted(new SessionFaultedEventArgs(sessionContext, ex));
+                    continue;
+                }
+
+                _sessions.Run(sessionContext, cancellationTokenSource.Token);
             }
         }
 
-        async Task<ISecurableDuplexPipe> GetPipeAsync(IEndpointListener endpointListener, SmtpSessionContext sessionContext, CancellationToken cancellationToken)
+        static async Task<ISecurableDuplexPipe> GetPipeAsync(IEndpointListener endpointListener, SmtpSessionContext sessionContext, CancellationToken cancellationToken)
         {
             var pipe = await endpointListener.GetPipeAsync(sessionContext, cancellationToken).ConfigureAwait(false);
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                if (sessionContext.EndpointDefinition.IsSecure && _options.ServerCertificate != null)
+                if (sessionContext.EndpointDefinition.IsSecure && sessionContext.EndpointDefinition.ServerCertificate != null)
                 {
-                    await pipe.UpgradeAsync(_options.ServerCertificate, _options.SupportedSslProtocols, cancellationToken).ConfigureAwait(false);
+                    await pipe.UpgradeAsync(sessionContext.EndpointDefinition.ServerCertificate, sessionContext.EndpointDefinition.SupportedSslProtocols, cancellationToken).ConfigureAwait(false);
                     cancellationToken.ThrowIfCancellationRequested();
                 }
             }

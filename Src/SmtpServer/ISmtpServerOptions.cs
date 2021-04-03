@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Security.Authentication;
-using System.Security.Cryptography.X509Certificates;
 
 namespace SmtpServer
 {
@@ -28,19 +26,9 @@ namespace SmtpServer
         string ServerName { get; }
 
         /// <summary>
-        /// Gets the Server Certificate to use when starting a TLS session.
-        /// </summary>
-        X509Certificate ServerCertificate { get; }
-
-        /// <summary>
         /// Gets the collection of endpoints to listen on.
         /// </summary>
         IReadOnlyList<IEndpointDefinition> Endpoints { get; }
-
-        /// <summary>
-        /// The supported SSL protocols.
-        /// </summary>
-        SslProtocols SupportedSslProtocols { get; }
 
         /// <summary>
         /// The timeout to use when waiting for a command from the client.

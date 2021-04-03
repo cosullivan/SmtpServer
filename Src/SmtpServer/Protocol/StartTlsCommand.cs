@@ -24,8 +24,8 @@ namespace SmtpServer.Protocol
         {
             await context.Pipe.Output.WriteReplyAsync(SmtpResponse.ServiceReady, cancellationToken).ConfigureAwait(false);
 
-            var certificate = context.ServerOptions.ServerCertificate;
-            var protocols = context.ServerOptions.SupportedSslProtocols;
+            var certificate = context.EndpointDefinition.ServerCertificate;
+            var protocols = context.EndpointDefinition.SupportedSslProtocols;
 
             await context.Pipe.UpgradeAsync(certificate, protocols, cancellationToken).ConfigureAwait(false);
 

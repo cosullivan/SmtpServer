@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Net;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 
 namespace SmtpServer
 {
@@ -29,5 +31,15 @@ namespace SmtpServer
         /// The timeout on each individual buffer read.
         /// </summary>
         TimeSpan ReadTimeout { get; }
+
+        /// <summary>
+        /// Gets the Server Certificate to use when starting a TLS session.
+        /// </summary>
+        X509Certificate ServerCertificate { get; }
+
+        /// <summary>
+        /// The supported SSL protocols.
+        /// </summary>
+        SslProtocols SupportedSslProtocols { get; }
     }
 }
