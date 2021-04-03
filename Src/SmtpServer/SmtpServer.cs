@@ -133,15 +133,19 @@ namespace SmtpServer
                 {
                     // wait for a client connection
                     sessionContext.Pipe = await GetPipeAsync(endpointListener, sessionContext, cancellationTokenSource.Token).ConfigureAwait(false);
-
-                    _sessions.Run(sessionContext, cancellationTokenSource.Token);
                 }
                 catch (OperationCanceledException) { }
-                catch (IOException) { }
+                catch (Exception ex)
+                {
+                    OnSessionFaulted(new SessionFaultedEventArgs(sessionContext, ex));
+                    continue;
+                }
+
+                _sessions.Run(sessionContext, cancellationTokenSource.Token);
             }
         }
 
-        async Task<ISecurableDuplexPipe> GetPipeAsync(IEndpointListener endpointListener, SmtpSessionContext sessionContext, CancellationToken cancellationToken)
+        static async Task<ISecurableDuplexPipe> GetPipeAsync(IEndpointListener endpointListener, SmtpSessionContext sessionContext, CancellationToken cancellationToken)
         {
             var pipe = await endpointListener.GetPipeAsync(sessionContext, cancellationToken).ConfigureAwait(false);
             try

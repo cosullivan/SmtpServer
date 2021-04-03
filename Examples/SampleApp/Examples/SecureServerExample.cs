@@ -33,7 +33,7 @@ namespace SampleApp.Examples
 
             var server = new SmtpServer.SmtpServer(options, serviceProvider);
             server.SessionCreated += OnSessionCreated;
-
+            
             var serverTask = server.StartAsync(cancellationTokenSource.Token);
 
             SampleMailClient.Send(user: "user", password: "password", useSsl: true);
@@ -58,7 +58,7 @@ namespace SampleApp.Examples
 
         static bool IgnoreCertificateValidationFailureForTestingOnly(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
-            return true;
+            return false;
         }
 
         static X509Certificate2 CreateCertificate()
