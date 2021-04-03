@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 
 namespace SmtpServer
 {
@@ -16,7 +18,8 @@ namespace SmtpServer
         {
             var definition = new EndpointDefinition
             {
-                ReadTimeout = TimeSpan.FromMinutes(2)
+                ReadTimeout = TimeSpan.FromMinutes(2),
+                SupportedSslProtocols = SslProtocols.Tls12,
             };
 
             _setters.ForEach(setter => setter(definition));
@@ -108,6 +111,30 @@ namespace SmtpServer
             return this;
         }
 
+        /// <summary>
+        /// Sets the X509 certificate to use when starting a TLS session.
+        /// </summary>
+        /// <param name="value">The server's certificate to use when starting a TLS session.</param>
+        /// <returns>A EndpointDefinitionBuilder to continue building on.</returns>
+        public EndpointDefinitionBuilder Certificate(X509Certificate value)
+        {
+            _setters.Add(options => options.ServerCertificate = value);
+
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the supported SSL protocols.
+        /// </summary>
+        /// <param name="value">The supported SSL protocols.</param>
+        /// <returns>A EndpointDefinitionBuilder to continue building on.</returns>
+        public EndpointDefinitionBuilder SupportedSslProtocols(SslProtocols value)
+        {
+            _setters.Add(options => options.SupportedSslProtocols = value);
+
+            return this;
+        }
+
         #region EndpointDefinition
 
         internal sealed class EndpointDefinition : IEndpointDefinition
@@ -136,6 +163,16 @@ namespace SmtpServer
             /// The timeout on each individual buffer read.
             /// </summary>
             public TimeSpan ReadTimeout { get; set; }
+
+            /// <summary>
+            /// Gets the Server Certificate to use when starting a TLS session.
+            /// </summary>
+            public X509Certificate ServerCertificate { get; set; }
+
+            /// <summary>
+            /// The supported SSL protocols.
+            /// </summary>
+            public SslProtocols SupportedSslProtocols { get; set; }
         }
 
         #endregion

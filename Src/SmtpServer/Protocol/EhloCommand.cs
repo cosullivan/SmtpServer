@@ -64,7 +64,7 @@ namespace SmtpServer.Protocol
             yield return "8BITMIME";
             yield return "SMTPUTF8";
 
-            if (context.Pipe.IsSecure == false && context.ServerOptions.ServerCertificate != null)
+            if (context.Pipe.IsSecure == false && context.EndpointDefinition.ServerCertificate != null)
             {
                 yield return "STARTTLS";
             }

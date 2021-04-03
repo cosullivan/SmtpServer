@@ -276,7 +276,7 @@ namespace SmtpServer.Tests
         {
             ServicePointManager.ServerCertificateValidationCallback = IgnoreCertificateValidationFailureForTestingOnly;
 
-            using (var disposable = CreateServer(options => options.Certificate(CreateCertificate()), endpoint => endpoint.IsSecure(true)))
+            using (var disposable = CreateServer(endpoint => endpoint.IsSecure(true).Certificate(CreateCertificate())))
             {
                 var isSecure = false;
                 var sessionCreatedHandler = new EventHandler<SessionEventArgs>(
@@ -308,8 +308,7 @@ namespace SmtpServer.Tests
             ServicePointManager.ServerCertificateValidationCallback = IgnoreCertificateValidationFailureForTestingOnly;
 
             using (var disposable = CreateServer(
-                server => server.Certificate(CreateCertificate()).SupportedSslProtocols(SslProtocols.Tls12),
-                endpoint => endpoint.AllowUnsecureAuthentication(true),
+                endpoint => endpoint.AllowUnsecureAuthentication(true).Certificate(CreateCertificate()).SupportedSslProtocols(SslProtocols.Tls12),
                 services => services.Add(userAuthenticator)))
             {
                 var isSecure = false;
@@ -387,6 +386,16 @@ namespace SmtpServer.Tests
         SmtpServerDisposable CreateServer(Action<SmtpServerOptionsBuilder> serverConfiguration)
         {
             return CreateServer(serverConfiguration, endpointConfiguration => { }, services => { });
+        }
+
+        /// <summary>
+        /// Create a running instance of a server.
+        /// </summary>
+        /// <param name="endpointConfiguration">The configuration to apply to run the server.</param>
+        /// <returns>A disposable instance which will close and release the server instance.</returns>
+        SmtpServerDisposable CreateServer(Action<EndpointDefinitionBuilder> endpointConfiguration)
+        {
+            return CreateServer(server => { }, endpointConfiguration, services => { });
         }
 
         /// <summary>

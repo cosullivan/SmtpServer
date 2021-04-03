@@ -148,9 +148,9 @@ namespace SmtpServer
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                if (sessionContext.EndpointDefinition.IsSecure && _options.ServerCertificate != null)
+                if (sessionContext.EndpointDefinition.IsSecure && sessionContext.EndpointDefinition.ServerCertificate != null)
                 {
-                    await pipe.UpgradeAsync(_options.ServerCertificate, _options.SupportedSslProtocols, cancellationToken).ConfigureAwait(false);
+                    await pipe.UpgradeAsync(sessionContext.EndpointDefinition.ServerCertificate, sessionContext.EndpointDefinition.SupportedSslProtocols, cancellationToken).ConfigureAwait(false);
                     cancellationToken.ThrowIfCancellationRequested();
                 }
             }

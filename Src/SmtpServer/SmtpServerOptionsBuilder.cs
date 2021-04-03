@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Security.Authentication;
-using System.Security.Cryptography.X509Certificates;
 
 namespace SmtpServer
 {
@@ -20,7 +18,6 @@ namespace SmtpServer
                 Endpoints = new List<IEndpointDefinition>(),
                 MaxRetryCount = 5,
                 MaxAuthenticationAttempts = 3,
-                SupportedSslProtocols = SslProtocols.Tls12,
                 NetworkBufferSize = 128,
                 CommandWaitTimeout = TimeSpan.FromMinutes(5)
             };
@@ -38,18 +35,6 @@ namespace SmtpServer
         public SmtpServerOptionsBuilder ServerName(string value)
         {
             _setters.Add(options => options.ServerName = value);
-
-            return this;
-        }
-
-        /// <summary>
-        /// Sets the X509 certificate to use when starting a TLS session.
-        /// </summary>
-        /// <param name="value">The server's certificate to use when starting a TLS session.</param>
-        /// <returns>A OptionsBuilder to continue building on.</returns>
-        public SmtpServerOptionsBuilder Certificate(X509Certificate value)
-        {
-            _setters.Add(options => options.ServerCertificate = value);
 
             return this;
         }
@@ -144,18 +129,6 @@ namespace SmtpServer
         }
 
         /// <summary>
-        /// Sets the supported SSL protocols.
-        /// </summary>
-        /// <param name="value">The supported SSL protocols.</param>
-        /// <returns>A OptionsBuilder to continue building on.</returns>
-        public SmtpServerOptionsBuilder SupportedSslProtocols(SslProtocols value)
-        {
-            _setters.Add(options => options.SupportedSslProtocols = value);
-
-            return this;
-        }
-
-        /// <summary>
         /// Sets the size of the buffer for each read operation.
         /// </summary>
         /// <param name="value">The buffer size for each read operation.</param>
@@ -204,11 +177,6 @@ namespace SmtpServer
             public string ServerName { get; set; }
 
             /// <summary>
-            /// Gets the Server Certificate to use when starting a TLS session.
-            /// </summary>
-            public X509Certificate ServerCertificate { get; set; }
-
-            /// <summary>
             /// Gets or sets the endpoint to listen on.
             /// </summary>
             internal List<IEndpointDefinition> Endpoints { get; set; }
@@ -217,11 +185,6 @@ namespace SmtpServer
             /// Gets or sets the endpoint to listen on.
             /// </summary>
             IReadOnlyList<IEndpointDefinition> ISmtpServerOptions.Endpoints => Endpoints;
-
-            /// <summary>
-            /// The supported SSL protocols.
-            /// </summary>
-            public SslProtocols SupportedSslProtocols { get; set; }
 
             /// <summary>
             /// The timeout to use when waiting for a command from the client.
