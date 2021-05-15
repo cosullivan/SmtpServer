@@ -40,5 +40,14 @@ namespace SmtpServer.Mail
         /// Gets the host server.
         /// </summary>
         public string Host { get; }
+
+        /// <summary>
+        /// Format the mailbox as a string
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"{User}@{Host}";
+        }
     }
 }
