@@ -21,15 +21,27 @@ namespace SampleApp.Examples
                 .Build();
 
             var server = new SmtpServer.SmtpServer(options, ServiceProvider.Default);
-
+            
             server.SessionCreated += OnSessionCreated;
             server.SessionCompleted += OnSessionCompleted;
+            server.SessionFaulted += OnSessionFaulted;
+            server.SessionCancelled += OnSessionCancelled;
 
             var serverTask = server.StartAsync(_cancellationTokenSource.Token);
 
             SampleMailClient.Send();
 
             serverTask.WaitWithoutException();
+        }
+
+        static void OnSessionFaulted(object sender, SessionFaultedEventArgs e)
+        {
+            Console.WriteLine("SessionFaulted: {0}", e.Exception);
+        }
+
+        static void OnSessionCancelled(object sender, SessionEventArgs e)
+        {
+            Console.WriteLine("SessionCancelled");
         }
 
         static void OnSessionCreated(object sender, SessionEventArgs e)

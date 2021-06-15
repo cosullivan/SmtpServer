@@ -36,6 +36,8 @@ namespace SmtpServer
         {
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
+                
                 _smtpServer.OnSessionCreated(new SessionEventArgs(handle.SessionContext));
 
                 await handle.Session.RunAsync(cancellationToken);

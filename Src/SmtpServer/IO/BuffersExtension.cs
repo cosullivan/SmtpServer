@@ -130,5 +130,65 @@ namespace SmtpServer.IO
             span = default;
             return false;
         }
+
+        internal static bool CaseInsensitiveStringEquals(this ReadOnlySequence<byte> buffer, ref Span<char> text)
+        {
+            if (buffer.IsSingleSegment)
+            {
+                var span = buffer.First.Span;
+
+                return CaseInsensitiveStringEquals(ref span, ref text, 0);
+            }
+
+            var i = 0;
+            var position = buffer.GetPosition(0);
+
+            while (buffer.TryGet(ref position, out var memory, advance: true))
+            {
+                var span = memory.Span;
+
+                if (CaseInsensitiveStringEquals(ref span, ref text, i) == false)
+                {
+                    return false;
+                }
+
+                i += span.Length;
+            }
+
+            return i > 0;
+        }
+
+        static bool CaseInsensitiveStringEquals(ref ReadOnlySpan<byte> span, ref Span<char> text, int offset)
+        {
+            if (text.Length - offset != span.Length)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < span.Length; i++)
+            {
+                var ch = (char)span[i];
+
+                if (char.ToUpper(ch) != char.ToUpper(text[i + offset]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        internal static bool IsHex(this ref ReadOnlySpan<byte> buffer)
+        {
+            for (var i = 0; i < buffer.Length; i++)
+            {
+                if ((buffer[i] < 'a' || buffer[i] > 'f') && (buffer[i] < 'A' || buffer[i] > 'F'))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
     }
 }

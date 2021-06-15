@@ -8,6 +8,8 @@ using System.Text;
 using MimeKit;
 using SampleApp.Examples;
 using SmtpServer.IO;
+using SmtpServer.Protocol;
+using SmtpServer.Tests;
 using SmtpServer.Text;
 
 namespace SampleApp
@@ -22,9 +24,12 @@ namespace SampleApp
             //SimpleServerExample.Run();
             //CustomEndpointListenerExample.Run();
             //ServerCancellingExample.Run();
-            //SessionTracingExample.Run();
+            SessionTracingExample.Run();
             //DependencyInjectionExample.Run();
-            SecureServerExample.Run();
+            //SecureServerExample.Run();
+
+            //SampleMailClient.Send(user: "user1", password: "password1", useSsl: false, port: 587);
+            //SampleMailClient.Send(useSsl: false, port: 587);
 
             //var files = Directory.GetFiles(@"C:\Temp\enron_mail_20150507.tar", "*.*", SearchOption.AllDirectories).ToList();
             //Console.WriteLine(files.OrderByDescending(file => new FileInfo(file).Length).First());
