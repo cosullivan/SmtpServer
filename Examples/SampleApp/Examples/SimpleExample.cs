@@ -5,7 +5,7 @@ using SmtpServer.ComponentModel;
 
 namespace SampleApp.Examples
 {
-    public static class SimpleExample
+    public static class CommonPortsExample
     {
         public static void Run()
         {
@@ -13,7 +13,7 @@ namespace SampleApp.Examples
 
             var options = new SmtpServerOptionsBuilder()
                 .ServerName("SmtpServer SampleApp")
-                .Port(9025)
+                .Port(25)
                 .Build();
 
             var serviceProvider = new ServiceProvider();

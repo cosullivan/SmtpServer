@@ -21,10 +21,6 @@ namespace SampleApp
 
             message.From.Add(MailboxAddress.Parse(from ?? "from@sample.com"));
             message.To.Add(MailboxAddress.Parse(to ?? "to@sample.com"));
-            //for (var i = 0; i < 400; i++)
-            //{
-            //    message.To.Add(MailboxAddress.Parse(to ?? $"testuser{i+1000}@longemaildomain1000001.com"));
-            //}
             message.Subject = subject ?? "Hello";
             message.Body = body ?? new TextPart("plain")
             {

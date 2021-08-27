@@ -24,9 +24,9 @@ namespace SampleApp
             //SimpleServerExample.Run();
             //CustomEndpointListenerExample.Run();
             //ServerCancellingExample.Run();
-            SessionTracingExample.Run();
+            //SessionTracingExample.Run();
             //DependencyInjectionExample.Run();
-            //SecureServerExample.Run();
+            SecureServerExample.Run();
 
             //SampleMailClient.Send(user: "user1", password: "password1", useSsl: false, port: 587);
             //SampleMailClient.Send(useSsl: false, port: 587);
