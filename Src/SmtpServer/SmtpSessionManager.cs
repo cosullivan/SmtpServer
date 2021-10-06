@@ -52,9 +52,12 @@ namespace SmtpServer
             }
             finally
             {
-                await handle.SessionContext.Pipe.Input.CompleteAsync();
-                
-                handle.SessionContext.Pipe.Dispose();
+                if (handle?.SessionContext?.Pipe != null)
+                {
+                    await handle.SessionContext.Pipe.Input.CompleteAsync();
+
+                    handle.SessionContext.Pipe.Dispose();
+                }
             }
         }
 
