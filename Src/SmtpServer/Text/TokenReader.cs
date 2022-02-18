@@ -1,11 +1,18 @@
 ﻿using System;
 using System.Buffers;
-using System.Transactions;
 
 namespace SmtpServer.Text
 {
     public ref struct TokenReader
     {
+        ref struct CheckpointState
+        {
+            public SequencePosition SpanPosition;
+            public ReadOnlySpan<byte> Span;
+            public int SpanIndex;
+            public int Length;
+        }
+
         /// <summary>
         /// Delegate for the TryMake function.
         /// </summary>
@@ -39,6 +46,7 @@ namespace SmtpServer.Text
         SequencePosition _spanPosition;
         ReadOnlySpan<byte> _span;
         int _spanIndex;
+        int _length;
 
         /// <summary>
         /// Constructor.
@@ -50,7 +58,37 @@ namespace SmtpServer.Text
             _spanPosition = _buffer.GetPosition(0);
             _span = default;
             _spanIndex = 0;
+            _length = 0;
             _peek = default;
+            _hasPeeked = false;
+        }
+        
+        /// <summary>
+        /// Create a checkpoint of the current state.
+        /// </summary>
+        /// <returns>The checkpoint for the current state of the reader.</returns>
+        CheckpointState Checkpoint()
+        {
+            return new CheckpointState
+            {
+                SpanPosition = _spanPosition,
+                Span = _span,
+                SpanIndex = _spanIndex,
+                Length = _length
+            };
+        }
+
+        /// <summary>
+        /// Rollback the current state to the checkpoint.
+        /// </summary>
+        /// <param name="checkpoint"></param>
+        void Rollback(ref CheckpointState checkpoint)
+        {
+            _span = checkpoint.Span;
+            _spanIndex = checkpoint.SpanIndex;
+            _spanPosition = checkpoint.SpanPosition;
+            _length = checkpoint.Length;
+
             _hasPeeked = false;
         }
 
@@ -61,18 +99,11 @@ namespace SmtpServer.Text
         /// <returns>true if the match could be made, false if not.</returns>
         public bool TryMake(TryMakeDelegate @delegate)
         {
-            var span = _span;
-            var spanIndex = _spanIndex;
-            var spanPosition = _spanPosition;
+            var checkpoint = Checkpoint();
 
             if (@delegate(ref this) == false)
             {
-                _span = span;
-                _spanIndex = spanIndex;
-                _spanPosition = spanPosition;
-
-                _hasPeeked = false;
-
+                Rollback(ref checkpoint);
                 return false;
             }
 
@@ -89,22 +120,19 @@ namespace SmtpServer.Text
         {
             buffer = default;
 
-            var span = _span;
-            var spanIndex = _spanIndex;
-            var spanPosition = _spanPosition;
+            var checkpoint = Checkpoint();
 
             if (@delegate(ref this) == false)
             {
-                _span = span;
-                _spanIndex = spanIndex;
-                _spanPosition = spanPosition;
-
-                _hasPeeked = false;
-
+                Rollback(ref checkpoint);
                 return false;
             }
 
-            buffer = _buffer.Slice(spanIndex, _spanIndex - spanIndex);
+            var start = _buffer.GetPosition(checkpoint.Length);
+            var end = _buffer.GetPosition(_length);
+
+            buffer = _buffer.Slice(start, end);
+
             return true;
         }
 
@@ -116,18 +144,11 @@ namespace SmtpServer.Text
         /// <returns>true if the match could be made, false if not.</returns>
         public bool TryMake<TOut>(TryMakeDelegate<TOut> @delegate, out TOut found)
         {
-            var span = _span;
-            var spanIndex = _spanIndex;
-            var spanPosition = _spanPosition;
+            var checkpoint = Checkpoint();
 
             if (@delegate(ref this, out found) == false)
             {
-                _span = span;
-                _spanIndex = spanIndex;
-                _spanPosition = spanPosition;
-
-                _hasPeeked = false;
-
+                Rollback(ref checkpoint);
                 return false;
             }
 
@@ -145,13 +166,11 @@ namespace SmtpServer.Text
         {
             if (_buffer.IsSingleSegment)
             {
-                var index = _spanIndex;
+                var checkpoint = Checkpoint();
 
                 if (@delegate(ref this, out value1, out value2) == false)
                 {
-                    _spanIndex = index;
-                    _hasPeeked = false;
-
+                    Rollback(ref checkpoint);
                     return false;
                 }
 
@@ -186,6 +205,7 @@ namespace SmtpServer.Text
             {
                 _hasPeeked = false;
                 _spanIndex += _peek.Text.Length;
+                _length += _peek.Text.Length;
 
                 return _peek;
             }
@@ -193,6 +213,7 @@ namespace SmtpServer.Text
             var token = ReadToken();
 
             _spanIndex += token.Text.Length;
+            _length += token.Text.Length;
 
             return token;
         }

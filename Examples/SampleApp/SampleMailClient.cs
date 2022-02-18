@@ -13,7 +13,8 @@ namespace SampleApp
             string password = null,
             MimeEntity body = null,
             int count = 1,
-            bool useSsl = false)
+            bool useSsl = false,
+            int port = 9025)
         {
             //var message = MimeMessage.Load(@"C:\Dev\Cain\Temp\message.eml");
             var message = new MimeMessage();
@@ -28,7 +29,7 @@ namespace SampleApp
 
             using var client = new SmtpClient();
 
-            client.Connect("localhost", 9025, useSsl);
+            client.Connect("localhost", port, useSsl);
 
             if (user != null && password != null)
             {
