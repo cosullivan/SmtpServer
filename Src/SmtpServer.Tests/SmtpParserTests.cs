@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Net;
 using System.Text;
+using SmtpServer.IO;
 using SmtpServer.Mail;
 using SmtpServer.Protocol;
 using SmtpServer.Text;
@@ -17,6 +18,18 @@ namespace SmtpServer.Tests
             var buffer = Encoding.UTF8.GetBytes(text);
 
             return new TokenReader(new ReadOnlySequence<byte>(buffer, 0, buffer.Length));
+        }
+
+        static TokenReader CreateReader(params byte[][] buffers)
+        {
+            var segmentList = new ByteArraySegmentList();
+            
+            foreach (var buffer in buffers)
+            {
+                segmentList.Append(buffer);
+            }
+
+            return new TokenReader(segmentList.Build());
         }
 
         static SmtpParser Parser => new SmtpParser(new SmtpCommandFactory());
@@ -210,6 +223,9 @@ namespace SmtpServer.Tests
         [InlineData("RCPT TO:<cain.osullivan@gmail.com>", "cain.osullivan", "gmail.com")]
         [InlineData(@"RCPT TO:<""Abc@def""@example.com>", "Abc@def", "example.com")]
         [InlineData("RCPT TO:<pelé@example.com>", "pelé", "example.com")]
+        [InlineData("RCPT TO:<@example1.com:someone@example.com>", "someone", "example.com")]
+        [InlineData("RCPT TO:<@example1.com,@example2.com:someone@example.com>", "someone", "example.com")]
+        [InlineData("RCPT TO:<example/example@example.com>", "example/example", "example.com")]
         public void CanMakeRcpt(string input, string user, string host)
         {
             // arrange
@@ -223,6 +239,22 @@ namespace SmtpServer.Tests
             Assert.True(command is RcptCommand);
             Assert.Equal(user, ((RcptCommand)command).Address.User);
             Assert.Equal(host, ((RcptCommand)command).Address.Host);
+        }
+
+        [Theory]
+        [InlineData("RCPT TO:<someone@@example.com>")]
+        [InlineData("RCPT TO:<someone@example..com>")]
+        [InlineData("RCPT TO:<someone@-examplecom>")]
+        public void CanNotMakeRcpt(string input)
+        {
+            // arrange
+            var reader = CreateReader(input);
+
+            // act
+            var result = Parser.TryMakeRcpt(ref reader, out _, out _);
+
+            // assert
+            Assert.False(result);
         }
 
         [Fact]
@@ -389,6 +421,7 @@ namespace SmtpServer.Tests
         [InlineData(@"$A12345@example.com", "$A12345", "example.com")]
         [InlineData(@"!def!xyz%abc@example.com", "!def!xyz%abc", "example.com")]
         [InlineData(@"_somename@example.com", "_somename", "example.com")]
+        [InlineData(@"somename@127.0.0.1", "somename", "127.0.0.1")]
         public void CanMakeMailbox(string email, string user, string host)
         {
             // arrange

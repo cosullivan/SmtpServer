@@ -2,6 +2,7 @@
 using System.IO;
 using System.Net;
 using System.Net.Security;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using SmtpServer;
@@ -58,7 +59,7 @@ namespace SampleApp.Examples
 
         static bool IgnoreCertificateValidationFailureForTestingOnly(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
-            return false;
+            return true;
         }
 
         static X509Certificate2 CreateCertificate()

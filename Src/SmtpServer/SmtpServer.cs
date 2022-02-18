@@ -141,7 +141,10 @@ namespace SmtpServer
                     continue;
                 }
 
-                _sessions.Run(sessionContext, cancellationTokenSource.Token);
+                if (sessionContext.Pipe != null)
+                {
+                    _sessions.Run(sessionContext, cancellationTokenSource.Token);
+                }
             }
         }
 
