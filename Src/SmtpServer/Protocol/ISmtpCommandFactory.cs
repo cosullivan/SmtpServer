@@ -80,5 +80,12 @@ namespace SmtpServer.Protocol
         /// <param name="destinationEndpoint">The destination endpoint.</param>
         /// <returns>The PROXY command.</returns>
         SmtpCommand CreateProxy(IPEndPoint sourceEndpoint = null, IPEndPoint destinationEndpoint = null);
+
+        /// <summary>
+        /// Create Message for initial SMTP Greeting
+        /// </summary>
+        /// <param name="serverOptions">The server options</param>
+        /// <returns>The SMTP greeting message</returns>
+        string CreateGreetingMessage(ISmtpServerOptions serverOptions);
     }
 }

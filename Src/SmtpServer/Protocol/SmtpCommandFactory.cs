@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Net;
+using System.Reflection;
 using SmtpServer.Mail;
 
 namespace SmtpServer.Protocol
@@ -112,6 +113,17 @@ namespace SmtpServer.Protocol
         public virtual SmtpCommand CreateProxy(IPEndPoint sourceEndpoint, IPEndPoint destinationEndpoint)
         {
             return new ProxyCommand(sourceEndpoint, destinationEndpoint);
+        }
+
+        /// <summary>
+        /// Create Message for initial SMTP Greeting
+        /// </summary>
+        /// <param name="serverOptions"></param>
+        /// <returns></returns>
+        public virtual string CreateGreetingMessage(ISmtpServerOptions serverOptions)
+        {
+            var version = typeof(SmtpCommandFactory).GetTypeInfo().Assembly.GetName().Version;
+            return $"{serverOptions.ServerName} v{version} ESMTP ready";
         }
     }
 }

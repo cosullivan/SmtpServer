@@ -174,9 +174,8 @@ namespace SmtpServer
         /// <returns>A task which performs the operation.</returns>
         ValueTask<FlushResult> OutputGreetingAsync(CancellationToken cancellationToken)
         {
-            var version = typeof(SmtpSession).GetTypeInfo().Assembly.GetName().Version;
-
-            _context.Pipe.Output.WriteLine($"220 {_context.ServerOptions.ServerName} v{version} ESMTP ready");
+            var greeting = _commandFactory.CreateGreetingMessage(_context.ServerOptions);
+            _context.Pipe.Output.WriteLine($"220 " + greeting);
             
             return _context.Pipe.Output.FlushAsync(cancellationToken);
         }
