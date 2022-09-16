@@ -36,8 +36,10 @@ namespace SmtpServer
         {
             try
             {
+                await UpgradeAsync(handle, cancellationToken);
+
                 cancellationToken.ThrowIfCancellationRequested();
-                
+
                 _smtpServer.OnSessionCreated(new SessionEventArgs(handle.SessionContext));
 
                 await handle.Session.RunAsync(cancellationToken);
@@ -57,6 +59,16 @@ namespace SmtpServer
                 await handle.SessionContext.Pipe.Input.CompleteAsync();
                 
                 handle.SessionContext.Pipe.Dispose();
+            }
+        }
+
+        async Task UpgradeAsync(SmtpSessionHandle handle, CancellationToken cancellationToken)
+        {
+            var endpoint = handle.SessionContext.EndpointDefinition;
+
+            if (endpoint.IsSecure && endpoint.ServerCertificate != null)
+            {
+                await handle.SessionContext.Pipe.UpgradeAsync(endpoint.ServerCertificate, endpoint.SupportedSslProtocols, cancellationToken).ConfigureAwait(false);
             }
         }
 

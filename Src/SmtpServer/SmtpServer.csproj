@@ -5,25 +5,24 @@
     <LangVersion>8.0</LangVersion>
     <AssemblyName>SmtpServer</AssemblyName>
     <RootNamespace>SmtpServer</RootNamespace>
-    <Version>9.0.1</Version>
+    <Version>9.0.2-beta1</Version>
     <Description>.NET SmtpServer</Description>
     <Authors>Cain O'Sullivan</Authors>
     <Company />
-    <Copyright>2015-2021</Copyright>
+    <Copyright>2015-2022</Copyright>
     <RepositoryUrl>https://github.com/cosullivan/SmtpServer</RepositoryUrl>
     <PackageProjectUrl>http://cainosullivan.com/smtpserver</PackageProjectUrl>
     <PackageTags>smtp smtpserver smtp server</PackageTags>
     <PackageLicenseUrl></PackageLicenseUrl>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-    <AssemblyVersion>9.0.1.0</AssemblyVersion>
-    <FileVersion>9.0.1.0</FileVersion>
-    <PackageReleaseNotes>Version 9
+    <AssemblyVersion>9.0.2-Beta1</AssemblyVersion>
+    <FileVersion>9.0.2.0</FileVersion>
+    <PackageReleaseNotes>Version 9.0.2
+Fixed a performance issue whereby the server would block incoming connections whilst another connection was upgrading to SSL.
+
+Version 9
 Breaking API change by removing the Certificate from the server options and adding it to the endpoint.
-
-Version 8
-https://github.com/cosullivan/SmtpServer/blob/develop/Version8.md
-
-Version 8.0.5 Fixed bug where the AUTH PLAIN LOGIN command wasnt adverstised from EHLO</PackageReleaseNotes>
+</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
