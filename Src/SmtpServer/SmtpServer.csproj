@@ -15,7 +15,7 @@
     <PackageTags>smtp smtpserver smtp server</PackageTags>
     <PackageLicenseUrl></PackageLicenseUrl>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-    <AssemblyVersion>9.0.2-Beta1</AssemblyVersion>
+    <!-- <AssemblyVersion>9.0.2-Beta1</AssemblyVersion> -->
     <FileVersion>9.0.2.0</FileVersion>
     <PackageReleaseNotes>Version 9.0.2
 Fixed a performance issue whereby the server would block incoming connections whilst another connection was upgrading to SSL.

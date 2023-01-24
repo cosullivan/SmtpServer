@@ -1,0 +1,38 @@
+name: Develop and publish to GPR
+
+on:
+  push:
+    branches: [ "develop" ]
+
+env:
+  REPOSITORY_URL: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: |
+          5.0.x
+        # 6.0.x
+        # 7.0.x  
+        source-url: ${{ env.REPOSITORY_URL }}
+      env:
+        NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+    - name: Build and Restore dependencies
+      run: dotnet build -c Release Src/SmtpServer.sln
+    - name: Test
+      run: dotnet test -c Release  Src/SmtpServer.Tests/SmtpServer.Tests.csproj --no-build --verbosity normal
+        
+    - name: Create nuget package for GPR
+      run: |
+        dotnet pack -v normal -c Release --include-source -p:PackageVersion=9.0.3-develop.${{ github.run_number }} ./Src/SmtpServer/SmtpServer.csproj 
+    - name: Publish the package to GPR
+      run: |
+        dotnet nuget push ./SmtpServer/bin/Release/*.symbols.nupkg -k ${{secrets.GITHUB_TOKEN}}
+        

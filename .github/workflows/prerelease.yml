@@ -1,0 +1,32 @@
+name: Tagged Prerelease to Nuget.org
+
+on:
+  push:
+    tags:
+    - "v[0-9]+.[0-9]+.[0-9]+-preview[0-9][0-9][0-9]"
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: |
+          5.0.x
+        # 6.0.x
+        # 7.0.x          
+      env:
+        NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+    - name: Set VERSION variable from tag
+      run: echo "VERSION=${GITHUB_REF/refs\/tags\/v/}" >> $GITHUB_ENV
+
+    - name: Pack
+      run: |
+        dotnet pack -v normal -c Release --include-source -p:PackageVersion=${VERSION} ./Src/SmtpServer/SmtpServer.csproj        
+    - name: Push
+      run: |
+        dotnet nuget push ./SmtpServer/bin/Release/*.symbols.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
+              
