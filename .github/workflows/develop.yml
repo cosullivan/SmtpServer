@@ -34,5 +34,5 @@ jobs:
         dotnet pack -v normal -c Release --include-source -p:PackageVersion=9.0.3-develop.${{ github.run_number }} ./Src/SmtpServer/SmtpServer.csproj 
     - name: Publish the package to GPR
       run: |
-        dotnet nuget push ./SmtpServer/bin/Release/*.symbols.nupkg -k ${{secrets.GITHUB_TOKEN}}
+        dotnet nuget push ./Src/SmtpServer/bin/Release/*.symbols.nupkg -k ${{secrets.GITHUB_TOKEN}}
         

@@ -28,5 +28,5 @@ jobs:
         dotnet pack -v normal -c Release --include-source -p:PackageVersion=${VERSION} ./Src/SmtpServer/SmtpServer.csproj        
     - name: Push
       run: |
-        dotnet nuget push ./SmtpServer/bin/Release/*.symbols.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
+        dotnet nuget push ./Src/SmtpServer/bin/Release/*.symbols.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
               
