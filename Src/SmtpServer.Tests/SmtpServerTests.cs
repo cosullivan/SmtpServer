@@ -3,7 +3,9 @@ using System.IO;
 using System.Net;
 using System.Net.Security;
 using System.Security.Authentication;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using MailKit;
@@ -17,18 +19,66 @@ using SmtpServer.Protocol;
 using SmtpServer.Storage;
 using SmtpResponse = SmtpServer.Protocol.SmtpResponse;
 
+
 namespace SmtpServer.Tests
 {
-    public class SmtpServerTests
+    public class SmtpServerTestFixture
+    {
+        public X509Certificate2 Certificate { get; set; }
+
+        /// <summary>
+        /// Called immediately after the class has been created, before it is used.
+        /// </summary>
+        public SmtpServerTestFixture()
+        {
+            using var selfSRsa = RSA.Create(4096);
+
+            var selfSignedRequest = new CertificateRequest(
+                "CN=localhost, OU=SmtpServer, O=cosullivan, L=Perth, S=Western Australia, C=Australia",
+                selfSRsa,
+                HashAlgorithmName.SHA256,
+                RSASignaturePadding.Pkcs1);
+
+            selfSignedRequest.CertificateExtensions.Add(
+                new X509BasicConstraintsExtension(true, false, 0, true));
+
+            selfSignedRequest.CertificateExtensions.Add(
+                new X509KeyUsageExtension(
+                    X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.DigitalSignature,
+                    false));
+
+            var subAltNameBuilder = new SubjectAlternativeNameBuilder();
+            subAltNameBuilder.AddUri(new Uri("udap://surefhir.labs")); // embedding a community uri in anchor cert
+            var x509Extension = subAltNameBuilder.Build();
+            selfSignedRequest.CertificateExtensions.Add(x509Extension);
+
+            selfSignedRequest.CertificateExtensions.Add(
+                new X509SubjectKeyIdentifierExtension(selfSignedRequest.PublicKey, false));
+
+            var caCertificate = selfSignedRequest.CreateSelfSigned(
+                       DateTimeOffset.UtcNow.AddDays(-1).AddMinutes(-1),
+                       DateTimeOffset.UtcNow.AddYears(2));
+
+            //
+            // ephemeral key work around https://github.com/dotnet/runtime/issues/23749
+            // the caCertificate cannot be used with SSLStream.AuthenticateAsServerAsync
+            //
+            Certificate = new X509Certificate2(caCertificate.Export(X509ContentType.Pkcs12));
+        }
+    }
+
+    public class SmtpServerTests : IClassFixture<SmtpServerTestFixture>
     {
         /// <summary>
         /// Constructor.
         /// </summary>
-        public SmtpServerTests()
+        public SmtpServerTests(SmtpServerTestFixture testFixture)
         {
+            Certificate = testFixture.Certificate;
             MessageStore = new MockMessageStore();
             CancellationTokenSource = new CancellationTokenSource();
         }
+
 
         [Fact]
         public void CanReceiveMessage()
@@ -51,6 +101,14 @@ namespace SmtpServer.Tests
         [InlineData("שלום שלום שלום", "windows-1255")]
         public void CanReceiveUnicodeMimeMessage(string text, string charset)
         {
+            //
+            // FYI
+            // Need this because there were no encoding providers loaded. So it fails find windows-1255
+            // Even the unit test in Mimekit load the encodings via a NUnit OneTimeSetup
+            // This may work on a machine with only net5.0.  
+            //
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
             using (CreateServer())
             {
                 // act
@@ -247,7 +305,7 @@ namespace SmtpServer.Tests
         {
             ServicePointManager.ServerCertificateValidationCallback = IgnoreCertificateValidationFailureForTestingOnly;
 
-            using (var disposable = CreateServer(options => options.Certificate(CreateCertificate())))
+            using (var disposable = CreateServer(options => options.Certificate(Certificate)))
             {
                 var isSecure = false;
                 var sessionCreatedHandler = new EventHandler<SessionEventArgs>(
@@ -260,11 +318,11 @@ namespace SmtpServer.Tests
                     });
 
                 disposable.Server.SessionCreated += sessionCreatedHandler;
-                
+
                 MailClient.Send();
 
                 disposable.Server.SessionCreated -= sessionCreatedHandler;
-                
+
                 Assert.True(isSecure);
             }
 
@@ -276,7 +334,7 @@ namespace SmtpServer.Tests
         {
             ServicePointManager.ServerCertificateValidationCallback = IgnoreCertificateValidationFailureForTestingOnly;
 
-            using (var disposable = CreateServer(endpoint => endpoint.IsSecure(true).Certificate(CreateCertificate())))
+            using (var disposable = CreateServer(endpoint => endpoint.IsSecure(true).Certificate(Certificate)))
             {
                 var isSecure = false;
                 var sessionCreatedHandler = new EventHandler<SessionEventArgs>(
@@ -289,11 +347,11 @@ namespace SmtpServer.Tests
                     });
 
                 disposable.Server.SessionCreated += sessionCreatedHandler;
-                
+
                 MailClient.NoOp(MailKit.Security.SecureSocketOptions.SslOnConnect);
 
                 disposable.Server.SessionCreated -= sessionCreatedHandler;
-                
+
                 Assert.True(isSecure);
             }
 
@@ -308,7 +366,7 @@ namespace SmtpServer.Tests
             ServicePointManager.ServerCertificateValidationCallback = IgnoreCertificateValidationFailureForTestingOnly;
 
             using (var disposable = CreateServer(
-                endpoint => endpoint.AllowUnsecureAuthentication(true).Certificate(CreateCertificate()).SupportedSslProtocols(SslProtocols.Tls12),
+                endpoint => endpoint.AllowUnsecureAuthentication(true).Certificate(Certificate).SupportedSslProtocols(SslProtocols.Tls12),
                 services => services.Add(userAuthenticator)))
             {
                 var isSecure = false;
@@ -359,14 +417,6 @@ namespace SmtpServer.Tests
         public static bool IgnoreCertificateValidationFailureForTestingOnly(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
             return true;
-        }
-
-        public static X509Certificate2 CreateCertificate()
-        {
-            var certificate = File.ReadAllBytes(@"C:\Users\caino\Dropbox\Documents\Cain\Programming\SmtpServer\SmtpServer.pfx");
-            var password = File.ReadAllText(@"C:\Users\caino\Dropbox\Documents\Cain\Programming\SmtpServer\SmtpServerPassword.txt");
-
-            return new X509Certificate2(certificate, password);
         }
 
         /// <summary>
@@ -484,5 +534,10 @@ namespace SmtpServer.Tests
         /// The cancellation token source for the test.
         /// </summary>
         public CancellationTokenSource CancellationTokenSource { get; }
+
+        /// <summary>
+        /// Certificate generated in <see cref="SmtpServerTestFixture"/>
+        /// </summary>
+        public X509Certificate2 Certificate { get; }
     }
 }
