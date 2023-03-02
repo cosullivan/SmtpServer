@@ -99,6 +99,21 @@ namespace SmtpServer
             return this;
         }
 
+#if NETSTANDARD2_1_OR_GREATER
+        /// <summary>
+        /// Sets a value indicating wheter client ssl renegotiation should be allowed, this is not recommended 
+        /// since it might allow for the following vulnerability https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2009-3555
+        /// .NET 7.0 has made renagotiation false by default https://learn.microsoft.com/en-us/dotnet/core/compatibility/networking/7.0/allowrenegotiation-default
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public EndpointDefinitionBuilder AllowClientSslRenegotiation(bool value = true)
+        {
+            _setters.Add(options => options.AllowClientSslRenegotiation = value);
+            return this;
+        }
+#endif
+
         /// <summary>
         /// Sets the read timeout to apply to stream operations.
         /// </summary>
@@ -154,6 +169,7 @@ namespace SmtpServer
             /// </summary>
             public bool AuthenticationRequired { get; set; }
 
+
             /// <summary>
             /// Gets a value indicating whether authentication should be allowed on an unsecure session.
             /// </summary>
@@ -173,6 +189,13 @@ namespace SmtpServer
             /// The supported SSL protocols.
             /// </summary>
             public SslProtocols SupportedSslProtocols { get; set; }
+
+#if NETSTANDARD2_1_OR_GREATER
+            /// <summary>
+            /// Gets a value indicating if during an SSL connection a client ssl renegotiation is allowed
+            /// </summary>
+            public bool AllowClientSslRenegotiation { get; set; }
+#endif
         }
 
         #endregion

@@ -30,6 +30,12 @@ namespace SmtpServer.Net
         }
 
         /// <summary>
+        /// During ssl connections allows the client to drop the connection and reconnect while renegotiation for a different TLS version
+        /// .NET 7.0 has set this to false to prevent the following vulnerability https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2009-3555
+        /// </summary>
+        public bool AllowSslClientRenegotiation { get; set; } = false;
+
+        /// <summary>
         /// Returns a securable pipe to the endpoint.
         /// </summary>
         /// <param name="context">The session context that the pipe is being created for.</param>
@@ -50,7 +56,12 @@ namespace SmtpServer.Net
             {
                 tcpClient.Close();
                 tcpClient.Dispose();
-            });
+            })
+            {
+#if NETSTANDARD2_1_OR_GREATER
+                AllowRenegotiation = AllowSslClientRenegotiation
+#endif
+            };
         }
 
         /// <summary>

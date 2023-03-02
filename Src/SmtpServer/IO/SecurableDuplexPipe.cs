@@ -29,6 +29,10 @@ namespace SmtpServer.IO
             Output = PipeWriter.Create(_stream);
         }
 
+#if NETSTANDARD2_1_OR_GREATER
+        public bool AllowRenegotiation { get; set; } = false;
+#endif
+
         /// <summary>
         /// Upgrade to a secure pipeline.
         /// </summary>
@@ -40,8 +44,18 @@ namespace SmtpServer.IO
         {
             var stream = new SslStream(_stream, true);
 
+#if NETSTANDARD2_1_OR_GREATER
+            await stream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+            {
+                AllowRenegotiation = AllowRenegotiation,
+                ServerCertificate = certificate,
+                CertificateRevocationCheckMode = X509RevocationMode.Online,
+                ClientCertificateRequired = false,
+                EnabledSslProtocols = protocols,
+            }, cancellationToken);
+#else
             await stream.AuthenticateAsServerAsync(certificate, false, protocols, true).ConfigureAwait(false);
-
+#endif
             _stream = stream;
             
             Input = PipeReader.Create(_stream);
