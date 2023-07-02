@@ -5,7 +5,7 @@ using SmtpServer.ComponentModel;
 
 namespace SampleApp.Examples
 {
-    public static class CommonPortsExample
+    public static class SimpleExample
     {
         public static void Run()
         {
