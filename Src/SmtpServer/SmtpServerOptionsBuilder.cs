@@ -141,9 +141,9 @@ namespace SmtpServer
         }
 
         /// <summary>
-        /// Sets the timeout to use whilst waiting for a command from the client.
+        /// Sets the timeout used when waiting for a command from the client.
         /// </summary>
-        /// <param name="value">The timeout to use whilst waiting for a command from the client.</param>
+        /// <param name="value">The timeout used when waiting for a command from the client.</param>
         /// <returns>An OptionsBuilder to continue building on.</returns>
         public SmtpServerOptionsBuilder CommandWaitTimeout(TimeSpan value)
         {

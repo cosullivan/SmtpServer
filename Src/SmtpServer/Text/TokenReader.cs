@@ -331,7 +331,7 @@ namespace SmtpServer.Text
         }
 
         /// <summary>
-        /// Reads a continual sequence whilst the predicate is matched.
+        /// Reads a continual sequence while the predicate is matched.
         /// </summary>
         /// <param name="predicate">The predicate to match against the characters in the buffer.</param>
         /// <returns>The span that was matched.</returns>
