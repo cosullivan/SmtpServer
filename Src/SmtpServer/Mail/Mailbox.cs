@@ -23,7 +23,7 @@ namespace SmtpServer.Mail
         /// <param name="address">The email address to create the mailbox from.</param>
         public Mailbox(string address)
         {
-            address = address.Replace(" ", String.Empty);
+            address = address.Replace(" ", string.Empty);
 
             var index = address.IndexOf('@');
 
