@@ -68,7 +68,7 @@ namespace SmtpServer.Tracing
         {
             _output.WriteLine("MAIL: Address={0} Parameters={1}", 
                 command.Address.AsAddress(),
-                String.Join(",", command.Parameters.Select(kvp => $"{kvp.Key}={kvp.Value}")));
+                string.Join(",", command.Parameters.Select(kvp => $"{kvp.Key}={kvp.Value}")));
         }
 
         /// <summary>

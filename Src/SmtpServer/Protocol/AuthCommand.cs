@@ -147,11 +147,13 @@ namespace SmtpServer.Protocol
             }
             else
             {
+                //Username = VXNlcm5hbWU6 (base64)
                 await context.Pipe.Output.WriteReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, "VXNlcm5hbWU6"), cancellationToken).ConfigureAwait(false);
 
                 _user = await ReadBase64EncodedLineAsync(context.Pipe.Input, cancellationToken).ConfigureAwait(false);
             }
 
+            //Password = UGFzc3dvcmQ6 (base64)
             await context.Pipe.Output.WriteReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, "UGFzc3dvcmQ6"), cancellationToken).ConfigureAwait(false);
 
             _password = await ReadBase64EncodedLineAsync(context.Pipe.Input, cancellationToken).ConfigureAwait(false);
