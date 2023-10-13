@@ -17,6 +17,11 @@ namespace SmtpServer
         event EventHandler<SmtpCommandEventArgs> CommandExecuted;
 
         /// <summary>
+        /// Fired when a response exception has occured. 
+        /// </summary>
+        event EventHandler<SmtpResponseExceptionEventArgs> ResponseException;
+
+        /// <summary>
         /// Fired when the session has been authenticated.
         /// </summary>
         event EventHandler<EventArgs> SessionAuthenticated;

@@ -13,7 +13,7 @@ namespace SampleApp.Examples
 
             var options = new SmtpServerOptionsBuilder()
                 .ServerName("SmtpServer SampleApp")
-                .Port(25)
+                .Port(9025)
                 .Build();
 
             var serviceProvider = new ServiceProvider();

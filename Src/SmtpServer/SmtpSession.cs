@@ -7,11 +7,15 @@ using SmtpServer.IO;
 using System.IO.Pipelines;
 using SmtpServer.StateMachine;
 using SmtpServer.ComponentModel;
+using System.Buffers;
+using System.Collections.Generic;
 
 namespace SmtpServer
 {
     internal sealed class SmtpSession
     {
+        const string BufferKey = "SmtpSession:Buffer";
+
         readonly SmtpStateMachine _stateMachine;
         readonly SmtpSessionContext _context;
         readonly ISmtpCommandFactory _commandFactory;
@@ -79,12 +83,16 @@ namespace SmtpServer
                 }
                 catch (SmtpResponseException responseException) when (responseException.IsQuitRequested)
                 {
+                    context.RaiseResponseException(responseException);
+
                     await context.Pipe.Output.WriteReplyAsync(responseException.Response, cancellationToken).ConfigureAwait(false);
 
                     context.IsQuitRequested = true;
                 }
                 catch (SmtpResponseException responseException)
                 {
+                    context.RaiseResponseException(responseException);
+
                     var response = CreateErrorResponse(responseException.Response, retries);
 
                     await context.Pipe.Output.WriteReplyAsync(response, cancellationToken).ConfigureAwait(false);
@@ -113,7 +121,12 @@ namespace SmtpServer
 
                         if (parser.TryMake(ref buffer, out command, out var errorResponse) == false)
                         {
-                            throw new SmtpResponseException(errorResponse);
+                            var properties = new Dictionary<string, object>()
+                            {
+                                { BufferKey, buffer.ToArray() }
+                            };
+
+                            throw new SmtpResponseException(errorResponse, false, properties);
                         }
 
                         return Task.CompletedTask;
