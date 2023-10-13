@@ -5,11 +5,11 @@
     <LangVersion>8.0</LangVersion>
     <AssemblyName>SmtpServer</AssemblyName>
     <RootNamespace>SmtpServer</RootNamespace>
-    <Version>9.0.3</Version>
+    <Version>9.1.0</Version>
     <Description>.NET SmtpServer</Description>
     <Authors>Cain O'Sullivan</Authors>
     <Company />
-    <Copyright>2015-2022</Copyright>
+    <Copyright>2015-2023</Copyright>
     <RepositoryUrl>https://github.com/cosullivan/SmtpServer</RepositoryUrl>
     <PackageProjectUrl>http://cainosullivan.com/smtpserver</PackageProjectUrl>
     <PackageTags>smtp smtpserver smtp server</PackageTags>
@@ -18,7 +18,7 @@
     <AssemblyVersion>9.1.0.0</AssemblyVersion>
     <FileVersion>9.1.0.0</FileVersion>
     <PackageReleaseNotes>Version 9.1.0
-Fixed a bug with the session not closing when the cancellation token was cancelled.
+Added a ResponseException event handler to the ISessionContext to enable external logging of exceptions.
 </PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
