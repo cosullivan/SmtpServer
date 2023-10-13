@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 using System.Threading;
 using SmtpServer;
 using SmtpServer.ComponentModel;
@@ -48,19 +49,32 @@ namespace SampleApp.Examples
         {
             Console.WriteLine("SessionCreated: {0}", e.Context.Properties[EndpointListener.RemoteEndPointKey]);
 
+            e.Context.Properties.Add("SessionID", Guid.NewGuid());
+
             e.Context.CommandExecuting += OnCommandExecuting;
             e.Context.CommandExecuted += OnCommandExecuted;
+            e.Context.ResponseException += OnResponseException;
+        }
+
+        private static void OnResponseException(object sender, SmtpResponseExceptionEventArgs e)
+        {
+            Console.WriteLine("Response Exception");
+            if (e.Exception.Properties.ContainsKey("SmtpSession:Buffer"))
+            {
+                var buffer = e.Exception.Properties["SmtpSession:Buffer"] as byte[];
+                Console.WriteLine("Unknown Line: {0}", Encoding.UTF8.GetString(buffer));
+            }
         }
 
         static void OnCommandExecuting(object sender, SmtpCommandEventArgs e)
         {
-            Console.WriteLine("Command Executing");
+            Console.WriteLine("Command Executing (SessionID={0})", e.Context.Properties["SessionID"]);
             new TracingSmtpCommandVisitor(Console.Out).Visit(e.Command);
         }
 
         static void OnCommandExecuted(object sender, SmtpCommandEventArgs e)
         {
-            Console.WriteLine("Command Executed");
+            Console.WriteLine("Command Executed (SessionID={0})", e.Context.Properties["SessionID"]);
             new TracingSmtpCommandVisitor(Console.Out).Visit(e.Command);
         }
 
@@ -70,6 +84,7 @@ namespace SampleApp.Examples
 
             e.Context.CommandExecuting -= OnCommandExecuting;
             e.Context.CommandExecuted -= OnCommandExecuted;
+            e.Context.ResponseException -= OnResponseException;
 
             _cancellationTokenSource.Cancel();
         }

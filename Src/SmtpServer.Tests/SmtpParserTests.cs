@@ -3,11 +3,11 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Net;
 using System.Text;
-using SmtpServer.IO;
 using SmtpServer.Mail;
 using SmtpServer.Protocol;
 using SmtpServer.Text;
 using Xunit;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace SmtpServer.Tests
 {
@@ -20,19 +20,23 @@ namespace SmtpServer.Tests
             return new TokenReader(new ReadOnlySequence<byte>(buffer, 0, buffer.Length));
         }
 
-        static TokenReader CreateReader(params byte[][] buffers)
-        {
-            var segmentList = new ByteArraySegmentList();
-            
-            foreach (var buffer in buffers)
-            {
-                segmentList.Append(buffer);
-            }
-
-            return new TokenReader(segmentList.Build());
-        }
-
         static SmtpParser Parser => new SmtpParser(new SmtpCommandFactory());
+
+        [Fact]
+        public void CanMakeUnrecognized()
+        {
+            // arrange
+            var buffer = Encoding.UTF8.GetBytes("ABCDE FGHIJ KLMNO");
+            var sequence = new ReadOnlySequence<byte>(buffer, 0, buffer.Length);
+
+            // act
+            var result = Parser.TryMake(ref sequence, out var command, out var errorResponse);
+
+            // assert
+            Assert.False(result);
+            Assert.Null(command);
+            Assert.Equal(SmtpReplyCode.CommandNotImplemented, errorResponse.ReplyCode);
+        }
 
         [Fact]
         public void CanMakeQuit()

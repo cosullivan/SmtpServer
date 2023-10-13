@@ -18,6 +18,11 @@ namespace SmtpServer
         public event EventHandler<SmtpCommandEventArgs> CommandExecuted;
 
         /// <summary>
+        /// Fired when a response exception has occured. 
+        /// </summary>
+        public event EventHandler<SmtpResponseExceptionEventArgs> ResponseException;
+
+        /// <summary>
         /// Fired when the session has been authenticated.
         /// </summary>
         public event EventHandler<EventArgs> SessionAuthenticated;
@@ -53,6 +58,15 @@ namespace SmtpServer
         internal void RaiseCommandExecuted(SmtpCommand command)
         {
             CommandExecuted?.Invoke(this, new SmtpCommandEventArgs(this, command));
+        }
+
+        /// <summary>
+        /// Raise the response exception event.
+        /// </summary>
+        /// <param name="responseException">The response exception that was raised.</param>
+        internal void RaiseResponseException(SmtpResponseException responseException)
+        {
+            ResponseException?.Invoke(this, new SmtpResponseExceptionEventArgs(this, responseException));
         }
 
         /// <summary>

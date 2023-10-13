@@ -1,4 +1,5 @@
-﻿using MailKit.Net.Smtp;
+﻿using System.Threading;
+using MailKit.Net.Smtp;
 using MimeKit;
 
 namespace SampleApp
@@ -16,7 +17,6 @@ namespace SampleApp
             bool useSsl = false,
             int port = 9025)
         {
-            //var message = MimeMessage.Load(@"C:\Dev\Cain\Temp\message.eml");
             var message = new MimeMessage();
 
             message.From.Add(MailboxAddress.Parse(from ?? "from@sample.com"));
@@ -27,7 +27,7 @@ namespace SampleApp
                 Text = "Hello World"
             };
 
-            using var client = new SmtpClient();
+            using var client = new SmtpClientEx();
 
             client.Connect("localhost", port, useSsl);
 
@@ -36,12 +36,22 @@ namespace SampleApp
                 client.Authenticate(user, password);
             }
 
+            client.SendUnknownCommand("ABCD EFGH IJKL");
+
             while (count-- > 0)
             {
                 client.Send(message);
             }
 
             client.Disconnect(true);
+        }
+
+        internal class SmtpClientEx : SmtpClient
+        {
+            public SmtpResponse SendUnknownCommand(string command, CancellationToken cancellationToken = default)
+            {
+                return SendCommand(command, cancellationToken);
+            }
         }
     }
 }

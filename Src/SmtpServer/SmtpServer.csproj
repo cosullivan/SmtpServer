@@ -15,9 +15,9 @@
     <PackageTags>smtp smtpserver smtp server</PackageTags>
     <PackageLicenseUrl></PackageLicenseUrl>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-    <AssemblyVersion>9.0.3.0</AssemblyVersion>
-    <FileVersion>9.0.3.0</FileVersion>
-    <PackageReleaseNotes>Version 9.0.3
+    <AssemblyVersion>9.1.0.0</AssemblyVersion>
+    <FileVersion>9.1.0.0</FileVersion>
+    <PackageReleaseNotes>Version 9.1.0
 Fixed a bug with the session not closing when the cancellation token was cancelled.
 </PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
