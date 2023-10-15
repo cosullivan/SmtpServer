@@ -7,15 +7,18 @@ SmtpServer is a simple, but highly functional SMTP server implementation. Writte
 SmtpServer is available via [NuGet](https://www.nuget.org/packages/SmtpServer/)
 
 # Whats New?
+
 See [here](https://github.com/cosullivan/SmtpServer/blob/master/Version8.md) for whats new in Version 8.
 
 # What does it support?
+
 SmtpServer currently supports the following ESMTP extensions:
-* STARTTLS
-* SIZE
-* PIPELINING
-* 8BITMIME
-* AUTH PLAIN LOGIN
+
+- STARTTLS
+- SIZE
+- PIPELINING
+- 8BITMIME
+- AUTH PLAIN LOGIN
 
 # How can it be used?
 
@@ -32,13 +35,17 @@ await smtpServer.StartAsync(CancellationToken.None);
 ```
 
 # What hooks are provided?
+
 There are three hooks that can be implemented; IMessageStore, IMailboxFilter, and IUserAuthenticator.
+
 ```cs
 var options = new SmtpServerOptionsBuilder()
     .ServerName("localhost")
-    .Port(25, 587)
-    .Port(465, isSecure: true)
-    .Certificate(CreateX509Certificate2())
+    .Endpoint(builder =>
+        builder
+            .Port(9025, true)
+            .AllowUnsecureAuthentication(false)
+            .Certificate(CreateCertificate()))
     .Build();
 
 var serviceProvider = new ServiceProvider();
@@ -48,6 +55,15 @@ serviceProvider.Add(new SampleUserAuthenticator());
 
 var smtpServer = new SmtpServer.SmtpServer(options, serviceProvider);
 await smtpServer.StartAsync(CancellationToken.None);
+
+// to create an X509Certificate for testing you need to run MAKECERT.EXE and then PVK2PFX.EXE
+// http://www.digitallycreated.net/Blog/38/using-makecert-to-create-certificates-for-development
+static X509Certificate2 CreateCertificate()
+{
+    var certificate = File.ReadAllBytes(@"Certificate.pfx");
+
+    return new X509Certificate2(certificate, "P@ssw0rd");
+}
 ```
 
 ```cs
@@ -67,7 +83,7 @@ public class SampleMessageStore : MessageStore
 
             var message = await MimeKit.MimeMessage.LoadAsync(stream, cancellationToken);
             Console.WriteLine(message.TextBody);
-            
+
             return SmtpResponse.Ok;
         }
 }
@@ -80,7 +96,7 @@ public class SampleMailboxFilter : IMailboxFilter, IMailboxFilterFactory
     {
         if (String.Equals(@from.Host, "test.com"))
         {
-            return Task.FromResult(MailboxFilterResult.Yes);   
+            return Task.FromResult(MailboxFilterResult.Yes);
         }
 
         return Task.FromResult(MailboxFilterResult.NoPermanently);
@@ -98,7 +114,7 @@ public class SampleMailboxFilter : IMailboxFilter, IMailboxFilterFactory
 }
 ```
 
-```cs  
+```cs
 public class SampleUserAuthenticator : IUserAuthenticator, IUserAuthenticatorFactory
 {
     public Task<bool> AuthenticateAsync(ISessionContext context, string user, string password, CancellationToken token)
