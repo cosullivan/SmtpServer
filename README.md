@@ -54,22 +54,22 @@ await smtpServer.StartAsync(CancellationToken.None);
 public class SampleMessageStore : MessageStore
 {
     public override async Task<SmtpResponse> SaveAsync(ISessionContext context, IMessageTransaction transaction, ReadOnlySequence<byte> buffer, CancellationToken cancellationToken)
+    {
+        await using var stream = new MemoryStream();
+
+        var position = buffer.GetPosition(0);
+        while (buffer.TryGet(ref position, out var memory))
         {
-            await using var stream = new MemoryStream();
-
-            var position = buffer.GetPosition(0);
-            while (buffer.TryGet(ref position, out var memory))
-            {
-                await stream.WriteAsync(memory, cancellationToken);
-            }
-
-            stream.Position = 0;
-
-            var message = await MimeKit.MimeMessage.LoadAsync(stream, cancellationToken);
-            Console.WriteLine(message.TextBody);
-            
-            return SmtpResponse.Ok;
+            await stream.WriteAsync(memory, cancellationToken);
         }
+
+        stream.Position = 0;
+
+        var message = await MimeKit.MimeMessage.LoadAsync(stream, cancellationToken);
+        Console.WriteLine(message.TextBody);
+            
+        return SmtpResponse.Ok;
+    }
 }
 ```
 
@@ -78,7 +78,7 @@ public class SampleMailboxFilter : IMailboxFilter, IMailboxFilterFactory
 {
     public Task<MailboxFilterResult> CanAcceptFromAsync(ISessionContext context, IMailbox @from, int size, CancellationToken cancellationToken)
     {
-        if (String.Equals(@from.Host, "test.com"))
+        if (string.Equals(@from.Host, "test.com"))
         {
             return Task.FromResult(MailboxFilterResult.Yes);   
         }
@@ -93,7 +93,7 @@ public class SampleMailboxFilter : IMailboxFilter, IMailboxFilterFactory
 
     public IMailboxFilter CreateInstance(ISessionContext context)
     {
-	return new SampleMailboxFilter();
+        return new SampleMailboxFilter();
     }
 }
 ```
@@ -103,14 +103,14 @@ public class SampleUserAuthenticator : IUserAuthenticator, IUserAuthenticatorFac
 {
     public Task<bool> AuthenticateAsync(ISessionContext context, string user, string password, CancellationToken token)
     {
-        Console.WriteLine("User={0} Password={1}", user, password);
+        Console.WriteLine($"User={user} Password={password}");
 
         return Task.FromResult(user.Length > 4);
     }
 
     public IUserAuthenticator CreateInstance(ISessionContext context)
     {
-	return new SampleUserAuthenticator();
+        return new SampleUserAuthenticator();
     }
 }
 ```

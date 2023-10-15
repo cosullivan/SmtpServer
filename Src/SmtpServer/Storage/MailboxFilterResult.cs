@@ -18,7 +18,7 @@
         NoPermanently = 2,
 
         /// <summary>
-        /// The message siz limit has been exceeded.
+        /// The message size limit has been exceeded.
         /// </summary>
         SizeLimitExceeded = 3
     }
