@@ -947,7 +947,7 @@ namespace SmtpServer.Protocol
         {
             reader.Skip(TokenKind.Space);
 
-            return reader.Take() == default;
+            return reader.Take().Kind == TokenKind.None;
         }
 
         /// <summary>
@@ -1802,7 +1802,7 @@ namespace SmtpServer.Protocol
         {
             Dictionary<string, string> dictionary = null;
 
-            while (reader.Peek() != default)
+            while (reader.Peek().Kind != TokenKind.None)
             {
                 if (reader.TryMake(TryMakeEsmtpParameter, out ReadOnlySequence<byte> keyword, out ReadOnlySequence<byte> value) == false)
                 {

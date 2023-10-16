@@ -89,39 +89,6 @@ namespace SmtpServer.Text
         }
 
         /// <summary>
-        /// Indicates whether this instance and a specified object are equal.
-        /// </summary>
-        /// <param name="other">Another object to compare to. </param>
-        /// <returns>true if <paramref name="other"/> and this instance are the same type and represent the same value; otherwise, false. </returns>
-        public bool Equals(Token other)
-        {
-            // TODO: need a faster comparisson implementation
-            return Kind == other.Kind && Text.ToString().Equals(other.Text.ToString(), StringComparison.OrdinalIgnoreCase);
-        }
-
-        /// <summary>
-        /// Returns a value indicating the equality of the two objects.
-        /// </summary>
-        /// <param name="left">The left hand side of the comparisson.</param>
-        /// <param name="right">The right hand side of the comparisson.</param>
-        /// <returns>true if the left and right side are equal, false if not.</returns>
-        public static bool operator ==(Token left, Token right)
-        {
-            return left.Equals(right);
-        }
-
-        /// <summary>
-        /// Returns a value indicating the inequality of the two objects.
-        /// </summary>
-        /// <param name="left">The left hand side of the comparisson.</param>
-        /// <param name="right">The right hand side of the comparisson.</param>
-        /// <returns>false if the left and right side are equal, true if not.</returns>
-        public static bool operator !=(Token left, Token right)
-        {
-            return !left.Equals(right);
-        }
-
-        /// <summary>
         /// Returns the string representation of the token.
         /// </summary>
         /// <returns>The string representation of the token.</returns>
