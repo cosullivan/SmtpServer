@@ -45,7 +45,7 @@ namespace SmtpServer.Net
             var stream = tcpClient.GetStream();
             stream.ReadTimeout = (int)_endpointDefinition.ReadTimeout.TotalMilliseconds;
 
-            return new SecurableDuplexPipe(tcpClient, stream, () =>
+            return new SecurableDuplexPipe(stream, () =>
             {
                 tcpClient.Close();
                 tcpClient.Dispose();

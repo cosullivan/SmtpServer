@@ -22,10 +22,5 @@ namespace SmtpServer.IO
         /// Returns a value indicating whether or not the current pipeline is secure.
         /// </summary>
         bool IsSecure { get; }
-
-        /// <summary>
-        /// Returns a value indicating whether the current pipline is connected.
-        /// </summary>
-        bool IsConnected { get;  }
     }
 }
