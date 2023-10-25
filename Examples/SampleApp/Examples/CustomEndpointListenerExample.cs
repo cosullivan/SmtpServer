@@ -95,6 +95,8 @@ namespace SampleApp.Examples
             public PipeWriter Output => _securableDuplexPipe.Output;
 
             public bool IsSecure => _securableDuplexPipe.IsSecure;
+
+            public bool IsConnected => _securableDuplexPipe.IsConnected;
         }
 
         public sealed class LoggingPipeReader : PipeReader

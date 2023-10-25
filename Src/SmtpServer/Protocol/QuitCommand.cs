@@ -1,6 +1,8 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
+using System.Net.Sockets;
 using SmtpServer.IO;
+using System.IO;
 
 namespace SmtpServer.Protocol
 {
@@ -24,7 +26,25 @@ namespace SmtpServer.Protocol
         {
             context.IsQuitRequested = true;
 
-            await context.Pipe.Output.WriteReplyAsync(SmtpResponse.ServiceClosingTransmissionChannel, cancellationToken).ConfigureAwait(false);
+            try
+            {
+                await context.Pipe.Output.WriteReplyAsync(SmtpResponse.ServiceClosingTransmissionChannel, cancellationToken).ConfigureAwait(false);
+            }
+            catch (IOException ioException)
+            {
+                if (ioException.GetBaseException() is SocketException socketException)
+                {
+                    // Some mail servers will send the QUIT command and then disconnect before
+                    // waiting for the 221 response from the server. This doesnt follow the spec but
+                    // we can gracefully handle this situation as in theory everything should be fine
+                    if (socketException.SocketErrorCode == SocketError.ConnectionReset)
+                    {
+                        return true;
+                    }
+                }
+
+                throw ioException;
+            }
 
             return true;
         }

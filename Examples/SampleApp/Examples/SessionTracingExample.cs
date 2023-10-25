@@ -4,6 +4,7 @@ using System.Threading;
 using SmtpServer;
 using SmtpServer.ComponentModel;
 using SmtpServer.Net;
+using SmtpServer.Protocol;
 using SmtpServer.Tracing;
 
 namespace SampleApp.Examples
@@ -47,8 +48,6 @@ namespace SampleApp.Examples
 
         static void OnSessionCreated(object sender, SessionEventArgs e)
         {
-            Console.WriteLine("SessionCreated: {0}", e.Context.Properties[EndpointListener.RemoteEndPointKey]);
-
             e.Context.Properties.Add("SessionID", Guid.NewGuid());
 
             e.Context.CommandExecuting += OnCommandExecuting;

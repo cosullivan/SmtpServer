@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.IO.Pipelines;
+using System.Net.Sockets;
 using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -12,16 +13,19 @@ namespace SmtpServer.IO
     internal sealed class SecurableDuplexPipe : ISecurableDuplexPipe
     {
         readonly Action _disposeAction;
+        readonly TcpClient _tcpClient;
         Stream _stream;
         bool _disposed;
 
         /// <summary>
         /// Constructor.
         /// </summary>
+        /// <param name="tcpClient">The underlying TCP client for the connectio.</param>
         /// <param name="stream">The stream that the pipe is reading and writing to.</param>
         /// <param name="disposeAction">The action to execute when the stream has been disposed.</param>
-        internal SecurableDuplexPipe(Stream stream, Action disposeAction)
+        internal SecurableDuplexPipe(TcpClient tcpClient, Stream stream, Action disposeAction)
         {
+            _tcpClient = tcpClient;
             _stream = stream;
             _disposeAction = disposeAction;
 
@@ -88,5 +92,10 @@ namespace SmtpServer.IO
         /// Returns a value indicating whether or not the current pipeline is secure.
         /// </summary>
         public bool IsSecure => _stream is SslStream;
+
+        /// <summary>
+        /// Returns a value indicating whether the current pipline is connected.
+        /// </summary>
+        public bool IsConnected => _tcpClient.Connected;
     }
 }
