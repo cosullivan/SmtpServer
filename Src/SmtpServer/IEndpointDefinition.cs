@@ -33,9 +33,9 @@ namespace SmtpServer
         TimeSpan ReadTimeout { get; }
 
         /// <summary>
-        /// Gets the Server Certificate to use when starting a TLS session.
+        /// Gets the Server Certificate factory to use when starting a TLS session.
         /// </summary>
-        X509Certificate ServerCertificate { get; }
+        ICertificateFactory CertificateFactory { get; }
 
         /// <summary>
         /// The supported SSL protocols.

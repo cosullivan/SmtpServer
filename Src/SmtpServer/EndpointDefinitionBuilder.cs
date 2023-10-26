@@ -118,7 +118,17 @@ namespace SmtpServer
         /// <returns>A EndpointDefinitionBuilder to continue building on.</returns>
         public EndpointDefinitionBuilder Certificate(X509Certificate value)
         {
-            _setters.Add(options => options.ServerCertificate = value);
+            return Certificate(new StaticCertificateFactory(value));
+        }
+
+        /// <summary>
+        /// Sets the X509 certificate factory to use when starting a TLS session.
+        /// </summary>
+        /// <param name="certificateFactory">The certificate factory to use when creating TLS sessions.</param>
+        /// <returns>A EndpointDefinitionBuilder to continue building on.</returns>
+        public EndpointDefinitionBuilder Certificate(ICertificateFactory certificateFactory)
+        {
+            _setters.Add(options => options.CertificateFactory = certificateFactory);
 
             return this;
         }
@@ -165,15 +175,35 @@ namespace SmtpServer
             public TimeSpan ReadTimeout { get; set; }
 
             /// <summary>
-            /// Gets the Server Certificate to use when starting a TLS session.
+            /// Gets the Server Certificate factory to use when starting a TLS session.
             /// </summary>
-            public X509Certificate ServerCertificate { get; set; }
+            public ICertificateFactory CertificateFactory { get; set; }
 
             /// <summary>
             /// The supported SSL protocols.
             /// </summary>
             public SslProtocols SupportedSslProtocols { get; set; }
         }
+
+        #endregion
+
+        #region StaticCertificateFactory 
+
+        internal sealed class StaticCertificateFactory : ICertificateFactory
+        {
+            readonly X509Certificate _serverCertificate;
+
+            public StaticCertificateFactory(X509Certificate serverCertificate)
+            {
+                _serverCertificate = serverCertificate;
+            }            
+
+            public X509Certificate GetServerCertificate(ISessionContext sessionContext)
+            {
+                return _serverCertificate;
+            }
+        }
+
 
         #endregion
     }

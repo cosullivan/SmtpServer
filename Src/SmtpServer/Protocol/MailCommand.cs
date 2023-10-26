@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.ComponentModel;
@@ -58,21 +57,13 @@ namespace SmtpServer.Protocol
 
             switch (await container.Instance.CanAcceptFromAsync(context, Address, size, cancellationToken).ConfigureAwait(false))
             {
-                case MailboxFilterResult.Yes:
+                case true:
                     context.Transaction.From = Address;
                     await context.Pipe.Output.WriteReplyAsync(SmtpResponse.Ok, cancellationToken).ConfigureAwait(false);
                     return true;
 
-                case MailboxFilterResult.NoTemporarily:
+                case false:
                     await context.Pipe.Output.WriteReplyAsync(SmtpResponse.MailboxUnavailable, cancellationToken).ConfigureAwait(false);
-                    return false;
-
-                case MailboxFilterResult.NoPermanently:
-                    await context.Pipe.Output.WriteReplyAsync(SmtpResponse.MailboxNameNotAllowed, cancellationToken).ConfigureAwait(false);
-                    return false;
-
-                case MailboxFilterResult.SizeLimitExceeded:
-                    await context.Pipe.Output.WriteReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ConfigureAwait(false);
                     return false;
             }
 

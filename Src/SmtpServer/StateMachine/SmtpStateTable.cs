@@ -63,7 +63,7 @@ namespace SmtpServer.StateMachine
 
         static bool CanAcceptStartTls(SmtpSessionContext context)
         {
-            return context.EndpointDefinition.ServerCertificate != null && context.Pipe.IsSecure == false;
+            return context.EndpointDefinition.CertificateFactory != null && context.Pipe.IsSecure == false;
         }
 
         readonly IDictionary<SmtpStateId, SmtpState> _states = new Dictionary<SmtpStateId, SmtpState>();

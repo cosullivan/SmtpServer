@@ -165,7 +165,7 @@ namespace SmtpServer.Tests
                 throw new SmtpResponseException(SmtpResponse.AuthenticationRequired);
 
 #pragma warning disable 162
-                return MailboxFilterResult.Yes;
+                return true;
 #pragma warning restore 162
             });
 

@@ -36,17 +36,13 @@ namespace SmtpServer.Protocol
 
             switch (await container.Instance.CanDeliverToAsync(context, Address, context.Transaction.From, cancellationToken).ConfigureAwait(false))
             {
-                case MailboxFilterResult.Yes:
+                case true:
                     context.Transaction.To.Add(Address);
                     await context.Pipe.Output.WriteReplyAsync(SmtpResponse.Ok, cancellationToken).ConfigureAwait(false);
                     return true;
 
-                case MailboxFilterResult.NoTemporarily:
+                case false:
                     await context.Pipe.Output.WriteReplyAsync(SmtpResponse.MailboxUnavailable, cancellationToken).ConfigureAwait(false);
-                    return false;
-
-                case MailboxFilterResult.NoPermanently:
-                    await context.Pipe.Output.WriteReplyAsync(SmtpResponse.MailboxNameNotAllowed, cancellationToken).ConfigureAwait(false);
                     return false;
             }
 

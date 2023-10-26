@@ -66,9 +66,11 @@ namespace SmtpServer
         {
             var endpoint = handle.SessionContext.EndpointDefinition;
 
-            if (endpoint.IsSecure && endpoint.ServerCertificate != null)
+            if (endpoint.IsSecure && endpoint.CertificateFactory != null)
             {
-                await handle.SessionContext.Pipe.UpgradeAsync(endpoint.ServerCertificate, endpoint.SupportedSslProtocols, cancellationToken).ConfigureAwait(false);
+                var serverCertificate = endpoint.CertificateFactory.GetServerCertificate(handle.SessionContext);
+
+                await handle.SessionContext.Pipe.UpgradeAsync(serverCertificate, endpoint.SupportedSslProtocols, cancellationToken).ConfigureAwait(false);
             }
         }
 

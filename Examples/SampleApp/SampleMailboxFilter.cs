@@ -6,6 +6,7 @@ using SmtpServer;
 using SmtpServer.Mail;
 using SmtpServer.Net;
 using SmtpServer.Storage;
+using SmtpServer.Protocol;
 
 namespace SampleApp
 {
@@ -26,8 +27,8 @@ namespace SampleApp
         /// <param name="from">The mailbox to test.</param>
         /// <param name="size">The estimated message size to accept.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The acceptance state of the mailbox.</returns>
-        public override async Task<MailboxFilterResult> CanAcceptFromAsync(
+        /// <returns>Returns true if the mailbox is accepted, false if not.</returns>
+        public override async Task<bool> CanAcceptFromAsync(
             ISessionContext context, 
             IMailbox @from, 
             int size,
@@ -37,17 +38,17 @@ namespace SampleApp
         
             if (@from == Mailbox.Empty)
             {
-                return MailboxFilterResult.NoPermanently;
+                throw new SmtpResponseException(SmtpResponse.MailboxNameNotAllowed);
             }
 
             var endpoint = (IPEndPoint)context.Properties[EndpointListener.RemoteEndPointKey];
             
             if (endpoint.Address.Equals(IPAddress.Parse("127.0.0.1")))
             {
-                return MailboxFilterResult.Yes;
+                return true;
             }
 
-            return MailboxFilterResult.NoPermanently;
+            return false;
         }
 
         /// <summary>
@@ -57,8 +58,8 @@ namespace SampleApp
         /// <param name="to">The mailbox to test.</param>
         /// <param name="from">The sender's mailbox.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The acceptance state of the mailbox.</returns>
-        public override async Task<MailboxFilterResult> CanDeliverToAsync(
+        /// <returns>Returns true if the mailbox can be delivered to, false if not.</returns>
+        public override async Task<bool> CanDeliverToAsync(
             ISessionContext context, 
             IMailbox to, 
             IMailbox @from,
@@ -66,7 +67,7 @@ namespace SampleApp
         {
             await Task.Delay(_delay, cancellationToken);
 
-            return MailboxFilterResult.Yes;
+            return true;
         }
     }
 }

@@ -5,7 +5,7 @@
     <LangVersion>8.0</LangVersion>
     <AssemblyName>SmtpServer</AssemblyName>
     <RootNamespace>SmtpServer</RootNamespace>
-    <Version>9.0.3</Version>
+    <Version>10.0.0-beta1</Version>
     <Description>.NET SmtpServer</Description>
     <Authors>Cain O'Sullivan</Authors>
     <Company />
@@ -15,10 +15,12 @@
     <PackageTags>smtp smtpserver smtp server</PackageTags>
     <PackageLicenseUrl></PackageLicenseUrl>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-    <AssemblyVersion>9.1.0.0</AssemblyVersion>
-    <FileVersion>9.1.0.0</FileVersion>
-    <PackageReleaseNotes>Version 9.1.0
-Fixed a bug with the session not closing when the cancellation token was cancelled.
+    <AssemblyVersion>10.0.0</AssemblyVersion>
+    <FileVersion>10.0.0</FileVersion>
+    <PackageReleaseNotes>Version 10.0.0
+- Removed MailboxFilterResult in favor of bool result. Impementations can throw SmtpResponseException for more control.
+- Handled servers that send the QUIT command and immediately close the connection.
+- Added an ICertificateFactory on the Endpoint that allows a new certificate to be created when required without having to restart the server.
 </PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>

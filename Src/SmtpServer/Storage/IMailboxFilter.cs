@@ -13,8 +13,8 @@ namespace SmtpServer.Storage
         /// <param name="from">The mailbox to test.</param>
         /// <param name="size">The estimated message size to accept.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The acceptance state of the mailbox.</returns>
-        Task<MailboxFilterResult> CanAcceptFromAsync(
+        /// <returns>Returns true if the mailbox is accepted, false if not.</returns>
+        Task<bool> CanAcceptFromAsync(
             ISessionContext context, 
             IMailbox from, 
             int size,
@@ -27,8 +27,8 @@ namespace SmtpServer.Storage
         /// <param name="to">The mailbox to test.</param>
         /// <param name="from">The sender's mailbox.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The acceptance state of the mailbox.</returns>
-        Task<MailboxFilterResult> CanDeliverToAsync(
+        /// <returns>Returns true if the mailbox can be delivered to, false if not.</returns>
+        Task<bool> CanDeliverToAsync(
             ISessionContext context, 
             IMailbox to, 
             IMailbox from, 

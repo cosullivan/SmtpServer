@@ -7,38 +7,38 @@ namespace SmtpServer.Storage
 {
     public sealed class DelegatingMailboxFilter : MailboxFilter
     {
-        static readonly Func<ISessionContext, IMailbox, MailboxFilterResult> EmptyAcceptDelegate = (context, @from) => MailboxFilterResult.Yes;
-        static readonly Func<ISessionContext, IMailbox, IMailbox, MailboxFilterResult> EmptyDeliverDelegate = (context, to, @from) => MailboxFilterResult.Yes;
+        static readonly Func<ISessionContext, IMailbox, bool> EmptyAcceptDelegate = (context, @from) => true;
+        static readonly Func<ISessionContext, IMailbox, IMailbox, bool> EmptyDeliverDelegate = (context, to, @from) => true;
 
-        readonly Func<ISessionContext, IMailbox, MailboxFilterResult> _canAcceptDelegate;
-        readonly Func<ISessionContext, IMailbox, IMailbox, MailboxFilterResult> _canDeliverDelegate;
+        readonly Func<ISessionContext, IMailbox, bool> _canAcceptDelegate;
+        readonly Func<ISessionContext, IMailbox, IMailbox, bool> _canDeliverDelegate;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="canAcceptDelegate">The delegate to accept a mailbox.</param>
-        public DelegatingMailboxFilter(Func<IMailbox, MailboxFilterResult> canAcceptDelegate)
+        public DelegatingMailboxFilter(Func<IMailbox, bool> canAcceptDelegate)
             : this(Wrap(canAcceptDelegate)) { }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="canAcceptDelegate">The delegate to accept a mailbox.</param>
-        public DelegatingMailboxFilter(Func<ISessionContext, IMailbox, MailboxFilterResult> canAcceptDelegate) 
+        public DelegatingMailboxFilter(Func<ISessionContext, IMailbox, bool> canAcceptDelegate) 
             : this(canAcceptDelegate, EmptyDeliverDelegate) { }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="canDeliverDelegate">The delegate to deliver to a mailbox.</param>
-        public DelegatingMailboxFilter(Func<IMailbox, IMailbox, MailboxFilterResult> canDeliverDelegate)
+        public DelegatingMailboxFilter(Func<IMailbox, IMailbox, bool> canDeliverDelegate)
             : this(EmptyAcceptDelegate, Wrap(canDeliverDelegate)) { }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="canDeliverDelegate">The delegate to deliver to a mailbox.</param>
-        public DelegatingMailboxFilter(Func<ISessionContext, IMailbox, IMailbox, MailboxFilterResult> canDeliverDelegate)
+        public DelegatingMailboxFilter(Func<ISessionContext, IMailbox, IMailbox, bool> canDeliverDelegate)
             : this(EmptyAcceptDelegate, canDeliverDelegate) { }
 
         /// <summary>
@@ -47,8 +47,8 @@ namespace SmtpServer.Storage
         /// <param name="canAcceptDelegate">The delegate to accept a mailbox.</param>
         /// <param name="canDeliverDelegate">The delegate to deliver to a mailbox.</param>
         public DelegatingMailboxFilter(
-            Func<ISessionContext, IMailbox, MailboxFilterResult> canAcceptDelegate,
-            Func<ISessionContext, IMailbox, IMailbox, MailboxFilterResult> canDeliverDelegate)
+            Func<ISessionContext, IMailbox, bool> canAcceptDelegate,
+            Func<ISessionContext, IMailbox, IMailbox, bool> canDeliverDelegate)
         {
             _canAcceptDelegate = canAcceptDelegate;
             _canDeliverDelegate = canDeliverDelegate;
@@ -59,7 +59,7 @@ namespace SmtpServer.Storage
         /// </summary>
         /// <param name="delegate">The delegate to wrap.</param>
         /// <returns>The function that is compatible with the main signature.</returns>
-        static Func<ISessionContext, IMailbox, MailboxFilterResult> Wrap(Func<IMailbox, MailboxFilterResult> @delegate)
+        static Func<ISessionContext, IMailbox, bool> Wrap(Func<IMailbox, bool> @delegate)
         {
             return (context, @from) => @delegate(@from);
         }
@@ -69,7 +69,7 @@ namespace SmtpServer.Storage
         /// </summary>
         /// <param name="delegate">The delegate to wrap.</param>
         /// <returns>The function that is compatible with the main signature.</returns>
-        static Func<ISessionContext, IMailbox, IMailbox, MailboxFilterResult> Wrap(Func<IMailbox, IMailbox, MailboxFilterResult> @delegate)
+        static Func<ISessionContext, IMailbox, IMailbox, bool> Wrap(Func<IMailbox, IMailbox, bool> @delegate)
         {
             return (context, to, @from) => @delegate(to, @from);
         }
@@ -81,8 +81,8 @@ namespace SmtpServer.Storage
         /// <param name="from">The mailbox to test.</param>
         /// <param name="size">The estimated message size to accept.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The acceptance state of the mailbox.</returns>
-        public override Task<MailboxFilterResult> CanAcceptFromAsync(
+        /// <returns>Returns true if the mailbox is accepted, false if not.</returns>
+        public override Task<bool> CanAcceptFromAsync(
             ISessionContext context,
             IMailbox @from,
             int size,
@@ -98,8 +98,8 @@ namespace SmtpServer.Storage
         /// <param name="to">The mailbox to test.</param>
         /// <param name="from">The sender's mailbox.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The acceptance state of the mailbox.</returns>
-        public override Task<MailboxFilterResult> CanDeliverToAsync(
+        /// <returns>Returns true if the mailbox can be delivered to, false if not.</returns>
+        public override Task<bool> CanDeliverToAsync(
             ISessionContext context,
             IMailbox to,
             IMailbox @from,

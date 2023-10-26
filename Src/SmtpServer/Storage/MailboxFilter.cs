@@ -15,14 +15,14 @@ namespace SmtpServer.Storage
         /// <param name="from">The mailbox to test.</param>
         /// <param name="size">The estimated message size to accept.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The acceptance state of the mailbox.</returns>
-        public virtual Task<MailboxFilterResult> CanAcceptFromAsync(
+        /// <returns>Returns true if the mailbox is accepted, false if not.</returns>
+        public virtual Task<bool> CanAcceptFromAsync(
             ISessionContext context, 
             IMailbox @from, 
             int size,
             CancellationToken cancellationToken)
         {
-            return Task.FromResult(MailboxFilterResult.Yes);
+            return Task.FromResult(true);
         }
 
         /// <summary>
@@ -32,14 +32,14 @@ namespace SmtpServer.Storage
         /// <param name="to">The mailbox to test.</param>
         /// <param name="from">The sender's mailbox.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The acceptance state of the mailbox.</returns>
-        public virtual Task<MailboxFilterResult> CanDeliverToAsync(
+        /// <returns>Returns true if the mailbox can be delivered to, false if not.</returns>
+        public virtual Task<bool> CanDeliverToAsync(
             ISessionContext context, 
             IMailbox to, 
             IMailbox @from,
             CancellationToken cancellationToken)
         {
-            return Task.FromResult(MailboxFilterResult.Yes);
+            return Task.FromResult(true);
         }
 
         sealed class DefaultMailboxFilter : MailboxFilter { }
