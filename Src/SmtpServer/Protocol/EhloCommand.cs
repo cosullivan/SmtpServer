@@ -69,9 +69,9 @@ namespace SmtpServer.Protocol
                 yield return "STARTTLS";
             }
 
-            if (context.ServerOptions.MaxMessageSize > 0)
+            if (context.ServerOptions.MaxMessageSizeOptions.Length > 0)
             {
-                yield return $"SIZE {context.ServerOptions.MaxMessageSize}";
+                yield return $"SIZE {context.ServerOptions.MaxMessageSizeOptions.Length}";
             }
 
             if (IsPlainLoginAllowed(context))

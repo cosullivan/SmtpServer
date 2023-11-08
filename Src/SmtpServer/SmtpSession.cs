@@ -81,6 +81,14 @@ namespace SmtpServer
 
                     retries = _context.ServerOptions.MaxRetryCount;
                 }
+                catch (MaxMessageSizeExceededException)
+                {
+                    context.RaiseResponseException(new SmtpResponseException(SmtpResponse.SizeLimitExceeded));
+
+                    await context.Pipe.Output.WriteReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ConfigureAwait(false);
+
+                    context.IsQuitRequested = true;
+                }
                 catch (SmtpResponseException responseException) when (responseException.IsQuitRequested)
                 {
                     context.RaiseResponseException(responseException);
@@ -131,6 +139,7 @@ namespace SmtpServer
 
                         return Task.CompletedTask;
                     },
+                    context.ServerOptions.MaxMessageSizeOptions,
                     cancellationTokenSource.Token).ConfigureAwait(false);
 
                 return command;

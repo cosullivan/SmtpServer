@@ -15,6 +15,7 @@ namespace SmtpServer
         {
             var serverOptions = new SmtpServerOptions
             {
+                MaxMessageSizeOptions = new MaxMessageSizeOptions(),
                 Endpoints = new List<IEndpointDefinition>(),
                 MaxRetryCount = 5,
                 MaxAuthenticationAttempts = 3,
@@ -95,11 +96,12 @@ namespace SmtpServer
         /// <summary>
         /// Sets the maximum message size.
         /// </summary>
-        /// <param name="value">The maximum message size to allow.</param>
+        /// <param name="length">The maximum message size to allow in bytes.</param>
+        /// <param name="handling">The handling type.</param>
         /// <returns>A OptionsBuilder to continue building on.</returns>
-        public SmtpServerOptionsBuilder MaxMessageSize(int value)
+        public SmtpServerOptionsBuilder MaxMessageSize(int length, MaxMessageSizeHandling handling = MaxMessageSizeHandling.Ignore)
         {
-            _setters.Add(options => options.MaxMessageSize = value);
+            _setters.Add(options => options.MaxMessageSizeOptions = new MaxMessageSizeOptions(handling, length));
 
             return this;
         }
@@ -148,10 +150,9 @@ namespace SmtpServer
         public SmtpServerOptionsBuilder CommandWaitTimeout(TimeSpan value)
         {
             _setters.Add(options => options.CommandWaitTimeout = value);
-            
+
             return this;
         }
-
         #region SmtpServerOptions
 
         class SmtpServerOptions : ISmtpServerOptions
@@ -159,7 +160,7 @@ namespace SmtpServer
             /// <summary>
             /// Gets or sets the maximum size of a message.
             /// </summary>
-            public int MaxMessageSize { get; set; }
+            public IMaxMessageSizeOptions MaxMessageSizeOptions { get; set; }
 
             /// <summary>
             /// The maximum number of retries before quitting the session.
@@ -195,6 +196,27 @@ namespace SmtpServer
             /// The size of the buffer that is read from each call to the underlying network client.
             /// </summary>
             public int NetworkBufferSize { get; set; }
+        }
+
+        public class MaxMessageSizeOptions: IMaxMessageSizeOptions
+        {
+            /// <summary>
+            /// Gets or sets the maximum size of a message.
+            /// </summary>
+            public int Length { get; set;}
+            /// <summary>
+            /// Gets or sets the handling type an oversized message.
+            /// </summary>
+            public MaxMessageSizeHandling Handling { get; set;}
+            public MaxMessageSizeOptions(MaxMessageSizeHandling handling, int length)
+            {
+                Length = length;
+                Handling = handling;
+            }
+            public MaxMessageSizeOptions()
+            {
+
+            }
         }
 
         #endregion

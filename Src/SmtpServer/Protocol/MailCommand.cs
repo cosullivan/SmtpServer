@@ -45,7 +45,7 @@ namespace SmtpServer.Protocol
             var size = GetMessageSize();
 
             // check against the server supplied maximum
-            if (context.ServerOptions.MaxMessageSize > 0 && size > context.ServerOptions.MaxMessageSize)
+            if (context.ServerOptions.MaxMessageSizeOptions.Length > 0 && size > context.ServerOptions.MaxMessageSizeOptions.Length)
             {
                 await context.Pipe.Output.WriteReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ConfigureAwait(false);
                 return false;
