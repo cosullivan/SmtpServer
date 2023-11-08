@@ -20,7 +20,8 @@ namespace SmtpServer
                 MaxRetryCount = 5,
                 MaxAuthenticationAttempts = 3,
                 NetworkBufferSize = 128,
-                CommandWaitTimeout = TimeSpan.FromMinutes(5)
+                CommandWaitTimeout = TimeSpan.FromMinutes(5),
+                ResponseWaitTimeout = TimeSpan.FromMinutes(5),
             };
 
             _setters.ForEach(setter => setter(serverOptions));
@@ -153,6 +154,18 @@ namespace SmtpServer
 
             return this;
         }
+
+        /// <summary>
+        /// Sets the timeout used when waiting for a command from the client.
+        /// </summary>
+        /// <param name="value">The timeout used when waiting for a command from the client.</param>
+        /// <returns>An OptionsBuilder to continue building on.</returns>
+        public SmtpServerOptionsBuilder ResponseWaitTimeout(TimeSpan value)
+        {
+            _setters.Add(options => options.ResponseWaitTimeout = value);
+
+            return this;
+        }
         #region SmtpServerOptions
 
         class SmtpServerOptions : ISmtpServerOptions
@@ -191,6 +204,11 @@ namespace SmtpServer
             /// The timeout to use when waiting for a command from the client.
             /// </summary>
             public TimeSpan CommandWaitTimeout { get; set; }
+
+            /// <summary>
+            /// The timeout to use when waiting for a command from the client.
+            /// </summary>
+            public TimeSpan ResponseWaitTimeout { get; set; }
 
             /// <summary>
             /// The size of the buffer that is read from each call to the underlying network client.

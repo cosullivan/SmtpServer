@@ -36,6 +36,11 @@ namespace SmtpServer
         TimeSpan CommandWaitTimeout { get; }
 
         /// <summary>
+        /// The timeout to use when waiting for a response from the client.
+        /// </summary>
+        TimeSpan ResponseWaitTimeout { get; }
+
+        /// <summary>
         /// The size of the buffer that is read from each call to the underlying network client.
         /// </summary>
         int NetworkBufferSize { get; }
