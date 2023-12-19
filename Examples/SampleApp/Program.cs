@@ -25,13 +25,13 @@ namespace SampleApp
         {
             ServicePointManager.ServerCertificateValidationCallback = IgnoreCertificateValidationFailureForTestingOnly;
 
-            //SimpleExample.Run();
+            SimpleExample.Run();
             //SimpleServerExample.Run();
             //CustomEndpointListenerExample.Run();
             //ServerCancellingExample.Run();
             //SessionTracingExample.Run();
             //DependencyInjectionExample.Run();
-            SecureServerExample.Run();
+            //SecureServerExample.Run();
         }
 
         static bool IgnoreCertificateValidationFailureForTestingOnly(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
