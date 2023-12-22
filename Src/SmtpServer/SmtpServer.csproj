@@ -5,7 +5,7 @@
     <LangVersion>8.0</LangVersion>
     <AssemblyName>SmtpServer</AssemblyName>
     <RootNamespace>SmtpServer</RootNamespace>
-    <Version>10.0.0</Version>
+    <Version>10.0.1</Version>
     <Description>.NET SmtpServer</Description>
     <Authors>Cain O'Sullivan</Authors>
     <Company />
@@ -17,10 +17,8 @@
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <AssemblyVersion>10.0.0</AssemblyVersion>
     <FileVersion>10.0.0</FileVersion>
-    <PackageReleaseNotes>Version 10.0.0
-- Removed MailboxFilterResult in favor of bool result. Impementations can throw SmtpResponseException for more control.
-- Handled servers that send the QUIT command and immediately close the connection.
-- Added an ICertificateFactory on the Endpoint that allows a new certificate to be created when required without having to restart the server.
+    <PackageReleaseNotes>Version 10.0.1
+- Fixed a bug that could cause a failure to recognize commands when using a large number of recipients.
 </PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>

@@ -4,7 +4,6 @@ using System.Threading;
 using SmtpServer;
 using SmtpServer.ComponentModel;
 using SmtpServer.Net;
-using SmtpServer.Protocol;
 using SmtpServer.Tracing;
 
 namespace SampleApp.Examples
@@ -31,7 +30,7 @@ namespace SampleApp.Examples
 
             var serverTask = server.StartAsync(_cancellationTokenSource.Token);
 
-            SampleMailClient.Send(recipients: 1);
+            SampleMailClient.Send(recipients: 1000);
 
             serverTask.WaitWithoutException();
         }
