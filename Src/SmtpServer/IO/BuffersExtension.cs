@@ -137,7 +137,7 @@ namespace SmtpServer.IO
             {
                 var span = buffer.First.Span;
 
-                return CaseInsensitiveStringEquals(ref span, ref text, 0);
+                return text.Length == span.Length && CaseInsensitiveStringEquals(ref span, ref text, 0);
             }
 
             var i = 0;
@@ -155,16 +155,11 @@ namespace SmtpServer.IO
                 i += span.Length;
             }
 
-            return i > 0;
+            return i == text.Length;
         }
 
         static bool CaseInsensitiveStringEquals(ref ReadOnlySpan<byte> span, ref Span<char> text, int offset)
         {
-            if (text.Length - offset != span.Length)
-            {
-                return false;
-            }
-
             for (var i = 0; i < span.Length; i++)
             {
                 var ch = (char)span[i];

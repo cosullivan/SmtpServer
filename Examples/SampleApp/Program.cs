@@ -33,6 +33,8 @@ namespace SampleApp
 
             //var files = Directory.GetFiles(@"C:\Temp\enron_mail_20150507.tar", "*.*", SearchOption.AllDirectories).ToList();
             //Console.WriteLine(files.OrderByDescending(file => new FileInfo(file).Length).First());
+
+            //new TokenReaderTests().CanCompareAcrossMultipleSegments();
         }
 
         static bool IgnoreCertificateValidationFailureForTestingOnly(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)

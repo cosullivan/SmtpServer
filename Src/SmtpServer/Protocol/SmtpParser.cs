@@ -283,7 +283,7 @@ namespace SmtpServer.Protocol
             {
                 return false;
             }
-            
+
             reader.Skip(TokenKind.Space);
 
             if (TryMakeToLiteral(ref reader) == false)
