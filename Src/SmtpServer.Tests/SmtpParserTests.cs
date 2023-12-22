@@ -7,7 +7,6 @@ using SmtpServer.Mail;
 using SmtpServer.Protocol;
 using SmtpServer.Text;
 using Xunit;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace SmtpServer.Tests
 {

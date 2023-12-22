@@ -14,13 +14,19 @@ namespace SampleApp
             string password = null,
             MimeEntity body = null,
             int count = 1,
+            int recipients = 1,
             bool useSsl = false,
             int port = 9025)
         {
             var message = new MimeMessage();
 
             message.From.Add(MailboxAddress.Parse(from ?? "from@sample.com"));
-            message.To.Add(MailboxAddress.Parse(to ?? "to@sample.com"));
+            
+            for (var i = 0; i < recipients; i++)
+            {
+                message.To.Add(MailboxAddress.Parse(to ?? $"to_{i}@sample.com"));
+            }
+
             message.Subject = subject ?? "Hello";
             message.Body = body ?? new TextPart("plain")
             {

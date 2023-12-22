@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System;
+using System.Text;
 using SmtpServer.IO;
 using SmtpServer.Text;
 using Xunit;
@@ -17,6 +18,39 @@ namespace SmtpServer.Tests
             }
 
             return new TokenReader(segments.Build());
+        }
+
+        [Fact]
+        public void CanCompareAcrossMultipleSegments()
+        {
+            // arrange
+            var reader = CreateReader("A", "BCD", "EF");
+
+            Span<char> match = stackalloc char[6];
+            match[0] = 'A';
+            match[1] = 'B';
+            match[2] = 'C';
+            match[3] = 'D';
+            match[4] = 'E';
+            match[5] = 'F';
+
+            // assert
+            Assert.True(reader.TryMake(TryMakeText, out var text));
+            Assert.False(text.IsSingleSegment);
+
+            // assert
+            Assert.True(text.CaseInsensitiveStringEquals(ref match));
+
+            static bool TryMakeText(ref TokenReader reader)
+            {
+                if (reader.Peek().Kind == TokenKind.Text)
+                {
+                    reader.Skip(TokenKind.Text);
+                    return true;
+                }
+
+                return false;
+            }
         }
 
         [Fact]

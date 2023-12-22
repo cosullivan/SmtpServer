@@ -31,7 +31,7 @@ namespace SampleApp.Examples
 
             var serverTask = server.StartAsync(_cancellationTokenSource.Token);
 
-            SampleMailClient.Send();
+            SampleMailClient.Send(recipients: 1);
 
             serverTask.WaitWithoutException();
         }
@@ -61,7 +61,7 @@ namespace SampleApp.Examples
             if (e.Exception.Properties.ContainsKey("SmtpSession:Buffer"))
             {
                 var buffer = e.Exception.Properties["SmtpSession:Buffer"] as byte[];
-                Console.WriteLine("Unknown Line: {0}", Encoding.UTF8.GetString(buffer));
+                Console.WriteLine("Unrecognized Command: {0}", Encoding.UTF8.GetString(buffer));
             }
         }
 
