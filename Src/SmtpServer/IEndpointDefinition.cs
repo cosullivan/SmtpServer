@@ -27,6 +27,14 @@ namespace SmtpServer
         /// </summary>
         bool AllowUnsecureAuthentication { get; }
 
+
+#if NETSTANDARD2_1_OR_GREATER
+        /// <summary>
+        /// Gets a value indicating if during an SSL connection a client ssl renegotiation is allowed
+        /// </summary>
+        bool AllowClientSslRenegotiation { get; }
+#endif
+
         /// <summary>
         /// The timeout on each individual buffer read.
         /// </summary>
