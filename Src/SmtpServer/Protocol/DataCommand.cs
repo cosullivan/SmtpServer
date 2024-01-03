@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using SmtpServer.ComponentModel;
 using SmtpServer.IO;
 using SmtpServer.Storage;
+using static SmtpServer.IO.PipeReaderExtensions;
 
 namespace SmtpServer.Protocol
 {
@@ -46,10 +47,15 @@ namespace SmtpServer.Protocol
                     {
                         // ReSharper disable once AccessToDisposedClosure
                         response = await container.Instance.SaveAsync(context, context.Transaction, buffer, cancellationToken).ConfigureAwait(false);
-                    }, 
+                    },
+                    context.ServerOptions.MaxMessageSizeOptions,
                     cancellationToken).ConfigureAwait(false);
                     
                 await context.Pipe.Output.WriteReplyAsync(response, cancellationToken).ConfigureAwait(false);
+            }
+            catch (MaxMessageSizeExceededException)
+            {
+                await context.Pipe.Output.WriteReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception)
             {

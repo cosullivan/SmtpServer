@@ -3,6 +3,7 @@ using System.IO.Pipelines;
 using System.Text;
 using System.Threading.Tasks;
 using SmtpServer.IO;
+using SmtpServer.Protocol;
 using SmtpServer.Text;
 using Xunit;
 
@@ -25,7 +26,7 @@ namespace SmtpServer.Tests
             var reader = CreatePipeReader("abcde\r\n");
 
             // act
-            var line = await reader.ReadLineAsync(Encoding.ASCII).ConfigureAwait(false);
+            var line = await reader.ReadLineAsync(Encoding.ASCII, new SmtpServerOptionsBuilder.MaxMessageSizeOptions()).ConfigureAwait(false);
 
             // assert
             Assert.Equal(5, line.Length);
@@ -40,7 +41,7 @@ namespace SmtpServer.Tests
             var reader = CreatePipeReader("ab\rcd\ne\r\n");
 
             // act
-            var line = await reader.ReadLineAsync(Encoding.ASCII).ConfigureAwait(false);
+            var line = await reader.ReadLineAsync(Encoding.ASCII, new SmtpServerOptionsBuilder.MaxMessageSizeOptions()).ConfigureAwait(false);
 
             // assert
             Assert.Equal(7, line.Length);
@@ -55,9 +56,9 @@ namespace SmtpServer.Tests
             var reader = CreatePipeReader("abcde\r\nfghij\r\nklmno\r\n");
 
             // act
-            var line1 = await reader.ReadLineAsync(Encoding.ASCII).ConfigureAwait(false);
-            var line2 = await reader.ReadLineAsync(Encoding.ASCII).ConfigureAwait(false);
-            var line3 = await reader.ReadLineAsync(Encoding.ASCII).ConfigureAwait(false);
+            var line1 = await reader.ReadLineAsync(Encoding.ASCII, new SmtpServerOptionsBuilder.MaxMessageSizeOptions()).ConfigureAwait(false);
+            var line2 = await reader.ReadLineAsync(Encoding.ASCII, new SmtpServerOptionsBuilder.MaxMessageSizeOptions()).ConfigureAwait(false);
+            var line3 = await reader.ReadLineAsync(Encoding.ASCII, new SmtpServerOptionsBuilder.MaxMessageSizeOptions()).ConfigureAwait(false);
 
             // assert
             Assert.Equal("abcde", line1);
@@ -79,10 +80,27 @@ namespace SmtpServer.Tests
                     text = StringUtil.Create(buffer);
 
                     return Task.CompletedTask;
-                });
+                }, new SmtpServerOptionsBuilder.MaxMessageSizeOptions());
 
             // assert
             Assert.Equal("abcd\r\n.1234", text);
+        }
+
+        [Fact]
+        public async void ThrowsNoExceptionOnIgnore()
+        {
+            var reader = CreatePipeReader("abcd\r\n..1234\r\n.\r\n");
+
+            await reader.ReadDotBlockAsync(_ => Task.CompletedTask, new SmtpServerOptionsBuilder.MaxMessageSizeOptions(MaxMessageSizeHandling.Ignore, 2));
+        }
+        [Fact]
+        public async void ThrowsExceptionOnStrict()
+        {
+            var reader = CreatePipeReader("abcd\r\n..1234\r\n.\r\n");
+
+            await Assert.ThrowsAsync<MaxMessageSizeExceededException>(
+                async () => await reader.ReadDotBlockAsync(_ => Task.CompletedTask, new SmtpServerOptionsBuilder.MaxMessageSizeOptions(MaxMessageSizeHandling.Strict, 2))
+            );
         }
     }
 }

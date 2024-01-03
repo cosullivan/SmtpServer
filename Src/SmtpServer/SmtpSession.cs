@@ -56,13 +56,15 @@ namespace SmtpServer
         /// <returns>A task which asynchronously performs the execution.</returns>
         async Task ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
+            var responseTimeout = new CancellationTokenSource(_context.ServerOptions.ResponseWaitTimeout);
+            var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(responseTimeout.Token, cancellationToken);
             var retries = _context.ServerOptions.MaxRetryCount;
 
             while (retries-- > 0 && context.IsQuitRequested == false && cancellationToken.IsCancellationRequested == false)
             {
                 try
                 {
-                    var command = await ReadCommandAsync(context, cancellationToken).ConfigureAwait(false);
+                    var command = await ReadCommandAsync(context, cancellationTokenSource.Token).ConfigureAwait(false);
 
                     if (command == null)
                     {
@@ -74,12 +76,20 @@ namespace SmtpServer
                         throw new SmtpResponseException(errorResponse);
                     }
 
-                    if (await ExecuteAsync(command, context, cancellationToken).ConfigureAwait(false))
+                    if (await ExecuteAsync(command, context, cancellationTokenSource.Token).ConfigureAwait(false))
                     {
                         _stateMachine.Transition(context);
                     }
 
                     retries = _context.ServerOptions.MaxRetryCount;
+                }
+                catch (MaxMessageSizeExceededException)
+                {
+                    context.RaiseResponseException(new SmtpResponseException(SmtpResponse.SizeLimitExceeded));
+
+                    await context.Pipe.Output.WriteReplyAsync(SmtpResponse.SizeLimitExceeded, cancellationToken).ConfigureAwait(false);
+
+                    context.IsQuitRequested = true;
                 }
                 catch (SmtpResponseException responseException) when (responseException.IsQuitRequested)
                 {
@@ -99,7 +109,14 @@ namespace SmtpServer
                 }
                 catch (OperationCanceledException)
                 {
-                    await context.Pipe.Output.WriteReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "The session has be cancelled."), CancellationToken.None).ConfigureAwait(false);
+                    if (responseTimeout.IsCancellationRequested)
+                    {
+                        await context.Pipe.Output.WriteReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "Timeout while waiting for response."), CancellationToken.None).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await context.Pipe.Output.WriteReplyAsync(new SmtpResponse(SmtpReplyCode.ServiceClosingTransmissionChannel, "The session has be cancelled."), CancellationToken.None).ConfigureAwait(false);
+                    }
                 }
             }
         }
@@ -131,6 +148,7 @@ namespace SmtpServer
 
                         return Task.CompletedTask;
                     },
+                    context.ServerOptions.MaxMessageSizeOptions,
                     cancellationTokenSource.Token).ConfigureAwait(false);
 
                 return command;

@@ -6,9 +6,9 @@ namespace SmtpServer
     public interface ISmtpServerOptions
     {
         /// <summary>
-        /// Gets the maximum size of a message.
+        /// Gets the maximum message size option.
         /// </summary>
-        int MaxMessageSize { get; }
+        IMaxMessageSizeOptions MaxMessageSizeOptions { get; }
 
         /// <summary>
         /// The maximum number of retries before quitting the session.
@@ -34,6 +34,11 @@ namespace SmtpServer
         /// The timeout to use when waiting for a command from the client.
         /// </summary>
         TimeSpan CommandWaitTimeout { get; }
+
+        /// <summary>
+        /// The timeout to use when waiting for a response from the client.
+        /// </summary>
+        TimeSpan ResponseWaitTimeout { get; }
 
         /// <summary>
         /// The size of the buffer that is read from each call to the underlying network client.
