@@ -16,6 +16,7 @@ using SmtpServer.Net;
 using SmtpServer.Protocol;
 using SmtpServer.Storage;
 using SmtpResponse = SmtpServer.Protocol.SmtpResponse;
+using System.Linq;
 
 namespace SmtpServer.Tests
 {
@@ -153,6 +154,15 @@ namespace SmtpServer.Tests
                 Task.Delay(TimeSpan.FromSeconds(5)).Wait();
 
                 Assert.Throws<IOException>(() => client.NoOp());
+            }
+        }
+
+        [Fact]
+        public void WillTerminateDueToTooMuchData()
+        {
+            using (CreateServer(c => c.MaxMessageSize(2, MaxMessageSizeHandling.Strict)))
+            {
+                Assert.Throws<IOException>(() => MailClient.Send(MailClient.Message(from: "test1@test.com", to: "test2@test.com", text: string.Concat(Enumerable.Repeat("Too long for 1024 bytes", 1000)))));
             }
         }
 
