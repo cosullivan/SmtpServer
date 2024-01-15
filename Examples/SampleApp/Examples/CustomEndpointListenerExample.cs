@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.IO.Pipelines;
+using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -80,7 +81,7 @@ namespace SampleApp.Examples
                 _securableDuplexPipe = securableDuplexPipe;
             }
 
-            public Task UpgradeAsync(X509Certificate certificate, SslProtocols protocols, CancellationToken cancellationToken = default)
+            public Task UpgradeAsync(X509Certificate certificate, SslProtocols protocols, CancellationToken cancellationToken = default, RemoteCertificateValidationCallback remoteCertificateValidationCallback = null)
             {
                 return _securableDuplexPipe.UpgradeAsync(certificate, protocols, cancellationToken);
             }
