@@ -16,6 +16,7 @@ using SmtpServer.Net;
 using SmtpServer.Protocol;
 using SmtpServer.Storage;
 using SmtpResponse = SmtpServer.Protocol.SmtpResponse;
+using System.Net.Sockets;
 
 namespace SmtpServer.Tests
 {
@@ -260,11 +261,11 @@ namespace SmtpServer.Tests
                     });
 
                 disposable.Server.SessionCreated += sessionCreatedHandler;
-                
+
                 MailClient.Send();
 
                 disposable.Server.SessionCreated -= sessionCreatedHandler;
-                
+
                 Assert.True(isSecure);
             }
 
@@ -289,11 +290,11 @@ namespace SmtpServer.Tests
                     });
 
                 disposable.Server.SessionCreated += sessionCreatedHandler;
-                
+
                 MailClient.NoOp(MailKit.Security.SecureSocketOptions.SslOnConnect);
 
                 disposable.Server.SessionCreated -= sessionCreatedHandler;
-                
+
                 Assert.True(isSecure);
             }
 
@@ -352,6 +353,35 @@ namespace SmtpServer.Tests
                 MailClient.Send();
             }
 
+            Assert.True(started);
+            Assert.True(stopped);
+        }
+
+        [Fact]
+        public void ListenerAlreadyCreate()
+        {
+            var endpointListenerFactory = new EndpointListenerFactory();
+
+            var started = false;
+            var stopped = false;
+            var raised = false;
+
+            endpointListenerFactory.EndpointStarted += (sender, e) => { started = true; };
+            endpointListenerFactory.EndpointStopped += (sender, e) => { stopped = true; };
+
+            using (CreateServer(services => services.Add(endpointListenerFactory)))
+            {
+                try
+                {
+                    using var disposable = CreateServer();
+                }
+                catch (AggregateException ex)
+                {
+                   raised = ex.InnerException is SocketException ? true : false;
+                }
+            }
+
+            Assert.True(raised);
             Assert.True(started);
             Assert.True(stopped);
         }
