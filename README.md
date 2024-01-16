@@ -43,7 +43,8 @@ var options = new SmtpServerOptionsBuilder()
     .ServerName("localhost")
     .Endpoint(builder =>
         builder
-            .Port(9025, true)
+            .Port(9025)
+            .IsSecure(true)
             .AllowUnsecureAuthentication(false)
             .Certificate(CreateCertificate()))
     .Build();
@@ -133,14 +134,18 @@ public class SampleUserAuthenticator : IUserAuthenticator, IUserAuthenticatorFac
 ```
 
 ```cs
-    public sealed class SampleClientCertificateValidator : ClientCertificateValidator
+public sealed class SampleClientCertificateValidator : IClientCertificateValidator, IClientCertificateValidatorFactory
+{
+    public RemoteCertificateValidationCallback RemoteClientCertificateValidationCallback { get; set; } =
+        (sender, certificate, chain, sslPolicyErrors) =>
+        {
+            // Provide your custom client certificate validation logic here.
+            // Return true if valid; otherwise, false.
+            return true;
+        };
+
+    public IClientCertificateValidator CreateInstance(ISessionContext context)
     {
-        public override RemoteCertificateValidationCallback RemoteClientCertificateValidationCallback { get; set; } =
-            (sender, certificate, chain, sslPolicyErrors) =>
-            {
-                // Provide your custom client certificate validation logic here.
-                // Return true if valid; otherwise, false.
-                return true;
-            };
+        return new SampleClientCertificateValidator();
     }
 ```
