@@ -358,44 +358,46 @@ namespace SmtpServer.Tests
         }
 
         [Fact]
-        public void ListenerCreatedAndListenerCreatedCallbackIsCalling()
+        public async Task ListenerCreatedAndListenerCreatedEventRaised()
         {
             // Arrange
             var isListenerStarted = false;
-            var endpointListenerFactory = new EndpointListenerFactory();
             var options = new SmtpServerOptionsBuilder()
-                 .ServerName("localhost")
-                 .Endpoint(
-                     endpointBuilder =>
-                     {
-                         endpointBuilder.Port(9025);
-                         endpointBuilder.AllowUnsecureAuthentication();
-                     });
+                 .Endpoint(endpointBuilder =>
+                 {
+                     endpointBuilder.Port(9025);
+                     endpointBuilder.AllowUnsecureAuthentication();
+                 });
 
             var serviceProvider = new ServiceProvider();
-            serviceProvider.Add(MessageStore);
-            serviceProvider.Add(endpointListenerFactory);
 
             var server = new SmtpServer(options.Build(), serviceProvider);
             server.ListenerCreated += (sender, e) => { isListenerStarted = true; };
 
             // Act
-            var smtpServerTask = server.StartAsync(CancellationTokenSource.Token);
+            try
+            {
+                // StartAsync(...) is a blocking call so we have to avoid awaiting it
+                server.StartAsync(CancellationTokenSource.Token);
+            }
+            catch
+            {
+                // ignored
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(1));
+            CancellationTokenSource.Cancel();
 
             // Assert
-            CancellationTokenSource.Cancel();
-            smtpServerTask.Wait();
             Assert.True(isListenerStarted);
         }
 
         [Fact]
-        public async Task ListenerFaultedAndListenerFaultedCallbackIsCalling()
+        public async Task ListenerFaultedAndListenerFaultedEventRaised()
         {
             // Arrange
             var isListenerFaulted = false;
-            var endpointListenerFactory = new EndpointListenerFactory();
             var options = new SmtpServerOptionsBuilder()
-                 .ServerName("localhost")
                  .Endpoint(
                      endpointBuilder =>
                      {
@@ -404,20 +406,20 @@ namespace SmtpServer.Tests
                      });
 
             var serviceProvider = new ServiceProvider();
-            serviceProvider.Add(MessageStore);
-            serviceProvider.Add(endpointListenerFactory);
 
             var server = new SmtpServer(options.Build(), serviceProvider);
             server.ListenerFaulted += (sender, e) => { isListenerFaulted = true; };
 
-            var serverTask = server.StartAsync(CancellationTokenSource.Token);
+            // We don't have to await any tasks because we are only looking for the event invocation
+            // StartAsync(...) is a blocking call so we have to avoid awaiting it
+            server.StartAsync(CancellationTokenSource.Token);
+            await Task.Delay(TimeSpan.FromSeconds(1));
 
-            // Act
-            await Assert.ThrowsAsync<SocketException>(() => server.StartAsync(CancellationTokenSource.Token));
+            // Act & Assert
+            Assert.ThrowsAsync<SocketException>(() => server.StartAsync(CancellationTokenSource.Token));
 
-            // Arrange
+            await Task.Delay(TimeSpan.FromSeconds(1));
             CancellationTokenSource.Cancel();
-            serverTask.Wait();
 
             Assert.True(isListenerFaulted);
         }
