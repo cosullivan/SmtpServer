@@ -36,7 +36,7 @@ await smtpServer.StartAsync(CancellationToken.None);
 
 # What hooks are provided?
 
-There are three hooks that can be implemented; IMessageStore, IMailboxFilter, and IUserAuthenticator.
+There are four hooks that can be implemented; IMessageStore, IMailboxFilter, IUserAuthenticator and IClientCertificateValidator.
 
 ```cs
 var options = new SmtpServerOptionsBuilder()
@@ -52,6 +52,7 @@ var serviceProvider = new ServiceProvider();
 serviceProvider.Add(new SampleMessageStore());
 serviceProvider.Add(new SampleMailboxFilter());
 serviceProvider.Add(new SampleUserAuthenticator());
+serviceProvider.Add(new SampleClientCertificateValidator());
 
 var smtpServer = new SmtpServer.SmtpServer(options, serviceProvider);
 await smtpServer.StartAsync(CancellationToken.None);
@@ -129,4 +130,17 @@ public class SampleUserAuthenticator : IUserAuthenticator, IUserAuthenticatorFac
 	return new SampleUserAuthenticator();
     }
 }
+```
+
+```cs
+    public sealed class SampleClientCertificateValidator : ClientCertificateValidator
+    {
+        public override RemoteCertificateValidationCallback RemoteClientCertificateValidationCallback { get; set; } =
+            (sender, certificate, chain, sslPolicyErrors) =>
+            {
+                // Provide your custom client certificate validation logic here.
+                // Return true if valid; otherwise, false.
+                return true;
+            };
+    }
 ```
