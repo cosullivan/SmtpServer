@@ -31,7 +31,7 @@ namespace SmtpServer.Protocol
 
             var clientCertificateValidator = context.ServiceProvider.GetService<IClientCertificateValidatorFactory, IClientCertificateValidator>(context, ClientCertificateValidator.Default);
 
-            await context.Pipe.UpgradeAsync(certificate, protocols, cancellationToken, clientCertificateValidator.RemoteCertificateValidationCallback).ConfigureAwait(false);
+            await context.Pipe.UpgradeAsync(certificate, protocols, cancellationToken, clientCertificateValidator.RemoteClientCertificateValidationCallback).ConfigureAwait(false);
 
             return true;
         }

@@ -10,6 +10,6 @@ namespace SmtpServer.Authentication
         /// <summary>
         /// Gets or sets the callback method used to validate the client certificate provided by the remote party in a secure connection.
         /// </summary>
-        RemoteCertificateValidationCallback RemoteCertificateValidationCallback { get; set; }
+        RemoteCertificateValidationCallback RemoteClientCertificateValidationCallback { get; set; }
     }
 }
