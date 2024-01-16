@@ -358,32 +358,68 @@ namespace SmtpServer.Tests
         }
 
         [Fact]
-        public void ListenerAlreadyCreate()
+        public void ListenerCreatedAndListenerCreatedCallbackIsCalling()
         {
+            // Arrange
+            var isListenerStarted = false;
             var endpointListenerFactory = new EndpointListenerFactory();
+            var options = new SmtpServerOptionsBuilder()
+                 .ServerName("localhost")
+                 .Endpoint(
+                     endpointBuilder =>
+                     {
+                         endpointBuilder.Port(9025);
+                         endpointBuilder.AllowUnsecureAuthentication();
+                     });
 
-            var started = false;
-            var stopped = false;
-            var raised = false;
+            var serviceProvider = new ServiceProvider();
+            serviceProvider.Add(MessageStore);
+            serviceProvider.Add(endpointListenerFactory);
 
-            endpointListenerFactory.EndpointStarted += (sender, e) => { started = true; };
-            endpointListenerFactory.EndpointStopped += (sender, e) => { stopped = true; };
+            var server = new SmtpServer(options.Build(), serviceProvider);
+            server.ListenerCreated += (sender, e) => { isListenerStarted = true; };
 
-            using (CreateServer(services => services.Add(endpointListenerFactory)))
-            {
-                try
-                {
-                    using var disposable = CreateServer();
-                }
-                catch (AggregateException ex)
-                {
-                   raised = ex.InnerException is SocketException ? true : false;
-                }
-            }
+            // Act
+            var smtpServerTask = server.StartAsync(CancellationTokenSource.Token);
 
-            Assert.True(raised);
-            Assert.True(started);
-            Assert.True(stopped);
+            // Assert
+            CancellationTokenSource.Cancel();
+            smtpServerTask.Wait();
+            Assert.True(isListenerStarted);
+        }
+
+        [Fact]
+        public async Task ListenerFaultedAndListenerFaultedCallbackIsCalling()
+        {
+            // Arrange
+            var isListenerFaulted = false;
+            var endpointListenerFactory = new EndpointListenerFactory();
+            var options = new SmtpServerOptionsBuilder()
+                 .ServerName("localhost")
+                 .Endpoint(
+                     endpointBuilder =>
+                     {
+                         endpointBuilder.Port(9025);
+                         endpointBuilder.AllowUnsecureAuthentication();
+                     });
+
+            var serviceProvider = new ServiceProvider();
+            serviceProvider.Add(MessageStore);
+            serviceProvider.Add(endpointListenerFactory);
+
+            var server = new SmtpServer(options.Build(), serviceProvider);
+            server.ListenerFaulted += (sender, e) => { isListenerFaulted = true; };
+
+            var serverTask = server.StartAsync(CancellationTokenSource.Token);
+
+            // Act
+            await Assert.ThrowsAsync<SocketException>(() => server.StartAsync(CancellationTokenSource.Token));
+
+            // Arrange
+            CancellationTokenSource.Cancel();
+            serverTask.Wait();
+
+            Assert.True(isListenerFaulted);
         }
 
         public static bool IgnoreCertificateValidationFailureForTestingOnly(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
