@@ -101,7 +101,7 @@ namespace SmtpServer
         /// Raises the ListenerCreated Event.
         /// </summary>
         /// <param name="args">The event data.</param>
-        protected internal virtual void OnListenerCreated(EventArgs args)
+        protected virtual void OnListenerCreated(EventArgs args)
         {
             ListenerCreated?.Invoke(this, args);
         }
@@ -110,7 +110,7 @@ namespace SmtpServer
         /// Raises the ListenerFaulted Event.
         /// </summary>
         /// <param name="args">The event data.</param>
-        protected internal virtual void OnListenerFaulted(ListenerFaultedEventArgs args)
+        protected virtual void OnListenerFaulted(ListenerFaultedEventArgs args)
         {
             ListenerFaulted?.Invoke(this, args);
         }
@@ -155,7 +155,7 @@ namespace SmtpServer
             try
             {
                 endpointListener = _endpointListenerFactory.CreateListener(endpointDefinition);
-                OnListenerCreated(new EventArgs());
+                OnListenerCreated(EventArgs.Empty);
             }
             catch (SocketException ex)
             {
