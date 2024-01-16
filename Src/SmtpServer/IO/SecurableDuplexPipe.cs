@@ -29,21 +29,16 @@ namespace SmtpServer.IO
             Output = PipeWriter.Create(_stream);
         }
 
-        /// <summary>
-        /// Upgrade to a secure pipeline.
-        /// </summary>
-        /// <param name="certificate">The X509Certificate used to authenticate the server.</param>
-        /// <param name="protocols">The value that represents the protocol used for authentication.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task that asynchronously performs the operation.</returns>
-        public async Task UpgradeAsync(X509Certificate certificate, SslProtocols protocols, CancellationToken cancellationToken = default)
+        /// <inheritdoc />
+        public async Task UpgradeAsync(X509Certificate certificate, SslProtocols protocols, CancellationToken cancellationToken = default, RemoteCertificateValidationCallback remoteCertificateValidationCallback = null)
         {
-            var stream = new SslStream(_stream, true);
+            var clientCertificateRequired = remoteCertificateValidationCallback != null;
+            var stream = clientCertificateRequired ? new SslStream(_stream, true, remoteCertificateValidationCallback) : new SslStream(_stream, true);
 
-            await stream.AuthenticateAsServerAsync(certificate, false, protocols, true).ConfigureAwait(false);
+            await stream.AuthenticateAsServerAsync(certificate, clientCertificateRequired, protocols, true).ConfigureAwait(false);
 
             _stream = stream;
-            
+
             Input = PipeReader.Create(_stream);
             Output = PipeWriter.Create(_stream);
         }
