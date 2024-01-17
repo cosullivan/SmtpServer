@@ -17,6 +17,7 @@ using SmtpServer.Net;
 using SmtpServer.Protocol;
 using SmtpServer.Storage;
 using SmtpResponse = SmtpServer.Protocol.SmtpResponse;
+using System.Net.Sockets;
 
 namespace SmtpServer.Tests
 {
@@ -440,6 +441,73 @@ namespace SmtpServer.Tests
 
             Assert.True(started);
             Assert.True(stopped);
+        }
+
+        [Fact]
+        public async Task ListenerCreatedAndListenerCreatedEventRaised()
+        {
+            // Arrange
+            var isListenerStarted = false;
+            var options = new SmtpServerOptionsBuilder()
+                 .Endpoint(endpointBuilder =>
+                 {
+                     endpointBuilder.Port(9025);
+                     endpointBuilder.AllowUnsecureAuthentication();
+                 });
+
+            var serviceProvider = new ServiceProvider();
+
+            var server = new SmtpServer(options.Build(), serviceProvider);
+            server.ListenerCreated += (sender, e) => { isListenerStarted = true; };
+
+            // Act
+            try
+            {
+                // StartAsync(...) is a blocking call so we have to avoid awaiting it
+                server.StartAsync(CancellationTokenSource.Token);
+            }
+            catch
+            {
+                // ignored
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(1));
+            CancellationTokenSource.Cancel();
+
+            // Assert
+            Assert.True(isListenerStarted);
+        }
+
+        [Fact]
+        public async Task ListenerFaultedAndListenerFaultedEventRaised()
+        {
+            // Arrange
+            var isListenerFaulted = false;
+            var options = new SmtpServerOptionsBuilder()
+                 .Endpoint(
+                     endpointBuilder =>
+                     {
+                         endpointBuilder.Port(9025);
+                         endpointBuilder.AllowUnsecureAuthentication();
+                     });
+
+            var serviceProvider = new ServiceProvider();
+
+            var server = new SmtpServer(options.Build(), serviceProvider);
+            server.ListenerFaulted += (sender, e) => { isListenerFaulted = true; };
+
+            // We don't have to await any tasks because we are only looking for the event invocation
+            // StartAsync(...) is a blocking call so we have to avoid awaiting it
+            server.StartAsync(CancellationTokenSource.Token);
+            await Task.Delay(TimeSpan.FromSeconds(1));
+
+            // Act & Assert
+            Assert.ThrowsAsync<SocketException>(() => server.StartAsync(CancellationTokenSource.Token));
+
+            await Task.Delay(TimeSpan.FromSeconds(1));
+            CancellationTokenSource.Cancel();
+
+            Assert.True(isListenerFaulted);
         }
 
         public static bool IgnoreCertificateValidationFailureForTestingOnly(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)

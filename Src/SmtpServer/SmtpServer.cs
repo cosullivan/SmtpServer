@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.ComponentModel;
@@ -28,6 +29,17 @@ namespace SmtpServer
         /// Raised when a session has been cancelled through the cancellation token.
         /// </summary>
         public event EventHandler<SessionEventArgs> SessionCancelled;
+
+        /// <summary>
+        /// Raised when a listener has been created .
+        /// </summary>
+        public event EventHandler<EventArgs> ListenerCreated;
+
+
+        /// <summary>
+        /// Raised when a listener has faulted.
+        /// </summary>
+        public event EventHandler<ListenerFaultedEventArgs> ListenerFaulted;
 
         readonly ISmtpServerOptions _options;
         readonly IServiceProvider _serviceProvider;
@@ -86,6 +98,24 @@ namespace SmtpServer
         }
 
         /// <summary>
+        /// Raises the ListenerCreated Event.
+        /// </summary>
+        /// <param name="args">The event data.</param>
+        protected virtual void OnListenerCreated(EventArgs args)
+        {
+            ListenerCreated?.Invoke(this, args);
+        }
+
+        /// <summary>
+        /// Raises the ListenerFaulted Event.
+        /// </summary>
+        /// <param name="args">The event data.</param>
+        protected virtual void OnListenerFaulted(ListenerFaultedEventArgs args)
+        {
+            ListenerFaulted?.Invoke(this, args);
+        }
+
+        /// <summary>
         /// Starts the SMTP server.
         /// </summary>
         /// <param name="cancellationToken">The cancellation token.</param>
@@ -121,7 +151,18 @@ namespace SmtpServer
             // the shutdown method. The Shutdown method will stop the listeners and allow any active sessions to finish gracefully.
             var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_shutdownTokenSource.Token, cancellationToken);
 
-            using var endpointListener = _endpointListenerFactory.CreateListener(endpointDefinition);
+           IEndpointListener endpointListener = null;
+            try
+            {
+                endpointListener = _endpointListenerFactory.CreateListener(endpointDefinition);
+                OnListenerCreated(EventArgs.Empty);
+            }
+            catch (SocketException ex)
+            {
+                OnListenerFaulted(new ListenerFaultedEventArgs(ex));
+                endpointListener?.Dispose();
+                throw;
+            }
 
             while (cancellationTokenSource.Token.IsCancellationRequested == false)
             {
@@ -144,6 +185,8 @@ namespace SmtpServer
                     _sessions.Run(sessionContext, cancellationTokenSource.Token);
                 }
             }
+
+            endpointListener?.Dispose();
         }
 
         /// <summary>
