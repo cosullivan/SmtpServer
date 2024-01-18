@@ -1,4 +1,6 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
+using MailKit;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
@@ -46,16 +48,23 @@ namespace SmtpServer.Tests
             return message;
         }
 
-        public static SmtpClientEx Client(string host = "localhost", int port = 9025, SecureSocketOptions options = SecureSocketOptions.Auto)
+        public static SmtpClientEx Client()
         {
-            var client = new SmtpClientEx();
-            
-            client.Connected += (sender, args) =>
+            return new SmtpClientEx();
+        }
+
+        public static SmtpClientEx Connect(this SmtpClientEx client,
+            EventHandler<ConnectedEventArgs> onConnected = null,
+            string host = "localhost",
+            int port = 9025,
+            SecureSocketOptions options = SecureSocketOptions.Auto)
+        {
+            if (onConnected is not null)
             {
+                client.Connected += onConnected;
+            }
 
-            };
-
-            client.Connect("localhost", 9025, options);
+            client.Connect(host, port, options);
 
             return client;
         }
@@ -67,7 +76,7 @@ namespace SmtpServer.Tests
         {
             message ??= Message();
 
-            using var client = Client();
+            using var client = Client().Connect();
 
             if (user != null && password != null)
             {
@@ -82,9 +91,9 @@ namespace SmtpServer.Tests
 
         public static void NoOp(SecureSocketOptions options = SecureSocketOptions.Auto)
         {
-            using var client = Client(options: options);
+            using var client = Client().Connect(options: options);
 
-            client.NoOp();            
+            client.NoOp();
         }
     }
 
@@ -92,7 +101,7 @@ namespace SmtpServer.Tests
     {
         public SmtpResponse SendUnknownCommand(string command, CancellationToken cancellationToken = default)
         {
-            return SendCommand(command, cancellationToken); 
+            return SendCommand(command, cancellationToken);
         }
     }
 }

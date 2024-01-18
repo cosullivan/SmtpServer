@@ -15,12 +15,14 @@ namespace SmtpServer.ComponentModel
         ISmtpCommandFactory _smtpCommandFactory;
         IMailboxFilterFactory _mailboxFilterFactory;
         IMessageStoreFactory _messageStoreFactory;
-        
+        IClientCertificateValidatorFactory _clientCertificateValidatorFactory;
+
         public ServiceProvider()
         {
             Add(UserAuthenticator.Default);
             Add(MailboxFilter.Default);
             Add(MessageStore.Default);
+            Add(ClientCertificateValidator.Default);
         }
 
         /// <summary>
@@ -96,6 +98,24 @@ namespace SmtpServer.ComponentModel
         }
 
         /// <summary>
+        /// Adds a client certificate validator factory to the application.
+        /// </summary>
+        /// <param name="clientCertificateValidatorFactory">The client certificate validator factory to add.</param>
+        public void Add(IClientCertificateValidatorFactory clientCertificateValidatorFactory)
+        {
+            _clientCertificateValidatorFactory = clientCertificateValidatorFactory;
+        }
+
+        /// <summary>
+        /// Adds a client certificate validator to the service.
+        /// </summary>
+        /// <param name="clientCertificateValidator">The client certificate validator to add.</param>
+        public void Add(IClientCertificateValidator clientCertificateValidator)
+        {
+            _clientCertificateValidatorFactory = new DelegatingClientCertificateValidatorFactory(context => clientCertificateValidator);
+        }
+
+        /// <summary>
         /// Gets the service object of the specified type.
         /// </summary>
         /// <param name="serviceType">An object that specifies the type of service object to get.</param>
@@ -125,6 +145,11 @@ namespace SmtpServer.ComponentModel
             if (serviceType == typeof(IMessageStoreFactory))
             {
                 return _messageStoreFactory;
+            }
+
+            if (serviceType == typeof(IClientCertificateValidatorFactory))
+            {
+                return _clientCertificateValidatorFactory;
             }
 
             throw new NotSupportedException(serviceType.ToString());

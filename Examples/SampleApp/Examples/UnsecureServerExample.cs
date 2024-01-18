@@ -10,7 +10,7 @@ using SmtpServer.Tracing;
 
 namespace SampleApp.Examples
 {
-    public static class UnsecureServerExample
+    public static class SecureServerExample
     {
         public static void Run()
         {
@@ -24,7 +24,7 @@ namespace SampleApp.Examples
                 .Endpoint(builder =>
                     builder
                         .Port(9025)
-                        .IsSecure(true)
+                        .IsSecure(false)
                         .AuthenticationRequired(true)
                         .AllowUnsecureAuthentication(false)
                         .Certificate(CreateCertificate()))
@@ -32,6 +32,8 @@ namespace SampleApp.Examples
 
             var serviceProvider = new ServiceProvider();
             serviceProvider.Add(new SampleUserAuthenticator());
+            // Client certificate validation will only be performed if the endpoint is not secure by default.
+            serviceProvider.Add(new SampleClientCertificateValidator());
 
             var server = new SmtpServer.SmtpServer(options, serviceProvider);
             server.SessionCreated += OnSessionCreated;
