@@ -17,7 +17,6 @@ using SmtpServer.Protocol;
 using SmtpServer.Storage;
 using SmtpResponse = SmtpServer.Protocol.SmtpResponse;
 using System.Text;
-using SmtpServer.Tests.Helpers;
 
 namespace SmtpServer.Tests
 {
