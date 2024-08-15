@@ -16,6 +16,8 @@ using SmtpServer.Net;
 using SmtpServer.Protocol;
 using SmtpServer.Storage;
 using SmtpResponse = SmtpServer.Protocol.SmtpResponse;
+using System.Text;
+using SmtpServer.Tests.Helpers;
 
 namespace SmtpServer.Tests
 {
@@ -48,9 +50,11 @@ namespace SmtpServer.Tests
 
         [Theory]
         [InlineData("Assunto teste acento çãõáéíóú", "utf-8")]
-        [InlineData("שלום שלום שלום", "windows-1255", Skip = "fix this currently not working with github build job")]
+        [InlineData("שלום שלום שלום", "windows-1255")]
         public void CanReceiveUnicodeMimeMessage(string text, string charset)
         {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
             using (CreateServer())
             {
                 // act
