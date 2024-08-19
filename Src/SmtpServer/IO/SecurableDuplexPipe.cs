@@ -92,6 +92,6 @@ namespace SmtpServer.IO
         /// <summary>
         /// Returns the used SslProtocol of a secure pipeline
         /// </summary>
-        public SslProtocols? SslProtocol => (_stream as SslStream)?.SslProtocol;
+        public SslProtocols SslProtocol => (_stream as SslStream)?.SslProtocol ?? SslProtocols.None;
     }
 }
