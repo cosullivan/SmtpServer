@@ -139,8 +139,7 @@ namespace SmtpServer.Tests
             }
         }
 
-        //[Fact(Skip = "Command timeout wont work properly until https://github.com/dotnet/corefx/issues/15033")]
-        [Fact]
+        [Fact(Skip = "Command timeout wont work properly until https://github.com/dotnet/corefx/issues/15033")]
         public void WillTimeoutWaitingForCommand()
         {
             using (CreateServer(c => c.CommandWaitTimeout(TimeSpan.FromSeconds(1))))
