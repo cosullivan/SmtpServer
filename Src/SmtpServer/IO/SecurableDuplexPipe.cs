@@ -43,7 +43,7 @@ namespace SmtpServer.IO
             await stream.AuthenticateAsServerAsync(certificate, false, protocols, true).ConfigureAwait(false);
 
             _stream = stream;
-            
+
             Input = PipeReader.Create(_stream);
             Output = PipeWriter.Create(_stream);
         }
@@ -88,5 +88,10 @@ namespace SmtpServer.IO
         /// Returns a value indicating whether or not the current pipeline is secure.
         /// </summary>
         public bool IsSecure => _stream is SslStream;
+
+        /// <summary>
+        /// Returns the used SslProtocol of a secure pipeline
+        /// </summary>
+        public SslProtocols SslProtocol => (_stream as SslStream)?.SslProtocol ?? SslProtocols.None;
     }
 }
