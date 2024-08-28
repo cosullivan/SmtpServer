@@ -1,0 +1,41 @@
+name: Build and Publish
+
+on:
+  workflow_dispatch: # Allow running the workflow manually from the GitHub UI
+  push:
+    paths:
+    - 'Src/**'
+    - '.github/workflows/**'
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET 8.0
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    - name: Restore dependencies
+      working-directory: ./Src
+      run: dotnet restore
+    - name: Build
+      working-directory: ./Src
+      run: dotnet build --configuration Release --no-restore
+    - name: Test
+      working-directory: ./Src
+      run: |
+        dotnet test --configuration Release --no-restore --no-build --verbosity normal
+    #- name: Create NuGet packages
+    #  run: |
+    #    dotnet pack --configuration Release --output $GITHUB_WORKSPACE/out Src/SmtpServer/SmtpServer.csproj
+    #- name: Push NuGet packages
+    #  run: |
+    #    dotnet nuget push $GITHUB_WORKSPACE/out/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{secrets.NUGET_TOKEN}} --skip-duplicate --no-symbols

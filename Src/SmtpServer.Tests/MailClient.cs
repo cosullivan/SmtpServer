@@ -1,8 +1,8 @@
-﻿using System.Threading;
-using MailKit.Net.Smtp;
+﻿using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
 using MimeKit.Text;
+using System.Threading;
 
 namespace SmtpServer.Tests
 {
@@ -49,7 +49,8 @@ namespace SmtpServer.Tests
         public static SmtpClientEx Client(string host = "localhost", int port = 9025, SecureSocketOptions options = SecureSocketOptions.Auto)
         {
             var client = new SmtpClientEx();
-            
+            client.ServerCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+
             client.Connected += (sender, args) =>
             {
 

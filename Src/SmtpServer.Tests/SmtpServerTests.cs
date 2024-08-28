@@ -1,20 +1,21 @@
-﻿using System;
-using System.IO;
-using System.Net;
-using System.Net.Security;
-using System.Security.Authentication;
-using System.Security.Cryptography.X509Certificates;
-using System.Threading;
-using System.Threading.Tasks;
-using MailKit;
-using SmtpServer.Mail;
-using SmtpServer.Tests.Mocks;
-using Xunit;
+﻿using MailKit;
 using SmtpServer.Authentication;
 using SmtpServer.ComponentModel;
+using SmtpServer.Mail;
 using SmtpServer.Net;
 using SmtpServer.Protocol;
 using SmtpServer.Storage;
+using SmtpServer.Tests.Mocks;
+using System;
+using System.IO;
+using System.Net;
+using System.Security.Authentication;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using Xunit;
 using SmtpResponse = SmtpServer.Protocol.SmtpResponse;
 
 namespace SmtpServer.Tests
@@ -51,6 +52,8 @@ namespace SmtpServer.Tests
         [InlineData("שלום שלום שלום", "windows-1255")]
         public void CanReceiveUnicodeMimeMessage(string text, string charset)
         {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
             using (CreateServer())
             {
                 // act
@@ -245,59 +248,49 @@ namespace SmtpServer.Tests
         [Fact]
         public void SecuresTheSessionWhenCertificateIsSupplied()
         {
-            ServicePointManager.ServerCertificateValidationCallback = IgnoreCertificateValidationFailureForTestingOnly;
+            using var disposable = CreateServer(options => options.Certificate(CreateCertificate()));
 
-            using (var disposable = CreateServer(options => options.Certificate(CreateCertificate())))
-            {
-                var isSecure = false;
-                var sessionCreatedHandler = new EventHandler<SessionEventArgs>(
-                    delegate (object sender, SessionEventArgs args)
+            var isSecure = false;
+            var sessionCreatedHandler = new EventHandler<SessionEventArgs>(
+                delegate (object sender, SessionEventArgs args)
+                {
+                    args.Context.CommandExecuted += (_, commandArgs) =>
                     {
-                        args.Context.CommandExecuted += (_, commandArgs) =>
-                        {
-                            isSecure = commandArgs.Context.Pipe.IsSecure;
-                        };
-                    });
+                        isSecure = commandArgs.Context.Pipe.IsSecure;
+                    };
+                });
 
-                disposable.Server.SessionCreated += sessionCreatedHandler;
-                
-                MailClient.Send();
+            disposable.Server.SessionCreated += sessionCreatedHandler;
 
-                disposable.Server.SessionCreated -= sessionCreatedHandler;
-                
-                Assert.True(isSecure);
-            }
+            MailClient.Send();
 
-            ServicePointManager.ServerCertificateValidationCallback = null;
+            disposable.Server.SessionCreated -= sessionCreatedHandler;
+
+            Assert.True(isSecure);
         }
 
         [Fact]
         public void SecuresTheSessionByDefault()
         {
-            ServicePointManager.ServerCertificateValidationCallback = IgnoreCertificateValidationFailureForTestingOnly;
+            using var disposable = CreateServer(endpoint => endpoint.IsSecure(true).Certificate(CreateCertificate()));
 
-            using (var disposable = CreateServer(endpoint => endpoint.IsSecure(true).Certificate(CreateCertificate())))
-            {
-                var isSecure = false;
-                var sessionCreatedHandler = new EventHandler<SessionEventArgs>(
-                    delegate (object sender, SessionEventArgs args)
+            var isSecure = false;
+            var sessionCreatedHandler = new EventHandler<SessionEventArgs>(
+                delegate (object sender, SessionEventArgs args)
+                {
+                    args.Context.CommandExecuted += (_, commandArgs) =>
                     {
-                        args.Context.CommandExecuted += (_, commandArgs) =>
-                        {
-                            isSecure = commandArgs.Context.Pipe.IsSecure;
-                        };
-                    });
+                        isSecure = commandArgs.Context.Pipe.IsSecure;
+                    };
+                });
 
-                disposable.Server.SessionCreated += sessionCreatedHandler;
-                
-                MailClient.NoOp(MailKit.Security.SecureSocketOptions.SslOnConnect);
+            disposable.Server.SessionCreated += sessionCreatedHandler;
 
-                disposable.Server.SessionCreated -= sessionCreatedHandler;
-                
-                Assert.True(isSecure);
-            }
+            MailClient.NoOp(MailKit.Security.SecureSocketOptions.SslOnConnect);
 
-            ServicePointManager.ServerCertificateValidationCallback = null;
+            disposable.Server.SessionCreated -= sessionCreatedHandler;
+
+            Assert.True(isSecure);
         }
 
         [Fact]
@@ -305,35 +298,30 @@ namespace SmtpServer.Tests
         {
             var userAuthenticator = new DelegatingUserAuthenticator((user, password) => true);
 
-            ServicePointManager.ServerCertificateValidationCallback = IgnoreCertificateValidationFailureForTestingOnly;
-
-            using (var disposable = CreateServer(
+            using var disposable = CreateServer(
                 endpoint => endpoint.AllowUnsecureAuthentication(true).Certificate(CreateCertificate()).SupportedSslProtocols(SslProtocols.Tls12),
-                services => services.Add(userAuthenticator)))
-            {
-                var isSecure = false;
-                ISessionContext sessionContext = null;
-                var sessionCreatedHandler = new EventHandler<SessionEventArgs>(
-                    delegate (object sender, SessionEventArgs args)
+                services => services.Add(userAuthenticator));
+
+            var isSecure = false;
+            ISessionContext sessionContext = null;
+            var sessionCreatedHandler = new EventHandler<SessionEventArgs>(
+                delegate (object sender, SessionEventArgs args)
+                {
+                    sessionContext = args.Context;
+                    sessionContext.CommandExecuted += (_, commandArgs) =>
                     {
-                        sessionContext = args.Context;
-                        sessionContext.CommandExecuted += (_, commandArgs) =>
-                        {
-                            isSecure = commandArgs.Context.Pipe.IsSecure;
-                        };
-                    });
+                        isSecure = commandArgs.Context.Pipe.IsSecure;
+                    };
+                });
 
-                disposable.Server.SessionCreated += sessionCreatedHandler;
+            disposable.Server.SessionCreated += sessionCreatedHandler;
 
-                MailClient.Send(user: "user", password: "password");
+            MailClient.Send(user: "user", password: "password");
 
-                disposable.Server.SessionCreated -= sessionCreatedHandler;
+            disposable.Server.SessionCreated -= sessionCreatedHandler;
 
-                Assert.True(isSecure);
-                Assert.True(sessionContext.Authentication.IsAuthenticated);
-            }
-
-            ServicePointManager.ServerCertificateValidationCallback = null;
+            Assert.True(isSecure);
+            Assert.True(sessionContext.Authentication.IsAuthenticated);
         }
 
         [Fact]
@@ -356,17 +344,38 @@ namespace SmtpServer.Tests
             Assert.True(stopped);
         }
 
-        public static bool IgnoreCertificateValidationFailureForTestingOnly(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        public static X509Certificate2 CreateSelfSignedCertificate(string subjectName)
         {
-            return true;
+            var validityPeriodInYears = 1;
+
+            using RSA rsa = RSA.Create(2048);  // 2048-Bit Key
+
+            var certificateRequest = new CertificateRequest(
+                $"CN={subjectName}",  // Common Name (CN)
+                rsa,
+                HashAlgorithmName.SHA256,  // Hash-Algorithmus
+                RSASignaturePadding.Pkcs1  // Padding Schema
+            );
+
+            certificateRequest.CertificateExtensions.Add(
+                new X509SubjectKeyIdentifierExtension(certificateRequest.PublicKey, false)
+            );
+
+            certificateRequest.CertificateExtensions.Add(
+                new X509BasicConstraintsExtension(true, false, 0, true)
+            );
+
+            DateTimeOffset notBefore = DateTimeOffset.UtcNow;
+            DateTimeOffset notAfter = notBefore.AddYears(validityPeriodInYears);
+
+            X509Certificate2 certificate = certificateRequest.CreateSelfSigned(notBefore, notAfter);
+
+            return new X509Certificate2(certificate.Export(X509ContentType.Pfx));
         }
 
         public static X509Certificate2 CreateCertificate()
         {
-            var certificate = File.ReadAllBytes(@"C:\Users\caino\Dropbox\Documents\Cain\Programming\SmtpServer\SmtpServer.pfx");
-            var password = File.ReadAllText(@"C:\Users\caino\Dropbox\Documents\Cain\Programming\SmtpServer\SmtpServerPassword.txt");
-
-            return new X509Certificate2(certificate, password);
+            return CreateSelfSignedCertificate("localhost");
         }
 
         /// <summary>
