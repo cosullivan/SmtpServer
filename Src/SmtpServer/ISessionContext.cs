@@ -4,6 +4,9 @@ using SmtpServer.IO;
 
 namespace SmtpServer
 {
+    /// <summary>
+    /// Session Context Interface
+    /// </summary>
     public interface ISessionContext
     {
         /// <summary>

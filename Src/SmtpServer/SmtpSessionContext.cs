@@ -7,24 +7,16 @@ namespace SmtpServer
 {
     internal sealed class SmtpSessionContext : ISessionContext
     {
-        /// <summary>
-        /// Fired when a command is about to execute.
-        /// </summary>
+        /// <inheritdoc />
         public event EventHandler<SmtpCommandEventArgs> CommandExecuting;
 
-        /// <summary>
-        /// Fired when a command has finished executing.
-        /// </summary>
+        /// <inheritdoc />
         public event EventHandler<SmtpCommandEventArgs> CommandExecuted;
 
-        /// <summary>
-        /// Fired when a response exception has occured. 
-        /// </summary>
+        /// <inheritdoc />
         public event EventHandler<SmtpResponseExceptionEventArgs> ResponseException;
 
-        /// <summary>
-        /// Fired when the session has been authenticated.
-        /// </summary>
+        /// <inheritdoc />
         public event EventHandler<EventArgs> SessionAuthenticated;
 
         /// <summary>
@@ -77,34 +69,24 @@ namespace SmtpServer
             SessionAuthenticated?.Invoke(this, EventArgs.Empty);
         }
 
-        /// <summary>
-        /// The service provider instance. 
-        /// </summary>
+        /// <inheritdoc />
         public IServiceProvider ServiceProvider { get; }
 
-        /// <summary>
-        /// Gets the options that the server was created with.
-        /// </summary>
+        /// <inheritdoc />
         public ISmtpServerOptions ServerOptions { get; }
 
-        /// <summary>
-        /// Gets the endpoint definition.
-        /// </summary>
+        /// <inheritdoc />
         public IEndpointDefinition EndpointDefinition { get; }
 
-        /// <summary>
-        /// Gets the pipeline to read from and write to.
-        /// </summary>
+        /// <inheritdoc />
         public ISecurableDuplexPipe Pipe { get; internal set; }
 
         /// <summary>
         /// Gets the current transaction.
         /// </summary>
         public SmtpMessageTransaction Transaction { get; }
-        
-        /// <summary>
-        /// Returns the authentication context.
-        /// </summary>
+
+        /// <inheritdoc />
         public AuthenticationContext Authentication { get; internal set; } = AuthenticationContext.Unauthenticated;
 
         /// <summary>
@@ -117,9 +99,7 @@ namespace SmtpServer
         /// </summary>
         public bool IsQuitRequested { get; internal set; }
 
-        /// <summary>
-        /// Returns a set of propeties for the current session.
-        /// </summary>
+        /// <inheritdoc />
         public IDictionary<string, object> Properties { get; }
     }
 }

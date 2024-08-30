@@ -3,6 +3,9 @@ using System.Threading.Tasks;
 
 namespace SmtpServer.Protocol
 {
+    /// <summary>
+    /// Smtp Command
+    /// </summary>
     public abstract class SmtpCommand
     {
         /// <summary>

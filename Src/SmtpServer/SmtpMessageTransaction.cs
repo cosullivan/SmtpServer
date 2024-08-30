@@ -4,6 +4,9 @@ using SmtpServer.Mail;
 
 namespace SmtpServer
 {
+    /// <summary>
+    /// Smtp Message Transaction
+    /// </summary>
     internal sealed class SmtpMessageTransaction : IMessageTransaction
     {
         /// <summary>
@@ -16,19 +19,13 @@ namespace SmtpServer
             Parameters = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>());
         }
 
-        /// <summary>
-        /// Gets or sets the mailbox that is sending the message.
-        /// </summary>
+        /// <inheritdoc />
         public IMailbox From { get; set; }
 
-        /// <summary>
-        /// Gets or sets the collection of mailboxes that the message is to be delivered to.
-        /// </summary>
+        /// <inheritdoc />
         public IList<IMailbox> To { get; set; } = new Collection<IMailbox>();
 
-        /// <summary>
-        /// The list of parameters that were supplied by the client.
-        /// </summary>
+        /// <inheritdoc />
         public IReadOnlyDictionary<string, string> Parameters { get; set; } = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>());
     }
 }

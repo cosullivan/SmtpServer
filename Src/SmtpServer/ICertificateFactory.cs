@@ -2,6 +2,9 @@
 
 namespace SmtpServer
 {
+    /// <summary>
+    /// Certificate Factory Interface
+    /// </summary>
     public interface ICertificateFactory
     {
         /// <summary>

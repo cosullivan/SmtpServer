@@ -2,10 +2,17 @@
 
 namespace SmtpServer.Storage
 {
+    /// <summary>
+    /// Delegating Mailbox Filter Factory
+    /// </summary>
     public sealed class DelegatingMailboxFilterFactory : IMailboxFilterFactory
     {
         readonly Func<ISessionContext, IMailboxFilter> _delegate;
 
+        /// <summary>
+        /// Delegating Mailbox Filter Factory
+        /// </summary>
+        /// <param name="delegate"></param>
         public DelegatingMailboxFilterFactory(Func<ISessionContext, IMailboxFilter> @delegate)
         {
             _delegate = @delegate;

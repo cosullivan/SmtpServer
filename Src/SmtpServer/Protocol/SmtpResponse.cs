@@ -1,5 +1,8 @@
 ﻿namespace SmtpServer.Protocol
 {
+    /// <summary>
+    /// Smtp Response
+    /// </summary>
     public class SmtpResponse
     {
         public static readonly SmtpResponse Ok = new SmtpResponse(SmtpReplyCode.Ok, "Ok");

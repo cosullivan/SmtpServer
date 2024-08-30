@@ -3,9 +3,12 @@ using System.Collections.Generic;
 
 namespace SmtpServer.Protocol
 {
+    /// <summary>
+    /// Smtp Response Exception
+    /// </summary>
     public sealed class SmtpResponseException : Exception
     {
-        static IReadOnlyDictionary<string, object> Empty = new Dictionary<string, object>();
+        static readonly IReadOnlyDictionary<string, object> Empty = new Dictionary<string, object>();
 
         /// <summary>
         /// Constructor.

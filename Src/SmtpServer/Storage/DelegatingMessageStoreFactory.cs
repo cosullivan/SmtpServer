@@ -2,10 +2,17 @@
 
 namespace SmtpServer.Storage
 {
+    /// <summary>
+    /// Delegating MessageStore Factory
+    /// </summary>
     public sealed class DelegatingMessageStoreFactory : IMessageStoreFactory
     {
         readonly Func<ISessionContext, IMessageStore> _delegate;
 
+        /// <summary>
+        /// Delegating MessageStore Factory
+        /// </summary>
+        /// <param name="delegate"></param>
         public DelegatingMessageStoreFactory(Func<ISessionContext, IMessageStore> @delegate)
         {
             _delegate = @delegate;

@@ -7,6 +7,9 @@ using SmtpServer.IO;
 
 namespace SmtpServer.Protocol
 {
+    /// <summary>
+    /// Ehlo Command
+    /// </summary>
     public class EhloCommand : SmtpCommand
     {
         public const string Command = "EHLO";

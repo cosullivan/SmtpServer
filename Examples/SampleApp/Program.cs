@@ -26,10 +26,10 @@ namespace SampleApp
             ServicePointManager.ServerCertificateValidationCallback = IgnoreCertificateValidationFailureForTestingOnly;
 
             //SimpleExample.Run();
-            //SimpleServerExample.Run();
+            SimpleServerExample.Run();
             //CustomEndpointListenerExample.Run();
             //ServerCancellingExample.Run();
-            SessionTracingExample.Run();
+            //SessionTracingExample.Run();
             //DependencyInjectionExample.Run();
             //SecureServerExample.Run();
         }
