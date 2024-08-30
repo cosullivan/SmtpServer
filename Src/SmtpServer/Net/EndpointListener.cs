@@ -46,8 +46,14 @@ namespace SmtpServer.Net
 
             return new SecurableDuplexPipe(stream, () =>
             {
-                tcpClient.Close();
-                tcpClient.Dispose();
+                try
+                {
+                    tcpClient.Close();
+                    tcpClient.Dispose();
+                }
+                catch (Exception)
+                {
+                }
             });
         }
 
