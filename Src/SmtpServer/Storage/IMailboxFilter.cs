@@ -4,6 +4,9 @@ using SmtpServer.Mail;
 
 namespace SmtpServer.Storage
 {
+    /// <summary>
+    /// Mailbox Filter Interface
+    /// </summary>
     public interface IMailboxFilter
     {
         /// <summary>

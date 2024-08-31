@@ -1,5 +1,9 @@
 ﻿namespace SmtpServer.ComponentModel
 {
+    /// <summary>
+    /// SessionContext Instance Factory Interface
+    /// </summary>
+    /// <typeparam name="TInstance"></typeparam>
     public interface ISessionContextInstanceFactory<out TInstance>
     {
         /// <summary>

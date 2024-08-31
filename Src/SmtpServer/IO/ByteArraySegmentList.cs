@@ -2,6 +2,9 @@
 
 namespace SmtpServer.IO
 {
+    /// <summary>
+    /// Byte Array Segment List
+    /// </summary>
     internal sealed class ByteArraySegmentList
     {
         internal void Append(byte[] buffer)
