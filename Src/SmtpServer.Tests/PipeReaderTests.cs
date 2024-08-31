@@ -19,7 +19,7 @@ namespace SmtpServer.Tests
 
         [Fact]
         // ReSharper disable once InconsistentNaming
-        public async void CanReadLineAndRemoveTrailingCRLF()
+        public async Task CanReadLineAndRemoveTrailingCRLF()
         {
             // arrange
             var reader = CreatePipeReader("abcde\r\n");
@@ -34,7 +34,7 @@ namespace SmtpServer.Tests
 
         [Fact]
         // ReSharper disable once InconsistentNaming
-        public async void CanReadLinesWithInconsistentCRLF()
+        public async Task CanReadLinesWithInconsistentCRLF()
         {
             // arrange
             var reader = CreatePipeReader("ab\rcd\ne\r\n");
@@ -49,7 +49,7 @@ namespace SmtpServer.Tests
 
         [Fact]
         // ReSharper disable once InconsistentNaming
-        public async void CanReadMultipleLines()
+        public async Task CanReadMultipleLines()
         {
             // arrange
             var reader = CreatePipeReader("abcde\r\nfghij\r\nklmno\r\n");
@@ -66,7 +66,7 @@ namespace SmtpServer.Tests
         }
 
         [Fact]
-        public async void CanReadBlockWithDotStuffingRemoved()
+        public async Task CanReadBlockWithDotStuffingRemoved()
         {
             // arrange
             var reader = CreatePipeReader("abcd\r\n..1234\r\n.\r\n");
