@@ -6,6 +6,9 @@ using System.IO;
 
 namespace SmtpServer.Protocol
 {
+    /// <summary>
+    /// Quit Command
+    /// </summary>
     public sealed class QuitCommand : SmtpCommand
     {
         public const string Command = "QUIT";

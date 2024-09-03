@@ -4,6 +4,9 @@ using System.Net;
 
 namespace SmtpServer.Protocol
 {
+    /// <summary>
+    /// Smtp Command Factory Interface
+    /// </summary>
     public interface ISmtpCommandFactory
     {
         /// <summary>

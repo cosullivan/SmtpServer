@@ -2,6 +2,9 @@
 
 namespace SmtpServer.Protocol
 {
+    /// <summary>
+    /// Smtp Command Visitor
+    /// </summary>
     public abstract class SmtpCommandVisitor
     {
         /// <summary>

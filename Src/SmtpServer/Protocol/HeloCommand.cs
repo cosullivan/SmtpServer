@@ -4,6 +4,9 @@ using SmtpServer.IO;
 
 namespace SmtpServer.Protocol
 {
+    /// <summary>
+    /// Helo Command
+    /// </summary>
     public class HeloCommand : SmtpCommand
     {
         public const string Command = "HELO";

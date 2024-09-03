@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Net;
 using System.Security.Authentication;
-using System.Security.Cryptography.X509Certificates;
 
 namespace SmtpServer
 {
+    /// <summary>
+    /// Endpoint Definition Interface
+    /// </summary>
     public interface IEndpointDefinition
     {
         /// <summary>

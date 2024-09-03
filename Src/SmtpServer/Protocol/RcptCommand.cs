@@ -8,6 +8,9 @@ using SmtpServer.Storage;
 
 namespace SmtpServer.Protocol
 {
+    /// <summary>
+    /// Rcpt Command
+    /// </summary>
     public sealed class RcptCommand : SmtpCommand
     {
         public const string Command = "RCPT";

@@ -4,6 +4,9 @@ using System.Threading.Tasks;
 
 namespace SmtpServer.Authentication
 {
+    /// <summary>
+    /// Delegating User Authenticator
+    /// </summary>
     public sealed class DelegatingUserAuthenticator : UserAuthenticator
     {
         readonly Func<ISessionContext, string, string, bool> _delegate;

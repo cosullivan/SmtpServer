@@ -3,6 +3,9 @@ using System.Threading.Tasks;
 
 namespace SmtpServer.Authentication
 {
+    /// <summary>
+    /// User Authenticator Interface
+    /// </summary>
     public interface IUserAuthenticator
     {
         /// <summary>

@@ -3,6 +3,9 @@ using SmtpServer.Mail;
 
 namespace SmtpServer
 {
+    /// <summary>
+    /// Message Transaction Interface
+    /// </summary>
     public interface IMessageTransaction
     {
         /// <summary>
