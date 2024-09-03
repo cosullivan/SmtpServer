@@ -1,5 +1,8 @@
 ﻿namespace SmtpServer.Protocol
 {
+    /// <summary>
+    /// Smtp Reply Code
+    /// </summary>
     public enum SmtpReplyCode
     {
         /// <summary>

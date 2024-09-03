@@ -1,4 +1,4 @@
-name: Build and Publish
+name: Build and Test
 
 on:
   workflow_dispatch: # Allow running the workflow manually from the GitHub UI
@@ -7,6 +7,10 @@ on:
     - 'Src/**'
     - '.github/workflows/**'
     branches: [ master ]
+  pull_request:
+    paths:
+    - 'Src/**'
+    - '.github/workflows/**'
 
 jobs:
   build:
@@ -15,7 +19,7 @@ jobs:
 
     permissions:
       contents: read
-      packages: write
+      #packages: write
 
     steps:
     - uses: actions/checkout@v4

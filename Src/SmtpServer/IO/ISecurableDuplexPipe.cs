@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace SmtpServer.IO
 {
+    /// <summary>
+    /// Securable Duplex Pipe Interface
+    /// </summary>
     public interface ISecurableDuplexPipe : IDuplexPipe, IDisposable
     {
         /// <summary>

@@ -2,6 +2,9 @@
 
 namespace SmtpServer.Mail
 {
+    /// <summary>
+    /// Mailbox
+    /// </summary>
     public sealed class Mailbox : IMailbox
     {
         public static readonly IMailbox Empty = new Mailbox(string.Empty, string.Empty);

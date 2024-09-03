@@ -48,12 +48,12 @@
         Colon,
 
         /// <summary>
-        /// >
+        /// &gt; Greater-than sign
         /// </summary>
         GreaterThan,
 
         /// <summary>
-        /// <
+        /// &lt; Less-than sign
         /// </summary>
         LessThan = 10,
 

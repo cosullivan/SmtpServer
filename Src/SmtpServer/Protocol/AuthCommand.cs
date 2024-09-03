@@ -7,10 +7,12 @@ using System.Threading.Tasks;
 using SmtpServer.Authentication;
 using SmtpServer.ComponentModel;
 using SmtpServer.IO;
-using SmtpServer.Storage;
 
 namespace SmtpServer.Protocol
 {
+    /// <summary>
+    /// Auth Command
+    /// </summary>
     public sealed class AuthCommand : SmtpCommand
     {
         public const string Command = "AUTH";

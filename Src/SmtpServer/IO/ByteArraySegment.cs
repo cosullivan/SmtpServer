@@ -3,6 +3,9 @@ using System.Buffers;
 
 namespace SmtpServer.IO
 {
+    /// <summary>
+    /// Byte Array Segment
+    /// </summary>
     internal sealed class ByteArraySegment : ReadOnlySequenceSegment<byte>
     {
         internal ByteArraySegment(ReadOnlyMemory<byte> memory)

@@ -4,6 +4,9 @@ using System.Runtime.CompilerServices;
 
 namespace SmtpServer.IO
 {
+    /// <summary>
+    /// Buffers Extension
+    /// </summary>
     public static class BuffersExtension
     {
         /// <summary>

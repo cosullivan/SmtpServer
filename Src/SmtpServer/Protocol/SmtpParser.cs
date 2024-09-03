@@ -10,6 +10,9 @@ using SmtpServer.Text;
 
 namespace SmtpServer.Protocol
 {
+    /// <summary>
+    /// Smtp Parser
+    /// </summary>
     public sealed class SmtpParser
     {
         delegate bool TryMakeDelegate(ref TokenReader reader, out SmtpCommand command, out SmtpResponse errorResponse);
@@ -18,6 +21,10 @@ namespace SmtpServer.Protocol
 
         readonly ISmtpCommandFactory _smtpCommandFactory;
 
+        /// <summary>
+        /// Smtp Parser
+        /// </summary>
+        /// <param name="smtpCommandFactory"></param>
         public SmtpParser(ISmtpCommandFactory smtpCommandFactory)
         {
             _smtpCommandFactory = smtpCommandFactory;

@@ -6,6 +6,9 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace SmtpServer
 {
+    /// <summary>
+    /// Endpoint Definition Builder
+    /// </summary>
     public sealed class EndpointDefinitionBuilder
     {
         readonly List<Action<EndpointDefinition>> _setters = new List<Action<EndpointDefinition>>();

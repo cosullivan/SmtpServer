@@ -4,6 +4,9 @@ using System.Security.Authentication;
 
 namespace SmtpServer
 {
+    /// <summary>
+    /// Endpoint Definition Interface
+    /// </summary>
     public interface IEndpointDefinition
     {
         /// <summary>

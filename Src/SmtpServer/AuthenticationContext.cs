@@ -1,5 +1,8 @@
 ﻿namespace SmtpServer
 {
+    /// <summary>
+    /// Authentication Context
+    /// </summary>
     public sealed class AuthenticationContext
     {
         public static readonly AuthenticationContext Unauthenticated = new AuthenticationContext();

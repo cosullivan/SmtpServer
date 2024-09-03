@@ -4,6 +4,9 @@ using SmtpServer.IO;
 
 namespace SmtpServer.Protocol
 {
+    /// <summary>
+    /// Rset Command
+    /// </summary>
     public sealed class RsetCommand : SmtpCommand
     {
         public const string Command = "RSET";

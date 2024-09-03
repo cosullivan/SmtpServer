@@ -4,6 +4,9 @@ using System.Threading.Tasks;
 
 namespace SmtpServer
 {
+    /// <summary>
+    /// Task Extensions
+    /// </summary>
     static class TaskExtensions
     {
         /// <summary>

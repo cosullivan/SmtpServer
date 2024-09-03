@@ -1,8 +1,5 @@
-﻿using System;
+﻿using SmtpServer;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading;
-using SmtpServer;
-using SmtpServer.ComponentModel;
 
 namespace SampleApp.Examples
 {

@@ -8,6 +8,9 @@ using SmtpServer.Storage;
 
 namespace SmtpServer.Protocol
 {
+    /// <summary>
+    /// Mail Command
+    /// </summary>
     public sealed class MailCommand : SmtpCommand
     {
         public const string Command = "MAIL";

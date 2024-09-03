@@ -5,6 +5,9 @@ using SmtpServer.IO;
 
 namespace SmtpServer.Net
 {
+    /// <summary>
+    /// Endpoint Listener Interface
+    /// </summary>
     public interface IEndpointListener : IDisposable
     {
         /// <summary>
