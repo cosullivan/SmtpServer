@@ -21,7 +21,7 @@ namespace SmtpServer
         {
             var definition = new EndpointDefinition
             {
-                SessionTimeout = TimeSpan.FromMinutes(2),
+                ReadTimeout = TimeSpan.FromMinutes(2),
                 SupportedSslProtocols = SslProtocols.Tls12,
             };
 
@@ -103,13 +103,13 @@ namespace SmtpServer
         }
 
         /// <summary>
-        /// Sets the session timeout to apply to the session.
+        /// Sets the read timeout to apply to stream operations.
         /// </summary>
-        /// <param name="value">The timeout value to apply to the Smtp session.</param>
+        /// <param name="value">The timeout value to apply to read operations.</param>
         /// <returns>A EndpointDefinitionBuilder to continue building on.</returns>
-        public EndpointDefinitionBuilder SessionTimeout(TimeSpan value)
+        public EndpointDefinitionBuilder ReadTimeout(TimeSpan value)
         {
-            _setters.Add(options => options.SessionTimeout = value);
+            _setters.Add(options => options.ReadTimeout = value);
 
             return this;
         }
@@ -152,25 +152,39 @@ namespace SmtpServer
 
         internal sealed class EndpointDefinition : IEndpointDefinition
         {
-            /// <inheritdoc />
+            /// <summary>
+            /// The IP endpoint to listen on.
+            /// </summary>
             public IPEndPoint Endpoint { get; set; }
 
-            /// <inheritdoc />
+            /// <summary>
+            /// Indicates whether the endpoint is secure by default.
+            /// </summary>
             public bool IsSecure { get; set; }
 
-            /// <inheritdoc />
+            /// <summary>
+            /// Gets a value indicating whether the client must authenticate in order to proceed.
+            /// </summary>
             public bool AuthenticationRequired { get; set; }
 
-            /// <inheritdoc />
+            /// <summary>
+            /// Gets a value indicating whether authentication should be allowed on an unsecure session.
+            /// </summary>
             public bool AllowUnsecureAuthentication { get; set; }
 
-            /// <inheritdoc />
-            public TimeSpan SessionTimeout { get; set; }
+            /// <summary>
+            /// The timeout on each individual buffer read.
+            /// </summary>
+            public TimeSpan ReadTimeout { get; set; }
 
-            /// <inheritdoc />
+            /// <summary>
+            /// Gets the Server Certificate factory to use when starting a TLS session.
+            /// </summary>
             public ICertificateFactory CertificateFactory { get; set; }
 
-            /// <inheritdoc />
+            /// <summary>
+            /// The supported SSL protocols.
+            /// </summary>
             public SslProtocols SupportedSslProtocols { get; set; }
         }
 

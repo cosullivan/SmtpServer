@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 
 namespace SmtpServer
 {
@@ -30,9 +31,9 @@ namespace SmtpServer
         bool AllowUnsecureAuthentication { get; }
 
         /// <summary>
-        /// The timeout of an Smtp session.
+        /// The timeout on each individual buffer read.
         /// </summary>
-        TimeSpan SessionTimeout { get; }
+        TimeSpan ReadTimeout { get; }
 
         /// <summary>
         /// Gets the Server Certificate factory to use when starting a TLS session.
