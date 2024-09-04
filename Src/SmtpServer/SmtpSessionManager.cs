@@ -34,15 +34,18 @@ namespace SmtpServer
 
         async Task RunAsync(SmtpSessionHandle handle, CancellationToken cancellationToken)
         {
+            using var sessionReadTimeoutCancellationTokenSource = new CancellationTokenSource(handle.SessionContext.EndpointDefinition.SessionTimeout);
+            using var linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, sessionReadTimeoutCancellationTokenSource.Token);
+
             try
             {
-                await UpgradeAsync(handle, cancellationToken);
+                await UpgradeAsync(handle, linkedTokenSource.Token);
 
-                cancellationToken.ThrowIfCancellationRequested();
+                linkedTokenSource.Token.ThrowIfCancellationRequested();
 
                 _smtpServer.OnSessionCreated(new SessionEventArgs(handle.SessionContext));
 
-                await handle.Session.RunAsync(cancellationToken);
+                await handle.Session.RunAsync(linkedTokenSource.Token);
 
                 _smtpServer.OnSessionCompleted(new SessionEventArgs(handle.SessionContext));
             }

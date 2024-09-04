@@ -56,16 +56,13 @@ namespace SmtpServer
         /// <returns>A task which asynchronously performs the execution.</returns>
         async Task ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            using var sessionReadTimeoutCancellationTokenSource = new CancellationTokenSource(context.EndpointDefinition.SessionTimeout);
-            using var linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, sessionReadTimeoutCancellationTokenSource.Token);
-
             var retries = _context.ServerOptions.MaxRetryCount;
 
-            while (retries-- > 0 && context.IsQuitRequested == false && linkedTokenSource.IsCancellationRequested == false)
+            while (retries-- > 0 && context.IsQuitRequested == false && cancellationToken.IsCancellationRequested == false)
             {
                 try
                 {
-                    var command = await ReadCommandAsync(context, linkedTokenSource.Token).ConfigureAwait(false);
+                    var command = await ReadCommandAsync(context, cancellationToken).ConfigureAwait(false);
 
                     if (command == null)
                     {
@@ -77,7 +74,7 @@ namespace SmtpServer
                         throw new SmtpResponseException(errorResponse);
                     }
 
-                    if (await ExecuteAsync(command, context, linkedTokenSource.Token).ConfigureAwait(false))
+                    if (await ExecuteAsync(command, context, cancellationToken).ConfigureAwait(false))
                     {
                         _stateMachine.Transition(context);
                     }
@@ -88,7 +85,7 @@ namespace SmtpServer
                 {
                     context.RaiseResponseException(responseException);
 
-                    await context.Pipe.Output.WriteReplyAsync(responseException.Response, linkedTokenSource.Token).ConfigureAwait(false);
+                    await context.Pipe.Output.WriteReplyAsync(responseException.Response, cancellationToken).ConfigureAwait(false);
 
                     context.IsQuitRequested = true;
                 }
@@ -98,7 +95,7 @@ namespace SmtpServer
 
                     var response = CreateErrorResponse(responseException.Response, retries);
 
-                    await context.Pipe.Output.WriteReplyAsync(response, linkedTokenSource.Token).ConfigureAwait(false);
+                    await context.Pipe.Output.WriteReplyAsync(response, cancellationToken).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
