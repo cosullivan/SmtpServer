@@ -1,5 +1,8 @@
 ﻿namespace SmtpServer.Text
 {
+    /// <summary>
+    /// Token Kind
+    /// </summary>
     public enum TokenKind
     {
         /// <summary>

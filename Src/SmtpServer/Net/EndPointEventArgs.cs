@@ -3,6 +3,9 @@ using System.Net;
 
 namespace SmtpServer.Net
 {
+    /// <summary>
+    /// Endpoint EventArgs
+    /// </summary>
     public sealed class EndpointEventArgs : EventArgs
     {
         /// <summary>

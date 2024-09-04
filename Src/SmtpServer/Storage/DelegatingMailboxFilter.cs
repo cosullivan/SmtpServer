@@ -5,6 +5,9 @@ using SmtpServer.Mail;
 
 namespace SmtpServer.Storage
 {
+    /// <summary>
+    /// Delegating Mailbox Filter
+    /// </summary>
     public sealed class DelegatingMailboxFilter : MailboxFilter
     {
         static readonly Func<ISessionContext, IMailbox, bool> EmptyAcceptDelegate = (context, @from) => true;

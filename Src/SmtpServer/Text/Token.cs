@@ -4,6 +4,9 @@ using System.Runtime.CompilerServices;
 
 namespace SmtpServer.Text
 {
+    /// <summary>
+    /// Token
+    /// </summary>
     [DebuggerDisplay("[{Kind}] {Text}")]
     public readonly ref struct Token
     {

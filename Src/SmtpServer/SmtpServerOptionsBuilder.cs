@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace SmtpServer
 {
+    /// <summary>
+    /// Smtp Server Options Builder
+    /// </summary>
     public sealed class SmtpServerOptionsBuilder
     {
         readonly List<Action<SmtpServerOptions>> _setters = new List<Action<SmtpServerOptions>>();

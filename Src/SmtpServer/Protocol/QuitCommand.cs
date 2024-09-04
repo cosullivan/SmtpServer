@@ -11,7 +11,7 @@ namespace SmtpServer.Protocol
     /// </summary>
     public sealed class QuitCommand : SmtpCommand
     {
-        public const string Command = "QUIT";
+        internal const string Command = "QUIT";
 
         /// <summary>
         /// Constructor.

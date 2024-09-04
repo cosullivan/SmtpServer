@@ -3,6 +3,9 @@ using System.Net.Sockets;
 
 namespace SmtpServer.Net
 {
+    /// <summary>
+    /// Endpoint Listener Factory
+    /// </summary>
     public class EndpointListenerFactory : IEndpointListenerFactory
     {
         internal static readonly IEndpointListenerFactory Default = new EndpointListenerFactory();
@@ -17,11 +20,7 @@ namespace SmtpServer.Net
         /// </summary>
         public event EventHandler<EndpointEventArgs> EndpointStopped;
 
-        /// <summary>
-        /// Create an instance of an endpoint listener for the specified endpoint definition.
-        /// </summary>
-        /// <param name="endpointDefinition">The endpoint definition to create the listener for.</param>
-        /// <returns>The endpoint listener for the specified endpoint definition.</returns>
+        /// <inheritdoc />
         public virtual IEndpointListener CreateListener(IEndpointDefinition endpointDefinition)
         {
             var tcpListener = new TcpListener(endpointDefinition.Endpoint);

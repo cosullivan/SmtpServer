@@ -5,6 +5,9 @@ using SmtpServer.Protocol;
 
 namespace SmtpServer.Storage
 {
+    /// <summary>
+    /// Message Store Interface
+    /// </summary>
     public interface IMessageStore
     {
         /// <summary>

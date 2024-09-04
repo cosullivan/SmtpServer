@@ -3,6 +3,9 @@ using System.Buffers;
 
 namespace SmtpServer.Text
 {
+    /// <summary>
+    /// Token Reader
+    /// </summary>
     public ref struct TokenReader
     {
         ref struct CheckpointState

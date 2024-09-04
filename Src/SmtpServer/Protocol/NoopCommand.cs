@@ -9,7 +9,7 @@ namespace SmtpServer.Protocol
     /// </summary>
     public sealed class NoopCommand : SmtpCommand
     {
-        public const string Command = "NOOP";
+        internal const string Command = "NOOP";
 
         /// <summary>
         /// Constructor.

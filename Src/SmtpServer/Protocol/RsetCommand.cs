@@ -9,7 +9,7 @@ namespace SmtpServer.Protocol
     /// </summary>
     public sealed class RsetCommand : SmtpCommand
     {
-        public const string Command = "RSET";
+        internal const string Command = "RSET";
 
         /// <summary>
         /// Constructor.

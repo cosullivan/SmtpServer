@@ -1,5 +1,8 @@
 ﻿namespace SmtpServer.Net
 {
+    /// <summary>
+    /// Endpoint Listener Factory Interface
+    /// </summary>
     public interface IEndpointListenerFactory
     {
         /// <summary>

@@ -5,7 +5,7 @@
     /// </summary>
     public sealed class AuthenticationContext
     {
-        public static readonly AuthenticationContext Unauthenticated = new AuthenticationContext();
+        internal static readonly AuthenticationContext Unauthenticated = new AuthenticationContext();
 
         /// <summary>
         /// Constructor.

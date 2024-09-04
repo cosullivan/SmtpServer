@@ -7,7 +7,7 @@ namespace SmtpServer.Mail
     /// </summary>
     public sealed class Mailbox : IMailbox
     {
-        public static readonly IMailbox Empty = new Mailbox(string.Empty, string.Empty);
+        internal static readonly IMailbox Empty = new Mailbox(string.Empty, string.Empty);
 
         /// <summary>
         /// Constructor.

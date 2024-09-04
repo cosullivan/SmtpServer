@@ -4,6 +4,9 @@ using SmtpServer.Mail;
 
 namespace SmtpServer.Protocol
 {
+    /// <summary>
+    /// Smtp Command Factory
+    /// </summary>
     public class SmtpCommandFactory : ISmtpCommandFactory
     {
         /// <inheritdoc />

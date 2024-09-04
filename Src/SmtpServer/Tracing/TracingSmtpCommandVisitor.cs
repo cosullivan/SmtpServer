@@ -6,6 +6,9 @@ using SmtpServer.Protocol;
 
 namespace SmtpServer.Tracing
 {
+    /// <summary>
+    /// Tracing Smtp Command Visitor
+    /// </summary>
     public sealed class TracingSmtpCommandVisitor : SmtpCommandVisitor
     {
         readonly TextWriter _output;

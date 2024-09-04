@@ -7,6 +7,9 @@ using SmtpServer.Net;
 
 namespace SmtpServer
 {
+    /// <summary>
+    /// Smtp Server
+    /// </summary>
     public class SmtpServer
     {
         /// <summary>

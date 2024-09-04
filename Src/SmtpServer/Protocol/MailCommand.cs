@@ -13,7 +13,7 @@ namespace SmtpServer.Protocol
     /// </summary>
     public sealed class MailCommand : SmtpCommand
     {
-        public const string Command = "MAIL";
+        internal const string Command = "MAIL";
 
         /// <summary>
         /// Constructor.
