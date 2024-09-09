@@ -43,12 +43,17 @@ namespace SmtpServer.Net
             context.Properties.Add(RemoteEndPointKey, tcpClient.Client.RemoteEndPoint);
 
             var stream = tcpClient.GetStream();
-            stream.ReadTimeout = (int)_endpointDefinition.ReadTimeout.TotalMilliseconds;
 
             return new SecurableDuplexPipe(stream, () =>
             {
-                tcpClient.Close();
-                tcpClient.Dispose();
+                try
+                {
+                    tcpClient.Close();
+                    tcpClient.Dispose();
+                }
+                catch (Exception)
+                {
+                }
             });
         }
 
