@@ -31,9 +31,9 @@ namespace SmtpServer
         bool AllowUnsecureAuthentication { get; }
 
         /// <summary>
-        /// The timeout on each individual buffer read.
+        /// The timeout of an Smtp session.
         /// </summary>
-        TimeSpan ReadTimeout { get; }
+        TimeSpan SessionTimeout { get; }
 
         /// <summary>
         /// Gets the Server Certificate factory to use when starting a TLS session.
