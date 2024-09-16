@@ -9,7 +9,10 @@ namespace SmtpServer.Storage
     /// </summary>
     public abstract class MailboxFilter : IMailboxFilter
     {
-        internal static readonly IMailboxFilter Default = new DefaultMailboxFilter();
+        /// <summary>
+        /// Default Mailbox Filter
+        /// </summary>
+        public static readonly IMailboxFilter Default = new DefaultMailboxFilter();
 
         /// <inheritdoc />
         public virtual Task<bool> CanAcceptFromAsync(

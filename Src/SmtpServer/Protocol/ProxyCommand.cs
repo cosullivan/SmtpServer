@@ -11,8 +11,15 @@ namespace SmtpServer.Protocol
     /// </summary>
     public sealed class ProxyCommand : SmtpCommand
     {
-        internal const string ProxySourceEndpointKey = "Proxy:ProxySourceEndpoint";
-        internal const string ProxyDestinationEndpointKey = "Proxy:ProxyDestinationEndpoint";
+        /// <summary>
+        /// Proxy Source Endpoint Key
+        /// </summary>
+        public const string ProxySourceEndpointKey = "Proxy:ProxySourceEndpoint";
+
+        /// <summary>
+        /// Proxy Destination Endpoint Key
+        /// </summary>
+        public const string ProxyDestinationEndpointKey = "Proxy:ProxyDestinationEndpoint";
 
         /// <summary>
         /// Smtp Proxy Command

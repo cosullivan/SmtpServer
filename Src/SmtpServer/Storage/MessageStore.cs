@@ -10,7 +10,10 @@ namespace SmtpServer.Storage
     /// </summary>
     public abstract class MessageStore : IMessageStore
     {
-        internal static readonly IMessageStore Default = new DefaultMessageStore();
+        /// <summary>
+        /// Default Message Store
+        /// </summary>
+        public static readonly IMessageStore Default = new DefaultMessageStore();
 
         /// <inheritdoc />
         public abstract Task<SmtpResponse> SaveAsync(ISessionContext context, IMessageTransaction transaction, ReadOnlySequence<byte> buffer, CancellationToken cancellationToken);

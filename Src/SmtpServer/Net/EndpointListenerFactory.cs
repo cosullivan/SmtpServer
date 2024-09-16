@@ -11,7 +11,7 @@ namespace SmtpServer.Net
         /// <summary>
         /// Default Endpoint Listener Factory
         /// </summary>
-        public static readonly IEndpointListenerFactory Default = new EndpointListenerFactory();
+        internal static readonly IEndpointListenerFactory Default = new EndpointListenerFactory();
 
         /// <summary>
         /// Raised when an endpoint has been started.
