@@ -8,7 +8,7 @@
         /// <summary>
         /// Empty Mailbox
         /// </summary>
-        internal static readonly IMailbox Empty = new Mailbox(string.Empty, string.Empty);
+        public static readonly IMailbox Empty = new Mailbox(string.Empty, string.Empty);
 
         /// <summary>
         /// Constructor.
