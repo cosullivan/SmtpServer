@@ -9,7 +9,10 @@ namespace SmtpServer.Protocol
     /// </summary>
     public sealed class StartTlsCommand : SmtpCommand
     {
-        internal const string Command = "STARTTLS";
+        /// <summary>
+        /// Smtp Start Tls Command
+        /// </summary>
+        public const string Command = "STARTTLS";
 
         /// <summary>
         /// Constructor.

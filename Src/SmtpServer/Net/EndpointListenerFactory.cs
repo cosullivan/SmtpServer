@@ -8,7 +8,10 @@ namespace SmtpServer.Net
     /// </summary>
     public class EndpointListenerFactory : IEndpointListenerFactory
     {
-        internal static readonly IEndpointListenerFactory Default = new EndpointListenerFactory();
+        /// <summary>
+        /// Default Endpoint Listener Factory
+        /// </summary>
+        public static readonly IEndpointListenerFactory Default = new EndpointListenerFactory();
 
         /// <summary>
         /// Raised when an endpoint has been started.

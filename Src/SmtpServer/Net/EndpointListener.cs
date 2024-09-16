@@ -11,8 +11,15 @@ namespace SmtpServer.Net
     /// </summary>
     public sealed class EndpointListener : IEndpointListener
     {
-        internal const string LocalEndPointKey = "EndpointListener:LocalEndPoint";
-        internal const string RemoteEndPointKey = "EndpointListener:RemoteEndPoint";
+        /// <summary>
+        /// EndpointListener LocalEndPoint Key
+        /// </summary>
+        public const string LocalEndPointKey = "EndpointListener:LocalEndPoint";
+
+        /// <summary>
+        /// EndpointListener RemoteEndPoint Key
+        /// </summary>
+        public const string RemoteEndPointKey = "EndpointListener:RemoteEndPoint";
 
         readonly IEndpointDefinition _endpointDefinition;
         readonly TcpListener _tcpListener;

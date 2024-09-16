@@ -9,7 +9,10 @@ namespace SmtpServer.Protocol
     /// </summary>
     public class HeloCommand : SmtpCommand
     {
-        internal const string Command = "HELO";
+        /// <summary>
+        /// Smtp Helo Command
+        /// </summary>
+        public const string Command = "HELO";
 
         /// <summary>
         /// Constructor.

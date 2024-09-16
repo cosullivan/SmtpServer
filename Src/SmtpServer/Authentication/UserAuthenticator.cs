@@ -8,7 +8,10 @@ namespace SmtpServer.Authentication
     /// </summary>
     public abstract class UserAuthenticator : IUserAuthenticator
     {
-        internal static readonly IUserAuthenticator Default = new DefaultUserAuthenticator();
+        /// <summary>
+        /// Default User Authenticator
+        /// </summary>
+        public static readonly IUserAuthenticator Default = new DefaultUserAuthenticator();
 
         /// <summary>
         /// Authenticate a user account.
