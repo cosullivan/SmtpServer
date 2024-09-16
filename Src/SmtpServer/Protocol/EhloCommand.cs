@@ -12,6 +12,9 @@ namespace SmtpServer.Protocol
     /// </summary>
     public class EhloCommand : SmtpCommand
     {
+        /// <summary>
+        /// Smtp Ehlo Command
+        /// </summary>
         public const string Command = "EHLO";
 
         /// <summary>

@@ -2,6 +2,9 @@
 
 namespace SmtpServer
 {
+    /// <summary>
+    /// Session Faulted EventArgs
+    /// </summary>
     public class SessionFaultedEventArgs : SessionEventArgs
     {
         /// <summary>

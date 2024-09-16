@@ -1,12 +1,13 @@
-﻿using System;
-
-namespace SmtpServer.Mail
+﻿namespace SmtpServer.Mail
 {
     /// <summary>
     /// Mailbox
     /// </summary>
     public sealed class Mailbox : IMailbox
     {
+        /// <summary>
+        /// Empty Mailbox
+        /// </summary>
         public static readonly IMailbox Empty = new Mailbox(string.Empty, string.Empty);
 
         /// <summary>

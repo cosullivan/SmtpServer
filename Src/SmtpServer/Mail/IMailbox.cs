@@ -3,6 +3,9 @@ using System.Globalization;
 
 namespace SmtpServer.Mail
 {
+    /// <summary>
+    /// Mailbox Interface
+    /// </summary>
     public interface IMailbox
     {
         /// <summary>
@@ -16,6 +19,9 @@ namespace SmtpServer.Mail
         string Host { get; }
     }
 
+    /// <summary>
+    /// Mailbox Extension Methods
+    /// </summary>
     public static class MailboxExtensionMethods
     {
         /// <summary>

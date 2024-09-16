@@ -12,6 +12,9 @@ namespace SmtpServer.Protocol
     /// </summary>
     public sealed class DataCommand : SmtpCommand
     {
+        /// <summary>
+        /// Smtp Data Command
+        /// </summary>
         public const string Command = "DATA";
 
         /// <summary>

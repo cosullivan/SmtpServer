@@ -15,6 +15,9 @@ namespace SmtpServer.Protocol
     /// </summary>
     public sealed class AuthCommand : SmtpCommand
     {
+        /// <summary>
+        /// Smtp Auth Command
+        /// </summary>
         public const string Command = "AUTH";
 
         string _user;

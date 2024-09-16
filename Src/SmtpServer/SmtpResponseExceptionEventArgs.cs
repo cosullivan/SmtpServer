@@ -2,6 +2,9 @@
 
 namespace SmtpServer
 {
+    /// <summary>
+    /// Smtp Response Exception EventArgs
+    /// </summary>
     public sealed class SmtpResponseExceptionEventArgs : SessionEventArgs
     {
         /// <summary>

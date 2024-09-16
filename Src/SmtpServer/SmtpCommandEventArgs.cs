@@ -2,6 +2,9 @@ using SmtpServer.Protocol;
 
 namespace SmtpServer
 {
+    /// <summary>
+    /// Smtp Command EventArgs
+    /// </summary>
     public sealed class SmtpCommandEventArgs : SessionEventArgs
     {
         /// <summary>

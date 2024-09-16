@@ -7,6 +7,9 @@ using SmtpServer.Protocol;
 
 namespace SmtpServer.IO
 {
+    /// <summary>
+    /// Pipe Writer Extensions
+    /// </summary>
     public static class PipeWriterExtensions
     {
         /// <summary>

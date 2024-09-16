@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace SmtpServer
 {
+    /// <summary>
+    /// Smtp Server Options Interface
+    /// </summary>
     public interface ISmtpServerOptions
     {
         /// <summary>

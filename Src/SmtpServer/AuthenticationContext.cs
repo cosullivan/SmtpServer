@@ -5,6 +5,9 @@
     /// </summary>
     public sealed class AuthenticationContext
     {
+        /// <summary>
+        /// Authentication Context in the Unauthenticated state
+        /// </summary>
         public static readonly AuthenticationContext Unauthenticated = new AuthenticationContext();
 
         /// <summary>

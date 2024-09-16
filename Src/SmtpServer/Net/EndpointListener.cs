@@ -6,9 +6,19 @@ using SmtpServer.IO;
 
 namespace SmtpServer.Net
 {
+    /// <summary>
+    /// Endpoint Listener
+    /// </summary>
     public sealed class EndpointListener : IEndpointListener
     {
+        /// <summary>
+        /// EndpointListener LocalEndPoint Key
+        /// </summary>
         public const string LocalEndPointKey = "EndpointListener:LocalEndPoint";
+
+        /// <summary>
+        /// EndpointListener RemoteEndPoint Key
+        /// </summary>
         public const string RemoteEndPointKey = "EndpointListener:RemoteEndPoint";
 
         readonly IEndpointDefinition _endpointDefinition;

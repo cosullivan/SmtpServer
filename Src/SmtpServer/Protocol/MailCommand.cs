@@ -13,6 +13,9 @@ namespace SmtpServer.Protocol
     /// </summary>
     public sealed class MailCommand : SmtpCommand
     {
+        /// <summary>
+        /// Smtp Mail Command
+        /// </summary>
         public const string Command = "MAIL";
 
         /// <summary>
