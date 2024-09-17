@@ -1,0 +1,46 @@
+name: Build, Test & Publish
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET 8.0
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    - name: Extract Version from tag
+      id: tag
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const version = context.ref.replace('refs/tags/', '');
+          return version.slice(1);
+    - name: Change Package Version
+      working-directory: ./Src
+      run: |
+        sed -i -e "s/<Version>[a-zA-Z0-9.-]*<\/Version>/<Version>${{ steps.tag.outputs.result }}<\/Version>/g" SmtpServer/SmtpServer.csproj
+    - name: Restore dependencies
+      working-directory: ./Src
+      run: dotnet restore
+    - name: Build
+      working-directory: ./Src
+      run: dotnet build --configuration Release --no-restore
+    - name: Test
+      working-directory: ./Src
+      run: |
+        dotnet test --configuration Release --no-restore --no-build --verbosity normal
+    - name: Build project and generate NuGet package
+      run: |
+        dotnet pack --configuration Release --output $GITHUB_WORKSPACE/out Src/SmtpServer/SmtpServer.csproj
+    - name: Push NuGet package
+      run: |
+        cd $GITHUB_WORKSPACE/out
+        dotnet nuget push *.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{secrets.NUGET_TOKEN}} --skip-duplicate --no-symbols

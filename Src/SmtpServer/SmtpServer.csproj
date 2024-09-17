@@ -8,20 +8,16 @@
     <Version>10.0.1</Version>
     <Description>.NET SmtpServer</Description>
     <Authors>Cain O'Sullivan</Authors>
-    <Company />
     <Copyright>2015-2023</Copyright>
     <RepositoryUrl>https://github.com/cosullivan/SmtpServer</RepositoryUrl>
     <PackageProjectUrl>http://cainosullivan.com/smtpserver</PackageProjectUrl>
-    <PackageTags>smtp smtpserver smtp server</PackageTags>
-    <PackageLicenseUrl></PackageLicenseUrl>
+    <PackageTags>smtp smtpserver mailserver</PackageTags>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-    <AssemblyVersion>10.0.0</AssemblyVersion>
-    <FileVersion>10.0.0</FileVersion>
     <PackageReleaseNotes>Version 10.0.1
 - Fixed a bug that could cause a failure to recognize commands when using a large number of recipients.
 </PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
