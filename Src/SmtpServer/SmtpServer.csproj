@@ -14,9 +14,7 @@
     <PackageTags>smtp smtpserver mailserver</PackageTags>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-    <PackageReleaseNotes>Version 10.0.1
-- Fixed a bug that could cause a failure to recognize commands when using a large number of recipients.
-</PackageReleaseNotes>
+    <PackageReleaseNotes>A changelog is available at https://github.com/cosullivan/SmtpServer/blob/master/CHANGELOG.md</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
