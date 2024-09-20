@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,8 +9,7 @@ namespace SmtpServer
     internal sealed class SmtpSessionManager
     {
         readonly SmtpServer _smtpServer;
-        readonly HashSet<SmtpSessionHandle> _sessions = new HashSet<SmtpSessionHandle>();
-        readonly object _sessionsLock = new object();
+        readonly ConcurrentDictionary<Guid, SmtpSessionHandle> _sessions = new ConcurrentDictionary<Guid, SmtpSessionHandle>();
         
         internal SmtpSessionManager(SmtpServer smtpServer)
         {
@@ -20,16 +19,13 @@ namespace SmtpServer
         internal void Run(SmtpSessionContext sessionContext, CancellationToken cancellationToken)
         {
             var handle = new SmtpSessionHandle(new SmtpSession(sessionContext), sessionContext);
-            Add(handle);
 
-            handle.CompletionTask = RunAsync(handle, cancellationToken);
+            var smtpSessionTask = RunAsync(handle, cancellationToken).ContinueWith(task =>
+            {
+                Remove(handle);
+            });
 
-            // ReSharper disable once MethodSupportsCancellation
-            handle.CompletionTask.ContinueWith(
-                task =>
-                {
-                    Remove(handle);
-                });
+            handle.CompletionTask = smtpSessionTask;
         }
 
         async Task RunAsync(SmtpSessionHandle handle, CancellationToken cancellationToken)
@@ -79,30 +75,18 @@ namespace SmtpServer
 
         internal Task WaitAsync()
         {
-            IReadOnlyList<Task> tasks;
-            
-            lock (_sessionsLock)
-            {
-                tasks = _sessions.Select(session => session.CompletionTask).ToList();
-            }
-            
+            var tasks = _sessions.Values.Select(session => session.CompletionTask).ToList().AsReadOnly();
             return Task.WhenAll(tasks);
         }
 
         void Add(SmtpSessionHandle handle)
         {
-            lock (_sessionsLock)
-            {
-                _sessions.Add(handle);
-            }
+            _sessions.TryAdd(handle.SessionContext.SessionId, handle);
         }
 
         void Remove(SmtpSessionHandle handle)
         {
-            lock (_sessionsLock)
-            {
-                _sessions.Remove(handle);
-            }
+            _sessions.TryRemove(handle.SessionContext.SessionId, out _);
         }
 
         class SmtpSessionHandle
@@ -118,6 +102,19 @@ namespace SmtpServer
             public SmtpSessionContext SessionContext { get; }
 
             public Task CompletionTask { get; set; }
+
+            public override bool Equals(object obj)
+            {
+                if (obj is SmtpSessionHandle other)
+                {
+                    return SessionContext.SessionId == other.SessionContext.SessionId;
+                }
+                return false;
+            }
+            public override int GetHashCode()
+            {
+                return SessionContext.SessionId.GetHashCode();
+            }
         }
     }
 }
