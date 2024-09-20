@@ -111,6 +111,7 @@ namespace SmtpServer
                 }
                 return false;
             }
+
             public override int GetHashCode()
             {
                 return SessionContext.SessionId.GetHashCode();
