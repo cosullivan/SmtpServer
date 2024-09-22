@@ -10,9 +10,14 @@ namespace SmtpServer.Tests
     {
         private readonly TcpClient _tcpClient;
         private NetworkStream _networkStream;
+        private readonly string _host;
+        private readonly int _port;
 
         internal RawSmtpClient(string host, int port)
         {
+            _host = host;
+            _port = port;
+
             _tcpClient = new TcpClient();
         }
 
@@ -24,7 +29,7 @@ namespace SmtpServer.Tests
 
         internal async Task<bool> ConnectAsync()
         {
-            await _tcpClient.ConnectAsync(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 9025));
+            await _tcpClient.ConnectAsync(new IPEndPoint(IPAddress.Parse(_host), _port));
             _networkStream = _tcpClient.GetStream();
 
             var greetingResponse = await WaitForDataAsync();
