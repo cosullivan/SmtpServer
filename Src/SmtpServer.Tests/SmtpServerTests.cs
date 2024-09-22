@@ -411,6 +411,9 @@ namespace SmtpServer.Tests
                                         .Certificate(CreateCertificate())
                                    );
 
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
             using var tcpClient = new TcpClient(server, port);
             using var sslStream = new SslStream(tcpClient.GetStream(), false, new RemoteCertificateValidationCallback(ValidateServerCertificate), null);
 
@@ -419,9 +422,6 @@ namespace SmtpServer.Tests
             if (sslStream.IsAuthenticated)
             {
                 var buffer = new byte[1024];
-
-                var stopwatch = new Stopwatch();
-                stopwatch.Start();
 
                 var welcomeByteCount = await sslStream.ReadAsync(buffer, 0, buffer.Length);
 
