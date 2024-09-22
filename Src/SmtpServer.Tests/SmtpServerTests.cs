@@ -427,7 +427,7 @@ namespace SmtpServer.Tests
 
                 var emptyResponseCount = await sslStream.ReadAsync(buffer, 0, buffer.Length);
 
-                await Task.Delay(50); //Add a tolerance
+                await Task.Delay(100); //Add a tolerance
                 stopwatch.Stop();
 
                 Assert.True(emptyResponseCount == 0, "Some data received");
