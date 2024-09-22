@@ -10,6 +10,8 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Net.Security;
+using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -365,6 +367,76 @@ namespace SmtpServer.Tests
             disposable.Server.SessionCreated -= sessionCreatedHandler;
 
             Assert.True(isSecure);
+        }
+
+        public static bool ValidateServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        {
+            return true;
+        }
+
+        [Fact]
+        public async Task SessionTimeoutIsExceeded_DelayedAuthenticate()
+        {
+            var sessionTimeout = TimeSpan.FromSeconds(3);
+            var server = "localhost";
+            var port = 9025;
+
+            using var disposable = CreateServer(endpoint => endpoint
+                                        .SessionTimeout(sessionTimeout)
+                                        .IsSecure(true)
+                                        .Certificate(CreateCertificate())
+                                   );
+
+            using var tcpClient = new TcpClient(server, port);
+            using var sslStream = new SslStream(tcpClient.GetStream(), false, new RemoteCertificateValidationCallback(ValidateServerCertificate), null);
+
+            await Task.Delay(sessionTimeout.Add(TimeSpan.FromSeconds(1)));
+
+            var exception = await Assert.ThrowsAsync<IOException>(async () =>
+            {
+                await sslStream.AuthenticateAsClientAsync(server);
+            });
+        }
+
+        [Fact]
+        public async Task SessionTimeoutIsExceeded_NoCommands()
+        {
+            var sessionTimeout = TimeSpan.FromSeconds(3);
+            var server = "localhost";
+            var port = 9025;
+
+            using var disposable = CreateServer(endpoint => endpoint
+                                        .SessionTimeout(sessionTimeout)
+                                        .IsSecure(true)
+                                        .Certificate(CreateCertificate())
+                                   );
+
+            using var tcpClient = new TcpClient(server, port);
+            using var sslStream = new SslStream(tcpClient.GetStream(), false, new RemoteCertificateValidationCallback(ValidateServerCertificate), null);
+
+            await sslStream.AuthenticateAsClientAsync(server);
+
+            if (sslStream.IsAuthenticated)
+            {
+                var buffer = new byte[1024];
+
+                var stopwatch = new Stopwatch();
+                stopwatch.Start();
+
+                var welcomeByteCount = await sslStream.ReadAsync(buffer, 0, buffer.Length);
+
+                var emptyResponseCount = await sslStream.ReadAsync(buffer, 0, buffer.Length);
+
+                await Task.Delay(50); //Add a tolerance
+                stopwatch.Stop();
+
+                Assert.True(emptyResponseCount == 0, "Some data received");
+                Assert.True(stopwatch.Elapsed > sessionTimeout, $"SessionTimout not elapsed {stopwatch.Elapsed}");
+            }
+            else
+            {
+                Assert.Fail("Smtp Session is not authenticated");
+            }
         }
 
         [Fact]
