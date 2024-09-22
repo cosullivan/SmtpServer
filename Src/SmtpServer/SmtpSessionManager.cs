@@ -102,20 +102,6 @@ namespace SmtpServer
             public SmtpSessionContext SessionContext { get; }
 
             public Task CompletionTask { get; set; }
-
-            public override bool Equals(object obj)
-            {
-                if (obj is SmtpSessionHandle other)
-                {
-                    return SessionContext.SessionId == other.SessionContext.SessionId;
-                }
-                return false;
-            }
-
-            public override int GetHashCode()
-            {
-                return SessionContext.SessionId.GetHashCode();
-            }
         }
     }
 }
