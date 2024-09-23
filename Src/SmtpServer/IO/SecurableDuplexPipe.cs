@@ -38,11 +38,27 @@ namespace SmtpServer.IO
         /// <returns>A task that asynchronously performs the operation.</returns>
         public async Task UpgradeAsync(X509Certificate certificate, SslProtocols protocols, CancellationToken cancellationToken = default)
         {
-            var stream = new SslStream(_stream, true);
+            var sslStream = new SslStream(_stream, true);
 
-            await stream.AuthenticateAsServerAsync(certificate, false, protocols, true).ConfigureAwait(false);
+            try
+            {
+                var sslServerAuthenticationOptions = new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = certificate,
+                    ClientCertificateRequired = false,
+                    EnabledSslProtocols = protocols,
+                    CertificateRevocationCheckMode = X509RevocationMode.Online
+                };
 
-            _stream = stream;
+                await sslStream.AuthenticateAsServerAsync(sslServerAuthenticationOptions, cancellationToken);
+            }
+            catch
+            {
+                sslStream.Dispose();
+                throw;
+            }
+
+            _stream = sslStream;
 
             Input = PipeReader.Create(_stream);
             Output = PipeWriter.Create(_stream);

@@ -8,6 +8,9 @@ namespace SmtpServer
     internal sealed class SmtpSessionContext : ISessionContext
     {
         /// <inheritdoc />
+        public Guid SessionId { get; private set; }
+
+        /// <inheritdoc />
         public event EventHandler<SmtpCommandEventArgs> CommandExecuting;
 
         /// <inheritdoc />
@@ -27,6 +30,7 @@ namespace SmtpServer
         /// <param name="endpointDefinition">The endpoint definition.</param>
         internal SmtpSessionContext(IServiceProvider serviceProvider, ISmtpServerOptions options, IEndpointDefinition endpointDefinition)
         {
+            SessionId = Guid.NewGuid();
             ServiceProvider = serviceProvider;
             ServerOptions = options;
             EndpointDefinition = endpointDefinition;
