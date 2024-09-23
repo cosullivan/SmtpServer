@@ -42,15 +42,15 @@ namespace SmtpServer.IO
 
             try
             {
-                var sslServerAuthenticationOptions = new SslServerAuthenticationOptions
-                {
-                    ServerCertificate = certificate,
-                    ClientCertificateRequired = false,
-                    EnabledSslProtocols = protocols,
-                    CertificateRevocationCheckMode = X509RevocationMode.Online
-                };
-
-                await sslStream.AuthenticateAsServerAsync(sslServerAuthenticationOptions, cancellationToken);
+                await sslStream.AuthenticateAsServerAsync(
+                    new SslServerAuthenticationOptions
+                    {
+                        ServerCertificate = certificate,
+                        ClientCertificateRequired = false,
+                        EnabledSslProtocols = protocols,
+                        CertificateRevocationCheckMode = X509RevocationMode.Online
+                    }, 
+                    cancellationToken);
             }
             catch
             {

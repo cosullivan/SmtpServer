@@ -19,19 +19,19 @@ namespace SmtpServer
         internal void Run(SmtpSessionContext sessionContext, CancellationToken cancellationToken)
         {
             var handle = new SmtpSessionHandle(new SmtpSession(sessionContext), sessionContext);
+            Add(handle);
 
-            var smtpSessionTask = RunAsync(handle, cancellationToken).ContinueWith(task =>
+            handle.CompletionTask = RunAsync(handle, cancellationToken).ContinueWith(task =>
             {
                 Remove(handle);
             });
-
-            handle.CompletionTask = smtpSessionTask;
         }
 
         async Task RunAsync(SmtpSessionHandle handle, CancellationToken cancellationToken)
         {
-            using var sessionReadTimeoutCancellationTokenSource = new CancellationTokenSource(handle.SessionContext.EndpointDefinition.SessionTimeout);
-            using var linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, sessionReadTimeoutCancellationTokenSource.Token);
+            using var sessionTimeoutCancellationTokenSource = new CancellationTokenSource(handle.SessionContext.EndpointDefinition.SessionTimeout);
+
+            using var linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, sessionTimeoutCancellationTokenSource.Token);
 
             try
             {

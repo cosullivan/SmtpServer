@@ -382,10 +382,10 @@ namespace SmtpServer.Tests
             var port = 9025;
 
             using var disposable = CreateServer(endpoint => endpoint
-                                        .SessionTimeout(sessionTimeout)
-                                        .IsSecure(true)
-                                        .Certificate(CreateCertificate())
-                                   );
+                .SessionTimeout(sessionTimeout)
+                .IsSecure(true)
+                .Certificate(CreateCertificate())
+            );
 
             using var tcpClient = new TcpClient(server, port);
             using var sslStream = new SslStream(tcpClient.GetStream(), false, new RemoteCertificateValidationCallback(ValidateServerCertificate), null);
