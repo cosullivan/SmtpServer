@@ -21,19 +21,16 @@ namespace SmtpServer.Net
         /// </summary>
         public const string RemoteEndPointKey = "EndpointListener:RemoteEndPoint";
 
-        readonly IEndpointDefinition _endpointDefinition;
         readonly TcpListener _tcpListener;
         readonly Action _disposeAction;
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="endpointDefinition">The endpoint definition to create the listener for.</param>
         /// <param name="tcpListener">The TCP listener for the endpoint.</param>
         /// <param name="disposeAction">The action to execute when the listener has been disposed.</param>
-        internal EndpointListener(IEndpointDefinition endpointDefinition, TcpListener tcpListener, Action disposeAction)
+        internal EndpointListener(TcpListener tcpListener, Action disposeAction)
         {
-            _endpointDefinition = endpointDefinition;
             _tcpListener = tcpListener;
             _disposeAction = disposeAction;
         }
@@ -61,9 +58,7 @@ namespace SmtpServer.Net
                     tcpClient.Close();
                     tcpClient.Dispose();
                 }
-                catch (Exception)
-                {
-                }
+                catch { }
             });
         }
 

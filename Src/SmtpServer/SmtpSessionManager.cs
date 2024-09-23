@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,8 +9,7 @@ namespace SmtpServer
     internal sealed class SmtpSessionManager
     {
         readonly SmtpServer _smtpServer;
-        readonly HashSet<SmtpSessionHandle> _sessions = new HashSet<SmtpSessionHandle>();
-        readonly object _sessionsLock = new object();
+        readonly ConcurrentDictionary<Guid, SmtpSessionHandle> _sessions = new ConcurrentDictionary<Guid, SmtpSessionHandle>();
         
         internal SmtpSessionManager(SmtpServer smtpServer)
         {
@@ -22,20 +21,17 @@ namespace SmtpServer
             var handle = new SmtpSessionHandle(new SmtpSession(sessionContext), sessionContext);
             Add(handle);
 
-            handle.CompletionTask = RunAsync(handle, cancellationToken);
-
-            // ReSharper disable once MethodSupportsCancellation
-            handle.CompletionTask.ContinueWith(
-                task =>
-                {
-                    Remove(handle);
-                });
+            handle.CompletionTask = RunAsync(handle, cancellationToken).ContinueWith(task =>
+            {
+                Remove(handle);
+            });
         }
 
         async Task RunAsync(SmtpSessionHandle handle, CancellationToken cancellationToken)
         {
-            using var sessionReadTimeoutCancellationTokenSource = new CancellationTokenSource(handle.SessionContext.EndpointDefinition.SessionTimeout);
-            using var linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, sessionReadTimeoutCancellationTokenSource.Token);
+            using var sessionTimeoutCancellationTokenSource = new CancellationTokenSource(handle.SessionContext.EndpointDefinition.SessionTimeout);
+
+            using var linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, sessionTimeoutCancellationTokenSource.Token);
 
             try
             {
@@ -79,30 +75,18 @@ namespace SmtpServer
 
         internal Task WaitAsync()
         {
-            IReadOnlyList<Task> tasks;
-            
-            lock (_sessionsLock)
-            {
-                tasks = _sessions.Select(session => session.CompletionTask).ToList();
-            }
-            
+            var tasks = _sessions.Values.Select(session => session.CompletionTask).ToList().AsReadOnly();
             return Task.WhenAll(tasks);
         }
 
         void Add(SmtpSessionHandle handle)
         {
-            lock (_sessionsLock)
-            {
-                _sessions.Add(handle);
-            }
+            _sessions.TryAdd(handle.SessionContext.SessionId, handle);
         }
 
         void Remove(SmtpSessionHandle handle)
         {
-            lock (_sessionsLock)
-            {
-                _sessions.Remove(handle);
-            }
+            _sessions.TryRemove(handle.SessionContext.SessionId, out _);
         }
 
         class SmtpSessionHandle
