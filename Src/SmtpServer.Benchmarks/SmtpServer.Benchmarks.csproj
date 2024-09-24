@@ -21,7 +21,7 @@
 
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.14.0" />
-    <PackageReference Include="MailKit" Version="3.4.1" />
+    <PackageReference Include="MailKit" Version="4.7.1.1" />
   </ItemGroup>
 
   <ItemGroup>
