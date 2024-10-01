@@ -29,13 +29,7 @@ namespace SmtpServer.IO
             Output = PipeWriter.Create(_stream);
         }
 
-        /// <summary>
-        /// Upgrade to a secure pipeline.
-        /// </summary>
-        /// <param name="certificate">The X509Certificate used to authenticate the server.</param>
-        /// <param name="protocols">The value that represents the protocol used for authentication.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task that asynchronously performs the operation.</returns>
+        /// <inheritdoc />
         public async Task UpgradeAsync(X509Certificate certificate, SslProtocols protocols, CancellationToken cancellationToken = default)
         {
             var sslStream = new SslStream(_stream, true);
@@ -100,14 +94,10 @@ namespace SmtpServer.IO
         /// </summary>
         public PipeWriter Output { get; private set; }
 
-        /// <summary>
-        /// Returns a value indicating whether or not the current pipeline is secure.
-        /// </summary>
+        /// <inheritdoc />
         public bool IsSecure => _stream is SslStream;
 
-        /// <summary>
-        /// Returns the used SslProtocol of a secure pipeline
-        /// </summary>
+        /// <inheritdoc />
         public SslProtocols SslProtocol => (_stream as SslStream)?.SslProtocol ?? SslProtocols.None;
     }
 }
