@@ -35,11 +35,11 @@ namespace SmtpServer
 
             try
             {
+                _smtpServer.OnSessionCreated(new SessionEventArgs(handle.SessionContext));
+
                 await UpgradeAsync(handle, linkedTokenSource.Token);
 
                 linkedTokenSource.Token.ThrowIfCancellationRequested();
-
-                _smtpServer.OnSessionCreated(new SessionEventArgs(handle.SessionContext));
 
                 await handle.Session.RunAsync(linkedTokenSource.Token);
 
