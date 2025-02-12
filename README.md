@@ -44,7 +44,8 @@ var options = new SmtpServerOptionsBuilder()
     .Endpoint(builder =>
         builder
             .Port(9025, true)
-            .AllowUnsecureAuthentication(false)
+            .AllowUnsecureAuthentication(false) // this is to disallow sending PLAIN credentials without an SSL/TLS tunnel
+            .AuthenticationRequired(true)       // if this isn't explicitely set to true, the UserAuthenticator provider has no effect
             .Certificate(CreateCertificate()))
     .Build();
 
