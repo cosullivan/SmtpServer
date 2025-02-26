@@ -35,6 +35,7 @@ namespace SmtpServer
         readonly ISmtpServerOptions _options;
         readonly IServiceProvider _serviceProvider;
         readonly IEndpointListenerFactory _endpointListenerFactory;
+        readonly ISessionServiceProviderFactory _sessionServiceProviderFactory;
         readonly SmtpSessionManager _sessions;
         readonly CancellationTokenSource _shutdownTokenSource = new CancellationTokenSource();
         readonly TaskCompletionSource<bool> _shutdownTask = new TaskCompletionSource<bool>();
@@ -50,6 +51,7 @@ namespace SmtpServer
             _serviceProvider = serviceProvider;
             _sessions = new SmtpSessionManager(this);
             _endpointListenerFactory = serviceProvider.GetServiceOrDefault(EndpointListenerFactory.Default);
+            _sessionServiceProviderFactory = serviceProvider.GetServiceOrDefault<ISessionServiceProviderFactory>(null);
         }
 
         /// <summary>
@@ -128,7 +130,8 @@ namespace SmtpServer
 
             while (cancellationTokenSource.Token.IsCancellationRequested == false)
             {
-                var sessionContext = new SmtpSessionContext(_serviceProvider, _options, endpointDefinition);
+                var spForCtx = _sessionServiceProviderFactory?.CreateServiceProvider(_serviceProvider);
+                var sessionContext = new SmtpSessionContext(spForCtx ?? _serviceProvider, _options, endpointDefinition);
                 
                 try
                 {
@@ -144,7 +147,7 @@ namespace SmtpServer
 
                 if (sessionContext.Pipe != null)
                 {
-                    _sessions.Run(sessionContext, cancellationTokenSource.Token);
+                    _sessions.Run(sessionContext, cancellationTokenSource.Token, spForCtx);
                 }
             }
         }
