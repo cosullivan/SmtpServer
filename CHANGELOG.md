@@ -1,5 +1,13 @@
 # Change Log
 
+## v11.0.0
+
+- Add SslProtocol to SecurableDuplexPipe
+- Add Github Workflow run build and unit tests
+- Add Summary Infos to classes
+- Add a session timeout that terminates the connection if it is open for too long
+- Fix missing session created event in failure case
+
 ## v10.0.1
 - Fixed a bug that could cause a failure to recognize commands when using a large number of recipients.
 
