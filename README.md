@@ -8,7 +8,7 @@ SmtpServer is available via [NuGet](https://www.nuget.org/packages/SmtpServer/)
 
 # Whats New?
 
-See [here](https://github.com/cosullivan/SmtpServer/blob/master/Version8.md) for whats new in Version 8.
+Check the [Changelog](https://github.com/cosullivan/SmtpServer/blob/master/CHANGELOG.md)
 
 # What does it support?
 
