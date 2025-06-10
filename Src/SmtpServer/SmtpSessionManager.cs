@@ -16,9 +16,9 @@ namespace SmtpServer
             _smtpServer = smtpServer;
         }
 
-        internal void Run(SmtpSessionContext sessionContext, CancellationToken cancellationToken)
+        internal void Run(SmtpSessionContext sessionContext, CancellationToken cancellationToken, IServiceProvider sessionServiceProvider)
         {
-            var handle = new SmtpSessionHandle(new SmtpSession(sessionContext), sessionContext);
+            var handle = new SmtpSessionHandle(new SmtpSession(sessionContext), sessionContext, sessionServiceProvider);
             Add(handle);
 
             handle.CompletionTask = RunAsync(handle, cancellationToken).ContinueWith(task =>
@@ -27,7 +27,7 @@ namespace SmtpServer
             });
         }
 
-        async Task RunAsync(SmtpSessionHandle handle, CancellationToken cancellationToken)
+        private async Task RunAsync(SmtpSessionHandle handle, CancellationToken cancellationToken)
         {
             using var sessionTimeoutCancellationTokenSource = new CancellationTokenSource(handle.SessionContext.EndpointDefinition.SessionTimeout);
 
@@ -58,6 +58,15 @@ namespace SmtpServer
                 await handle.SessionContext.Pipe.Input.CompleteAsync();
                 
                 handle.SessionContext.Pipe.Dispose();
+
+                if (handle.SessionServiceProvider is IAsyncDisposable asyncDisposable)
+                {
+                    await asyncDisposable.DisposeAsync();
+                } 
+                else if (handle.SessionServiceProvider is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
             }
         }
 
@@ -91,15 +100,18 @@ namespace SmtpServer
 
         class SmtpSessionHandle
         {
-            public SmtpSessionHandle(SmtpSession session, SmtpSessionContext sessionContext)
+            public SmtpSessionHandle(SmtpSession session, SmtpSessionContext sessionContext, IServiceProvider sessionServiceProvider)
             {
                 Session = session;
                 SessionContext = sessionContext;
+                SessionServiceProvider = sessionServiceProvider;
             }
 
             public SmtpSession Session { get; }
             
             public SmtpSessionContext SessionContext { get; }
+
+            public IServiceProvider SessionServiceProvider { get; }
 
             public Task CompletionTask { get; set; }
         }
