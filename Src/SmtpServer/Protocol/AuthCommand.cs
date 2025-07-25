@@ -106,7 +106,7 @@ namespace SmtpServer.Protocol
             {
                 await context.Pipe.Output.WriteReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, " "), cancellationToken).ConfigureAwait(false);
 
-                authentication = await context.Pipe.Input.ReadLineAsync(Encoding.ASCII, cancellationToken).ConfigureAwait(false);
+                authentication = await context.Pipe.Input.ReadLineAsync(Encoding.ASCII, context.ServerOptions.MaxMessageSizeOptions, cancellationToken).ConfigureAwait(false);
             }
 
             if (TryExtractFromBase64(authentication) == false)
@@ -155,13 +155,13 @@ namespace SmtpServer.Protocol
                 //Username = VXNlcm5hbWU6 (base64)
                 await context.Pipe.Output.WriteReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, "VXNlcm5hbWU6"), cancellationToken).ConfigureAwait(false);
 
-                _user = await ReadBase64EncodedLineAsync(context.Pipe.Input, cancellationToken).ConfigureAwait(false);
+                _user = await ReadBase64EncodedLineAsync(context.Pipe.Input, context.ServerOptions.MaxMessageSizeOptions, cancellationToken).ConfigureAwait(false);
             }
 
             //Password = UGFzc3dvcmQ6 (base64)
             await context.Pipe.Output.WriteReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, "UGFzc3dvcmQ6"), cancellationToken).ConfigureAwait(false);
 
-            _password = await ReadBase64EncodedLineAsync(context.Pipe.Input, cancellationToken).ConfigureAwait(false);
+            _password = await ReadBase64EncodedLineAsync(context.Pipe.Input, context.ServerOptions.MaxMessageSizeOptions, cancellationToken).ConfigureAwait(false);
 
             return true;
         }
@@ -172,9 +172,9 @@ namespace SmtpServer.Protocol
         /// <param name="reader">The pipe to read from.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The decoded Base64 string.</returns>
-        static async Task<string> ReadBase64EncodedLineAsync(PipeReader reader, CancellationToken cancellationToken)
+        static async Task<string> ReadBase64EncodedLineAsync(PipeReader reader, IMaxMessageSizeOptions maxMessageSizeOptions, CancellationToken cancellationToken)
         {
-            var text = await reader.ReadLineAsync(cancellationToken);
+            var text = await reader.ReadLineAsync(maxMessageSizeOptions, cancellationToken);
 
             return text == null ? string.Empty : Encoding.UTF8.GetString(Convert.FromBase64String(text));
         }

@@ -18,11 +18,12 @@ namespace SmtpServer
         {
             var serverOptions = new SmtpServerOptions
             {
+                MaxMessageSizeOptions = new MaxMessageSizeOptions(),
                 Endpoints = new List<IEndpointDefinition>(),
                 MaxRetryCount = 5,
                 MaxAuthenticationAttempts = 3,
                 NetworkBufferSize = 128,
-                CommandWaitTimeout = TimeSpan.FromMinutes(5)
+                CommandWaitTimeout = TimeSpan.FromMinutes(5),
             };
 
             _setters.ForEach(setter => setter(serverOptions));
@@ -98,11 +99,12 @@ namespace SmtpServer
         /// <summary>
         /// Sets the maximum message size.
         /// </summary>
-        /// <param name="value">The maximum message size to allow.</param>
+        /// <param name="length">The maximum message size to allow in bytes.</param>
+        /// <param name="handling">The handling type.</param>
         /// <returns>A OptionsBuilder to continue building on.</returns>
-        public SmtpServerOptionsBuilder MaxMessageSize(int value)
+        public SmtpServerOptionsBuilder MaxMessageSize(int length, MaxMessageSizeHandling handling = MaxMessageSizeHandling.Ignore)
         {
-            _setters.Add(options => options.MaxMessageSize = value);
+            _setters.Add(options => options.MaxMessageSizeOptions = new MaxMessageSizeOptions(handling, length));
 
             return this;
         }
@@ -160,9 +162,9 @@ namespace SmtpServer
         class SmtpServerOptions : ISmtpServerOptions
         {
             /// <summary>
-            /// Gets or sets the maximum size of a message.
+            /// Gets or sets the maximum message size option.
             /// </summary>
-            public int MaxMessageSize { get; set; }
+            public IMaxMessageSizeOptions MaxMessageSizeOptions { get; set; }
 
             /// <summary>
             /// The maximum number of retries before quitting the session.

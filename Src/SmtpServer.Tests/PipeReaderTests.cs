@@ -24,8 +24,10 @@ namespace SmtpServer.Tests
             // arrange
             var reader = CreatePipeReader("abcde\r\n");
 
+            var maxMessageSizeOptions = new MaxMessageSizeOptions();
+
             // act
-            var line = await reader.ReadLineAsync(Encoding.ASCII).ConfigureAwait(false);
+            var line = await reader.ReadLineAsync(Encoding.ASCII, maxMessageSizeOptions).ConfigureAwait(false);
 
             // assert
             Assert.Equal(5, line.Length);
@@ -39,8 +41,10 @@ namespace SmtpServer.Tests
             // arrange
             var reader = CreatePipeReader("ab\rcd\ne\r\n");
 
+            var maxMessageSizeOptions = new MaxMessageSizeOptions();
+
             // act
-            var line = await reader.ReadLineAsync(Encoding.ASCII).ConfigureAwait(false);
+            var line = await reader.ReadLineAsync(Encoding.ASCII, maxMessageSizeOptions).ConfigureAwait(false);
 
             // assert
             Assert.Equal(7, line.Length);
@@ -54,10 +58,12 @@ namespace SmtpServer.Tests
             // arrange
             var reader = CreatePipeReader("abcde\r\nfghij\r\nklmno\r\n");
 
+            var maxMessageSizeOptions = new MaxMessageSizeOptions();
+
             // act
-            var line1 = await reader.ReadLineAsync(Encoding.ASCII).ConfigureAwait(false);
-            var line2 = await reader.ReadLineAsync(Encoding.ASCII).ConfigureAwait(false);
-            var line3 = await reader.ReadLineAsync(Encoding.ASCII).ConfigureAwait(false);
+            var line1 = await reader.ReadLineAsync(Encoding.ASCII, maxMessageSizeOptions).ConfigureAwait(false);
+            var line2 = await reader.ReadLineAsync(Encoding.ASCII, maxMessageSizeOptions).ConfigureAwait(false);
+            var line3 = await reader.ReadLineAsync(Encoding.ASCII, maxMessageSizeOptions).ConfigureAwait(false);
 
             // assert
             Assert.Equal("abcde", line1);
@@ -71,6 +77,8 @@ namespace SmtpServer.Tests
             // arrange
             var reader = CreatePipeReader("abcd\r\n..1234\r\n.\r\n");
 
+            var maxMessageSizeOptions = new MaxMessageSizeOptions();
+
             // act
             var text = "";
             await reader.ReadDotBlockAsync(
@@ -79,7 +87,8 @@ namespace SmtpServer.Tests
                     text = StringUtil.Create(buffer);
 
                     return Task.CompletedTask;
-                });
+                },
+                maxMessageSizeOptions);
 
             // assert
             Assert.Equal("abcd\r\n.1234", text);
