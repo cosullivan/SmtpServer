@@ -22,7 +22,8 @@ namespace SmtpServer
                 MaxRetryCount = 5,
                 MaxAuthenticationAttempts = 3,
                 NetworkBufferSize = 128,
-                CommandWaitTimeout = TimeSpan.FromMinutes(5)
+                CommandWaitTimeout = TimeSpan.FromMinutes(5),
+                CustomGreetingMessage = null
             };
 
             _setters.ForEach(setter => setter(serverOptions));
@@ -155,6 +156,19 @@ namespace SmtpServer
             return this;
         }
 
+        /// <summary>
+        /// Sets the custom SMTP greeting message sent to the client upon connection,
+        /// typically returned as the initial "220" response.
+        /// </summary>
+        /// <param name="value">The greeting message to send to the client (e.g., "220 mail.example.com v1.0 ESMTP ready").</param>
+        /// <returns>An OptionsBuilder to continue building on.</returns>
+        public SmtpServerOptionsBuilder CustomGreetingMessage(string value)
+        {
+            _setters.Add(options => options.CustomGreetingMessage = value);
+
+            return this;
+        }
+
         #region SmtpServerOptions
 
         class SmtpServerOptions : ISmtpServerOptions
@@ -198,6 +212,13 @@ namespace SmtpServer
             /// The size of the buffer that is read from each call to the underlying network client.
             /// </summary>
             public int NetworkBufferSize { get; set; }
+
+            /// <summary>
+            /// Gets or sets the custom greeting message sent by the server in response to the initial SMTP connection.
+            /// This message is returned after the client connects and before any commands are issued (e.g., "220 mail.example.com v1.0 ESMTP ready").
+            /// If not set, a default greeting will be used.
+            /// </summary>
+            public string CustomGreetingMessage { get; set; }
         }
 
         #endregion

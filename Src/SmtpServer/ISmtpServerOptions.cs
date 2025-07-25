@@ -42,5 +42,12 @@ namespace SmtpServer
         /// The size of the buffer that is read from each call to the underlying network client.
         /// </summary>
         int NetworkBufferSize { get; }
+
+        /// <summary>
+        /// Gets the custom greeting message sent by the server in response to the initial SMTP connection.
+        /// This message is returned after the client connects and before any commands are issued (e.g., "220 mail.example.com v1.0 ESMTP ready").
+        /// If not set, a default greeting will be used.
+        /// </summary>
+        string CustomGreetingMessage { get; }
     }
 }

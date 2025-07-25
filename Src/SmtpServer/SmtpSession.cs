@@ -1,20 +1,21 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-using SmtpServer.Protocol;
-using System.Reflection;
+﻿using SmtpServer.ComponentModel;
 using SmtpServer.IO;
-using System.IO.Pipelines;
+using SmtpServer.Protocol;
 using SmtpServer.StateMachine;
-using SmtpServer.ComponentModel;
+using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.IO.Pipelines;
+using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SmtpServer
 {
     internal sealed class SmtpSession
     {
         const string BufferKey = "SmtpSession:Buffer";
+        static readonly Version AssemblyVersion = typeof(SmtpSession).GetTypeInfo().Assembly.GetName().Version;
 
         readonly SmtpStateMachine _stateMachine;
         readonly SmtpSessionContext _context;
@@ -187,9 +188,15 @@ namespace SmtpServer
         /// <returns>A task which performs the operation.</returns>
         ValueTask<FlushResult> OutputGreetingAsync(CancellationToken cancellationToken)
         {
-            var version = typeof(SmtpSession).GetTypeInfo().Assembly.GetName().Version;
-
-            _context.Pipe.Output.WriteLine($"220 {_context.ServerOptions.ServerName} v{version} ESMTP ready");
+            if (_context.ServerOptions.CustomGreetingMessage is null)
+            {
+                var serverVersion = AssemblyVersion;
+                _context.Pipe.Output.WriteLine($"220 {_context.ServerOptions.ServerName} v{serverVersion} ESMTP ready");
+            }
+            else
+            {
+                _context.Pipe.Output.WriteLine($"220 {_context.ServerOptions.ServerName} {_context.ServerOptions.CustomGreetingMessage}");
+            }
             
             return _context.Pipe.Output.FlushAsync(cancellationToken);
         }
