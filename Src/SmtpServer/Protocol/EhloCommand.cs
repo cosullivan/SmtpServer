@@ -80,9 +80,22 @@ namespace SmtpServer.Protocol
                 yield return $"SIZE {context.ServerOptions.MaxMessageSize}";
             }
 
+            var supportedLoginTypes = new List<string>();
             if (IsPlainLoginAllowed(context))
             {
-                yield return "AUTH PLAIN LOGIN";
+                supportedLoginTypes.Add("PLAIN");
+                supportedLoginTypes.Add("LOGIN");
+            }
+
+            if (IsBearerTokenLoginAllowed(context))
+            {
+                supportedLoginTypes.Add("XOAUTH2");
+                supportedLoginTypes.Add("OAUTHBEARER");
+            }
+
+            if (supportedLoginTypes.Count > 0)
+            {
+                yield return $"AUTH {string.Join(" ", supportedLoginTypes)}";
             }
 
             static bool IsPlainLoginAllowed(ISessionContext context)
@@ -94,8 +107,19 @@ namespace SmtpServer.Protocol
 
                 return context.Pipe.IsSecure || context.EndpointDefinition.AllowUnsecureAuthentication;
             }
+
+            static bool IsBearerTokenLoginAllowed(ISessionContext context)
+            {
+                if (context.ServiceProvider.GetService(typeof(IBearerTokenAuthenticatorFactory)) == null
+                    && context.ServiceProvider.GetService(typeof(IBearerTokenAuthenticator)) == null)
+                {
+                    return false;
+                }
+
+                return context.Pipe.IsSecure || context.EndpointDefinition.AllowUnsecureAuthentication;
+            }
         }
-        
+
         /// <summary>
         /// Gets the domain name or address literal.
         /// </summary>

@@ -22,6 +22,9 @@ namespace SmtpServer.Protocol
 
         string _user;
         string _password;
+#nullable enable
+        string? _bearerToken;
+#nullable restore
 
         /// <summary>
         /// Constructor.
@@ -62,25 +65,65 @@ namespace SmtpServer.Protocol
                         return false;
                     }
                     break;
+                case AuthenticationMethod.XOAuth2:
+                    if (await TryXOAuth2Async(context, cancellationToken).ConfigureAwait(false) == false)
+                    {
+                        await context.Pipe.Output.WriteReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ConfigureAwait(false);
+                        return false;
+                    }
+                    break;
+                case AuthenticationMethod.OAuthBearer:
+                    if (await TryOAuthBearerAsync(context, cancellationToken).ConfigureAwait(false) == false)
+                    {
+                        await context.Pipe.Output.WriteReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ConfigureAwait(false);
+                        return false;
+                    }
+                    break;
             }
 
-            var userAuthenticator = context.ServiceProvider.GetService<IUserAuthenticatorFactory, IUserAuthenticator>(context, UserAuthenticator.Default);
-
-            using (var container = new DisposableContainer<IUserAuthenticator>(userAuthenticator))
+            if (Method == AuthenticationMethod.Plain || Method == AuthenticationMethod.Login)
             {
-                if (await container.Instance.AuthenticateAsync(context, _user, _password, cancellationToken).ConfigureAwait(false) == false)
+                var userAuthenticator = context.ServiceProvider.GetService<IUserAuthenticatorFactory, IUserAuthenticator>(context, UserAuthenticator.Default);
+
+                using (var container = new DisposableContainer<IUserAuthenticator>(userAuthenticator))
                 {
-                    var remaining = context.ServerOptions.MaxAuthenticationAttempts - ++context.AuthenticationAttempts;
-                    var response = new SmtpResponse(SmtpReplyCode.AuthenticationFailed, $"authentication failed, {remaining} attempt(s) remaining.");
-
-                    await context.Pipe.Output.WriteReplyAsync(response, cancellationToken).ConfigureAwait(false);
-
-                    if (remaining <= 0)
+                    if (await container.Instance.AuthenticateAsync(context, _user, _password, cancellationToken).ConfigureAwait(false) == false)
                     {
-                        throw new SmtpResponseException(SmtpResponse.ServiceClosingTransmissionChannel, true);
-                    }
+                        var remaining = context.ServerOptions.MaxAuthenticationAttempts - ++context.AuthenticationAttempts;
+                        var response = new SmtpResponse(SmtpReplyCode.AuthenticationFailed, $"authentication failed, {remaining} attempt(s) remaining.");
 
-                    return false;
+                        await context.Pipe.Output.WriteReplyAsync(response, cancellationToken).ConfigureAwait(false);
+
+                        if (remaining <= 0)
+                        {
+                            throw new SmtpResponseException(SmtpResponse.ServiceClosingTransmissionChannel, true);
+                        }
+
+                        return false;
+                    }
+                }
+            }
+
+            if (Method == AuthenticationMethod.XOAuth2 || Method == AuthenticationMethod.OAuthBearer)
+            {
+                var bearerTokenAuthenticator = context.ServiceProvider.GetService<IBearerTokenAuthenticatorFactory, IBearerTokenAuthenticator>(context, BearerTokenAuthenticator.Default);
+
+                using (var container = new DisposableContainer<IBearerTokenAuthenticator>(bearerTokenAuthenticator))
+                {
+                    if (await container.Instance.AuthenticateAsync(context, _user, _bearerToken, cancellationToken).ConfigureAwait(false) == false)
+                    {
+                        var remaining = context.ServerOptions.MaxAuthenticationAttempts - ++context.AuthenticationAttempts;
+                        var response = new SmtpResponse(SmtpReplyCode.AuthenticationFailed, $"authentication failed, {remaining} attempt(s) remaining.");
+
+                        await context.Pipe.Output.WriteReplyAsync(response, cancellationToken).ConfigureAwait(false);
+
+                        if (remaining <= 0)
+                        {
+                            throw new SmtpResponseException(SmtpResponse.ServiceClosingTransmissionChannel, true);
+                        }
+
+                        return false;
+                    }
                 }
             }
 
@@ -165,6 +208,101 @@ namespace SmtpServer.Protocol
 
             return true;
         }
+
+#nullable enable
+        /// <summary>
+        /// Attempt an XOAUTH2 login sequence.
+        /// </summary>
+        /// <param name="context">The execution context to operate on.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>true if the LOGIN login sequence worked, false if not.</returns>
+        async Task<bool> TryXOAuth2Async(ISessionContext context, CancellationToken cancellationToken)
+        {
+            string? oauth2Response;
+
+            if (string.IsNullOrWhiteSpace(Parameter) == false)
+            {
+                // inline
+                oauth2Response = Encoding.UTF8.GetString(Convert.FromBase64String(Parameter));
+            }
+            else
+            {
+                // interactive
+                await context.Pipe.Output.WriteReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, ""), cancellationToken);
+
+                oauth2Response = await ReadBase64EncodedLineAsync(context.Pipe.Input, cancellationToken);
+            }
+
+            if (oauth2Response != null)
+            {
+                string[] oauth2Parameters = oauth2Response.Split("\u0001", StringSplitOptions.RemoveEmptyEntries);
+
+                if (oauth2Parameters.Length > 0)
+                {
+                    string usernameComponent = oauth2Parameters[0];
+                    if (usernameComponent.StartsWith("user=", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _user = usernameComponent[5..];
+                    }
+
+                    string bearerTokenComponent = oauth2Parameters[1];
+                    if (bearerTokenComponent.StartsWith("auth=Bearer ", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _bearerToken = bearerTokenComponent[12..];
+                    }
+                }
+            }
+
+            return _user != null && _bearerToken != null;
+        }
+
+        /// <summary>
+        /// Attempt an OAUTHBEARER login sequence.
+        /// </summary>
+        /// <param name="context">The execution context to operate on.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>true if the LOGIN login sequence worked, false if not.</returns>
+        async Task<bool> TryOAuthBearerAsync(ISessionContext context, CancellationToken cancellationToken)
+        {
+            string? oauth2Response;
+
+            if (string.IsNullOrWhiteSpace(Parameter) == false)
+            {
+                // inline
+                oauth2Response = Encoding.UTF8.GetString(Convert.FromBase64String(Parameter));
+            }
+            else
+            {
+                // interactive
+                await context.Pipe.Output.WriteReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, ""), cancellationToken);
+
+                oauth2Response = await ReadBase64EncodedLineAsync(context.Pipe.Input, cancellationToken);
+            }
+
+            if (oauth2Response != null)
+            {
+                string[] fields = oauth2Response.Split("\u0001", StringSplitOptions.RemoveEmptyEntries);
+
+                foreach (string field in fields)
+                {
+                    if (field.StartsWith("n,a=", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string identity = field[4..].TrimEnd(',');
+                        if (!string.IsNullOrWhiteSpace(identity))
+                        {
+                            _user = identity;
+                        }
+                    }
+                    else if (field.StartsWith("auth=Bearer ", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _bearerToken = field[12..];
+                    }
+                }
+            }
+
+            return _user != null && _bearerToken != null;
+        }
+#nullable restore
 
         /// <summary>
         /// Read a Base64 encoded line.
