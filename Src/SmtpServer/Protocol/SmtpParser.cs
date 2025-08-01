@@ -671,6 +671,18 @@ namespace SmtpServer.Protocol
                 return true;
             }
 
+            if (reader.TryMake(TryMakeXOAuth2Literal))
+            {
+                authenticationMethod = AuthenticationMethod.XOAuth2;
+                return true;
+            }
+
+            if (reader.TryMake(TryMakeOAuthBearerLiteral))
+            {
+                authenticationMethod = AuthenticationMethod.OAuthBearer;
+                return true;
+            }
+
             authenticationMethod = default;
             return false;
         }
@@ -733,6 +745,68 @@ namespace SmtpServer.Protocol
                 command[2] = 'A';
                 command[3] = 'I';
                 command[4] = 'N';
+
+                return text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Try to make the XOAUTH2 text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the XOAUTH2 text sequence could be made, false if not.</returns>
+        public bool TryMakeXOAuth2Literal(ref TokenReader reader)
+        {
+            bool isXOAuth = false;
+            bool isVersion2 = false;
+
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[6];
+                command[0] = 'X';
+                command[1] = 'O';
+                command[2] = 'A';
+                command[3] = 'U';
+                command[4] = 'T';
+                command[5] = 'H';
+
+                isXOAuth = text.CaseInsensitiveStringEquals(ref command);
+            }
+
+            if (isXOAuth && reader.TryMake(TryMakeNumber, out var number))
+            {
+                Span<char> command = stackalloc char[1];
+                command[0] = '2';
+
+                isVersion2 = number.CaseInsensitiveStringEquals(ref command);
+            }
+
+            return isXOAuth && isVersion2;
+        }
+
+        /// <summary>
+        /// Try to make the OAUTHBEARER text sequence.
+        /// </summary>
+        /// <param name="reader">The reader to perform the operation on.</param>
+        /// <returns>true if the XOAUTH2 text sequence could be made, false if not.</returns>
+        public bool TryMakeOAuthBearerLiteral(ref TokenReader reader)
+        {
+            if (reader.TryMake(TryMakeText, out var text))
+            {
+                Span<char> command = stackalloc char[11];
+                command[0] = 'O';
+                command[1] = 'A';
+                command[2] = 'U';
+                command[3] = 'T';
+                command[4] = 'H';
+                command[5] = 'B';
+                command[6] = 'E';
+                command[7] = 'A';
+                command[8] = 'R';
+                command[9] = 'E';
+                command[10] = 'R';
 
                 return text.CaseInsensitiveStringEquals(ref command);
             }

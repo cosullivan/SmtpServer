@@ -1,4 +1,20 @@
-﻿using MailKit;
+﻿using System;
+using System.Diagnostics;
+using System.IdentityModel.Tokens.Jwt;
+using System.IO;
+using System.Net;
+using System.Net.Security;
+using System.Net.Sockets;
+using System.Security.Authentication;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using MailKit;
+using MailKit.Security;
+using Microsoft.IdentityModel.Tokens;
 using SmtpServer.Authentication;
 using SmtpServer.ComponentModel;
 using SmtpServer.Mail;
@@ -6,18 +22,6 @@ using SmtpServer.Net;
 using SmtpServer.Protocol;
 using SmtpServer.Storage;
 using SmtpServer.Tests.Mocks;
-using System;
-using System.Diagnostics;
-using System.IO;
-using System.Net;
-using System.Net.Security;
-using System.Net.Sockets;
-using System.Security.Authentication;
-using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 using SmtpResponse = SmtpServer.Protocol.SmtpResponse;
 
@@ -94,6 +98,68 @@ namespace SmtpServer.Tests
                 Assert.Equal("password", password);
             }
         }
+
+#nullable enable
+        [Fact]
+        public void CanAuthenticateUser_WithXOAuth2()
+        {
+            // arrange
+            string? actualUser = null;
+            string? actualBearerToken = null;
+
+            var bearerTokenAuthenticator = new DelegatingBearerTokenAuthenticator((u, bt) =>
+            {
+                actualUser = u;
+                actualBearerToken = bt;
+
+                return true;
+            });
+
+            string nameIdentifier = "user@host.com";
+            string bearerToken = GenerateJwt(nameIdentifier, "my-very-long-at-least-32-bytes-key");
+
+            using (CreateServer(endpoint => endpoint.AllowUnsecureAuthentication(), services => services.Add(bearerTokenAuthenticator)))
+            {
+                // act
+                MailClient.Send(new SaslMechanismOAuth2(nameIdentifier, bearerToken));
+
+                // assert
+                Assert.Single(MessageStore.Messages);
+                Assert.Equal(nameIdentifier, actualUser);
+                Assert.Equal(bearerToken, actualBearerToken);
+            }
+        }
+
+        [Fact]
+        public void CanAuthenticateUser_WithOAuthBearer()
+        {
+            // arrange
+            string? actualUser = null;
+            string? actualBearerToken = null;
+
+            var bearerTokenAuthenticator = new DelegatingBearerTokenAuthenticator((u, bt) =>
+            {
+                actualUser = u;
+                actualBearerToken = bt;
+
+                return true;
+            });
+
+            string nameIdentifier = "user@host.com";
+            string bearerToken = GenerateJwt(nameIdentifier, "my-very-long-at-least-32-bytes-key");
+
+            using (CreateServer(endpoint => endpoint.AllowUnsecureAuthentication(), services => services.Add(bearerTokenAuthenticator)))
+            {
+                // act
+                MailClient.Send(new SaslMechanismOAuthBearer(nameIdentifier, bearerToken));
+
+                // assert
+                Assert.Single(MessageStore.Messages);
+                Assert.Equal(nameIdentifier, actualUser);
+                Assert.Equal(bearerToken, actualBearerToken);
+            }
+        }
+#nullable restore
 
         [Theory]
         [InlineData("", "")]
@@ -639,5 +705,26 @@ namespace SmtpServer.Tests
         /// The cancellation token source for the test.
         /// </summary>
         public CancellationTokenSource CancellationTokenSource { get; }
+
+        static string GenerateJwt(string nameId, string key)
+        {
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            var handler = new JwtSecurityTokenHandler();
+            var token = handler.CreateJwtSecurityToken(
+                issuer: "test-issuer",
+                audience: "smtp",
+                subject: new ClaimsIdentity(
+                [
+                    new Claim(ClaimTypes.NameIdentifier, nameId),
+                ]),
+                notBefore: DateTime.UtcNow,
+                expires: DateTime.UtcNow.AddMinutes(10),
+                signingCredentials: credentials
+            );
+
+            return handler.WriteToken(token);
+        }
     }
 }

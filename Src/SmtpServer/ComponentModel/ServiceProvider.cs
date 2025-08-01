@@ -18,6 +18,7 @@ namespace SmtpServer.ComponentModel
 
         IEndpointListenerFactory _endpointListenerFactory;
         IUserAuthenticatorFactory _userAuthenticatorFactory;
+        IBearerTokenAuthenticatorFactory _bearerTokenAuthenticatorFactory;
         ISmtpCommandFactory _smtpCommandFactory;
         IMailboxFilterFactory _mailboxFilterFactory;
         IMessageStoreFactory _messageStoreFactory;
@@ -28,6 +29,7 @@ namespace SmtpServer.ComponentModel
         public ServiceProvider()
         {
             Add(UserAuthenticator.Default);
+            Add(BearerTokenAuthenticator.Default);
             Add(MailboxFilter.Default);
             Add(MessageStore.Default);
         }
@@ -57,6 +59,15 @@ namespace SmtpServer.ComponentModel
         public void Add(IUserAuthenticator userAuthenticator)
         {
             _userAuthenticatorFactory = new DelegatingUserAuthenticatorFactory(context => userAuthenticator);
+        }
+
+        /// <summary>
+        /// Add an instance of the bearer token authenticator.
+        /// </summary>
+        /// <param name="bearerTokenAuthenticator">The bearer token authenticator.</param>
+        public void Add(IBearerTokenAuthenticator bearerTokenAuthenticator)
+        {
+            _bearerTokenAuthenticatorFactory = new DelegatingBearerTokenAuthenticatorFactory(context => bearerTokenAuthenticator);
         }
 
         /// <summary>
@@ -119,6 +130,11 @@ namespace SmtpServer.ComponentModel
             if (serviceType == typeof(IUserAuthenticatorFactory))
             {
                 return _userAuthenticatorFactory;
+            }
+
+            if (serviceType == typeof(IBearerTokenAuthenticatorFactory))
+            {
+                return _bearerTokenAuthenticatorFactory;
             }
 
             if (serviceType == typeof(ISmtpCommandFactory))

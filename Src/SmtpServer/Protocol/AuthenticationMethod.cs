@@ -13,6 +13,16 @@
         /// <summary>
         /// Plain
         /// </summary>
-        Plain
+        Plain,
+
+        /// <summary>
+        /// XOAuth2
+        /// </summary>
+        XOAuth2,
+
+        /// <summary>
+        /// OAuthBearer
+        /// </summary>
+        OAuthBearer
     }
 }

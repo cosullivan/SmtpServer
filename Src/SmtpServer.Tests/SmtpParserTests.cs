@@ -1,12 +1,17 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Net;
+using System.Security.Claims;
 using System.Text;
 using SmtpServer.Mail;
 using SmtpServer.Protocol;
 using SmtpServer.Text;
 using Xunit;
+using SecurityAlgorithms = Microsoft.IdentityModel.Tokens.SecurityAlgorithms;
+using SigningCredentials = Microsoft.IdentityModel.Tokens.SigningCredentials;
+using SymmetricSecurityKey = Microsoft.IdentityModel.Tokens.SymmetricSecurityKey;
 
 namespace SmtpServer.Tests
 {
@@ -147,6 +152,44 @@ namespace SmtpServer.Tests
             Assert.True(command is AuthCommand);
             Assert.Equal(AuthenticationMethod.Login, ((AuthCommand)command).Method);
             Assert.Equal("Y2Fpbi5vc3VsbGl2YW5AZ21haWwuY29t", ((AuthCommand)command).Parameter);
+        }
+
+        [Fact]
+        public void CanMakeAuthXOAuth2()
+        {
+            // arrange
+            string email = "test-user@host.com";
+            string token = GenerateJwt(email, "my-very-long-at-least-32-bytes-key");
+            string authString = $"user={email}\u0001auth=Bearer {token}\u0001\u0001";
+
+            var reader = CreateReader($"AUTH XOAUTH2 {Convert.ToBase64String(Encoding.UTF8.GetBytes(authString))}");
+
+            // act
+            var result = Parser.TryMakeAuth(ref reader, out var command, out var errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is AuthCommand);
+            Assert.Equal(AuthenticationMethod.XOAuth2, ((AuthCommand) command).Method);
+        }
+
+        [Fact]
+        public void CanMakeAuthOAuthBearer()
+        {
+            // arrange
+            string email = "test-user@host.com";
+            string token = GenerateJwt(email, "my-very-long-at-least-32-bytes-key");
+            string authString = $"user={email}\u0001auth=Bearer {token}\u0001\u0001";
+
+            var reader = CreateReader($"AUTH OAUTHBEARER {Convert.ToBase64String(Encoding.UTF8.GetBytes(authString))}");
+
+            // act
+            var result = Parser.TryMakeAuth(ref reader, out var command, out var errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is AuthCommand);
+            Assert.Equal(AuthenticationMethod.OAuthBearer, ((AuthCommand) command).Method);
         }
 
         [Theory]
@@ -687,6 +730,27 @@ namespace SmtpServer.Tests
 
             // assert
             Assert.False(result);
+        }
+
+        static string GenerateJwt(string nameId, string key)
+        {
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            var handler = new JwtSecurityTokenHandler();
+            var token = handler.CreateJwtSecurityToken(
+                issuer: "test-issuer",
+                audience: "smtp",
+                subject: new ClaimsIdentity(
+                [
+                    new Claim(ClaimTypes.NameIdentifier, nameId),
+                ]),
+                notBefore: DateTime.UtcNow,
+                expires: DateTime.UtcNow.AddMinutes(10),
+                signingCredentials: credentials
+            );
+
+            return handler.WriteToken(token);
         }
     }
 }

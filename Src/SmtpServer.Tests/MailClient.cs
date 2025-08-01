@@ -81,6 +81,28 @@ namespace SmtpServer.Tests
             client.Disconnect(true);
         }
 
+#nullable enable
+        public static void Send(
+            SaslMechanism saslMechanism,
+            MimeMessage? message = null!
+        )
+        {
+            message ??= Message();
+
+            System.ArgumentNullException.ThrowIfNull(message);
+            System.ArgumentNullException.ThrowIfNull(saslMechanism);
+
+            using var client = Client();
+
+            client.Authenticate(saslMechanism);
+
+            //client.NoOp();
+
+            client.Send(message);
+            client.Disconnect(true);
+        }
+#nullable restore
+
         public static void NoOp(SecureSocketOptions options = SecureSocketOptions.Auto)
         {
             using var client = Client(options: options);
