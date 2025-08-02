@@ -39,7 +39,7 @@ namespace SmtpServer.IO
             {
                 if (maxMessageSizeOptions.Handling == MaxMessageSizeHandling.Strict && read.Buffer.Length > maxMessageSizeOptions.Length)
                 {
-                    throw new MaxMessageSizeExceededException();
+                    throw new SmtpResponseException(SmtpResponse.MaxMessageSizeExceeded, true);
                 }
 
                 if (read.Buffer.TryFind(sequence, ref head, out var tail))

@@ -174,7 +174,7 @@ namespace SmtpServer.Tests
 
             using (CreateServer(c => c.MaxMessageSize(maxAcceptedMailMessageSize, MaxMessageSizeHandling.Strict)))
             {
-                Assert.Throws<SmtpProtocolException>(() => MailClient.Send(mailMessage));
+                Assert.Throws<SmtpCommandException>(() => MailClient.Send(mailMessage));
             }
         }
 
