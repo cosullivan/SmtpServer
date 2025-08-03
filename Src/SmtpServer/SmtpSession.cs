@@ -189,14 +189,14 @@ namespace SmtpServer
         /// <returns>A task which performs the operation.</returns>
         ValueTask<FlushResult> OutputGreetingAsync(CancellationToken cancellationToken)
         {
-            if (_context.ServerOptions.CustomGreetingMessage is null)
+            if (_context.ServerOptions.CustomSmtpGreeting is null)
             {
                 var serverVersion = AssemblyVersion;
                 _context.Pipe.Output.WriteLine($"220 {_context.ServerOptions.ServerName} v{serverVersion} ESMTP ready");
             }
             else
             {
-                _context.Pipe.Output.WriteLine($"220 {_context.ServerOptions.ServerName} {_context.ServerOptions.CustomGreetingMessage}");
+                _context.Pipe.Output.WriteLine(_context.ServerOptions.CustomSmtpGreeting(_context));
             }
             
             return _context.Pipe.Output.FlushAsync(cancellationToken);
