@@ -9,9 +9,9 @@ namespace SmtpServer
     public interface ISmtpServerOptions
     {
         /// <summary>
-        /// Gets the maximum size of a message.
+        /// Gets the maximum message size option.
         /// </summary>
-        int MaxMessageSize { get; }
+        IMaxMessageSizeOptions MaxMessageSizeOptions { get; }
 
         /// <summary>
         /// The maximum number of retries before quitting the session.

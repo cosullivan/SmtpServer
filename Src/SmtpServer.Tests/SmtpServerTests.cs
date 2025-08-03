@@ -1,4 +1,5 @@
 ﻿using MailKit;
+using MailKit.Net.Smtp;
 using SmtpServer.Authentication;
 using SmtpServer.ComponentModel;
 using SmtpServer.Mail;
@@ -9,6 +10,7 @@ using SmtpServer.Tests.Mocks;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -159,6 +161,20 @@ namespace SmtpServer.Tests
                 Task.Delay(TimeSpan.FromSeconds(5)).Wait();
 
                 Assert.Throws<IOException>(() => client.NoOp());
+            }
+        }
+
+        [Fact]
+        public void WillTerminateDueToTooMuchData()
+        {
+            var maxAcceptedMailMessageSize = 50;
+
+            var largeMailContent = string.Concat(Enumerable.Repeat("Too long for 1024 bytes", 1000));
+            using var mailMessage = MailClient.Message(from: "test1@test.com", to: "test2@test.com", text: largeMailContent);
+
+            using (CreateServer(c => c.MaxMessageSize(maxAcceptedMailMessageSize, MaxMessageSizeHandling.Strict)))
+            {
+                Assert.Throws<SmtpCommandException>(() => MailClient.Send(mailMessage));
             }
         }
 

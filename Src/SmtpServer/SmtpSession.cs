@@ -132,6 +132,7 @@ namespace SmtpServer
 
                         return Task.CompletedTask;
                     },
+                    context.ServerOptions.MaxMessageSizeOptions,
                     cancellationTokenSource.Token).ConfigureAwait(false);
 
                 return command;

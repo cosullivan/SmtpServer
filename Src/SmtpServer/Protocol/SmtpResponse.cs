@@ -71,6 +71,11 @@
         public static readonly SmtpResponse AuthenticationRequired = new SmtpResponse(SmtpReplyCode.AuthenticationRequired, "authentication required");
 
         /// <summary>
+        /// 552 MaxMessageSizeExceeded
+        /// </summary>
+        public static readonly SmtpResponse MaxMessageSizeExceeded = new SmtpResponse(SmtpReplyCode.SizeLimitExceeded, "message size exceeds fixed maximium message size");
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="replyCode">The reply code.</param>
