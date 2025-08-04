@@ -165,10 +165,10 @@ namespace SmtpServer
         /// <param name="smtpGreetingFunc">
         /// A delegate that returns the greeting message to send to the client,
         /// based on the <see cref="ISessionContext"/> (e.g., client IP, TLS state).
-        /// Example: <c>ctx => $"220 {sessionContext.ServerOptions.ServerName} ESMTP ready"</c>
+        /// Example: <c>sessionContext => $"220 {sessionContext.ServerOptions.ServerName} ESMTP ready"</c>
         /// </param>
         /// <returns>An OptionsBuilder to continue building on.</returns>
-        public SmtpServerOptionsBuilder CustomGreetingMessage(Func<ISessionContext, string> smtpGreetingFunc)
+        public SmtpServerOptionsBuilder CustomSmtpGreeting(Func<ISessionContext, string> smtpGreetingFunc)
         {
             _setters.Add(options => options.CustomSmtpGreeting = smtpGreetingFunc);
 
