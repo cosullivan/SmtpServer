@@ -58,9 +58,14 @@ namespace SmtpServer.Protocol
                     
                 await context.Pipe.Output.WriteReplyAsync(response, cancellationToken).ConfigureAwait(false);
             }
+            catch (SmtpResponseException)
+            {
+                return false;
+            }
             catch (Exception)
             {
                 await context.Pipe.Output.WriteReplyAsync(new SmtpResponse(SmtpReplyCode.TransactionFailed), cancellationToken).ConfigureAwait(false);
+                return false;
             }
 
             return true;
