@@ -1099,13 +1099,13 @@ namespace SmtpServer.Protocol
 
             if (reader.TryMake(TryMakeDomain, out var domain))
             {
-                mailbox = CreateMailbox(localpart, domain);
+                mailbox = CreateMailbox(localpart, domain) ?? throw new SmtpResponseException(SmtpResponse.MailboxNameNotAllowed);
                 return true;
             }
 
             if (reader.TryMake(TryMakeAddressLiteral, out var address))
             {
-                mailbox = CreateMailbox(localpart, address);
+                mailbox = CreateMailbox(localpart, address) ?? throw new SmtpResponseException(SmtpResponse.MailboxNameNotAllowed);
                 return true;
             }
 
@@ -1113,9 +1113,21 @@ namespace SmtpServer.Protocol
 
             static Mailbox CreateMailbox(ReadOnlySequence<byte> localpart, ReadOnlySequence<byte> domainOrAddress)
             {
-                var user = Regex.Unescape(StringUtil.Create(localpart, Encoding.UTF8).Trim('"'));
+                var tempLocalpart = StringUtil.Create(localpart, Encoding.UTF8)?.Trim('"');
+                if (tempLocalpart == null)
+                {
+                    return null;
+                }
+
+                var tempDomain = StringUtil.Create(domainOrAddress);
+                if (tempDomain == null)
+                {
+                    return null;
+                }
+
+                var unescapedLocalpart = Regex.Unescape(tempLocalpart);
                 
-                return new Mailbox(user, StringUtil.Create(domainOrAddress));
+                return new Mailbox(unescapedLocalpart, tempDomain);
             }
         }
 

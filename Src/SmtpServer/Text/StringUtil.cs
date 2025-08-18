@@ -18,6 +18,11 @@ namespace SmtpServer.Text
                 return null;
             }
 
+            if (sequence.Length > ushort.MaxValue)
+            {
+                return null;
+            }
+
             if (sequence.IsSingleSegment)
             {
                 var span = sequence.First.Span;
