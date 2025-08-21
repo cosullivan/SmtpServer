@@ -70,22 +70,22 @@ static X509Certificate2 CreateCertificate()
 public class SampleMessageStore : MessageStore
 {
     public override async Task<SmtpResponse> SaveAsync(ISessionContext context, IMessageTransaction transaction, ReadOnlySequence<byte> buffer, CancellationToken cancellationToken)
+    {
+        await using var stream = new MemoryStream();
+
+        var position = buffer.GetPosition(0);
+        while (buffer.TryGet(ref position, out var memory))
         {
-            await using var stream = new MemoryStream();
-
-            var position = buffer.GetPosition(0);
-            while (buffer.TryGet(ref position, out var memory))
-            {
-                await stream.WriteAsync(memory, cancellationToken);
-            }
-
-            stream.Position = 0;
-
-            var message = await MimeKit.MimeMessage.LoadAsync(stream, cancellationToken);
-            Console.WriteLine(message.TextBody);
-
-            return SmtpResponse.Ok;
+            await stream.WriteAsync(memory, cancellationToken);
         }
+
+        stream.Position = 0;
+
+        var message = await MimeKit.MimeMessage.LoadAsync(stream, cancellationToken);
+        Console.WriteLine(message.TextBody);
+
+        return SmtpResponse.Ok;
+    }
 }
 ```
 
@@ -109,7 +109,7 @@ public class SampleMailboxFilter : IMailboxFilter, IMailboxFilterFactory
 
     public IMailboxFilter CreateInstance(ISessionContext context)
     {
-	return new SampleMailboxFilter();
+        return new SampleMailboxFilter();
     }
 }
 ```
@@ -126,7 +126,7 @@ public class SampleUserAuthenticator : IUserAuthenticator, IUserAuthenticatorFac
 
     public IUserAuthenticator CreateInstance(ISessionContext context)
     {
-	return new SampleUserAuthenticator();
+        return new SampleUserAuthenticator();
     }
 }
 ```
