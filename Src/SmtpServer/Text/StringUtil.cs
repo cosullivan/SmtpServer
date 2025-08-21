@@ -11,26 +11,21 @@ namespace SmtpServer.Text
             return Create(sequence, Encoding.ASCII);
         }
 
-        internal static unsafe string Create(ReadOnlySequence<byte> sequence, Encoding encoding)
+        internal static string Create(ReadOnlySequence<byte> sequence, Encoding encoding)
         {
             if (sequence.Length == 0)
             {
                 return null;
             }
 
-            if (sequence.Length > ushort.MaxValue)
+            if (sequence.Length > short.MaxValue)
             {
                 return null;
             }
 
             if (sequence.IsSingleSegment)
             {
-                var span = sequence.First.Span;
-
-                fixed (byte* ptr = span)
-                {
-                    return encoding.GetString(ptr, span.Length);
-                }
+                return encoding.GetString(sequence.First.Span);
             }
             else
             {
@@ -48,10 +43,7 @@ namespace SmtpServer.Text
                     }
                 }
 
-                fixed (byte* ptr = buffer)
-                {
-                    return encoding.GetString(ptr, buffer.Length);
-                }
+                return encoding.GetString(buffer);
             }
         }
 
