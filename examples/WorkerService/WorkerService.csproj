@@ -10,6 +10,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Src\SmtpServer\SmtpServer.csproj" />
+    <ProjectReference Include="..\..\src\SmtpServer\SmtpServer.csproj" />
   </ItemGroup>
 </Project>
