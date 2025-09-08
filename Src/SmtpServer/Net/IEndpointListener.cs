@@ -11,7 +11,7 @@ namespace SmtpServer.Net
     public interface IEndpointListener : IDisposable
     {
         /// <summary>
-        /// Returns a securtable pipe to the endpoint.
+        /// Returns a securable pipe to the endpoint.
         /// </summary>
         /// <param name="context">The session context that the pipe is being created for.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
