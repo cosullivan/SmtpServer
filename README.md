@@ -2,17 +2,16 @@
 
 [![NuGet](https://img.shields.io/nuget/v/SmtpServer.svg)](https://www.nuget.org/packages/SmtpServer/)
 
-SmtpServer is a simple, but highly functional SMTP server implementation. Written entirely in C# it takes full advantage of the .NET TPL to achieve maximum performance.
+**SmtpServer** is a lightweight yet powerful SMTP server implementation in C#.  
+Built entirely in .NET, it leverages the Task Parallel Library (TPL) for maximum performance.
 
-SmtpServer is available via [NuGet](https://www.nuget.org/packages/SmtpServer/)
-
-# Whats New?
+## 🆕 What's New?
 
 Check the [Changelog](https://github.com/cosullivan/SmtpServer/blob/master/CHANGELOG.md)
 
-# What does it support?
+## ⚡ Supported ESMTP Extensions
 
-SmtpServer currently supports the following ESMTP extensions:
+SmtpServer currently supports the following extensions:
 
 - STARTTLS
 - SIZE
@@ -20,9 +19,16 @@ SmtpServer currently supports the following ESMTP extensions:
 - 8BITMIME
 - AUTH PLAIN LOGIN
 
-# How can it be used?
+## Installation
 
-At its most basic, it only takes a few lines of code for the server to be listening to incoming requests.
+The package is available on [NuGet](https://www.nuget.org/packages/SmtpServer)
+```powershell
+PM> install-package SmtpServer
+```
+
+## 🚀 Getting Started
+
+Starting a basic SMTP server requires only a few lines of code:
 
 ```cs
 var options = new SmtpServerOptionsBuilder()
@@ -34,7 +40,7 @@ var smtpServer = new SmtpServer.SmtpServer(options, ServiceProvider.Default);
 await smtpServer.StartAsync(CancellationToken.None);
 ```
 
-# What hooks are provided?
+### What hooks are provided?
 
 There are three hooks that can be implemented; IMessageStore, IMailboxFilter, and IUserAuthenticator.
 

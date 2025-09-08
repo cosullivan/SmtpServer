@@ -6,7 +6,7 @@
     <AssemblyName>SmtpServer</AssemblyName>
     <RootNamespace>SmtpServer</RootNamespace>
     <Version>10.0.1</Version>
-    <Description>.NET SmtpServer</Description>
+    <Description>High-performance, flexible SMTP server implementation for .NET with support for ESMTP, TLS, authentication, and custom message handling.</Description>
     <Authors>Cain O'Sullivan</Authors>
     <Copyright>2015-2023</Copyright>
     <RepositoryUrl>https://github.com/cosullivan/SmtpServer</RepositoryUrl>
