@@ -19,8 +19,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Src\SmtpServer.Tests\SmtpServer.Tests.csproj" />
-    <ProjectReference Include="..\..\Src\SmtpServer\SmtpServer.csproj" />
+    <ProjectReference Include="..\..\src\SmtpServer.Tests\SmtpServer.Tests.csproj" />
+    <ProjectReference Include="..\..\src\SmtpServer\SmtpServer.csproj" />
   </ItemGroup>
 
 </Project>

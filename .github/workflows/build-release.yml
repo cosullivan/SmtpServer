@@ -11,9 +11,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Setup .NET 8.0
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 8.0.x
     - name: Extract Version from tag
@@ -24,22 +24,22 @@ jobs:
           const version = context.ref.replace('refs/tags/', '');
           return version.slice(1);
     - name: Change Package Version
-      working-directory: ./Src
+      working-directory: ./src
       run: |
         sed -i -e "s/<Version>[a-zA-Z0-9.-]*<\/Version>/<Version>${{ steps.tag.outputs.result }}<\/Version>/g" SmtpServer/SmtpServer.csproj
     - name: Restore dependencies
-      working-directory: ./Src
+      working-directory: ./src
       run: dotnet restore
     - name: Build
-      working-directory: ./Src
+      working-directory: ./src
       run: dotnet build --configuration Release --no-restore
     - name: Test
-      working-directory: ./Src
+      working-directory: ./src
       run: |
         dotnet test --configuration Release --no-restore --no-build --verbosity normal
     - name: Build project and generate NuGet package
       run: |
-        dotnet pack --configuration Release --output $GITHUB_WORKSPACE/out Src/SmtpServer/SmtpServer.csproj
+        dotnet pack --configuration Release --output $GITHUB_WORKSPACE/out src/SmtpServer/SmtpServer.csproj
     - name: Push NuGet package
       run: |
         cd $GITHUB_WORKSPACE/out

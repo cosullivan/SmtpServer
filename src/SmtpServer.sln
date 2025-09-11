@@ -9,11 +9,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SmtpServer.Benchmarks", "Sm
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SmtpServer.Tests", "SmtpServer.Tests\SmtpServer.Tests.csproj", "{4957B054-F07E-402D-A3EC-7EBA0B3018B7}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WorkerService", "..\Examples\WorkerService\WorkerService.csproj", "{EE0C474F-8404-4FB6-865F-A034B5DB77FE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WorkerService", "..\examples\WorkerService\WorkerService.csproj", "{EE0C474F-8404-4FB6-865F-A034B5DB77FE}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Examples", "Examples", "{6BAD2430-FA6B-4929-8BD7-66663CA02207}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SampleApp", "..\Examples\SampleApp\SampleApp.csproj", "{DB671922-7280-4854-9C4F-0BA073B5F1E2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SampleApp", "..\examples\SampleApp\SampleApp.csproj", "{DB671922-7280-4854-9C4F-0BA073B5F1E2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
