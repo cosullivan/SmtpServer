@@ -17,6 +17,7 @@ SmtpServer currently supports the following extensions:
 - SIZE
 - PIPELINING
 - 8BITMIME
+- SMTPUTF8
 - AUTH PLAIN LOGIN
 
 ## Installation
