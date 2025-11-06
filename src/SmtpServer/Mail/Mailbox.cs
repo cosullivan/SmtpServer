@@ -44,5 +44,10 @@
         /// Gets the host server.
         /// </summary>
         public string Host { get; }
+
+        public override string ToString()
+        {
+            return User + "@" + Host;
+        }
     }
 }
