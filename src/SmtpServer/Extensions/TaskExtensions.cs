@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SmtpServer
+namespace SmtpServer.Extensions
 {
     /// <summary>
     /// Task Extensions

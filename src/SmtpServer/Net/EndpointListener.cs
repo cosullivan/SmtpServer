@@ -2,6 +2,7 @@
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using SmtpServer.Extensions;
 using SmtpServer.IO;
 
 namespace SmtpServer.Net
