@@ -1,17 +1,32 @@
 # Change Log
 
+## v11.1.0
+
+- Added: Configuration option to define the maximum allowed message size.
+- Added: Support for custom SMTP greeting messages.
+- Improved: Optimized protection against excessively long text segments to enhance stability and performance.
+
+```cs
+var options = new SmtpServerOptionsBuilder()
+	.ServerName("My mail server")
+	.MaxMessageSize(5242880, MaxMessageSizeHandling.Strict) //5MB
+	.CommandWaitTimeout(TimeSpan.FromSeconds(60))
+```
+
 ## v11.0.0
 
-- Add SslProtocol to SecurableDuplexPipe
-- Add Github Workflow run build and unit tests
-- Add Summary Infos to classes
-- Add a session timeout that terminates the connection if it is open for too long
-- Fix missing session created event in failure case
+- Added: SslProtocol support to SecurableDuplexPipe.
+- Added: GitHub workflow for automated build and unit tests.
+- Added: Summary information to classes for improved code documentation.
+- Added: Session timeout to automatically close connections that remain open for too long.
+- Fixed: Missing SessionCreated event in failure scenarios.
 
 ## v10.0.1
+
 - Fixed a bug that could cause a failure to recognize commands when using a large number of recipients.
 
 ## v10.0.0
+
 - Removed MailboxFilterResult in favor of bool result. Impementations can throw SmtpResponseException for more control.
 - Handled servers that send the QUIT command and immediately close the connection.
 - Added an ICertificateFactory on the Endpoint that allows a new certificate to be created when required without having to restart the server.
