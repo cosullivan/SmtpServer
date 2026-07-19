@@ -2,6 +2,7 @@
 using SmtpServer.Protocol;
 using SmtpServer.Storage;
 using System;
+using Microsoft.Extensions.Logging;
 using SmtpServer.Net;
 
 namespace SmtpServer.ComponentModel
@@ -19,8 +20,10 @@ namespace SmtpServer.ComponentModel
         IEndpointListenerFactory _endpointListenerFactory;
         IUserAuthenticatorFactory _userAuthenticatorFactory;
         ISmtpCommandFactory _smtpCommandFactory;
+        ISmtpCommandPolicyFactory _smtpCommandPolicyFactory;
         IMailboxFilterFactory _mailboxFilterFactory;
         IMessageStoreFactory _messageStoreFactory;
+        ILoggerFactory _loggerFactory;
 
         /// <summary>
         /// Service Provider
@@ -30,6 +33,7 @@ namespace SmtpServer.ComponentModel
             Add(UserAuthenticator.Default);
             Add(MailboxFilter.Default);
             Add(MessageStore.Default);
+            Add(SmtpCommandPolicy.Default);
         }
 
         /// <summary>
@@ -69,6 +73,24 @@ namespace SmtpServer.ComponentModel
         }
 
         /// <summary>
+        /// Add an instance of the SMTP command policy factory.
+        /// </summary>
+        /// <param name="smtpCommandPolicyFactory">The SMTP command policy factory.</param>
+        public void Add(ISmtpCommandPolicyFactory smtpCommandPolicyFactory)
+        {
+            _smtpCommandPolicyFactory = smtpCommandPolicyFactory;
+        }
+
+        /// <summary>
+        /// Add an instance of the SMTP command policy.
+        /// </summary>
+        /// <param name="smtpCommandPolicy">The SMTP command policy.</param>
+        public void Add(ISmtpCommandPolicy smtpCommandPolicy)
+        {
+            _smtpCommandPolicyFactory = new DelegatingSmtpCommandPolicyFactory(context => smtpCommandPolicy);
+        }
+
+        /// <summary>
         /// Add an instance of the Mailbox Filter Factory.
         /// </summary>
         /// <param name="mailboxFilterFactory">The mailbox filter factory.</param>
@@ -105,6 +127,15 @@ namespace SmtpServer.ComponentModel
         }
 
         /// <summary>
+        /// Add an instance of the logger factory.
+        /// </summary>
+        /// <param name="loggerFactory">The logger factory.</param>
+        public void Add(ILoggerFactory loggerFactory)
+        {
+            _loggerFactory = loggerFactory;
+        }
+
+        /// <summary>
         /// Gets the service object of the specified type.
         /// </summary>
         /// <param name="serviceType">An object that specifies the type of service object to get.</param>
@@ -126,6 +157,11 @@ namespace SmtpServer.ComponentModel
                 return _smtpCommandFactory;
             }
 
+            if (serviceType == typeof(ISmtpCommandPolicyFactory))
+            {
+                return _smtpCommandPolicyFactory;
+            }
+
             if (serviceType == typeof(IMailboxFilterFactory))
             {
                 return _mailboxFilterFactory;
@@ -134,6 +170,11 @@ namespace SmtpServer.ComponentModel
             if (serviceType == typeof(IMessageStoreFactory))
             {
                 return _messageStoreFactory;
+            }
+
+            if (serviceType == typeof(ILoggerFactory))
+            {
+                return _loggerFactory;
             }
 
             throw new NotSupportedException(serviceType.ToString());

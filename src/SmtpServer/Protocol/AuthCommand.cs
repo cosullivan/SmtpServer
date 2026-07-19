@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO.Pipelines;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.Authentication;
@@ -62,6 +61,22 @@ namespace SmtpServer.Protocol
                         return false;
                     }
                     break;
+
+                case AuthenticationMethod.XOAuth2:
+                    if (await TryOAuthAsync(context, xOAuth2: true, cancellationToken).ConfigureAwait(false) == false)
+                    {
+                        await context.Pipe.Output.WriteReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ConfigureAwait(false);
+                        return false;
+                    }
+                    break;
+
+                case AuthenticationMethod.OAuthBearer:
+                    if (await TryOAuthAsync(context, xOAuth2: false, cancellationToken).ConfigureAwait(false) == false)
+                    {
+                        await context.Pipe.Output.WriteReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ConfigureAwait(false);
+                        return false;
+                    }
+                    break;
             }
 
             var userAuthenticator = context.ServiceProvider.GetService<IUserAuthenticatorFactory, IUserAuthenticator>(context, UserAuthenticator.Default);
@@ -106,12 +121,11 @@ namespace SmtpServer.Protocol
             {
                 await context.Pipe.Output.WriteReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, " "), cancellationToken).ConfigureAwait(false);
 
-                authentication = await context.Pipe.Input.ReadLineAsync(Encoding.ASCII, context.ServerOptions.MaxMessageSizeOptions, cancellationToken).ConfigureAwait(false);
+                authentication = await context.Pipe.Input.ReadLineAsync(Encoding.ASCII, context.ServerOptions.MaxCommandLineLength, cancellationToken).ConfigureAwait(false);
             }
 
             if (TryExtractFromBase64(authentication) == false)
             {
-                await context.Pipe.Output.WriteReplyAsync(SmtpResponse.AuthenticationFailed, cancellationToken).ConfigureAwait(false);
                 return false;
             }
 
@@ -125,15 +139,36 @@ namespace SmtpServer.Protocol
         /// <returns>true if the user name and password were extracted from the base64 encoded string, false if not.</returns>
         bool TryExtractFromBase64(string base64)
         {
-            var match = Regex.Match(Encoding.UTF8.GetString(Convert.FromBase64String(base64)), "\x0000(?<user>.*)\x0000(?<password>.*)");
-
-            if (match.Success == false)
+            if (TryDecodeBase64(base64, out var buffer, out var bytesWritten) == false)
             {
                 return false;
             }
 
-            _user = match.Groups["user"].Value;
-            _password = match.Groups["password"].Value;
+            try
+            {
+                var decoded = new ReadOnlySpan<byte>(buffer, 0, bytesWritten);
+
+                var userStart = decoded.IndexOf((byte)0);
+                if (userStart < 0)
+                {
+                    return false;
+                }
+
+                var passwordStart = decoded.Slice(userStart + 1).IndexOf((byte)0);
+                if (passwordStart < 0)
+                {
+                    return false;
+                }
+
+                passwordStart += userStart + 1;
+
+                _user = Encoding.UTF8.GetString(buffer, userStart + 1, passwordStart - userStart - 1);
+                _password = Encoding.UTF8.GetString(buffer, passwordStart + 1, bytesWritten - passwordStart - 1);
+            }
+            finally
+            {
+                Array.Clear(buffer, 0, bytesWritten);
+            }
 
             return true;
         }
@@ -148,35 +183,116 @@ namespace SmtpServer.Protocol
         {
             if (string.IsNullOrWhiteSpace(Parameter) == false)
             {
-                _user = Encoding.UTF8.GetString(Convert.FromBase64String(Parameter));
+                if (TryDecodeBase64String(Parameter, out _user) == false)
+                {
+                    return false;
+                }
             }
             else
             {
                 //Username = VXNlcm5hbWU6 (base64)
                 await context.Pipe.Output.WriteReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, "VXNlcm5hbWU6"), cancellationToken).ConfigureAwait(false);
 
-                _user = await ReadBase64EncodedLineAsync(context.Pipe.Input, context.ServerOptions.MaxMessageSizeOptions, cancellationToken).ConfigureAwait(false);
+                _user = await ReadBase64EncodedLineAsync(context.Pipe.Input, context.ServerOptions.MaxCommandLineLength, cancellationToken).ConfigureAwait(false);
+                if (_user == null)
+                {
+                    return false;
+                }
             }
 
             //Password = UGFzc3dvcmQ6 (base64)
             await context.Pipe.Output.WriteReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, "UGFzc3dvcmQ6"), cancellationToken).ConfigureAwait(false);
 
-            _password = await ReadBase64EncodedLineAsync(context.Pipe.Input, context.ServerOptions.MaxMessageSizeOptions, cancellationToken).ConfigureAwait(false);
+            _password = await ReadBase64EncodedLineAsync(context.Pipe.Input, context.ServerOptions.MaxCommandLineLength, cancellationToken).ConfigureAwait(false);
+            if (_password == null)
+            {
+                return false;
+            }
 
             return true;
+        }
+
+        /// <summary>
+        /// Attempt an XOAUTH2 or OAUTHBEARER bearer-token exchange. The decoded bearer token is surfaced to
+        /// the authenticator as the password and the SASL identity as the user, so a host validates the token
+        /// exactly as it validates any other credential — no live identity-provider call happens here.
+        /// </summary>
+        /// <param name="context">The execution context to operate on.</param>
+        /// <param name="xOAuth2">true to decode the XOAUTH2 blob, false to decode the OAUTHBEARER blob.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>true if a user and bearer token were decoded, false if not.</returns>
+        async Task<bool> TryOAuthAsync(ISessionContext context, bool xOAuth2, CancellationToken cancellationToken)
+        {
+            var response = Parameter;
+
+            if (string.IsNullOrWhiteSpace(response))
+            {
+                await context.Pipe.Output.WriteReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, " "), cancellationToken).ConfigureAwait(false);
+
+                response = await context.Pipe.Input.ReadLineAsync(Encoding.ASCII, context.ServerOptions.MaxCommandLineLength, cancellationToken).ConfigureAwait(false);
+            }
+
+            return xOAuth2
+                ? OAuthSaslDecoder.TryDecodeXOAuth2(response, out _user, out _password)
+                : OAuthSaslDecoder.TryDecodeOAuthBearer(response, out _user, out _password);
         }
 
         /// <summary>
         /// Read a Base64 encoded line.
         /// </summary>
         /// <param name="reader">The pipe to read from.</param>
+        /// <param name="maxLineLength">The maximum command line length.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The decoded Base64 string.</returns>
-        static async Task<string> ReadBase64EncodedLineAsync(PipeReader reader, IMaxMessageSizeOptions maxMessageSizeOptions, CancellationToken cancellationToken)
+        /// <returns>The decoded Base64 string, or null when the line is invalid.</returns>
+        static async Task<string> ReadBase64EncodedLineAsync(PipeReader reader, int maxLineLength, CancellationToken cancellationToken)
         {
-            var text = await reader.ReadLineAsync(maxMessageSizeOptions, cancellationToken);
+            var text = await reader.ReadLineAsync(maxLineLength, cancellationToken);
 
-            return text == null ? string.Empty : Encoding.UTF8.GetString(Convert.FromBase64String(text));
+            return TryDecodeBase64String(text, out var value) ? value : null;
+        }
+
+        static bool TryDecodeBase64String(string text, out string value)
+        {
+            value = null;
+
+            if (TryDecodeBase64(text, out var buffer, out var bytesWritten) == false)
+            {
+                return false;
+            }
+
+            try
+            {
+                value = Encoding.UTF8.GetString(buffer, 0, bytesWritten);
+            }
+            finally
+            {
+                Array.Clear(buffer, 0, bytesWritten);
+            }
+
+            return true;
+        }
+
+        static bool TryDecodeBase64(string text, out byte[] buffer, out int bytesWritten)
+        {
+            buffer = null;
+            bytesWritten = 0;
+
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return false;
+            }
+
+            var maxByteCount = text.Length;
+            buffer = new byte[maxByteCount];
+
+            if (Convert.TryFromBase64String(text, buffer, out bytesWritten) == false)
+            {
+                Array.Clear(buffer, 0, buffer.Length);
+                buffer = null;
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>

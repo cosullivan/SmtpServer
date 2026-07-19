@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Net;
 using System.Text;
+using SmtpServer.IO;
 using SmtpServer.Mail;
 using SmtpServer.Protocol;
 using SmtpServer.Text;
@@ -17,6 +18,23 @@ namespace SmtpServer.Tests
             var buffer = Encoding.UTF8.GetBytes(text);
 
             return new TokenReader(new ReadOnlySequence<byte>(buffer, 0, buffer.Length));
+        }
+
+        static TokenReader CreateReader(params string[] values)
+        {
+            return new TokenReader(CreateSequence(values));
+        }
+
+        static ReadOnlySequence<byte> CreateSequence(params string[] values)
+        {
+            var segments = new ByteArraySegmentList();
+
+            foreach (var value in values)
+            {
+                segments.Append(Encoding.UTF8.GetBytes(value));
+            }
+
+            return segments.Build();
         }
 
         static SmtpParser Parser => new SmtpParser(new SmtpCommandFactory());
@@ -35,6 +53,131 @@ namespace SmtpServer.Tests
             Assert.False(result);
             Assert.Null(command);
             Assert.Equal(SmtpReplyCode.CommandNotImplemented, errorResponse.ReplyCode);
+        }
+
+        [Theory]
+        [InlineData("HELO abc.example.com extra")]
+        [InlineData("MAIL FROM:<sender@example.com> SIZE=")]
+        public void CanReturnSyntaxErrorForMalformedKnownCommand(string input)
+        {
+            // arrange
+            var buffer = Encoding.UTF8.GetBytes(input);
+            var sequence = new ReadOnlySequence<byte>(buffer, 0, buffer.Length);
+
+            // act
+            var result = Parser.TryMake(ref sequence, out var command, out var errorResponse);
+
+            // assert
+            Assert.False(result);
+            Assert.Null(command);
+            Assert.Equal(SmtpReplyCode.SyntaxError, errorResponse.ReplyCode);
+        }
+
+        [Theory]
+        [InlineData("ehlo example.com", typeof(EhloCommand))]
+        [InlineData("HELO example.com", typeof(HeloCommand))]
+        [InlineData("MAIL FROM:<cain.osullivan@gmail.com>", typeof(MailCommand))]
+        [InlineData("RCPT TO:<cain.osullivan@gmail.com>", typeof(RcptCommand))]
+        [InlineData("HELP", typeof(HelpCommand))]
+        [InlineData("VRFY cain.osullivan@gmail.com", typeof(VrfyCommand))]
+        [InlineData("EXPN staff", typeof(ExpnCommand))]
+        [InlineData("BDAT 5 LAST", typeof(BdatCommand))]
+        [InlineData("DATA", typeof(DataCommand))]
+        [InlineData("QUIT", typeof(QuitCommand))]
+        [InlineData("RSET", typeof(RsetCommand))]
+        [InlineData("NOOP", typeof(NoopCommand))]
+        [InlineData("STARTTLS", typeof(StartTlsCommand))]
+        [InlineData("AUTH PLAIN Y2Fpbi5vc3VsbGl2YW5AZ21haWwuY29t", typeof(AuthCommand))]
+        [InlineData("PROXY UNKNOWN", typeof(ProxyCommand))]
+        public void CanMakeKnownCommandUsingTopLevelDispatch(string input, Type commandType)
+        {
+            // arrange
+            var buffer = Encoding.UTF8.GetBytes(input);
+            var sequence = new ReadOnlySequence<byte>(buffer, 0, buffer.Length);
+
+            // act
+            var result = Parser.TryMake(ref sequence, out var command, out var errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.Equal(commandType, command.GetType());
+            Assert.Null(errorResponse);
+        }
+
+        [Fact]
+        public void CanMakeSplitMailWithEsmtpParameters()
+        {
+            // arrange
+            var sequence = CreateSequence("MA", "IL FROM:<sender", "@example.com> SI", "ZE=123 SMTP", "UTF8");
+
+            // act
+            var result = Parser.TryMake(ref sequence, out var command, out var errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.Null(errorResponse);
+
+            var mailCommand = Assert.IsType<MailCommand>(command);
+            Assert.Equal("sender", mailCommand.Address.User);
+            Assert.Equal("example.com", mailCommand.Address.Host);
+            Assert.Equal("123", mailCommand.Parameters["SIZE"]);
+            Assert.True(mailCommand.Parameters.ContainsKey("SMTPUTF8"));
+        }
+
+        [Fact]
+        public void CanMakeSplitRcptWithEsmtpParameters()
+        {
+            // arrange
+            var sequence = CreateSequence("RC", "PT TO:<recipient@example.com> NOTIFY=SUCCESS,FAIL", "URE OR", "CPT=rfc822;original@example.com");
+
+            // act
+            var result = Parser.TryMake(ref sequence, out var command, out var errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.Null(errorResponse);
+
+            var rcptCommand = Assert.IsType<RcptCommand>(command);
+            Assert.Equal("recipient", rcptCommand.Address.User);
+            Assert.Equal("example.com", rcptCommand.Address.Host);
+            Assert.Equal("SUCCESS,FAILURE", rcptCommand.Parameters["NOTIFY"]);
+            Assert.Equal("rfc822;original@example.com", rcptCommand.Parameters["ORCPT"]);
+        }
+
+        [Fact]
+        public void CanMakeSplitAuthPlain()
+        {
+            // arrange
+            var sequence = CreateSequence("AU", "TH PL", "AIN Y2Fpbi5vc3", "VsbGl2YW5AZ21haWwuY29t");
+
+            // act
+            var result = Parser.TryMake(ref sequence, out var command, out var errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.Null(errorResponse);
+
+            var authCommand = Assert.IsType<AuthCommand>(command);
+            Assert.Equal(AuthenticationMethod.Plain, authCommand.Method);
+            Assert.Equal("Y2Fpbi5vc3VsbGl2YW5AZ21haWwuY29t", authCommand.Parameter);
+        }
+
+        [Fact]
+        public void CanMakeSplitBdatLast()
+        {
+            // arrange
+            var sequence = CreateSequence("BD", "AT 102", "4 LA", "ST");
+
+            // act
+            var result = Parser.TryMake(ref sequence, out var command, out var errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.Null(errorResponse);
+
+            var bdatCommand = Assert.IsType<BdatCommand>(command);
+            Assert.Equal(1024, bdatCommand.Size);
+            Assert.True(bdatCommand.IsLast);
         }
 
         [Fact]
@@ -65,6 +208,125 @@ namespace SmtpServer.Tests
             Assert.True(command is NoopCommand);
         }
 
+        [Theory]
+        [InlineData("HELP", "")]
+        [InlineData("HELP MAIL", "MAIL")]
+        public void CanMakeHelp(string input, string argument)
+        {
+            // arrange
+            var reader = CreateReader(input);
+
+            // act
+            var result = Parser.TryMakeHelp(ref reader, out var command, out var errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is HelpCommand);
+            Assert.Equal(argument, ((HelpCommand)command).Argument);
+            Assert.Null(errorResponse);
+        }
+
+        [Fact]
+        public void CanMakeVrfy()
+        {
+            // arrange
+            var reader = CreateReader("VRFY user@example.com");
+
+            // act
+            var result = Parser.TryMakeVrfy(ref reader, out var command, out var errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is VrfyCommand);
+            Assert.Equal("user@example.com", ((VrfyCommand)command).Argument);
+            Assert.Null(errorResponse);
+        }
+
+        [Fact]
+        public void CanNotMakeVrfyWithoutArgument()
+        {
+            // arrange
+            var reader = CreateReader("VRFY");
+
+            // act
+            var result = Parser.TryMakeVrfy(ref reader, out var command, out var errorResponse);
+
+            // assert
+            Assert.False(result);
+            Assert.Null(command);
+            Assert.Equal(SmtpReplyCode.SyntaxError, errorResponse.ReplyCode);
+        }
+
+        [Fact]
+        public void CanMakeExpn()
+        {
+            // arrange
+            var reader = CreateReader("EXPN staff");
+
+            // act
+            var result = Parser.TryMakeExpn(ref reader, out var command, out var errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is ExpnCommand);
+            Assert.Equal("staff", ((ExpnCommand)command).Argument);
+            Assert.Null(errorResponse);
+        }
+
+        [Fact]
+        public void CanNotMakeExpnWithoutArgument()
+        {
+            // arrange
+            var reader = CreateReader("EXPN");
+
+            // act
+            var result = Parser.TryMakeExpn(ref reader, out var command, out var errorResponse);
+
+            // assert
+            Assert.False(result);
+            Assert.Null(command);
+            Assert.Equal(SmtpReplyCode.SyntaxError, errorResponse.ReplyCode);
+        }
+
+        [Theory]
+        [InlineData("BDAT 5", 5, false)]
+        [InlineData("BDAT 0 LAST", 0, true)]
+        [InlineData("BDAT 1024 last", 1024, true)]
+        public void CanMakeBdat(string input, long size, bool isLast)
+        {
+            // arrange
+            var reader = CreateReader(input);
+
+            // act
+            var result = Parser.TryMakeBdat(ref reader, out var command, out var errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is BdatCommand);
+            Assert.Equal(size, ((BdatCommand)command).Size);
+            Assert.Equal(isLast, ((BdatCommand)command).IsLast);
+            Assert.Null(errorResponse);
+        }
+
+        [Theory]
+        [InlineData("BDAT")]
+        [InlineData("BDAT LAST")]
+        [InlineData("BDAT 5 DONE")]
+        [InlineData("BDAT 5 LAST extra")]
+        public void CanNotMakeBdat(string input)
+        {
+            // arrange
+            var reader = CreateReader(input);
+
+            // act
+            var result = Parser.TryMakeBdat(ref reader, out var command, out var errorResponse);
+
+            // assert
+            Assert.False(result);
+            Assert.Null(command);
+            Assert.Equal(SmtpReplyCode.SyntaxError, errorResponse.ReplyCode);
+        }
+
         [Fact]
         public void CanMakeHelo()
         {
@@ -84,6 +346,8 @@ namespace SmtpServer.Tests
         [InlineData("HELO abc.")]
         [InlineData("HELO -abc.com")]
         [InlineData("HELO ////")]
+        [InlineData("HELO abc.example.com extra")]
+        [InlineData("HELO [192.168.1.200] extra")]
         public void CanNotMakeHelo(string input)
         {
             // arrange
@@ -102,6 +366,7 @@ namespace SmtpServer.Tests
         [InlineData("EHLO abc-1-def.mail.com", "abc-1-def.mail.com")]
         [InlineData("EHLO 192.168.1.200", "192.168.1.200")]
         [InlineData("EHLO [192.168.1.200]", "192.168.1.200")]
+        [InlineData("EHLO dæmi.is", "dæmi.is")]
         [InlineData("EHLO [IPv6:ABCD:EF01:2345:6789:ABCD:EF01:2345:6789]", "IPv6:ABCD:EF01:2345:6789:ABCD:EF01:2345:6789")]
         public void CanMakeEhlo(string input, string domainOrAddress)
         {
@@ -115,6 +380,23 @@ namespace SmtpServer.Tests
             Assert.True(result);
             Assert.True(command is EhloCommand);
             Assert.Equal(domainOrAddress, ((EhloCommand)command).DomainOrAddress);
+        }
+
+        [Theory]
+        [InlineData("EHLO abc.example.com extra")]
+        [InlineData("EHLO [192.168.1.200] extra")]
+        public void CanNotMakeEhlo(string input)
+        {
+            // arrange
+            var reader = CreateReader(input);
+
+            // act
+            var result = Parser.TryMakeEhlo(ref reader, out var command, out var errorResponse);
+
+            // assert
+            Assert.False(result);
+            Assert.Null(command);
+            Assert.NotNull(errorResponse);
         }
 
         [Fact]
@@ -149,10 +431,59 @@ namespace SmtpServer.Tests
             Assert.Equal("Y2Fpbi5vc3VsbGl2YW5AZ21haWwuY29t", ((AuthCommand)command).Parameter);
         }
 
+        [Fact]
+        public void CanMakeAuthXOAuth2()
+        {
+            // arrange — the "2" tokenizes separately from "XOAUTH", so this proves both tokens are consumed
+            var reader = CreateReader("AUTH XOAUTH2 dXNlcj1hbGljZQ==");
+
+            // act
+            var result = Parser.TryMakeAuth(ref reader, out var command, out var errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is AuthCommand);
+            Assert.Equal(AuthenticationMethod.XOAuth2, ((AuthCommand)command).Method);
+            Assert.Equal("dXNlcj1hbGljZQ==", ((AuthCommand)command).Parameter);
+        }
+
+        [Fact]
+        public void CanMakeAuthXOAuth2WithoutInitialResponse()
+        {
+            // arrange
+            var reader = CreateReader("AUTH XOAUTH2");
+
+            // act
+            var result = Parser.TryMakeAuth(ref reader, out var command, out var errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is AuthCommand);
+            Assert.Equal(AuthenticationMethod.XOAuth2, ((AuthCommand)command).Method);
+            Assert.Null(((AuthCommand)command).Parameter);
+        }
+
+        [Fact]
+        public void CanMakeAuthOAuthBearer()
+        {
+            // arrange
+            var reader = CreateReader("AUTH OAUTHBEARER dXNlcj1hbGljZQ==");
+
+            // act
+            var result = Parser.TryMakeAuth(ref reader, out var command, out var errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.True(command is AuthCommand);
+            Assert.Equal(AuthenticationMethod.OAuthBearer, ((AuthCommand)command).Method);
+            Assert.Equal("dXNlcj1hbGljZQ==", ((AuthCommand)command).Parameter);
+        }
+
         [Theory]
         [InlineData("MAIL FROM:<cain.osullivan@gmail.com>", "cain.osullivan", "gmail.com")]
         [InlineData(@"MAIL FROM:<""Abc@def""@example.com>", "Abc@def", "example.com")]
         [InlineData("MAIL FROM:<pelé@example.com> SMTPUTF8", "pelé", "example.com", "SMTPUTF8")]
+        [InlineData("MAIL FROM:<þorsteinn@dæmi.is> SMTPUTF8", "þorsteinn", "dæmi.is", "SMTPUTF8")]
         public void CanMakeMail(string input, string user, string host, string extension = null)
         {
             // arrange
@@ -171,6 +502,23 @@ namespace SmtpServer.Tests
             {
                 Assert.True(((MailCommand)command).Parameters.ContainsKey(extension));
             }
+        }
+
+        [Fact]
+        public void CanMakeMailWithDsnParameters()
+        {
+            // arrange
+            var reader = CreateReader("MAIL FROM:<sender@example.com> ret=FULL ENVID=abc123");
+
+            // act
+            var result = Parser.TryMakeMail(ref reader, out var command, out var errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.Null(errorResponse);
+            var mailCommand = Assert.IsType<MailCommand>(command);
+            Assert.Equal("FULL", mailCommand.Parameters["RET"]);
+            Assert.Equal("abc123", mailCommand.Parameters["envid"]);
         }
 
         [Fact]
@@ -209,6 +557,9 @@ namespace SmtpServer.Tests
 
         [Theory]
         [InlineData("MAIL FROM:cain")]
+        [InlineData("MAIL FROM:<cain.osullivan@gmail.com> SIZE=")]
+        [InlineData("MAIL FROM:<cain.osullivan@gmail.com> =BAD")]
+        [InlineData("MAIL FROM:<cain.osullivan@gmail.com> SIZE=123 =BAD")]
         public void CanNotMakeMail(string input)
         {
             // arrange
@@ -226,6 +577,7 @@ namespace SmtpServer.Tests
         [InlineData("RCPT TO:<cain.osullivan@gmail.com>", "cain.osullivan", "gmail.com")]
         [InlineData(@"RCPT TO:<""Abc@def""@example.com>", "Abc@def", "example.com")]
         [InlineData("RCPT TO:<pelé@example.com>", "pelé", "example.com")]
+        [InlineData("RCPT TO:<þorsteinn@dæmi.is>", "þorsteinn", "dæmi.is")]
         [InlineData("RCPT TO:<@example1.com:someone@example.com>", "someone", "example.com")]
         [InlineData("RCPT TO:<@example1.com,@example2.com:someone@example.com>", "someone", "example.com")]
         [InlineData("RCPT TO:<example/example@example.com>", "example/example", "example.com")]
@@ -242,6 +594,41 @@ namespace SmtpServer.Tests
             Assert.True(command is RcptCommand);
             Assert.Equal(user, ((RcptCommand)command).Address.User);
             Assert.Equal(host, ((RcptCommand)command).Address.Host);
+        }
+
+        [Fact]
+        public void CanMakeRcptWithDsnParameters()
+        {
+            // arrange
+            var reader = CreateReader("RCPT TO:<recipient@example.com> notify=SUCCESS,FAILURE ORCPT=rfc822;original@example.com");
+
+            // act
+            var result = Parser.TryMakeRcpt(ref reader, out var command, out var errorResponse);
+
+            // assert
+            Assert.True(result);
+            Assert.Null(errorResponse);
+            var rcptCommand = Assert.IsType<RcptCommand>(command);
+            Assert.Equal("recipient", rcptCommand.Address.User);
+            Assert.Equal("example.com", rcptCommand.Address.Host);
+            Assert.Equal(2, rcptCommand.Parameters.Count);
+            Assert.Equal("SUCCESS,FAILURE", rcptCommand.Parameters["NOTIFY"]);
+            Assert.Equal("rfc822;original@example.com", rcptCommand.Parameters["orcpt"]);
+        }
+
+        [Fact]
+        public void CanNotMakeRcptWithInvalidParameters()
+        {
+            // arrange
+            var reader = CreateReader("RCPT TO:<cain.osullivan@gmail.com> NOTIFY=");
+
+            // act
+            var result = Parser.TryMakeRcpt(ref reader, out var command, out var errorResponse);
+
+            // assert
+            Assert.False(result);
+            Assert.Null(command);
+            Assert.NotNull(errorResponse);
         }
 
         [Theory]
@@ -310,6 +697,24 @@ namespace SmtpServer.Tests
             Assert.Equal(IPAddress.Parse("3456:2e76:66d8:f84:abcd:abef:ffff:1234").ToString(), ((ProxyCommand)command).DestinationEndpoint.Address.ToString());
             Assert.Equal(1234, ((ProxyCommand)command).SourceEndpoint.Port);
             Assert.Equal(16789, ((ProxyCommand)command).DestinationEndpoint.Port);
+        }
+
+        [Theory]
+        [InlineData("PROXY TCP5 192.168.1.1 192.168.1.2 1234 16789")]
+        [InlineData("PROXY TCP46 192.168.1.1 192.168.1.2 1234 16789")]
+        [InlineData("PROXY TCPA 192.168.1.1 192.168.1.2 1234 16789")]
+        public void CanNotMakeProxyWithInvalidTcpVersion(string input)
+        {
+            // arrange
+            var reader = CreateReader(input);
+
+            // act
+            var result = Parser.TryMakeProxy(ref reader, out var command, out var errorResponse);
+
+            // assert
+            Assert.False(result);
+            Assert.Null(command);
+            Assert.Null(errorResponse);
         }
 
         [Fact]

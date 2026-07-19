@@ -2,7 +2,9 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using SmtpServer.ComponentModel;
+using SmtpServer.Logging;
 using SmtpServer.Net;
 
 namespace SmtpServer
@@ -36,6 +38,7 @@ namespace SmtpServer
         readonly IServiceProvider _serviceProvider;
         readonly IEndpointListenerFactory _endpointListenerFactory;
         readonly SmtpSessionManager _sessions;
+        readonly ILogger<SmtpServer> _logger;
         readonly CancellationTokenSource _shutdownTokenSource = new CancellationTokenSource();
         readonly TaskCompletionSource<bool> _shutdownTask = new TaskCompletionSource<bool>();
 
@@ -48,7 +51,9 @@ namespace SmtpServer
         {
             _options = options;
             _serviceProvider = serviceProvider;
-            _sessions = new SmtpSessionManager(this);
+            var loggerFactory = SmtpLoggerFactory.Resolve(serviceProvider);
+            _logger = loggerFactory.CreateLogger<SmtpServer>();
+            _sessions = new SmtpSessionManager(this, loggerFactory);
             _endpointListenerFactory = serviceProvider.GetServiceOrDefault(EndpointListenerFactory.Default);
         }
 
@@ -95,13 +100,19 @@ namespace SmtpServer
         /// <returns>A task which performs the operation.</returns>
         public async Task StartAsync(CancellationToken cancellationToken)
         {
+            _logger.LogInformation("SMTP server starting with {EndpointCount} endpoint(s).", _options.Endpoints.Count());
+
             var tasks = _options.Endpoints.Select(e => ListenAsync(e, cancellationToken));
 
             await Task.WhenAll(tasks).ConfigureAwait(false);
 
+            _logger.LogInformation("SMTP server stopped accepting new sessions.");
+
             _shutdownTask.TrySetResult(true);
 
             await _sessions.WaitAsync().ConfigureAwait(false);
+
+            _logger.LogInformation("SMTP server stopped.");
         }
 
         /// <summary>
@@ -125,6 +136,7 @@ namespace SmtpServer
             var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_shutdownTokenSource.Token, cancellationToken);
 
             using var endpointListener = _endpointListenerFactory.CreateListener(endpointDefinition);
+            _logger.LogInformation("SMTP endpoint listening on {EndPoint}.", endpointDefinition.Endpoint);
 
             while (cancellationTokenSource.Token.IsCancellationRequested == false)
             {
@@ -138,6 +150,7 @@ namespace SmtpServer
                 catch (OperationCanceledException) { }
                 catch (Exception ex)
                 {
+                    _logger.LogError(ex, "SMTP listener failed while accepting a session on {EndPoint}.", endpointDefinition.Endpoint);
                     OnSessionFaulted(new SessionFaultedEventArgs(sessionContext, ex));
                     continue;
                 }

@@ -18,7 +18,58 @@ SmtpServer currently supports the following extensions:
 - PIPELINING
 - 8BITMIME
 - SMTPUTF8
+- DSN
+- CHUNKING
 - AUTH PLAIN LOGIN
+
+PIPELINING is advertised because the session reads queued command lines sequentially from the pipe. Commands are still validated against the SMTP state machine in order.
+
+8BITMIME is advertised because message content is accepted and stored as bytes without 7-bit rewriting. Applications remain responsible for MIME validation or normalization in their message store if they need stricter policy.
+
+SMTPUTF8 support covers UTF-8 mailbox/domain parsing and message acceptance. Applications remain responsible for downstream delivery compatibility and storage policy.
+
+SIZE is advertised when `MaxMessageSize(...)` is configured. MAIL `SIZE` parameters are checked before accepting the transaction, and strict DATA/BDAT body limits are enforced while reading content.
+
+DSN support parses and exposes `RET`, `ENVID`, `NOTIFY`, and `ORCPT` envelope parameters. Applications remain responsible for generating and delivering delivery status notifications from their message store or mailbox filter code.
+
+CHUNKING support accepts `BDAT <size> [LAST]` message content without DATA dot-stuffing. Multi-chunk messages are stored only after the `LAST` chunk; strict maximum message size limits are enforced across the full BDAT transfer.
+
+SMTPUTF8, DSN, and CHUNKING are enabled by default for compatibility. Applications can disable advertised and accepted support explicitly:
+
+```cs
+var options = new SmtpServerOptionsBuilder()
+    .ServerName("localhost")
+    .Extensions(extensions => extensions
+        .SmtpUtf8(false)
+        .Dsn(false)
+        .Chunking(false))
+    .Build();
+```
+
+STARTTLS is advertised only when the endpoint has a certificate and the current connection is not already secure.
+
+AUTH PLAIN LOGIN is advertised only when an authenticator is registered and the current connection is secure or the endpoint explicitly allows insecure authentication.
+
+SMTP replies include enhanced status codes for common success, syntax, authentication, mailbox, size, bad sequence, and transaction failure responses. AUTH continuation challenges are left unchanged for SASL compatibility.
+
+HELP is implemented for basic command discovery. VRFY and EXPN are accepted, but the default policy avoids mailbox or mailing list enumeration and returns conservative `252` responses. Applications that intentionally disclose verification or expansion results can register `ISmtpCommandPolicy` or `ISmtpCommandPolicyFactory`.
+
+## Configuration Limits
+
+`MaxMessageSize(length, handling)` applies to DATA and BDAT message content. `MaxCommandLineLength(length)` applies separately to SMTP command lines and AUTH continuation lines; the default is 4096 bytes, excluding the terminating CRLF.
+
+## Session Policy
+
+Connection and HELO/EHLO policy can be configured without replacing command handlers:
+
+```cs
+var options = new SmtpServerOptionsBuilder()
+    .ServerName("localhost")
+    .SessionPolicy(policy => policy
+        .OnConnectionAccepted((context, token) => Task.FromResult(SmtpResponse.Ok))
+        .OnHelo((context, name, token) => Task.FromResult(SmtpResponse.Ok)))
+    .Build();
+```
 
 ## Installation
 
@@ -41,9 +92,35 @@ var smtpServer = new SmtpServer.SmtpServer(options, ServiceProvider.Default);
 await smtpServer.StartAsync(CancellationToken.None);
 ```
 
+### Logging with Generic Host
+
+When the server is created with an `IServiceProvider` that contains `ILoggerFactory`, SMTP lifecycle and protocol diagnostics are written through `Microsoft.Extensions.Logging`.
+
+```cs
+Host.CreateDefaultBuilder(args)
+    .ConfigureServices(services =>
+    {
+        services.AddTransient<IMessageStore, SampleMessageStore>();
+
+        services.AddSingleton(provider =>
+        {
+            var options = new SmtpServerOptionsBuilder()
+                .ServerName("SMTP Server")
+                .Port(9025)
+                .Build();
+
+            return new SmtpServer.SmtpServer(options, provider);
+        });
+
+        services.AddHostedService<Worker>();
+    });
+```
+
+Session lifecycle is logged at `Information`, safe command snapshots at `Debug`, expected SMTP response exceptions at `Warning`, and listener/session faults at `Error`. Session logs include a `BeginScope` with `SessionId`, endpoint details, TLS state, and authentication state. AUTH material and message bodies are not logged by default.
+
 ### What hooks are provided?
 
-There are three hooks that can be implemented; IMessageStore, IMailboxFilter, and IUserAuthenticator.
+There are four hooks that can be implemented: `IMessageStore`, `IMailboxFilter`, `IUserAuthenticator`, and `ISmtpCommandPolicy`.
 
 ```cs
 var options = new SmtpServerOptionsBuilder()

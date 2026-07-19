@@ -51,7 +51,7 @@ namespace SmtpServer.Net
 
             var stream = tcpClient.GetStream();
 
-            return new SecurableDuplexPipe(stream, () =>
+            return new SecurableDuplexPipe(stream, context.ServerOptions.NetworkBufferSize, () =>
             {
                 try
                 {

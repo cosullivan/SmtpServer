@@ -70,7 +70,18 @@ namespace SmtpServer.IO
                 throw new ArgumentNullException(nameof(writer));
             }
 
-            writer.WriteLine($"{(int)response.ReplyCode} {response.Message}");
+            if (response.EnhancedStatusCode.HasValue)
+            {
+                var enhancedStatusCode = response.EnhancedStatusCode.Value;
+
+                writer.WriteLine(string.IsNullOrEmpty(response.Message)
+                    ? $"{(int)response.ReplyCode} {enhancedStatusCode}"
+                    : $"{(int)response.ReplyCode} {enhancedStatusCode} {response.Message}");
+            }
+            else
+            {
+                writer.WriteLine($"{(int)response.ReplyCode} {response.Message}");
+            }
 
             return writer.FlushAsync(cancellationToken);
         }

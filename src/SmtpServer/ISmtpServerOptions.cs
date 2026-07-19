@@ -14,6 +14,11 @@ namespace SmtpServer
         IMaxMessageSizeOptions MaxMessageSizeOptions { get; }
 
         /// <summary>
+        /// Gets the maximum SMTP command line length in bytes, excluding the terminating CRLF.
+        /// </summary>
+        int MaxCommandLineLength { get; }
+
+        /// <summary>
         /// The maximum number of retries before quitting the session.
         /// </summary>
         int MaxRetryCount { get; }
@@ -27,6 +32,16 @@ namespace SmtpServer
         /// Gets the SMTP server name.
         /// </summary>
         string ServerName { get; }
+
+        /// <summary>
+        /// Gets the SMTP extension options.
+        /// </summary>
+        SmtpServerExtensionOptions Extensions { get; }
+
+        /// <summary>
+        /// Gets the SMTP session policy options.
+        /// </summary>
+        SmtpServerSessionPolicyOptions SessionPolicy { get; }
 
         /// <summary>
         /// Gets the collection of endpoints to listen on.

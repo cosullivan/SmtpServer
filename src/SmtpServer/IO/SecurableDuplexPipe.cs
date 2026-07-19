@@ -12,6 +12,7 @@ namespace SmtpServer.IO
     internal sealed class SecurableDuplexPipe : ISecurableDuplexPipe
     {
         readonly Action _disposeAction;
+        readonly int _networkBufferSize;
         Stream _stream;
         bool _disposed;
 
@@ -19,13 +20,15 @@ namespace SmtpServer.IO
         /// Constructor.
         /// </summary>
         /// <param name="stream">The stream that the pipe is reading and writing to.</param>
+        /// <param name="networkBufferSize">The size of the buffer to use when reading from the stream.</param>
         /// <param name="disposeAction">The action to execute when the stream has been disposed.</param>
-        internal SecurableDuplexPipe(Stream stream, Action disposeAction)
+        internal SecurableDuplexPipe(Stream stream, int networkBufferSize, Action disposeAction)
         {
             _stream = stream;
+            _networkBufferSize = networkBufferSize;
             _disposeAction = disposeAction;
 
-            Input = PipeReader.Create(_stream);
+            Input = PipeReader.Create(_stream, new StreamPipeReaderOptions(bufferSize: networkBufferSize));
             Output = PipeWriter.Create(_stream);
         }
 
@@ -54,7 +57,7 @@ namespace SmtpServer.IO
 
             _stream = sslStream;
 
-            Input = PipeReader.Create(_stream);
+            Input = PipeReader.Create(_stream, new StreamPipeReaderOptions(bufferSize: _networkBufferSize));
             Output = PipeWriter.Create(_stream);
         }
 

@@ -140,3 +140,5 @@ FakesAssemblies/
 .vs/
 .vscode/
 project.lock.json
+# JetBrains Rider/IntelliJ
+.idea/

@@ -9,6 +9,7 @@ using System.IO.Pipelines;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace SmtpServer
 {
@@ -20,14 +21,17 @@ namespace SmtpServer
         readonly SmtpStateMachine _stateMachine;
         readonly SmtpSessionContext _context;
         readonly ISmtpCommandFactory _commandFactory;
+        readonly ILogger<SmtpSession> _logger;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="context">The session context.</param>
-        internal SmtpSession(SmtpSessionContext context)
+        /// <param name="logger">The logger to write session diagnostics to.</param>
+        internal SmtpSession(SmtpSessionContext context, ILogger<SmtpSession> logger)
         {
             _context = context;
+            _logger = logger;
             _stateMachine = new SmtpStateMachine(_context);
             _commandFactory = context.ServiceProvider.GetServiceOrDefault<ISmtpCommandFactory>(new SmtpCommandFactory());
         }
@@ -40,6 +44,11 @@ namespace SmtpServer
         internal async Task RunAsync(CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
+            if (await IsConnectionAcceptedAsync(cancellationToken).ConfigureAwait(false) == false)
             {
                 return;
             }
@@ -84,6 +93,7 @@ namespace SmtpServer
                 }
                 catch (SmtpResponseException responseException) when (responseException.IsQuitRequested)
                 {
+                    LogResponseException(responseException, retries);
                     context.RaiseResponseException(responseException);
 
                     await context.Pipe.Output.WriteReplyAsync(responseException.Response, cancellationToken).ConfigureAwait(false);
@@ -92,6 +102,7 @@ namespace SmtpServer
                 }
                 catch (SmtpResponseException responseException)
                 {
+                    LogResponseException(responseException, retries);
                     context.RaiseResponseException(responseException);
 
                     var response = CreateErrorResponse(responseException.Response, retries);
@@ -132,7 +143,7 @@ namespace SmtpServer
 
                         return Task.CompletedTask;
                     },
-                    context.ServerOptions.MaxMessageSizeOptions,
+                    context.ServerOptions.MaxCommandLineLength,
                     cancellationTokenSource.Token).ConfigureAwait(false);
 
                 return command;
@@ -171,15 +182,30 @@ namespace SmtpServer
         /// <param name="context">The execution context to operate on.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which asynchronously performs the execution.</returns>
-        static async Task<bool> ExecuteAsync(SmtpCommand command, SmtpSessionContext context, CancellationToken cancellationToken)
+        async Task<bool> ExecuteAsync(SmtpCommand command, SmtpSessionContext context, CancellationToken cancellationToken)
         {
+            var safeCommand = SmtpCommandSnapshot.From(command);
+
+            _logger.LogDebug("SMTP command executing: {CommandName} {CommandArgument}.", safeCommand.Name, safeCommand.Argument);
             context.RaiseCommandExecuting(command);
 
             var result = await command.ExecuteAsync(context, cancellationToken);
 
             context.RaiseCommandExecuted(command);
+            _logger.LogDebug("SMTP command executed: {CommandName} {CommandArgument}.", safeCommand.Name, safeCommand.Argument);
 
             return result;
+        }
+
+        void LogResponseException(SmtpResponseException responseException, int retries)
+        {
+            _logger.LogWarning(
+                responseException,
+                "SMTP response exception {ReplyCode}: {ReplyMessage}. QuitRequested={QuitRequested}, RetriesRemaining={RetriesRemaining}.",
+                responseException.Response.ReplyCode,
+                responseException.Response.Message,
+                responseException.IsQuitRequested,
+                retries);
         }
 
         /// <summary>
@@ -200,6 +226,37 @@ namespace SmtpServer
             }
             
             return _context.Pipe.Output.FlushAsync(cancellationToken);
+        }
+
+        async Task<bool> IsConnectionAcceptedAsync(CancellationToken cancellationToken)
+        {
+            var policy = _context.ServerOptions.SessionPolicy;
+            if (policy.ConnectionAccepted == null)
+            {
+                return true;
+            }
+
+            var response = await policy.ConnectionAccepted(_context, cancellationToken).ConfigureAwait(false);
+            if (IsSuccessResponse(response))
+            {
+                return true;
+            }
+
+            await _context.Pipe.Output.WriteReplyAsync(response, cancellationToken).ConfigureAwait(false);
+            _context.IsQuitRequested = true;
+            _logger.LogWarning("SMTP session rejected by connection policy with {ReplyCode}: {ReplyMessage}.", response.ReplyCode, response.Message);
+            return false;
+        }
+
+        internal static bool IsSuccessResponse(SmtpResponse response)
+        {
+            if (response == null)
+            {
+                return true;
+            }
+
+            var replyCode = (int)response.ReplyCode;
+            return replyCode >= 200 && replyCode < 400;
         }
     }
 }

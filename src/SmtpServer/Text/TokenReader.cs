@@ -167,20 +167,15 @@ namespace SmtpServer.Text
         /// <returns>true if the match could be made, false if not.</returns>
         public bool TryMake<TOut1, TOut2>(TryMakeDelegate<TOut1, TOut2> @delegate, out TOut1 value1, out TOut2 value2)
         {
-            if (_buffer.IsSingleSegment)
+            var checkpoint = Checkpoint();
+
+            if (@delegate(ref this, out value1, out value2) == false)
             {
-                var checkpoint = Checkpoint();
-
-                if (@delegate(ref this, out value1, out value2) == false)
-                {
-                    Rollback(ref checkpoint);
-                    return false;
-                }
-
-                return true;
+                Rollback(ref checkpoint);
+                return false;
             }
 
-            throw new NotImplementedException();
+            return true;
         }
 
         /// <summary>

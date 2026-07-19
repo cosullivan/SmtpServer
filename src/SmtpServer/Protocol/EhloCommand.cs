@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.Authentication;
@@ -35,14 +34,33 @@ namespace SmtpServer.Protocol
         /// if the current state is to be maintained.</returns>
         internal override async Task<bool> ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
-            var output = new[] { GetGreeting(context) }.Union(GetExtensions(context)).ToArray();
-
-            for (var i = 0; i < output.Length - 1; i++)
+            if (await AcceptHeloAsync(context, cancellationToken).ConfigureAwait(false) == false)
             {
-                context.Pipe.Output.WriteLine($"250-{output[i]}");
+                return false;
             }
 
-            context.Pipe.Output.WriteLine($"250 {output[output.Length - 1]}");
+            var greeting = GetGreeting(context);
+
+            using (var extensions = GetExtensions(context).GetEnumerator())
+            {
+                if (extensions.MoveNext() == false)
+                {
+                    context.Pipe.Output.WriteLine($"250 {greeting}");
+                }
+                else
+                {
+                    context.Pipe.Output.WriteLine($"250-{greeting}");
+
+                    var extension = extensions.Current;
+                    while (extensions.MoveNext())
+                    {
+                        context.Pipe.Output.WriteLine($"250-{extension}");
+                        extension = extensions.Current;
+                    }
+
+                    context.Pipe.Output.WriteLine($"250 {extension}");
+                }
+            }
 
             await context.Pipe.Output.FlushAsync(cancellationToken).ConfigureAwait(false);
 
@@ -68,7 +86,21 @@ namespace SmtpServer.Protocol
         {
             yield return "PIPELINING";
             yield return "8BITMIME";
-            yield return "SMTPUTF8";
+
+            if (context.ServerOptions.Extensions.SmtpUtf8Enabled)
+            {
+                yield return "SMTPUTF8";
+            }
+
+            if (context.ServerOptions.Extensions.DsnEnabled)
+            {
+                yield return "DSN";
+            }
+
+            if (context.ServerOptions.Extensions.ChunkingEnabled)
+            {
+                yield return "CHUNKING";
+            }
 
             if (context.Pipe.IsSecure == false && context.EndpointDefinition.CertificateFactory != null)
             {
@@ -82,7 +114,16 @@ namespace SmtpServer.Protocol
 
             if (IsPlainLoginAllowed(context))
             {
-                yield return "AUTH PLAIN LOGIN";
+                var mechanisms = "AUTH PLAIN LOGIN";
+
+                // Advertise the bearer-token mechanisms only when the host opts in (it has wired an
+                // authenticator that can validate a token), so a client never negotiates one we cannot honour.
+                if (context.ServerOptions.Extensions.OAuthEnabled)
+                {
+                    mechanisms += " XOAUTH2 OAUTHBEARER";
+                }
+
+                yield return mechanisms;
             }
 
             static bool IsPlainLoginAllowed(ISessionContext context)
@@ -95,7 +136,25 @@ namespace SmtpServer.Protocol
                 return context.Pipe.IsSecure || context.EndpointDefinition.AllowUnsecureAuthentication;
             }
         }
-        
+
+        async Task<bool> AcceptHeloAsync(SmtpSessionContext context, CancellationToken cancellationToken)
+        {
+            var policy = context.ServerOptions.SessionPolicy;
+            if (policy.Helo == null)
+            {
+                return true;
+            }
+
+            var response = await policy.Helo(context, DomainOrAddress, cancellationToken).ConfigureAwait(false);
+            if (SmtpSession.IsSuccessResponse(response))
+            {
+                return true;
+            }
+
+            await context.Pipe.Output.WriteReplyAsync(response, cancellationToken).ConfigureAwait(false);
+            return false;
+        }
+
         /// <summary>
         /// Gets the domain name or address literal.
         /// </summary>

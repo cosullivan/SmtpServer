@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.ComponentModel;
@@ -45,16 +46,9 @@ namespace SmtpServer.Protocol
             {
                 using var container = new DisposableContainer<IMessageStore>(messageStore);
 
-                SmtpResponse response = null;
-
-                await context.Pipe.Input.ReadDotBlockAsync(
-                    async buffer =>
-                    {
-                        // ReSharper disable once AccessToDisposedClosure
-                        response = await container.Instance.SaveAsync(context, context.Transaction, buffer, cancellationToken).ConfigureAwait(false);
-                    },
-                    context.ServerOptions.MaxMessageSizeOptions,
-                    cancellationToken).ConfigureAwait(false);
+                var response = container.Instance is IStreamingMessageStore streamingMessageStore
+                    ? await SaveAsync(streamingMessageStore, context, cancellationToken).ConfigureAwait(false)
+                    : await SaveAsync(container.Instance, context, cancellationToken).ConfigureAwait(false);
                     
                 await context.Pipe.Output.WriteReplyAsync(response, cancellationToken).ConfigureAwait(false);
             }
@@ -69,6 +63,40 @@ namespace SmtpServer.Protocol
             }
 
             return true;
+        }
+
+        static async Task<SmtpResponse> SaveAsync(IMessageStore messageStore, SmtpSessionContext context, CancellationToken cancellationToken)
+        {
+            SmtpResponse response = null;
+
+            await context.Pipe.Input.ReadDotBlockAsync(
+                async buffer =>
+                {
+                    response = await messageStore.SaveAsync(context, context.Transaction, buffer, cancellationToken).ConfigureAwait(false);
+                },
+                context.ServerOptions.MaxMessageSizeOptions,
+                cancellationToken).ConfigureAwait(false);
+
+            return response;
+        }
+
+        static async Task<SmtpResponse> SaveAsync(IStreamingMessageStore messageStore, SmtpSessionContext context, CancellationToken cancellationToken)
+        {
+            var pipe = new Pipe();
+
+            try
+            {
+                var readTask = context.Pipe.Input.ReadDotBlockAsync(pipe.Writer, context.ServerOptions.MaxMessageSizeOptions, cancellationToken).AsTask();
+                var saveTask = messageStore.SaveAsync(context, context.Transaction, pipe.Reader, cancellationToken);
+
+                await readTask.ConfigureAwait(false);
+
+                return await saveTask.ConfigureAwait(false);
+            }
+            finally
+            {
+                pipe.Reader.Complete();
+            }
         }
     }
 }

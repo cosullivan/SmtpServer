@@ -8,6 +8,11 @@ namespace SmtpServer
     /// </summary>
     public sealed class SmtpServerOptionsBuilder
     {
+        /// <summary>
+        /// The default maximum SMTP command line length in bytes, excluding the terminating CRLF.
+        /// </summary>
+        public const int DefaultMaxCommandLineLength = 4096;
+
         readonly List<Action<SmtpServerOptions>> _setters = new List<Action<SmtpServerOptions>>();
 
         /// <summary>
@@ -19,11 +24,14 @@ namespace SmtpServer
             var serverOptions = new SmtpServerOptions
             {
                 MaxMessageSizeOptions = new MaxMessageSizeOptions(),
+                MaxCommandLineLength = DefaultMaxCommandLineLength,
                 Endpoints = new List<IEndpointDefinition>(),
                 MaxRetryCount = 5,
                 MaxAuthenticationAttempts = 3,
                 NetworkBufferSize = 128,
                 CommandWaitTimeout = TimeSpan.FromMinutes(5),
+                Extensions = new SmtpServerExtensionOptions(),
+                SessionPolicy = new SmtpServerSessionPolicyOptions(),
                 CustomSmtpGreeting = null,
             };
 
@@ -111,6 +119,23 @@ namespace SmtpServer
         }
 
         /// <summary>
+        /// Sets the maximum SMTP command line length in bytes, excluding the terminating CRLF.
+        /// </summary>
+        /// <param name="length">The maximum command line length to allow in bytes.</param>
+        /// <returns>An OptionsBuilder to continue building on.</returns>
+        public SmtpServerOptionsBuilder MaxCommandLineLength(int length)
+        {
+            if (length <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(length), "The maximum command line length must be greater than zero.");
+            }
+
+            _setters.Add(options => options.MaxCommandLineLength = length);
+
+            return this;
+        }
+
+        /// <summary>
         /// Sets the maximum number of retries for a failed command.
         /// </summary>
         /// <param name="value">The maximum number of retries allowed for a failed command.</param>
@@ -135,12 +160,51 @@ namespace SmtpServer
         }
 
         /// <summary>
+        /// Configures the SMTP extensions that are advertised and accepted.
+        /// </summary>
+        /// <param name="configure">The callback used to configure the SMTP extension options.</param>
+        /// <returns>A OptionsBuilder to continue building on.</returns>
+        public SmtpServerOptionsBuilder Extensions(Action<SmtpServerExtensionOptions> configure)
+        {
+            if (configure == null)
+            {
+                throw new ArgumentNullException(nameof(configure));
+            }
+
+            _setters.Add(options => configure(options.Extensions));
+
+            return this;
+        }
+
+        /// <summary>
+        /// Configures optional SMTP session policy callbacks.
+        /// </summary>
+        /// <param name="configure">The callback used to configure the SMTP session policy options.</param>
+        /// <returns>A OptionsBuilder to continue building on.</returns>
+        public SmtpServerOptionsBuilder SessionPolicy(Action<SmtpServerSessionPolicyOptions> configure)
+        {
+            if (configure == null)
+            {
+                throw new ArgumentNullException(nameof(configure));
+            }
+
+            _setters.Add(options => configure(options.SessionPolicy));
+
+            return this;
+        }
+
+        /// <summary>
         /// Sets the size of the buffer for each read operation.
         /// </summary>
         /// <param name="value">The buffer size for each read operation.</param>
         /// <returns>An OptionsBuilder to continue building on.</returns>
         public SmtpServerOptionsBuilder NetworkBufferSize(int value)
         {
+            if (value <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(value), "The network buffer size must be greater than zero.");
+            }
+
             _setters.Add(options => options.NetworkBufferSize = value);
 
             return this;
@@ -185,6 +249,11 @@ namespace SmtpServer
             public IMaxMessageSizeOptions MaxMessageSizeOptions { get; set; }
 
             /// <summary>
+            /// Gets or sets the maximum SMTP command line length in bytes, excluding the terminating CRLF.
+            /// </summary>
+            public int MaxCommandLineLength { get; set; }
+
+            /// <summary>
             /// The maximum number of retries before quitting the session.
             /// </summary>
             public int MaxRetryCount { get; set; }
@@ -198,6 +267,16 @@ namespace SmtpServer
             /// Gets or sets the SMTP server name.
             /// </summary>
             public string ServerName { get; set; }
+
+            /// <summary>
+            /// Gets or sets the SMTP extension options.
+            /// </summary>
+            public SmtpServerExtensionOptions Extensions { get; set; }
+
+            /// <summary>
+            /// Gets or sets the SMTP session policy options.
+            /// </summary>
+            public SmtpServerSessionPolicyOptions SessionPolicy { get; set; }
 
             /// <summary>
             /// Gets or sets the endpoint to listen on.

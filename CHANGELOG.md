@@ -1,10 +1,40 @@
 # Change Log
 
+## v11.2.1
+
+- Fixed: Repacked the SS-17 feature surface from the correct release build so the package includes configurable SMTP extensions, session policy callbacks, and safe command snapshots.
+
+## v11.2.0
+
+- Added: Configurable SMTP extension surface for SMTPUTF8, DSN, and CHUNKING. Extensions remain enabled by default for compatibility and can be disabled through `SmtpServerOptionsBuilder.Extensions(...)`.
+- Added: Session policy callbacks for accepted connections and EHLO/HELO identity checks through `SmtpServerOptionsBuilder.SessionPolicy(...)`.
+- Added: Safe command snapshots on command events so AUTH arguments can be logged without exposing credentials.
+
+```cs
+var options = new SmtpServerOptionsBuilder()
+	.ServerName("My mail server")
+	.Extensions(extensions => extensions
+		.SmtpUtf8(false)
+		.Dsn(false)
+		.Chunking(false))
+	.SessionPolicy(policy => policy
+		.OnConnectionAccepted((context, token) => Task.FromResult(SmtpResponse.Ok))
+		.OnHelo((context, name, token) => Task.FromResult(SmtpResponse.Ok)));
+```
+
 ## v11.1.0
 
 - Added: Configuration option to define the maximum allowed message size.
 - Added: Support for custom SMTP greeting messages.
+- Added: DSN envelope parameter support for MAIL and RCPT commands.
+- Added: Enhanced status code support for common SMTP responses.
+- Added: HELP, VRFY, and EXPN command handling with conservative default VRFY/EXPN responses and an opt-in `ISmtpCommandPolicy` extension point.
+- Added: CHUNKING/BDAT support with multi-chunk streaming, LAST chunk completion, and strict size-limit enforcement.
+- Added: `MaxCommandLineLength` option for SMTP command and AUTH continuation line limits, separate from message body size limits.
+- Fixed: NetworkBufferSize now controls the stream read buffer used by the SMTP connection pipe.
+- Improved: Reduced allocations in EHLO response generation and AUTH credential parsing.
 - Improved: Optimized protection against excessively long text segments to enhance stability and performance.
+- Improved: Documented ESMTP extension advertisement behavior and added tests for conditional EHLO SIZE, STARTTLS, and AUTH advertisement.
 
 ```cs
 var options = new SmtpServerOptionsBuilder()

@@ -39,6 +39,48 @@ namespace SmtpServer.Protocol
         SmtpCommand CreateRcpt(IMailbox address);
 
         /// <summary>
+        /// Create a RCPT command.
+        /// </summary>
+        /// <param name="address">The address that the mail is to.</param>
+        /// <param name="parameters">The optional parameters for the recipient.</param>
+        /// <returns>The RCPT command.</returns>
+        SmtpCommand CreateRcpt(IMailbox address, IReadOnlyDictionary<string, string> parameters)
+            => CreateRcpt(address);
+
+        /// <summary>
+        /// Create a HELP command.
+        /// </summary>
+        /// <param name="argument">The optional command argument.</param>
+        /// <returns>The HELP command.</returns>
+        SmtpCommand CreateHelp(string argument)
+            => new HelpCommand(argument);
+
+        /// <summary>
+        /// Create a VRFY command.
+        /// </summary>
+        /// <param name="argument">The verification argument.</param>
+        /// <returns>The VRFY command.</returns>
+        SmtpCommand CreateVrfy(string argument)
+            => new VrfyCommand(argument);
+
+        /// <summary>
+        /// Create an EXPN command.
+        /// </summary>
+        /// <param name="argument">The expansion argument.</param>
+        /// <returns>The EXPN command.</returns>
+        SmtpCommand CreateExpn(string argument)
+            => new ExpnCommand(argument);
+
+        /// <summary>
+        /// Create a BDAT command.
+        /// </summary>
+        /// <param name="size">The chunk size.</param>
+        /// <param name="isLast">Whether this is the last chunk.</param>
+        /// <returns>The BDAT command.</returns>
+        SmtpCommand CreateBdat(long size, bool isLast)
+            => new BdatCommand(size, isLast);
+
+        /// <summary>
         /// Create a DATA command.
         /// </summary>
         /// <returns>The DATA command.</returns>

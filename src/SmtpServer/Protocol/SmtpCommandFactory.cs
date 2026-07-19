@@ -30,7 +30,37 @@ namespace SmtpServer.Protocol
         /// <inheritdoc />
         public virtual SmtpCommand CreateRcpt(IMailbox address)
         {
-            return new RcptCommand(address);
+            return CreateRcpt(address, new Dictionary<string, string>());
+        }
+
+        /// <inheritdoc />
+        public virtual SmtpCommand CreateRcpt(IMailbox address, IReadOnlyDictionary<string, string> parameters)
+        {
+            return new RcptCommand(address, parameters);
+        }
+
+        /// <inheritdoc />
+        public virtual SmtpCommand CreateHelp(string argument)
+        {
+            return new HelpCommand(argument);
+        }
+
+        /// <inheritdoc />
+        public virtual SmtpCommand CreateVrfy(string argument)
+        {
+            return new VrfyCommand(argument);
+        }
+
+        /// <inheritdoc />
+        public virtual SmtpCommand CreateExpn(string argument)
+        {
+            return new ExpnCommand(argument);
+        }
+
+        /// <inheritdoc />
+        public virtual SmtpCommand CreateBdat(long size, bool isLast)
+        {
+            return new BdatCommand(size, isLast);
         }
 
         /// <inheritdoc />

@@ -32,6 +32,11 @@ namespace SmtpServer.Protocol
         /// if the current state is to be maintained.</returns>
         internal override async Task<bool> ExecuteAsync(SmtpSessionContext context, CancellationToken cancellationToken)
         {
+            if (await AcceptHeloAsync(context, cancellationToken).ConfigureAwait(false) == false)
+            {
+                return false;
+            }
+
             var response = new SmtpResponse(SmtpReplyCode.Ok, GetGreeting(context));
 
             await context.Pipe.Output.WriteReplyAsync(response, cancellationToken).ConfigureAwait(false);
@@ -47,6 +52,24 @@ namespace SmtpServer.Protocol
         protected virtual string GetGreeting(ISessionContext context)
         {
             return $"{context.ServerOptions.ServerName} Hello {DomainOrAddress}, haven't we met before?";
+        }
+
+        async Task<bool> AcceptHeloAsync(SmtpSessionContext context, CancellationToken cancellationToken)
+        {
+            var policy = context.ServerOptions.SessionPolicy;
+            if (policy.Helo == null)
+            {
+                return true;
+            }
+
+            var response = await policy.Helo(context, DomainOrAddress, cancellationToken).ConfigureAwait(false);
+            if (SmtpSession.IsSuccessResponse(response))
+            {
+                return true;
+            }
+
+            await context.Pipe.Output.WriteReplyAsync(response, cancellationToken).ConfigureAwait(false);
+            return false;
         }
 
         /// <summary>

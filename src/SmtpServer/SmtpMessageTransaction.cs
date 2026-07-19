@@ -7,7 +7,7 @@ namespace SmtpServer
     /// <summary>
     /// Smtp Message Transaction
     /// </summary>
-    internal sealed class SmtpMessageTransaction : IMessageTransaction
+    internal sealed class SmtpMessageTransaction : IMessageTransaction, IParameterizedMessageTransaction
     {
         /// <summary>
         /// Reset the current transaction.
@@ -16,6 +16,7 @@ namespace SmtpServer
         {
             From = null;
             To = new Collection<IMailbox>();
+            Recipients = new Collection<IMessageRecipient>();
             Parameters = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>());
         }
 
@@ -24,6 +25,12 @@ namespace SmtpServer
 
         /// <inheritdoc />
         public IList<IMailbox> To { get; set; } = new Collection<IMailbox>();
+
+        /// <inheritdoc />
+        public Collection<IMessageRecipient> Recipients { get; private set; } = new Collection<IMessageRecipient>();
+
+        /// <inheritdoc />
+        IReadOnlyList<IMessageRecipient> IParameterizedMessageTransaction.Recipients => Recipients;
 
         /// <inheritdoc />
         public IReadOnlyDictionary<string, string> Parameters { get; set; } = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>());

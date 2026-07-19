@@ -8,5 +8,6 @@
         WaitingForMailSecure = 3,
         WithinTransaction = 4,
         CanAcceptData = 5,
+        BdatInProgress = 6,
     }
 }

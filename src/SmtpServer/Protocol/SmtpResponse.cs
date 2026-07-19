@@ -80,10 +80,12 @@
         /// </summary>
         /// <param name="replyCode">The reply code.</param>
         /// <param name="message">The reply message.</param>
-        public SmtpResponse(SmtpReplyCode replyCode, string message = null)
+        /// <param name="enhancedStatusCode">The enhanced status code.</param>
+        public SmtpResponse(SmtpReplyCode replyCode, string message = null, SmtpEnhancedStatusCode? enhancedStatusCode = null)
         {
             ReplyCode = replyCode;
             Message = message;
+            EnhancedStatusCode = enhancedStatusCode ?? GetDefaultEnhancedStatusCode(replyCode);
         }
 
         /// <summary>
@@ -95,5 +97,63 @@
         /// Gets the response message.
         /// </summary>
         public string Message { get; }
+
+        /// <summary>
+        /// Gets the enhanced status code.
+        /// </summary>
+        public SmtpEnhancedStatusCode? EnhancedStatusCode { get; }
+
+        static SmtpEnhancedStatusCode? GetDefaultEnhancedStatusCode(SmtpReplyCode replyCode)
+        {
+            switch (replyCode)
+            {
+                case SmtpReplyCode.ServiceReady:
+                case SmtpReplyCode.ServiceClosingTransmissionChannel:
+                case SmtpReplyCode.Ok:
+                case SmtpReplyCode.HelpResponse:
+                    return new SmtpEnhancedStatusCode(2, 0, 0);
+
+                case SmtpReplyCode.AuthenticationSuccessful:
+                    return new SmtpEnhancedStatusCode(2, 7, 0);
+
+                case SmtpReplyCode.CantVerifyUser:
+                    return new SmtpEnhancedStatusCode(2, 5, 2);
+
+                case SmtpReplyCode.ServiceUnavailable:
+                    return new SmtpEnhancedStatusCode(4, 3, 0);
+
+                case SmtpReplyCode.CommandUnrecognized:
+                case SmtpReplyCode.CommandNotImplemented:
+                case SmtpReplyCode.BadSequence:
+                    return new SmtpEnhancedStatusCode(5, 5, 1);
+
+                case SmtpReplyCode.SyntaxError:
+                    return new SmtpEnhancedStatusCode(5, 5, 2);
+
+                case SmtpReplyCode.CommandParameterNotImplemented:
+                    return new SmtpEnhancedStatusCode(5, 5, 4);
+
+                case SmtpReplyCode.AuthenticationRequired:
+                    return new SmtpEnhancedStatusCode(5, 7, 0);
+
+                case SmtpReplyCode.AuthenticationFailed:
+                    return new SmtpEnhancedStatusCode(5, 7, 8);
+
+                case SmtpReplyCode.MailboxUnavailable:
+                    return new SmtpEnhancedStatusCode(5, 1, 1);
+
+                case SmtpReplyCode.MailboxNameNotAllowed:
+                    return new SmtpEnhancedStatusCode(5, 1, 3);
+
+                case SmtpReplyCode.SizeLimitExceeded:
+                    return new SmtpEnhancedStatusCode(5, 3, 4);
+
+                case SmtpReplyCode.TransactionFailed:
+                    return new SmtpEnhancedStatusCode(5, 0, 0);
+
+                default:
+                    return null;
+            }
+        }
     }
 }

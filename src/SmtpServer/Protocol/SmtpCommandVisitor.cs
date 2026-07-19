@@ -43,6 +43,30 @@ namespace SmtpServer.Protocol
                 return;
             }
 
+            if (command is HelpCommand helpCommand)
+            {
+                Visit(helpCommand);
+                return;
+            }
+
+            if (command is VrfyCommand vrfyCommand)
+            {
+                Visit(vrfyCommand);
+                return;
+            }
+
+            if (command is ExpnCommand expnCommand)
+            {
+                Visit(expnCommand);
+                return;
+            }
+
+            if (command is BdatCommand bdatCommand)
+            {
+                Visit(bdatCommand);
+                return;
+            }
+
             if (command is NoopCommand noopCommand)
             {
                 Visit(noopCommand);
@@ -111,6 +135,30 @@ namespace SmtpServer.Protocol
         /// </summary>
         /// <param name="command">The command that is being visited.</param>
         protected virtual void Visit(MailCommand command) { }
+
+        /// <summary>
+        /// Visit a HELP command.
+        /// </summary>
+        /// <param name="command">The command that is being visited.</param>
+        protected virtual void Visit(HelpCommand command) { }
+
+        /// <summary>
+        /// Visit a VRFY command.
+        /// </summary>
+        /// <param name="command">The command that is being visited.</param>
+        protected virtual void Visit(VrfyCommand command) { }
+
+        /// <summary>
+        /// Visit an EXPN command.
+        /// </summary>
+        /// <param name="command">The command that is being visited.</param>
+        protected virtual void Visit(ExpnCommand command) { }
+
+        /// <summary>
+        /// Visit a BDAT command.
+        /// </summary>
+        /// <param name="command">The command that is being visited.</param>
+        protected virtual void Visit(BdatCommand command) { }
 
         /// <summary>
         /// Visit an NOOP command.

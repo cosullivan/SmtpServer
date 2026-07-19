@@ -1,0 +1,99 @@
+pipeline {
+    agent { label 'dotnet' }
+
+    parameters {
+        booleanParam(
+            name: 'PUSH_NUGET',
+            defaultValue: false,
+            description: 'Push generated NuGet packages to nuget.devop.is after pack'
+        )
+    }
+
+    environment {
+        PACKAGE_PROJECT = './src/SmtpServer/SmtpServer.csproj'
+        TEST_PROJECT = './src/SmtpServer.Tests/SmtpServer.Tests.csproj'
+        CONFIG = 'Release'
+        NUGET_OUTPUT = './nupkg'
+        NUGET_SOURCE = 'https://nuget.devop.is/v3/index.json'
+        DOTNET_CLI_TELEMETRY_OPTOUT = '1'
+        DOTNET_NOLOGO = 'true'
+    }
+
+    stages {
+        stage('Build, Test & Pack') {
+            steps {
+                container('dotnet') {
+                    // MinVer derives the package version from the git tag (prefix in the csproj). The library's
+                    // own dependencies come from nuget.org, but the devop-marketplace source still needs its
+                    // basic-auth credential injected here: the feed requires auth to read its service index,
+                    // so the push stage (which reuses this nuget.config) cannot even reach it otherwise.
+                    withCredentials([usernamePassword(
+                        credentialsId: 'devop-nuget-credentials',
+                        usernameVariable: 'DEVOP_NUGET_USER',
+                        passwordVariable: 'DEVOP_NUGET_PASSWORD'
+                    )]) {
+                        sh '''
+                            git config --global --add safe.directory '*' 2>/dev/null || printf '[safe]\n\tdirectory = *\n' >> ~/.gitconfig
+
+                            TAG_PREFIX=$(grep -o '<MinVerTagPrefix>[^<]*' "$PACKAGE_PROJECT" | sed 's/<MinVerTagPrefix>//')
+                            VERSION_PROP=''
+                            if [ -n "$TAG_PREFIX" ]; then
+                                LATEST_TAG=$(git describe --tags --match "${TAG_PREFIX}*" --abbrev=0 2>/dev/null || echo '')
+                                if [ -n "$LATEST_TAG" ]; then
+                                    PKG_VERSION="${LATEST_TAG#$TAG_PREFIX}"
+                                    echo "Resolved version $PKG_VERSION from tag $LATEST_TAG"
+                                    VERSION_PROP="-p:MinVerVersionOverride=$PKG_VERSION"
+                                else
+                                    echo "No tag found for prefix '$TAG_PREFIX' -- MinVer will calculate from history"
+                                fi
+                            fi
+
+                            dotnet --info
+                            dotnet nuget update source devop-marketplace \
+                              --source "$NUGET_SOURCE" \
+                              --username "$DEVOP_NUGET_USER" \
+                              --password "$DEVOP_NUGET_PASSWORD" \
+                              --store-password-in-clear-text \
+                              --valid-authentication-types basic \
+                              --configfile ./nuget.config
+                            dotnet restore "$PACKAGE_PROJECT" --configfile ./nuget.config -v:minimal /nr:false
+                            dotnet restore "$TEST_PROJECT" --configfile ./nuget.config -v:minimal /nr:false
+                            dotnet build "$PACKAGE_PROJECT" -c "$CONFIG" --no-restore $VERSION_PROP -v:minimal /nr:false
+                            dotnet test "$TEST_PROJECT" -c "$CONFIG" --no-restore $VERSION_PROP --logger trx --results-directory ./TestResults -v:minimal /nr:false
+                            dotnet pack "$PACKAGE_PROJECT" -c "$CONFIG" --no-restore -o "$NUGET_OUTPUT" $VERSION_PROP -v:minimal /nr:false
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Push NuGet Package') {
+            when {
+                expression { params.PUSH_NUGET }
+            }
+            steps {
+                container('dotnet') {
+                    withCredentials([string(credentialsId: 'devop-nuget', variable: 'NUGET_API_KEY')]) {
+                        sh '''
+                            for pkg in ./nupkg/*.nupkg; do
+                                echo "Pushing $pkg to nuget.devop.is"
+                                dotnet nuget push "$pkg" \
+                                  --source "$NUGET_SOURCE" \
+                                  --api-key "$NUGET_API_KEY" \
+                                  --skip-duplicate
+                            done
+                        '''
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            archiveArtifacts artifacts: 'nupkg/**', fingerprint: true, allowEmptyArchive: true
+            archiveArtifacts artifacts: 'TestResults/**', fingerprint: true, allowEmptyArchive: true
+            jiraSendBuildInfo site: 'vlink-team.atlassian.net'
+        }
+    }
+}

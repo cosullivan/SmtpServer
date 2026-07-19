@@ -41,11 +41,36 @@ namespace SmtpServer.Tests
             return false;
         }
 
+        internal async Task<string> ConnectAndReadGreetingAsync()
+        {
+            await _tcpClient.ConnectAsync(new IPEndPoint(IPAddress.Parse(_host), _port));
+            _networkStream = _tcpClient.GetStream();
+
+            return await WaitForDataAsync();
+        }
+
         internal async Task<string> SendCommandAsync(string command)
         {
             var commandData = Encoding.UTF8.GetBytes($"{command}\r\n");
 
             await _networkStream.WriteAsync(commandData, 0, commandData.Length);
+            return await WaitForDataAsync();
+        }
+
+        internal async Task<string> SendBdatAsync(string command, string data)
+        {
+            var commandData = Encoding.UTF8.GetBytes($"{command}\r\n{data}");
+
+            await _networkStream.WriteAsync(commandData, 0, commandData.Length);
+            return await WaitForDataAsync();
+        }
+
+        internal async Task<string> SendBdatAsync(string command, byte[] data)
+        {
+            var commandData = Encoding.UTF8.GetBytes($"{command}\r\n");
+
+            await _networkStream.WriteAsync(commandData, 0, commandData.Length);
+            await _networkStream.WriteAsync(data, 0, data.Length);
             return await WaitForDataAsync();
         }
 

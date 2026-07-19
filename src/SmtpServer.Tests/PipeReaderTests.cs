@@ -1,8 +1,10 @@
 ﻿using System.IO;
 using System.IO.Pipelines;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.IO;
+using SmtpServer.Protocol;
 using SmtpServer.Text;
 using Xunit;
 
@@ -72,6 +74,62 @@ namespace SmtpServer.Tests
         }
 
         [Fact]
+        public async Task CanEnforceMaxCommandLineLength()
+        {
+            // arrange
+            var reader = CreatePipeReader("abcdef\r\n");
+
+            // act
+            var exception = await Assert.ThrowsAsync<SmtpResponseException>(
+                async () => await reader.ReadLineAsync(Encoding.ASCII, 5));
+
+            // assert
+            Assert.True(exception.IsQuitRequested);
+            Assert.Equal(SmtpReplyCode.SyntaxError, exception.Response.ReplyCode);
+        }
+
+        [Fact]
+        public async Task CanReadLineAtMaxCommandLineLength()
+        {
+            // arrange
+            var reader = CreatePipeReader("abcde\r\n");
+
+            // act
+            var line = await reader.ReadLineAsync(Encoding.ASCII, 5);
+
+            // assert
+            Assert.Equal("abcde", line);
+        }
+
+        [Fact]
+        public async Task CanWriteEnhancedStatusCodeReply()
+        {
+            // arrange
+            var pipe = new Pipe();
+
+            // act
+            await pipe.Writer.WriteReplyAsync(SmtpResponse.AuthenticationFailed, CancellationToken.None);
+            pipe.Writer.Complete();
+
+            // assert
+            Assert.Equal("535 5.7.8 authentication failed\r\n", await ReadAllAsync(pipe.Reader));
+        }
+
+        [Fact]
+        public async Task CanWriteAuthContinuationWithoutEnhancedStatusCode()
+        {
+            // arrange
+            var pipe = new Pipe();
+
+            // act
+            await pipe.Writer.WriteReplyAsync(new SmtpResponse(SmtpReplyCode.ContinueWithAuth, "VXNlcm5hbWU6"), CancellationToken.None);
+            pipe.Writer.Complete();
+
+            // assert
+            Assert.Equal("334 VXNlcm5hbWU6\r\n", await ReadAllAsync(pipe.Reader));
+        }
+
+        [Fact]
         public async Task CanReadBlockWithDotStuffingRemoved()
         {
             // arrange
@@ -92,6 +150,67 @@ namespace SmtpServer.Tests
 
             // assert
             Assert.Equal("abcd\r\n.1234", text);
+        }
+
+        [Fact]
+        public async Task CanStreamBlockWithDotStuffingRemoved()
+        {
+            // arrange
+            var reader = CreatePipeReader("abcd\r\n..1234\r\n.\r\n");
+            var writer = new Pipe();
+
+            var maxMessageSizeOptions = new MaxMessageSizeOptions();
+
+            // act
+            await reader.ReadDotBlockAsync(writer.Writer, maxMessageSizeOptions);
+            var text = await ReadAllAsync(writer.Reader);
+
+            // assert
+            Assert.Equal("abcd\r\n.1234", text);
+        }
+
+        [Fact]
+        public async Task CanEnforceMaxMessageSizeWhenStreamingBlock()
+        {
+            // arrange
+            var reader = CreatePipeReader("abcd\r\n1234\r\n.\r\n");
+            var writer = new Pipe();
+
+            var maxMessageSizeOptions = new MaxMessageSizeOptions(MaxMessageSizeHandling.Strict, 5);
+
+            // act
+            var exception = await Assert.ThrowsAsync<SmtpResponseException>(
+                async () => await reader.ReadDotBlockAsync(writer.Writer, maxMessageSizeOptions));
+
+            // assert
+            Assert.True(exception.IsQuitRequested);
+        }
+
+        static async Task<string> ReadAllAsync(PipeReader reader)
+        {
+            using var stream = new MemoryStream();
+
+            while (true)
+            {
+                var result = await reader.ReadAsync();
+                var buffer = result.Buffer;
+
+                foreach (var segment in buffer)
+                {
+                    stream.Write(segment.Span);
+                }
+
+                reader.AdvanceTo(buffer.End);
+
+                if (result.IsCompleted)
+                {
+                    break;
+                }
+            }
+
+            reader.Complete();
+
+            return Encoding.ASCII.GetString(stream.ToArray());
         }
     }
 }

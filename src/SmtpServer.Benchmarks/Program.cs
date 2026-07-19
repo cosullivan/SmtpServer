@@ -8,17 +8,13 @@ namespace SmtpServer.Benchmarks
     {
         public static void Main(string[] args)
         {
-            //var summary = BenchmarkRunner.Run<TokenizerBenchmarks>(
-            //    ManualConfig
-            //        .Create(DefaultConfig.Instance)
-            //        .With(ConfigOptions.DisableOptimizationsValidator));
-
-            //var summary = BenchmarkRunner.Run<ThroughputBenchmarks>();
-
-            var summary = BenchmarkRunner.Run<ThroughputBenchmarks>(
-                ManualConfig
-                    .Create(DefaultConfig.Instance)
-                    .With(ConfigOptions.DisableOptimizationsValidator));
+            BenchmarkSwitcher
+                .FromAssembly(typeof(Program).Assembly)
+                .Run(
+                    args,
+                    ManualConfig
+                        .Create(DefaultConfig.Instance)
+                        .WithOptions(ConfigOptions.DisableOptimizationsValidator));
         }
     }
 }

@@ -33,7 +33,7 @@ namespace SmtpServer.Tracing
         /// <param name="command">The command that is being visited.</param>
         protected override void Visit(AuthCommand command)
         {
-            _output.WriteLine("AUTH: Method={0}, Parameter={1}", command.Method, command.Parameter);
+            _output.WriteLine("AUTH: Method={0}, Parameter={1}", command.Method, SmtpCommandSnapshot.Redacted);
         }
 
         /// <summary>
@@ -75,6 +75,42 @@ namespace SmtpServer.Tracing
         }
 
         /// <summary>
+        /// Visit a HELP command.
+        /// </summary>
+        /// <param name="command">The command that is being visited.</param>
+        protected override void Visit(HelpCommand command)
+        {
+            _output.WriteLine("HELP: Argument={0}", command.Argument);
+        }
+
+        /// <summary>
+        /// Visit a VRFY command.
+        /// </summary>
+        /// <param name="command">The command that is being visited.</param>
+        protected override void Visit(VrfyCommand command)
+        {
+            _output.WriteLine("VRFY: Argument={0}", command.Argument);
+        }
+
+        /// <summary>
+        /// Visit an EXPN command.
+        /// </summary>
+        /// <param name="command">The command that is being visited.</param>
+        protected override void Visit(ExpnCommand command)
+        {
+            _output.WriteLine("EXPN: Argument={0}", command.Argument);
+        }
+
+        /// <summary>
+        /// Visit a BDAT command.
+        /// </summary>
+        /// <param name="command">The command that is being visited.</param>
+        protected override void Visit(BdatCommand command)
+        {
+            _output.WriteLine("BDAT: Size={0}, Last={1}", command.Size, command.IsLast);
+        }
+
+        /// <summary>
         /// Visit an NOOP command.
         /// </summary>
         /// <param name="command">The command that is being visited.</param>
@@ -107,7 +143,9 @@ namespace SmtpServer.Tracing
         /// <param name="command">The command that is being visited.</param>
         protected override void Visit(RcptCommand command)
         {
-            _output.WriteLine("RCPT: Address={0}", command.Address.AsAddress());
+            _output.WriteLine("RCPT: Address={0} Parameters={1}",
+                command.Address.AsAddress(),
+                string.Join(",", command.Parameters.Select(kvp => $"{kvp.Key}={kvp.Value}")));
         }
 
         /// <summary>

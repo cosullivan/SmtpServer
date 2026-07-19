@@ -15,11 +15,17 @@ namespace SmtpServer
         public SmtpCommandEventArgs(ISessionContext context, SmtpCommand command) : base(context)
         {
             Command = command;
+            SafeCommand = SmtpCommandSnapshot.From(command);
         }
 
         /// <summary>
         /// The command for the event.
         /// </summary>
         public SmtpCommand Command { get; }
+
+        /// <summary>
+        /// The safe-to-log command snapshot for the event.
+        /// </summary>
+        public SmtpCommandSnapshot SafeCommand { get; }
     }
 }

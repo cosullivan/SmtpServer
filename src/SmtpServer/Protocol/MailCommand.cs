@@ -44,6 +44,13 @@ namespace SmtpServer.Protocol
                 return false;
             }
 
+            var unsupportedExtensionResponse = GetUnsupportedExtensionResponse(context);
+            if (unsupportedExtensionResponse != null)
+            {
+                await context.Pipe.Output.WriteReplyAsync(unsupportedExtensionResponse, cancellationToken).ConfigureAwait(false);
+                return false;
+            }
+
             context.Transaction.Reset();
             context.Transaction.Parameters = Parameters;
 
@@ -88,6 +95,65 @@ namespace SmtpServer.Protocol
             }
 
             return int.TryParse(value, out var size) == false ? 0 : size;
+        }
+
+        SmtpResponse GetUnsupportedExtensionResponse(ISessionContext context)
+        {
+            if (context.ServerOptions.Extensions.SmtpUtf8Enabled == false)
+            {
+                if (ContainsParameter("SMTPUTF8"))
+                {
+                    return new SmtpResponse(SmtpReplyCode.CommandParameterNotImplemented, "SMTPUTF8 is not enabled");
+                }
+
+                if (ContainsNonAscii(Address))
+                {
+                    return SmtpResponse.MailboxNameNotAllowed;
+                }
+            }
+
+            if (context.ServerOptions.Extensions.DsnEnabled == false && (ContainsParameter("RET") || ContainsParameter("ENVID")))
+            {
+                return new SmtpResponse(SmtpReplyCode.CommandParameterNotImplemented, "DSN is not enabled");
+            }
+
+            return null;
+        }
+
+        bool ContainsParameter(string name)
+        {
+            foreach (var parameter in Parameters)
+            {
+                if (string.Equals(parameter.Key, name, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        static bool ContainsNonAscii(IMailbox mailbox)
+        {
+            return ContainsNonAscii(mailbox?.User) || ContainsNonAscii(mailbox?.Host);
+        }
+
+        static bool ContainsNonAscii(string value)
+        {
+            if (value == null)
+            {
+                return false;
+            }
+
+            foreach (var character in value)
+            {
+                if (character > 127)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>

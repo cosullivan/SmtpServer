@@ -1,11 +1,12 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using SmtpServer.Mail;
 
 namespace SmtpServer.Storage
 {
-    internal sealed class CompositeMailboxFilter : IMailboxFilter
+    internal sealed class CompositeMailboxFilter : IParameterizedMailboxFilter
     {
         readonly IMailboxFilter[] _filters;
 
@@ -56,12 +57,26 @@ namespace SmtpServer.Storage
             IMailbox @from,
             CancellationToken cancellationToken = default)
         {
+            return await CanDeliverToAsync(context, to, @from, new Dictionary<string, string>(), cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <inheritdoc />
+        public async Task<bool> CanDeliverToAsync(
+            ISessionContext context,
+            IMailbox to,
+            IMailbox @from,
+            IReadOnlyDictionary<string, string> parameters,
+            CancellationToken cancellationToken = default)
+        {
             if (_filters == null || _filters.Any() == false)
             {
                 return true;
             }
 
-            var results = await Task.WhenAll(_filters.Select(f => f.CanDeliverToAsync(context, to, @from, cancellationToken))).ConfigureAwait(false);
+            var results = await Task.WhenAll(_filters.Select(f =>
+                f is IParameterizedMailboxFilter parameterizedMailboxFilter
+                    ? parameterizedMailboxFilter.CanDeliverToAsync(context, to, @from, parameters, cancellationToken)
+                    : f.CanDeliverToAsync(context, to, @from, cancellationToken))).ConfigureAwait(false);
 
             return results.All(r => r == true);
         }
